@@ -1,0 +1,36 @@
+"use client";
+
+import { useUser, UserButton } from "@clerk/nextjs";
+import Link from "next/link";
+
+const LoginButton: React.FC = () => {
+  const { isSignedIn, isLoaded } = useUser();
+
+  // Prevents flash before Clerk loads
+  if (!isLoaded) return null;
+
+  // If signed in, show Clerk user menu
+  if (isSignedIn) {
+    return (
+      <div className="flex items-center space-x-2">
+        <UserButton afterSignOutUrl="/" />
+      </div>
+    );
+  }
+
+  // If not signed in, show login / open account link
+  return (
+    <Link
+      href="/sign-in"
+      className="inline-flex items-center justify-center px-5 py-2.5 
+                 bg-gradient-to-r from-blue-600 to-indigo-600 
+                 hover:from-indigo-700 hover:to-blue-700 
+                 text-white text-sm font-semibold rounded-lg 
+                 shadow-md transition-all duration-200"
+    >
+      Open Account / Login
+    </Link>
+  );
+};
+
+export default LoginButton;

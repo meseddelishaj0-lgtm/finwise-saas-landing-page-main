@@ -1,0 +1,9 @@
+// src/lib/stripe.ts
+import Stripe from "stripe";
+
+// ✅ create and export an initialized instance
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+
+});
+
+export default stripe;
