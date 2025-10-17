@@ -1,35 +1,39 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { getServerSession } from "next-auth";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: "2024-06-20" as any, // or remove this line entirely
-});
-
-interface ExtendedSession {
-  user?: {
-    email?: string;
-    stripeCustomerId?: string;
-  };
-}
+import { prisma } from "@/lib/prisma";
+import Stripe from "stripe";
 
 export async function POST() {
-  const session = (await getServerSession()) as ExtendedSession;
+  try {
+    const session = await getServerSession();
+    const email = session?.user?.email;
 
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!email) {
+      return NextResponse.json({ error: "User not authenticated" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { stripeCustomerId: true },
+    });
+
+    if (!user?.stripeCustomerId) {
+      return NextResponse.json({ error: "No Stripe customer found" }, { status: 404 });
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: "2025-09-30.clover" as any,
+    });
+
+    // ✅ Create billing portal session
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: "https://www.wallstreetstocks.ai/dashboard",
+    });
+
+    return NextResponse.json({ url: portalSession.url });
+  } catch (error: any) {
+    console.error("❌ Billing portal creation error:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  const customerId = session.user.stripeCustomerId;
-
-  if (!customerId) {
-    return NextResponse.json({ error: "No Stripe customer ID" }, { status: 400 });
-  }
-
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: customerId,
-    return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
-  });
-
-  return NextResponse.json({ url: portalSession.url });
 }

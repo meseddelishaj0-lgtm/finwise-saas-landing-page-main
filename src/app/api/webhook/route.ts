@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
-// ✅ Modern Next.js 14 route config
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const preferredRegion = "auto";
@@ -19,7 +18,7 @@ export async function POST(req: Request) {
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2024-06-20" as any,
+    apiVersion: "2025-09-30.clover" as any,
   });
 
   let event: Stripe.Event;
@@ -27,35 +26,50 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, endpointSecret);
   } catch (err: any) {
-    console.error("❌ Stripe verification failed:", err.message);
+    console.error("❌ Stripe signature verification failed:", err.message);
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
   try {
     switch (event.type) {
-      // ✅ Checkout session completed
+      // ✅ User successfully completes checkout
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log("✅ Checkout completed:", session.id, session.customer_email);
+        const email =
+          session.metadata?.email ||
+          session.customer_email ||
+          session.customer_details?.email;
+        const plan = session.metadata?.plan || "Free";
+        const stripeCustomerId = session.customer as string;
 
-        if (session.customer && session.customer_email) {
-          await prisma.user.updateMany({
-            where: { email: session.customer_email },
-            data: {
-              stripeCustomerId: session.customer as any,
-            },
-          });
-
-          console.log("🧩 Saved Stripe customer ID for:", session.customer_email);
+        if (!email) {
+          console.warn("⚠️ No email found in checkout session:", session.id);
+          break;
         }
+
+        // ✅ Always upsert user (creates if not found)
+        await prisma.user.upsert({
+          where: { email },
+          update: {
+            stripeCustomerId,
+            currentPlan: plan,
+          },
+          create: {
+            email,
+            stripeCustomerId,
+            currentPlan: plan,
+            name: "",
+            password: "",
+          },
+        });
+
+        console.log(`✅ Checkout saved for ${email} (${plan})`);
         break;
       }
 
-      // ✅ Payment succeeded
+      // ✅ Payment succeeded (set next billing date)
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice;
-        console.log("💰 Payment succeeded for invoice:", invoice.id);
-
         const customerId = invoice.customer as string;
         const nextBillingDate = new Date(
           (invoice.lines?.data?.[0]?.period?.end ?? invoice.created) * 1000
@@ -66,15 +80,13 @@ export async function POST(req: Request) {
           data: { nextBillingDate },
         });
 
-        console.log("📆 Updated next billing date for:", customerId);
+        console.log(`💰 Updated next billing date for ${customerId}`);
         break;
       }
 
       // ✅ Subscription updated
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log("🔄 Subscription updated:", subscription.id);
-
         const customerId = subscription.customer as string;
         const planName =
           subscription.items.data[0]?.price?.nickname || "Unknown Plan";
@@ -90,15 +102,13 @@ export async function POST(req: Request) {
           },
         });
 
-        console.log("📊 Updated plan:", planName, "for:", customerId);
+        console.log(`🔄 Updated subscription for ${customerId}: ${planName}`);
         break;
       }
 
       // ✅ Subscription canceled
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log("⚠️ Subscription canceled:", subscription.id);
-
         const customerId = subscription.customer as string;
 
         await prisma.user.updateMany({
@@ -109,7 +119,7 @@ export async function POST(req: Request) {
           },
         });
 
-        console.log("❌ Set plan to canceled for:", customerId);
+        console.log(`❌ Subscription canceled for ${customerId}`);
         break;
       }
 

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",                                // ✅ added — required for "@/lib/..." alias to work
+    "baseUrl": "src", 
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -14,12 +14,10 @@
     "jsx": "preserve",
     "incremental": true,
     "plugins": [
-      {
-        "name": "next"
-      }
+      { "name": "next" }
     ],
     "paths": {
-      "@/*": ["src/*"]                            // ✅ simplified — no need for "./" here
+      "@/*": ["*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
