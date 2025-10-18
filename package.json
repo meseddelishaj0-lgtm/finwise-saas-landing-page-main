@@ -29,7 +29,8 @@
     "yahoo-finance2": "^2.13.3"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^20.19.22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/stripe": "^8.0.416",

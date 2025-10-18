@@ -13,7 +13,7 @@ export default function DashboardPage() {
     nextBillingDate: "Loading...",
   });
 
-  // ✅ Fetch user billing info from Stripe
+  // ✅ Fetch user billing info
   useEffect(() => {
     const fetchBillingInfo = async () => {
       try {
@@ -46,12 +46,10 @@ export default function DashboardPage() {
     );
   }
 
-  // ✅ Stripe Customer Portal handler
+  // ✅ Stripe Billing Portal handler
   const handleManageBilling = async () => {
     try {
-      const res = await fetch("/api/create-portal-session", {
-        method: "POST",
-      });
+      const res = await fetch("/api/create-portal-session", { method: "POST" });
       const data = await res.json();
       if (res.ok && data.url) {
         window.location.href = data.url;
@@ -63,6 +61,55 @@ export default function DashboardPage() {
       alert("Something went wrong opening the billing portal.");
     }
   };
+
+  // ✅ Handle navigation to current plan dashboard
+  const handleGoToPlan = () => {
+    const plan = billingInfo.plan.toLowerCase();
+    if (plan === "gold") router.push("/dashboard/gold");
+    else if (plan === "platinum") router.push("/dashboard/platinum");
+    else if (plan === "diamond") router.push("/dashboard/diamond");
+    else router.push("/plans");
+  };
+
+  // ✅ Dynamic color scheme for plan cards
+  const getPlanStyle = (plan: string) => {
+    switch (plan.toLowerCase()) {
+      case "gold":
+        return {
+          bg: "from-yellow-100 to-yellow-50",
+          border: "border-yellow-400",
+          text: "text-yellow-700",
+          button:
+            "bg-yellow-400 hover:bg-yellow-500 text-black hover:scale-105 transition-all",
+        };
+      case "platinum":
+        return {
+          bg: "from-gray-100 to-gray-50",
+          border: "border-gray-400",
+          text: "text-gray-700",
+          button:
+            "bg-gray-300 hover:bg-gray-400 text-black hover:scale-105 transition-all",
+        };
+      case "diamond":
+        return {
+          bg: "from-blue-100 to-blue-50",
+          border: "border-blue-400",
+          text: "text-blue-700",
+          button:
+            "bg-blue-400 hover:bg-blue-500 text-white hover:scale-105 transition-all",
+        };
+      default:
+        return {
+          bg: "from-gray-50 to-gray-100",
+          border: "border-gray-300",
+          text: "text-gray-700",
+          button:
+            "bg-gray-300 hover:bg-gray-400 text-black hover:scale-105 transition-all",
+        };
+    }
+  };
+
+  const planStyle = getPlanStyle(billingInfo.plan);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
@@ -95,25 +142,6 @@ export default function DashboardPage() {
 
       {/* Dashboard Body */}
       <main className="max-w-6xl mx-auto px-6 py-14">
-        {/* ✅ Billing Overview */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm text-center mb-10 border border-gray-100">
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            💳 Billing Overview
-          </h3>
-          <p className="text-gray-700">
-            Active Plan:{" "}
-            <span className="font-semibold text-blue-600">
-              {billingInfo.plan}
-            </span>
-          </p>
-          <p className="text-gray-700 mt-1">
-            Next Billing Date:{" "}
-            <span className="font-semibold text-blue-600">
-              {billingInfo.nextBillingDate}
-            </span>
-          </p>
-        </div>
-
         {/* Welcome Card */}
         <div className="bg-white p-10 rounded-2xl shadow-md text-center mb-12">
           <h2 className="text-3xl font-bold mb-2 text-gray-900">
@@ -238,8 +266,48 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ✅ Manage Subscription Button */}
-        <div className="text-center mt-12">
+        {/* 🎟 My Plan Access - color themed */}
+        <div
+          className={`bg-gradient-to-br ${planStyle.bg} border ${planStyle.border} p-6 rounded-2xl shadow-sm text-center mt-12 transition-all`}
+        >
+          <h3 className={`text-xl font-semibold mb-2 ${planStyle.text}`}>
+            🎟 My Plan Access
+          </h3>
+          <p className="text-gray-700 mb-4">
+            Current Plan:{" "}
+            <span className={`font-semibold ${planStyle.text}`}>
+              {billingInfo.plan}
+            </span>
+          </p>
+          <button
+            onClick={handleGoToPlan}
+            className={`font-semibold py-3 px-8 rounded-full ${planStyle.button}`}
+          >
+            Go to {billingInfo.plan} Dashboard →
+          </button>
+        </div>
+
+        {/* 💳 Billing Overview */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm text-center mt-12 border border-gray-100">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            💳 Billing Overview
+          </h3>
+          <p className="text-gray-700">
+            Active Plan:{" "}
+            <span className="font-semibold text-blue-600">
+              {billingInfo.plan}
+            </span>
+          </p>
+          <p className="text-gray-700 mt-1">
+            Next Billing Date:{" "}
+            <span className="font-semibold text-blue-600">
+              {billingInfo.nextBillingDate}
+            </span>
+          </p>
+        </div>
+
+        {/* Manage Subscription */}
+        <div className="text-center mt-8 mb-10">
           <button
             onClick={handleManageBilling}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full transition-all"

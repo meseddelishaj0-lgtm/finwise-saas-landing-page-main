@@ -1,110 +1,61 @@
 import { NextResponse } from "next/server";
-import { headers } from "next/headers";
 import Stripe from "stripe";
-import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+// ✅ use from /lib
 
-// ✅ Required for dynamic route
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const preferredRegion = "auto";
 
 export async function POST(req: Request) {
-  const rawBody = await req.text();
-  const signature = headers().get("stripe-signature");
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-
-  if (!signature || !endpointSecret) {
-    console.error("❌ Missing Stripe signature or endpoint secret");
-    return NextResponse.json({ error: "Invalid webhook setup" }, { status: 400 });
-  }
-
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2025-09-30.clover" as any,
-  });
-
-  let event: Stripe.Event;
-
   try {
-    event = stripe.webhooks.constructEvent(rawBody, signature, endpointSecret);
-  } catch (err: any) {
-    console.error("❌ Stripe verification failed:", err.message);
-    return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
-  }
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {});
 
-  try {
-    switch (event.type) {
-      // ✅ Checkout completed → save Stripe ID + Plan + Email
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const email = session.customer_email || session.metadata?.email;
-        const plan = session.metadata?.plan || "Unknown";
+    const body = await req.json();
+    const { plan } = body;
 
-        console.log("✅ Checkout completed for:", email, "→", plan);
+    // ✅ Get session user (so email is real, not testuser@example.com)
+    const session = await getServerSession(authOptions);
+    const email = session?.user?.email;
 
-        if (email && session.customer) {
-          await prisma.user.upsert({
-            where: { email },
-            update: {
-              stripeCustomerId: session.customer as string,
-              currentPlan: plan,
-            },
-            create: {
-              email,
-              stripeCustomerId: session.customer as string,
-              currentPlan: plan,
-              name: email.split("@")[0],
-              password: "",
-            },
-          });
-          console.log("🧩 Saved Stripe customer ID for:", email);
-        }
-        break;
-      }
-
-      // ✅ Payment succeeded → update billing date
-      case "invoice.payment_succeeded": {
-        const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string;
-        const email = invoice.customer_email || invoice.metadata?.email;
-
-        const nextBillingDate = new Date(
-          (invoice.lines?.data?.[0]?.period?.end ?? invoice.created) * 1000
-        );
-
-        if (customerId && email) {
-          await prisma.user.updateMany({
-            where: { stripeCustomerId: customerId },
-            data: { nextBillingDate },
-          });
-          console.log("📆 Updated next billing date for:", email);
-        }
-        break;
-      }
-
-      // ✅ Subscription canceled
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
-        const customerId = subscription.customer as string;
-
-        await prisma.user.updateMany({
-          where: { stripeCustomerId: customerId },
-          data: {
-            currentPlan: "Canceled",
-            nextBillingDate: null,
-          },
-        });
-
-        console.log("⚠️ Subscription canceled for:", customerId);
-        break;
-      }
-
-      default:
-        console.log(`ℹ️ Unhandled event type: ${event.type}`);
+    if (!plan || !email) {
+      return NextResponse.json(
+        { error: "Missing plan or not authenticated" },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ received: true });
+    console.log(`💳 Creating checkout session for: ${email} — Plan: ${plan}`);
+
+    // ✅ Match your price IDs from .env
+    const priceMap: Record<string, string> = {
+      gold: process.env.STRIPE_PRICE_GOLD_ID!,
+      platinum: process.env.STRIPE_PRICE_PLATINUM_ID!,
+      diamond: process.env.STRIPE_PRICE_DIAMOND_ID!,
+    };
+
+    const priceId = priceMap[plan.toLowerCase()];
+    if (!priceId) {
+      return NextResponse.json({ error: "Invalid plan type" }, { status: 400 });
+    }
+
+    // ✅ Create Stripe checkout session
+    const sessionStripe = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      customer_email: email,
+      line_items: [{ price: priceId, quantity: 1 }],
+      // 🟩 Redirect directly to dashboard/plan after payment success
+      success_url: `https://www.wallstreetstocks.ai/dashboard/${plan.toLowerCase()}?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `https://www.wallstreetstocks.ai/plans?canceled=true`,
+      metadata: { email, plan },
+    });
+
+    console.log("✅ Stripe session created:", sessionStripe.id);
+    return NextResponse.json({ url: sessionStripe.url });
   } catch (err: any) {
-    console.error("🔥 Webhook processing error:", err.message);
+    console.error("🔥 Checkout error:", err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

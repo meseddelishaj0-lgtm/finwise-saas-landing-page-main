@@ -1,13 +1,12 @@
-import { NextAuthOptions } from "next-auth";
+import NextAuth from "next-auth";
+import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
+// replaced native bcrypt with bcryptjs (pure JS)
 import bcrypt from "bcryptjs";
 
-/**
- * ✅ NextAuth configuration
- * Handles login authentication using email + password stored in Prisma
- */
 export const authOptions: NextAuthOptions = {
+  debug: true,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -15,52 +14,47 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-
-      // ✅ Main login logic
-      async authorize(
-        credentials: Record<string, string> | undefined
-      ): Promise<any> {
-        if (!credentials?.email || !credentials.password) return null;
-
-        // 🔍 Find user in Prisma by email
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-
-        if (!user) {
-          console.error("❌ No user found with email:", credentials.email);
-          return null;
-        }
-
-        // 🔐 Compare hashed password using bcrypt
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isValid) {
-          console.error("⚠️ Invalid password for user:", credentials.email);
-          return null;
-        }
-
-        // ✅ Return user info (session payload)
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) return null;
+        const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+        if (!user) return null;
+        // bcryptjs.compare has same signature
+        const isValid = await bcrypt.compare(credentials.password, user.password);
+        if (!isValid) return null;
+        return { id: user.id.toString(), name: user.name, email: user.email };
       },
     }),
   ],
-
-  // ✅ Redirect to login page on auth failure
-  pages: {
-    signIn: "/login",
+  callbacks: {
+    async jwt({ token, user }: { token: any; user?: any }) {
+      try {
+        if (user) {
+          token.id = (user as any).id ?? token.id;
+          token.name = (user as any).name ?? token.name;
+          token.email = (user as any).email ?? token.email;
+        }
+        return token;
+      } catch (e) {
+        console.error("jwt callback error", e);
+        throw e;
+      }
+    },
+    async session({ session, token }: { session: any; token: any }) {
+      try {
+        if (session?.user) {
+          (session.user as any).id = token.id;
+          session.user.name = token.name;
+          session.user.email = token.email;
+        }
+        return session;
+      } catch (e) {
+        console.error("session callback error", e);
+        throw e;
+      }
+    },
   },
-
-  // ✅ JWT-based sessions (stateless, better for serverless)
-  session: { strategy: "jwt" },
-
-  // ✅ Encryption secret
-  secret: process.env.NEXTAUTH_SECRET,
+  pages: { signIn: "/login" },
 };
+
+export default NextAuth(authOptions);
+

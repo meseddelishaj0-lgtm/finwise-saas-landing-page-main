@@ -13,7 +13,7 @@ import {
 
 export default function GoldDashboardPage() {
   return (
-    <section className="max-w-6xl mx-auto py-16 px-6">
+    <section className="max-w-6xl mx-auto pt-28 py-16 px-6">
       {/* Header */}
       <div className="text-center mb-12">
         <Trophy className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
