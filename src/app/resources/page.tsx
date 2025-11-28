@@ -39,6 +39,18 @@ export default function ResourcesPage() {
       description:
         "Stay informed with insights on economic trends, stock market behavior, and global financial news.",
     },
+    {
+      title: "🧮 Tools & Calculators",
+      slug: "tools-calculators",
+      description:
+        "Access powerful financial calculators, ROI analyzers, mortgage estimators, and AI-driven investment tools designed for smarter decisions.",
+    },
+    {
+      title: "🚀 Business & Entrepreneurship",
+      slug: "business-entrepreneurship",
+      description:
+        "Explore startup strategies, business planning, funding insights, leadership principles, and growth frameworks for modern entrepreneurs.",
+    },
   ];
 
   return (
@@ -46,8 +58,8 @@ export default function ResourcesPage() {
       <div className="max-w-6xl mx-auto text-center">
         <h1 className="text-4xl font-bold mb-6 text-gray-900">📚 Resources</h1>
         <p className="text-lg text-gray-600 mb-12">
-          Dive into professional insights across finance, accounting, real estate, insurance, 
-          taxes, and market trends — built to empower your investing and learning journey.
+          Dive into professional insights across finance, accounting, real estate, insurance,
+          taxes, business, and market trends — built to empower your investing and learning journey.
         </p>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">

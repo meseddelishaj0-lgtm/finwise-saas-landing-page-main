@@ -7,23 +7,22 @@ export default function PlatinumDashboard() {
   const router = useRouter();
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 pt-28 py-16 px-6">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 pt-28 py-16 px-6">
       {/* Header */}
       <div className="max-w-6xl mx-auto text-center mb-12">
         <h1 className="text-4xl font-bold text-blue-700 mb-4">
           💎 Platinum Dashboard
         </h1>
         <p className="text-gray-700 text-lg max-w-2xl mx-auto">
-          Access all advanced AI-powered tools and dashboards — everything from
-          Gold plus real-time data intelligence, custom research requests, and
-          exclusive insights built for serious investors.
+          Unlock the full power of AI investing — access all advanced tools,
+          real-time intelligence, and exclusive insights designed for elite investors.
         </p>
       </div>
 
       {/* Features Grid */}
       <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {/* 1. Real-Time AI Dashboards */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-all border border-blue-100">
+        <div className="bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all border border-blue-100">
           <h3 className="text-xl font-semibold text-blue-700 mb-3">
             ⚡ Real-Time AI Dashboards
           </h3>
@@ -32,101 +31,113 @@ export default function PlatinumDashboard() {
             equities, sectors, and macro signals in real time.
           </p>
           <button
-            onClick={() => router.push("/features/ai/ai-forecast-engine")}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
+            onClick={() =>
+              router.push("/dashboard/platinum/real-time-ai-dashboards")
+            }
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-full"
           >
             Launch Dashboard
           </button>
         </div>
 
         {/* 2. Advanced Portfolio Tracking */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-all border border-blue-100">
+        <div className="bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all border border-blue-100">
           <h3 className="text-xl font-semibold text-blue-700 mb-3">
             📊 Advanced Portfolio Tracking
           </h3>
           <p className="text-gray-600 mb-4">
-            Monitor portfolio performance across assets with dynamic risk
-            metrics, allocation heatmaps, and real-time profit tracking.
+            Monitor portfolio performance with real-time analytics, risk metrics,
+            and allocation heatmaps enhanced by AI.
           </p>
           <button
-            onClick={() => router.push("/dashboard/portfolio")}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
+            onClick={() =>
+              router.push("/dashboard/platinum/advanced-portfolio-tracking")
+            }
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-full"
           >
             Track Portfolio
           </button>
         </div>
 
         {/* 3. Sector Rotation & Trend Forecasts */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-all border border-blue-100">
+        <div className="bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all border border-blue-100">
           <h3 className="text-xl font-semibold text-blue-700 mb-3">
             📈 Sector Rotation & Trend Forecasts
           </h3>
           <p className="text-gray-600 mb-4">
-            Identify sector leadership shifts and predict future momentum with
-            AI-driven rotation models and macro forecasting.
+            Identify sector leadership shifts and forecast future market momentum
+            using AI-driven macro models.
           </p>
           <button
-            onClick={() => router.push("/features/ai/macro-data-integration")}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
+            onClick={() =>
+              router.push("/dashboard/platinum/sector-rotation-trend-forecasts")
+            }
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-full"
           >
             Explore Forecasts
           </button>
         </div>
 
         {/* 4. Custom Research Requests */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-all border border-blue-100">
+        <div className="bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all border border-blue-100">
           <h3 className="text-xl font-semibold text-blue-700 mb-3">
             🧠 Custom Research Requests
           </h3>
           <p className="text-gray-600 mb-4">
-            Submit direct AI-powered research queries — get tailored market
-            insights, valuation reports, or company deep dives on demand.
+            Request AI-generated reports, valuations, and custom insights tailored
+            to your specific investment ideas.
           </p>
           <button
-            onClick={() => router.push("/dashboard/research")}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
+            onClick={() =>
+              router.push("/dashboard/platinum/custom-research-requests")
+            }
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-full"
           >
             Request Research
           </button>
         </div>
 
         {/* 5. Exclusive Weekly Briefings */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-all border border-blue-100">
+        <div className="bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all border border-blue-100">
           <h3 className="text-xl font-semibold text-blue-700 mb-3">
             🗞️ Exclusive Weekly Briefings
           </h3>
           <p className="text-gray-600 mb-4">
-            Receive handpicked reports from our AI analysts summarizing
-            macroeconomic updates, sector performance, and upcoming catalysts.
+            Receive curated weekly AI insights summarizing macro trends, sector
+            movements, and key market catalysts.
           </p>
           <button
-            onClick={() => router.push("/dashboard/reports")}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
+            onClick={() =>
+              router.push("/dashboard/platinum/exclusive-weekly-briefings")
+            }
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-full"
           >
             View Briefings
           </button>
         </div>
 
         {/* 6. Platinum Market Overview */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition-all border border-blue-100">
+        <div className="bg-white rounded-2xl p-8 shadow-md hover:shadow-lg transition-all border border-blue-100">
           <h3 className="text-xl font-semibold text-blue-700 mb-3">
             🌐 Platinum Market Overview
           </h3>
           <p className="text-gray-600 mb-4">
-            Access AI-enhanced insights on global indices, sector heatmaps, and
-            cross-asset correlations updated daily.
+            Access AI-enhanced overviews of global indices, sector correlations,
+            and daily cross-asset heatmaps.
           </p>
           <button
-            onClick={() => router.push("/ai-dashboard/market-trends")}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
+            onClick={() =>
+              router.push("/dashboard/platinum/platinum-market-overview")
+            }
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-full"
           >
             Open Overview
           </button>
         </div>
       </section>
 
-      {/* TradingView Chart */}
-      <div className="max-w-6xl mx-auto mt-16 bg-white p-6 rounded-2xl shadow-sm">
+      {/* Market Snapshot */}
+      <div className="max-w-6xl mx-auto mt-16 bg-white p-6 rounded-2xl shadow-md border border-blue-100">
         <h3 className="text-xl font-semibold text-blue-700 mb-4">
           📊 Live Market Snapshot
         </h3>
@@ -141,7 +152,7 @@ export default function PlatinumDashboard() {
         ></iframe>
       </div>
 
-      {/* Back to Main Dashboard */}
+      {/* Back Button */}
       <div className="text-center mt-12">
         <button
           onClick={() => router.push("/dashboard")}

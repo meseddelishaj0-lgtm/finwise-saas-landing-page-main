@@ -10,21 +10,25 @@ export default function MemberNetworkPage() {
       name: "💼 Professional Investors",
       description:
         "Connect with experienced portfolio managers, analysts, and traders to exchange professional insights.",
+      link: "/community/members/investors",
     },
     {
       name: "🧠 AI & Data Analysts",
       description:
         "Collaborate with AI engineers and data scientists using models to forecast trends and evaluate stocks.",
+      link: "/community/members/analysts",
     },
     {
       name: "📊 Finance Students & Learners",
       description:
         "Join a learning community of finance students and aspiring analysts to grow your market knowledge.",
+      link: "/community/members/students",
     },
     {
       name: "🤝 Networking Events",
       description:
         "Access exclusive online meetups, webinars, and collaboration sessions to expand your professional network.",
+      link: "/community/members/events",
     },
   ];
 
@@ -61,11 +65,18 @@ export default function MemberNetworkPage() {
           {members.map((member) => (
             <div
               key={member.name}
-              className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all text-left border border-gray-100"
+              className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all text-left border border-gray-100 cursor-pointer"
+              onClick={() => router.push(member.link)}
             >
               <h3 className="text-xl font-semibold mb-2">{member.name}</h3>
               <p className="text-gray-600 mb-4">{member.description}</p>
-              <button className="text-yellow-600 font-semibold hover:underline">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(member.link);
+                }}
+                className="text-yellow-600 font-semibold hover:underline"
+              >
                 Learn More →
               </button>
             </div>

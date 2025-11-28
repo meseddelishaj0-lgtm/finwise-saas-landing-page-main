@@ -17,7 +17,9 @@ export default function GoldDashboardPage() {
       {/* Header */}
       <div className="text-center mb-12">
         <Trophy className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-        <h1 className="text-4xl font-bold text-gray-900 mb-3">🥇 Gold Plan Dashboard</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-3">
+          🥇 Gold Plan Dashboard
+        </h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
           Perfect for beginners starting their <strong>AI investing journey</strong>.  
           Access smart AI tools, curated insights, and community learning — all in one place.
@@ -34,7 +36,7 @@ export default function GoldDashboardPage() {
             Get weekly AI-generated stock recommendations based on sentiment, fundamentals, and trends.
           </p>
           <Link
-            href="/ai-stock-picks"
+            href="/dashboard/gold/ai-stock-picks"
             className="text-yellow-600 hover:underline font-semibold"
           >
             View Picks →
@@ -49,7 +51,7 @@ export default function GoldDashboardPage() {
             Access premium weekly AI research covering earnings, market trends, and economic updates.
           </p>
           <Link
-            href="/weekly-research-repots"
+            href="/dashboard/gold/weekly-research-reports"
             className="text-yellow-600 hover:underline font-semibold"
           >
             Read Reports →
@@ -64,7 +66,7 @@ export default function GoldDashboardPage() {
             See every stock’s AI-driven score for value, growth, and risk using real financial data.
           </p>
           <Link
-            href="/fundemental-ai-ratings"
+            href="/dashboard/gold/fundamental-ai-ratings"
             className="text-yellow-600 hover:underline font-semibold"
           >
             Analyze Stocks →
@@ -79,7 +81,7 @@ export default function GoldDashboardPage() {
             Start fast with ready-to-use AI-optimized portfolios for different risk levels.
           </p>
           <Link
-            href="/gold/beginner-portfolio-templates"
+            href="/dashboard/gold/beginner-portfolio-templates"
             className="text-yellow-600 hover:underline font-semibold"
           >
             Browse Templates →

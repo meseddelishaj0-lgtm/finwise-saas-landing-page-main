@@ -1,0 +1,1763 @@
+// app/(tabs)/index.tsx - REDESIGNED CLEAN WHITE VERSION
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Platform,
+  ActivityIndicator,
+  Modal,
+  Alert,
+  RefreshControl
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { LineChart } from 'react-native-chart-kit';
+import { LineChart as GiftedLineChart } from 'react-native-gifted-charts';
+import { Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
+const chartWidth = 110;
+const portfolioChartWidth = width - 80;
+
+const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+
+export default function Dashboard() {
+  const router = useRouter();
+  const [tickerInput, setTickerInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+
+  // Add Stock Modal
+  const [addStockModal, setAddStockModal] = useState(false);
+  const [newStockSymbol, setNewStockSymbol] = useState('');
+  const [newStockShares, setNewStockShares] = useState('');
+  const [newStockAvgCost, setNewStockAvgCost] = useState('');
+  const [addingStock, setAddingStock] = useState(false);
+
+  // Portfolio graph time range
+  const [portfolioTimeRange, setPortfolioTimeRange] = useState('1Y');
+
+  // Live Major Indices
+  const [majorIndices, setMajorIndices] = useState([
+    { symbol: 'DIA', name: 'DIA', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'SPY', name: 'SPY', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'QQQ', name: 'QQQ', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+  ]);
+
+  // Live Trending
+  const [trending, setTrending] = useState<any[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(true);
+
+  // Portfolio data
+  const [portfolio, setPortfolio] = useState({
+    totalValue: 0,
+    dayChange: 0,
+    dayChangePercent: 0,
+    yearChange: 0,
+    yearChangePercent: 0,
+    holdings: [] as any[],
+    chartData: [] as Array<{ value: number; label: string; dataPointText?: string }>,
+    chartLabels: [] as string[]
+  });
+
+  // User's stock holdings
+  const [userHoldings, setUserHoldings] = useState([
+    { symbol: 'AAPL', shares: 10, avgCost: 150 },
+    { symbol: 'TSLA', shares: 5, avgCost: 200 },
+    { symbol: 'MSFT', shares: 8, avgCost: 300 },
+  ]);
+
+  // Fetch live market indices data
+  const fetchMarketChips = async () => {
+    try {
+      const symbols = ['DIA', 'SPY', 'QQQ'];
+      const res = await fetch(
+        `${BASE_URL}/quote/${symbols.join(',')}?apikey=${FMP_API_KEY}`
+      );
+      const data = await res.json();
+
+      if (data && Array.isArray(data)) {
+        const updated = data.map((item: any) => ({
+          symbol: item.symbol,
+          name: item.symbol,
+          price: item.price || 0,
+          change: item.change || 0,
+          changePercent: item.changesPercentage || 0,
+          color: (item.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30'
+        }));
+        setMajorIndices(updated);
+      }
+    } catch (err) {
+      console.error('Market chips fetch error:', err);
+    }
+  };
+
+  // Fetch trending stocks with live data
+  const fetchTrending = async () => {
+    setTrendingLoading(true);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/stock_market/actives?limit=6&apikey=${FMP_API_KEY}`
+      );
+      const data = await res.json();
+
+      if (data && Array.isArray(data)) {
+        const trendingData = await Promise.all(
+          data.slice(0, 6).map(async (stock: any, idx: number) => {
+            try {
+              const chartRes = await fetch(
+                `${BASE_URL}/historical-chart/5min/${stock.symbol}?apikey=${FMP_API_KEY}`
+              );
+              const chartData = await chartRes.json();
+
+              const chartValues = chartData && Array.isArray(chartData) 
+                ? chartData.slice(0, 30).reverse().map((d: any) => d.close)
+                : [stock.price, stock.price * 0.99, stock.price * 1.01, stock.price];
+
+              return {
+                symbol: stock.symbol,
+                name: stock.name || stock.symbol,
+                price: stock.price || 0,
+                change: stock.change || 0,
+                changePercent: stock.changesPercentage || 0,
+                color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
+                data: chartValues,
+                rank: idx + 1
+              };
+            } catch (err) {
+              return {
+                symbol: stock.symbol,
+                name: stock.name || stock.symbol,
+                price: stock.price || 0,
+                change: stock.change || 0,
+                changePercent: stock.changesPercentage || 0,
+                color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
+                data: [stock.price, stock.price, stock.price, stock.price],
+                rank: idx + 1
+              };
+            }
+          })
+        );
+
+        setTrending(trendingData);
+      }
+    } catch (err) {
+      console.error('Trending fetch error:', err);
+    } finally {
+      setTrendingLoading(false);
+    }
+  };
+
+  // Fetch portfolio data with historical chart
+  const fetchPortfolio = async () => {
+    try {
+      if (userHoldings.length === 0) {
+        setPortfolio({
+          totalValue: 0,
+          dayChange: 0,
+          dayChangePercent: 0,
+          yearChange: 0,
+          yearChangePercent: 0,
+          holdings: [],
+          chartData: [{ value: 0, label: '' }],
+          chartLabels: ['']
+        });
+        return;
+      }
+
+      const symbols = userHoldings.map(h => h.symbol).join(',');
+      const res = await fetch(
+        `${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
+      );
+      const quotes = await res.json();
+
+      if (quotes && Array.isArray(quotes)) {
+        const holdings = userHoldings.map((holding) => {
+          const quote = quotes.find(q => q.symbol === holding.symbol);
+          if (!quote) return null;
+
+          const currentValue = holding.shares * quote.price;
+          const costBasis = holding.shares * holding.avgCost;
+          const gain = currentValue - costBasis;
+          const gainPercent = (gain / costBasis) * 100;
+
+          return {
+            ...holding,
+            currentPrice: quote.price,
+            currentValue,
+            gain,
+            gainPercent,
+            dayChange: quote.change * holding.shares,
+          };
+        }).filter(h => h !== null);
+
+        const totalValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
+        const totalDayChange = holdings.reduce((sum, h) => sum + h.dayChange, 0);
+        const totalDayChangePercent = totalValue > 0 ? (totalDayChange / (totalValue - totalDayChange)) * 100 : 0;
+
+        // Fetch historical data for portfolio chart
+        await fetchPortfolioChart(totalValue, holdings);
+
+        setPortfolio(prev => ({
+          ...prev,
+          totalValue,
+          dayChange: totalDayChange,
+          dayChangePercent: totalDayChangePercent,
+          holdings,
+        }));
+      }
+    } catch (err) {
+      console.error('Portfolio fetch error:', err);
+    }
+  };
+
+  // Fetch portfolio historical chart data
+  const fetchPortfolioChart = async (currentValue: number, holdings: any[]) => {
+    try {
+      let historicalData: any[] = [];
+      let labels: string[] = [];
+      let fullLabels: string[] = [];
+
+      const today = new Date();
+      let daysBack = 365;
+      
+      switch (portfolioTimeRange) {
+        case '1D': daysBack = 1; break;
+        case '5D': daysBack = 5; break;
+        case '1M': daysBack = 30; break;
+        case '6M': daysBack = 180; break;
+        case 'YTD': 
+          const yearStart = new Date(today.getFullYear(), 0, 1);
+          daysBack = Math.floor((today.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
+          break;
+        case '1Y': daysBack = 365; break;
+        case '5Y': daysBack = 1825; break;
+        case 'ALL': daysBack = 3650; break;
+      }
+
+      const primarySymbol = holdings[0]?.symbol;
+      if (!primarySymbol) return;
+
+      const fromDate = new Date(today.getTime() - daysBack * 24 * 60 * 60 * 1000)
+        .toISOString().split('T')[0];
+      const toDate = today.toISOString().split('T')[0];
+
+      const histRes = await fetch(
+        `${BASE_URL}/historical-price-full/${primarySymbol}?from=${fromDate}&to=${toDate}&apikey=${FMP_API_KEY}`
+      );
+      const histData = await histRes.json();
+
+      if (histData?.historical && Array.isArray(histData.historical)) {
+        const dataPoints = histData.historical.reverse();
+        
+        const portfolioValues = dataPoints.map((point: any) => {
+          const dayValue = point.close;
+          const baseValue = dataPoints[0].close;
+          const percentChange = (dayValue - baseValue) / baseValue;
+          const costBasis = holdings.reduce((sum, h) => sum + h.shares * h.avgCost, 0);
+          return costBasis * (1 + percentChange);
+        });
+
+        const step = Math.max(1, Math.floor(portfolioValues.length / 100));
+        const sampledValues = portfolioValues.filter((_: number, i: number) => i % step === 0);
+        const sampledDates = dataPoints.filter((_: any, i: number) => i % step === 0);
+        
+        // Create data array with labels for each point
+        historicalData = sampledValues.map((value: number, idx: number) => {
+          const date = new Date(sampledDates[idx].date);
+          let label = '';
+          
+          // Show labels based on position for better visibility
+          const totalPoints = sampledValues.length;
+          const labelInterval = Math.ceil(totalPoints / 5); // Show ~5 labels
+          const showLabel = idx % labelInterval === 0 || idx === totalPoints - 1;
+          
+          if (showLabel) {
+            if (portfolioTimeRange === '1D') {
+              label = date.toLocaleTimeString('en-US', { 
+                hour: 'numeric',
+              });
+            } else if (portfolioTimeRange === '5D') {
+              label = date.toLocaleDateString('en-US', { 
+                weekday: 'short'
+              });
+            } else {
+              label = date.toLocaleDateString('en-US', { 
+                month: 'short'
+              });
+            }
+          }
+          
+          // Full label for tooltip
+          let fullLabel = '';
+          if (portfolioTimeRange === '1D') {
+            fullLabel = date.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit'
+            });
+          } else {
+            fullLabel = date.toLocaleDateString('en-US', { 
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            });
+          }
+          
+          return {
+            value: value,
+            label: label,
+            dataPointText: fullLabel
+          };
+        });
+
+        // Generate visible labels (fewer for x-axis)
+        const labelStep = Math.ceil(historicalData.length / 6);
+        labels = historicalData.map((d: any, i: number) => 
+          i % labelStep === 0 ? d.label : ''
+        );
+
+        const startValue = sampledValues[0] || currentValue;
+        const endValue = sampledValues[sampledValues.length - 1] || currentValue;
+        const yearChange = endValue - startValue;
+        const yearChangePercent = startValue > 0 ? (yearChange / startValue) * 100 : 0;
+
+        setPortfolio(prev => ({
+          ...prev,
+          chartData: historicalData,
+          chartLabels: labels,
+          yearChange,
+          yearChangePercent
+        }));
+      }
+    } catch (err) {
+      console.error('Portfolio chart fetch error:', err);
+      setPortfolio(prev => ({
+        ...prev,
+        chartData: [
+          { value: currentValue * 0.7, label: 'Start' },
+          { value: currentValue * 0.8, label: '' },
+          { value: currentValue * 0.9, label: '' },
+          { value: currentValue, label: 'Now' }
+        ],
+        chartLabels: ['Start', '', '', 'Now']
+      }));
+    }
+  };
+
+  // Add stock to portfolio
+  const handleAddStock = async () => {
+    if (!newStockSymbol.trim() || !newStockShares.trim() || !newStockAvgCost.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    setAddingStock(true);
+
+    try {
+      const symbol = newStockSymbol.toUpperCase().trim();
+      
+      const quoteRes = await fetch(
+        `${BASE_URL}/quote/${symbol}?apikey=${FMP_API_KEY}`
+      );
+      const quoteData = await quoteRes.json();
+
+      if (!quoteData || !Array.isArray(quoteData) || quoteData.length === 0) {
+        Alert.alert('Error', `Stock ${symbol} not found`);
+        setAddingStock(false);
+        return;
+      }
+
+      const newHolding = {
+        symbol,
+        shares: parseFloat(newStockShares),
+        avgCost: parseFloat(newStockAvgCost)
+      };
+
+      setUserHoldings(prev => [...prev, newHolding]);
+      
+      setNewStockSymbol('');
+      setNewStockShares('');
+      setNewStockAvgCost('');
+      setAddStockModal(false);
+
+      setTimeout(() => {
+        fetchPortfolio();
+      }, 500);
+
+      Alert.alert('Success', `${symbol} added to your portfolio!`);
+    } catch (err) {
+      console.error('Add stock error:', err);
+      Alert.alert('Error', 'Failed to add stock. Please try again.');
+    } finally {
+      setAddingStock(false);
+    }
+  };
+
+  // Remove stock from portfolio
+  const handleRemoveStock = (symbol: string) => {
+    Alert.alert(
+      'Remove Stock',
+      `Are you sure you want to remove ${symbol} from your portfolio?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            setUserHoldings(prev => prev.filter(h => h.symbol !== symbol));
+            setTimeout(() => {
+              fetchPortfolio();
+            }, 500);
+          }
+        }
+      ]
+    );
+  };
+
+  // Search for tickers
+  const searchTickers = async (query: string) => {
+    if (!query || query.length < 1) {
+      setSearchResults([]);
+      setShowSearchDropdown(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${BASE_URL}/search?query=${query}&limit=10&apikey=${FMP_API_KEY}`
+      );
+      const data = await res.json();
+
+      if (data && Array.isArray(data)) {
+        setSearchResults(data);
+        setShowSearchDropdown(true);
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+    }
+  };
+
+  // Debounce search
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (searchQuery) {
+        searchTickers(searchQuery);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
+
+  // AI Analysis with DCF Valuation
+  const handleAiAnalyze = async () => {
+    if (!tickerInput.trim()) return;
+
+    setAiLoading(true);
+    setAiResult(null);
+
+    try {
+      const ticker = tickerInput.toUpperCase();
+      
+      // Fetch quote data
+      const quoteRes = await fetch(
+        `${BASE_URL}/quote/${ticker}?apikey=${FMP_API_KEY}`
+      );
+      const quoteData = await quoteRes.json();
+
+      if (!quoteData || !Array.isArray(quoteData) || quoteData.length === 0) {
+        setAiResult(`❌ No data found for ${ticker}. Please check the symbol.`);
+        setAiLoading(false);
+        return;
+      }
+
+      const quote = quoteData[0];
+
+      // Fetch DCF (Discounted Cash Flow) intrinsic value
+      const dcfRes = await fetch(
+        `${BASE_URL}/discounted-cash-flow/${ticker}?apikey=${FMP_API_KEY}`
+      );
+      const dcfData = await dcfRes.json();
+
+      let intrinsicValue = null;
+      let dcfInfo = '';
+      
+      if (dcfData && Array.isArray(dcfData) && dcfData.length > 0 && dcfData[0].dcf) {
+        intrinsicValue = dcfData[0].dcf;
+        const currentPrice = quote.price;
+        const priceDiff = intrinsicValue - currentPrice;
+        const priceDiffPercent = (priceDiff / currentPrice) * 100;
+        
+        dcfInfo = `\n\nIntrinsic Value (DCF): $${intrinsicValue.toFixed(2)}
+Current Price: $${currentPrice.toFixed(2)}
+${priceDiff >= 0 ? 'Undervalued' : 'Overvalued'} by: $${Math.abs(priceDiff).toFixed(2)} (${Math.abs(priceDiffPercent).toFixed(2)}%)`;
+      }
+
+      // Get AI sentiment analysis
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 800,
+          messages: [
+            {
+              role: "user",
+              content: `Analyze this stock and provide a brief sentiment assessment:
+
+Symbol: ${ticker}
+Company: ${quote.name || ticker}
+Current Price: $${quote.price}
+Change: ${quote.change} (${quote.changesPercentage}%)
+Day Range: ${quote.dayLow} - ${quote.dayHigh}
+52 Week Range: ${quote.yearLow} - ${quote.yearHigh}
+Market Cap: ${quote.marketCap}
+PE Ratio: ${quote.pe || 'N/A'}
+${intrinsicValue ? `DCF Intrinsic Value: $${intrinsicValue.toFixed(2)}` : ''}
+
+Provide:
+1. Overall Sentiment: Positive, Negative, or Neutral
+2. AI Confidence Level: (percentage)
+3. Brief reasoning (2-3 sentences)
+
+Format your response as:
+Sentiment: [Positive/Negative/Neutral]
+Confidence: [XX]%
+Analysis: [Your brief analysis]`
+            }
+          ],
+        })
+      });
+
+      const data = await response.json();
+      const aiText = data.content?.[0]?.text || "Analysis complete.";
+
+      // Parse sentiment and confidence from AI response
+      let sentiment = "Neutral";
+      let confidence = "50";
+      
+      const sentimentMatch = aiText.match(/Sentiment:\s*(Positive|Negative|Neutral)/i);
+      const confidenceMatch = aiText.match(/Confidence:\s*(\d+)%?/i);
+      
+      if (sentimentMatch) sentiment = sentimentMatch[1];
+      if (confidenceMatch) confidence = confidenceMatch[1];
+
+      const resultText = `${quote.name || ticker} — Intrinsic Value: ${intrinsicValue ? `$${intrinsicValue.toFixed(2)}` : 'N/A'} | Sentiment: ${sentiment} (AI confidence ${confidence}%)${dcfInfo}\n\n${aiText}`;
+
+      setAiResult(resultText);
+    } catch (err) {
+      console.error('AI analysis error:', err);
+      setAiResult(`⚠️ Analysis failed. Please try again.`);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Refresh all data
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      fetchMarketChips(),
+      fetchTrending(),
+      fetchPortfolio()
+    ]);
+    setRefreshing(false);
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    fetchMarketChips();
+    fetchTrending();
+    fetchPortfolio();
+
+    const interval = setInterval(() => {
+      fetchMarketChips();
+      fetchTrending();
+      fetchPortfolio();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refetch portfolio when time range changes
+  useEffect(() => {
+    if (portfolio.holdings.length > 0) {
+      fetchPortfolio();
+    }
+  }, [portfolioTimeRange]);
+
+  return (
+    <View style={styles.container}>
+      {/* Floating + Button */}
+      <TouchableOpacity style={styles.fab} onPress={() => setAddStockModal(true)}>
+        <Ionicons name="add" size={32} color="#fff" />
+      </TouchableOpacity>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#007AFF" />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.menuButton}
+            onPress={() => router.push('/menu')}
+          >
+            <Text style={styles.menu}>Menu</Text>
+          </TouchableOpacity>
+
+          <View style={styles.searchWrapper}>
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIconHeader} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search stocks, ETFs, bonds..."
+                placeholderTextColor="#8E8E93"
+                value={searchQuery}
+                onChangeText={(text) => {
+                  setSearchQuery(text);
+                  if (text.length === 0) {
+                    setShowSearchDropdown(false);
+                  }
+                }}
+                onFocus={() => {
+                  if (searchQuery && searchResults.length > 0) {
+                    setShowSearchDropdown(true);
+                  }
+                }}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => {
+                    setSearchQuery('');
+                    setSearchResults([]);
+                    setShowSearchDropdown(false);
+                  }}
+                >
+                  <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Search Dropdown */}
+            {showSearchDropdown && searchResults.length > 0 && (
+              <View style={styles.searchDropdown}>
+                <ScrollView 
+                  style={styles.searchScrollView}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {searchResults.map((result, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.searchResultItem}
+                      onPress={() => {
+                        setSearchQuery('');
+                        setShowSearchDropdown(false);
+                        router.push(`/symbol/${result.symbol}/chart`);
+                      }}
+                    >
+                      <View style={styles.searchResultLeft}>
+                        <Text style={styles.searchResultSymbol}>{result.symbol}</Text>
+                        <Text style={styles.searchResultName} numberOfLines={1}>
+                          {result.name}
+                        </Text>
+                      </View>
+                      <View style={styles.searchResultRight}>
+                        <Text style={styles.searchResultExchange}>{result.exchangeShortName}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+
+          <TouchableOpacity onPress={() => router.push('/messages')}>
+            <Ionicons name="chatbubble-ellipses-outline" size={26} color="#007AFF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Live Major Indices - Enhanced Cards */}
+        <View style={styles.indicesSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Market Indices</Text>
+            <View style={styles.liveIndicatorContainer}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
+            </View>
+          </View>
+          
+          <View style={styles.indicesGrid}>
+            {majorIndices.map((index, i) => (
+              <TouchableOpacity 
+                key={i} 
+                style={styles.indexCard}
+                onPress={() => router.push(`/symbol/${index.symbol}/chart`)}
+              >
+                <Text style={styles.indexSymbol}>{index.symbol}</Text>
+                <Text style={styles.indexPrice}>${index.price.toFixed(2)}</Text>
+                <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
+                  <Ionicons 
+                    name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'} 
+                    size={14} 
+                    color={index.color} 
+                  />
+                  <Text style={[styles.indexChange, { color: index.color }]}>
+                    {index.changePercent >= 0 ? '+' : ''}{index.changePercent.toFixed(2)}%
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Enhanced Portfolio Section */}
+        <View style={styles.portfolioSection}>
+          <View style={styles.portfolioTopRow}>
+            <View style={styles.portfolioDropdown}>
+              <Text style={styles.portfolioDropdownText}>All Holdings</Text>
+              <Ionicons name="chevron-down" size={20} color="#007AFF" />
+            </View>
+            <TouchableOpacity 
+              style={styles.addIconButton}
+              onPress={() => setAddStockModal(true)}
+            >
+              <Ionicons name="add" size={24} color="#007AFF" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.portfolioValueSection}>
+            <Text style={styles.portfolioValue}>
+              ${portfolio.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+            <Text style={[styles.portfolioChange, { color: portfolio.dayChange >= 0 ? "#00C853" : "#FF3B30" }]}>
+              {portfolio.dayChange >= 0 ? '+' : ''}${Math.abs(portfolio.dayChange).toFixed(2)} ({portfolio.dayChange >= 0 ? '+' : ''}{portfolio.dayChangePercent.toFixed(2)}%)
+            </Text>
+          </View>
+
+          {/* Portfolio Chart */}
+          {portfolio.chartData.length > 1 && (
+            <View style={styles.portfolioChartContainer}>
+              <GiftedLineChart
+                areaChart
+                data={portfolio.chartData}
+                height={200}
+                width={portfolioChartWidth}
+                curved
+                curvature={0.2}
+                startFillColor={portfolio.yearChange >= 0 ? '#86EFAC' : '#FCA5A5'}
+                startOpacity={0.2}
+                endOpacity={0.02}
+                color={portfolio.yearChange >= 0 ? '#34D399' : '#FF3B30'}
+                thickness={2}
+                hideDataPoints
+                hideAxesAndRules
+                hideYAxisText
+                yAxisLabelPrefix="$"
+                backgroundColor="transparent"
+                spacing={Math.max(1, (portfolioChartWidth - 40) / portfolio.chartData.length)}
+                initialSpacing={10}
+                endSpacing={10}
+                pointerConfig={{
+                  pointerStripHeight: 200,
+                  pointerStripColor: '#8E8E93',
+                  pointerStripWidth: 2,
+                  strokeDashArray: [0],
+                  pointerColor: portfolio.yearChange >= 0 ? '#34D399' : '#FF3B30',
+                  radius: 7,
+                  pointerLabelWidth: 140,
+                  pointerLabelHeight: 70,
+                  activatePointersOnLongPress: false,
+                  autoAdjustPointerLabelPosition: true,
+                  pointerLabelComponent: (items: any) => {
+                    if (!items?.[0]) return null;
+                    
+                    const dataPointText = items[0].dataPointText;
+                    
+                    return (
+                      <View style={styles.portfolioTooltip}>
+                        <Text style={styles.portfolioTooltipLabel}>
+                          {dataPointText || ''}
+                        </Text>
+                      </View>
+                    );
+                  },
+                }}
+              />
+              
+              {/* Time Range Selector */}
+              <View style={styles.timeRangeSelectorContainer}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.timeRangeScrollContent}
+                >
+                  {['1D', '5D', '1M', '6M', 'YTD', '1Y', '5Y', 'ALL'].map((range) => (
+                    <TouchableOpacity
+                      key={range}
+                      style={[
+                        styles.timeRangeButton,
+                        portfolioTimeRange === range && styles.timeRangeButtonActive
+                      ]}
+                      onPress={() => setPortfolioTimeRange(range)}
+                    >
+                      <Text style={[
+                        styles.timeRangeText,
+                        portfolioTimeRange === range && styles.timeRangeTextActive
+                      ]}>
+                        {range}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity style={styles.expandButton}>
+                  <Ionicons name="expand-outline" size={20} color="#8E8E93" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Holdings List */}
+          {portfolio.holdings.length > 0 && (
+            <View style={styles.holdingsList}>
+              <Text style={styles.holdingsTitle}>Holdings</Text>
+              {portfolio.holdings.map((holding, idx) => (
+                <TouchableOpacity 
+                  key={idx} 
+                  style={styles.holdingRow}
+                  onPress={() => router.push(`/symbol/${holding.symbol}/chart`)}
+                  onLongPress={() => handleRemoveStock(holding.symbol)}
+                >
+                  <View style={styles.holdingLeft}>
+                    <View style={styles.holdingIconContainer}>
+                      <Text style={styles.holdingIcon}>{holding.symbol.charAt(0)}</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.holdingSymbol}>{holding.symbol}</Text>
+                      <Text style={styles.holdingShares}>
+                        {holding.shares} shares • ${holding.avgCost.toFixed(2)} avg
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.holdingRight}>
+                    <Text style={styles.holdingValue}>
+                      ${holding.currentValue.toFixed(2)}
+                    </Text>
+                    <Text style={[styles.holdingGain, { color: holding.gain >= 0 ? "#34C759" : "#FF3B30" }]}>
+                      {holding.gain >= 0 ? '+' : ''}${Math.abs(holding.gain).toFixed(2)}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {portfolio.holdings.length === 0 && (
+            <View style={styles.emptyPortfolio}>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="pie-chart-outline" size={48} color="#007AFF" />
+              </View>
+              <Text style={styles.emptyText}>Start Building Your Portfolio</Text>
+              <Text style={styles.emptySubtext}>Tap the + button to add your first stock</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Trending Section */}
+        <View style={styles.trendingSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Trending Now</Text>
+            <View style={styles.liveIndicatorContainer}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>LIVE</Text>
+            </View>
+          </View>
+
+          {trendingLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+            </View>
+          ) : (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              contentContainerStyle={styles.trendingScroll}
+            >
+              {trending.map((stock, i) => (
+                <TouchableOpacity 
+                  key={i} 
+                  style={styles.trendingCard}
+                  onPress={() => router.push(`/symbol/${stock.symbol}/chart`)}
+                >
+                  <View style={styles.trendingHeader}>
+                    <Text style={styles.trendingSymbol}>{stock.symbol}</Text>
+                    <Ionicons 
+                      name={stock.changePercent >= 0 ? 'trending-up' : 'trending-down'} 
+                      size={16} 
+                      color={stock.color} 
+                    />
+                  </View>
+                  
+                  <Text style={styles.trendingPrice}>${stock.price.toFixed(2)}</Text>
+                  
+                  <LineChart
+                    data={{ 
+                      labels: stock.data.map(() => ''), 
+                      datasets: [{ 
+                        data: stock.data.length > 0 ? stock.data : [stock.price],
+                        strokeWidth: 2,
+                      }] 
+                    }}
+                    width={chartWidth}
+                    height={50}
+                    chartConfig={{ 
+                      backgroundGradientFrom: '#fff', 
+                      backgroundGradientTo: '#fff',
+                      backgroundGradientFromOpacity: 0,
+                      backgroundGradientToOpacity: 0,
+                      color: (opacity = 1) => stock.color, 
+                      strokeWidth: 2,
+                      propsForDots: {
+                        r: '0',
+                      },
+                    }}
+                    withDots={false}
+                    withShadow={false}
+                    withHorizontalLabels={false}
+                    withVerticalLabels={false}
+                    withInnerLines={false}
+                    withOuterLines={false}
+                    bezier
+                    style={styles.miniChart}
+                  />
+                  
+                  <Text style={[styles.trendingChange, { color: stock.color }]}>
+                    {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
+        {/* AI Dashboard */}
+        <View style={styles.aiDashboard}>
+          <View style={styles.aiHeader}>
+            <View>
+              <Text style={styles.aiTitle}>AI Stock Analyzer</Text>
+              <Text style={styles.aiSubtitle}>DCF valuation + AI sentiment</Text>
+            </View>
+            <View style={styles.aiIconContainer}>
+              <Ionicons name="sparkles" size={24} color="#007AFF" />
+            </View>
+          </View>
+
+          <View style={styles.aiInputContainer}>
+            <View style={styles.inputWrapper}>
+              <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+              <TextInput
+                style={styles.aiInput}
+                placeholder="Enter ticker (e.g., AAPL, TSLA)"
+                placeholderTextColor="#999"
+                value={tickerInput}
+                onChangeText={setTickerInput}
+                autoCapitalize="characters"
+                editable={!aiLoading}
+              />
+            </View>
+            <TouchableOpacity 
+              style={[styles.aiButton, aiLoading && styles.aiButtonDisabled]} 
+              onPress={handleAiAnalyze}
+              disabled={aiLoading}
+            >
+              {aiLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="flash" size={20} color="#fff" />
+                  <Text style={styles.aiButtonText}>Analyze</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {aiResult && (
+            <View style={styles.aiResult}>
+              <Text style={styles.aiResultText}>{aiResult}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* Add Stock Modal */}
+      <Modal
+        visible={addStockModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAddStockModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Add Stock</Text>
+                <Text style={styles.modalSubtitle}>Add to your portfolio</Text>
+              </View>
+              <TouchableOpacity onPress={() => setAddStockModal(false)}>
+                <Ionicons name="close-circle" size={32} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalForm}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Stock Symbol</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  placeholder="e.g., AAPL"
+                  placeholderTextColor="#999"
+                  value={newStockSymbol}
+                  onChangeText={setNewStockSymbol}
+                  autoCapitalize="characters"
+                  editable={!addingStock}
+                />
+              </View>
+
+              <View style={styles.inputRow}>
+                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                  <Text style={styles.inputLabel}>Shares</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="10"
+                    placeholderTextColor="#999"
+                    value={newStockShares}
+                    onChangeText={setNewStockShares}
+                    keyboardType="decimal-pad"
+                    editable={!addingStock}
+                  />
+                </View>
+
+                <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                  <Text style={styles.inputLabel}>Avg Cost ($)</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="150.00"
+                    placeholderTextColor="#999"
+                    value={newStockAvgCost}
+                    onChangeText={setNewStockAvgCost}
+                    keyboardType="decimal-pad"
+                    editable={!addingStock}
+                  />
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.modalButton, addingStock && styles.modalButtonDisabled]}
+                onPress={handleAddStock}
+                disabled={addingStock}
+              >
+                {addingStock ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="add-circle" size={20} color="#fff" />
+                    <Text style={styles.modalButtonText}>Add to Portfolio</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { 
+    flex: 1, 
+    backgroundColor: '#F5F5F7' 
+  },
+  scrollView: { flex: 1 },
+  content: { paddingBottom: 20 },
+  
+  // FAB
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 90,
+    backgroundColor: '#007AFF',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  
+  // Header
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 20,
+    alignItems: 'center',
+    backgroundColor: '#F5F5F7'
+  },
+  menuButton: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 8, 
+    borderRadius: 20, 
+    borderWidth: 1.5, 
+    borderColor: '#E5E5EA' 
+  },
+  menu: { 
+    fontSize: 15, 
+    fontWeight: '600',
+    color: '#000'
+  },
+  searchWrapper: {
+    flex: 1,
+    marginHorizontal: 12,
+    position: 'relative',
+    zIndex: 1000,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  searchIconHeader: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#000',
+    fontWeight: '500',
+  },
+  searchDropdown: {
+    position: 'absolute',
+    top: 48,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    maxHeight: 300,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 1001,
+  },
+  searchScrollView: {
+    maxHeight: 300,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  searchResultLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  searchResultSymbol: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 2,
+  },
+  searchResultName: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  searchResultRight: {
+    alignItems: 'flex-end',
+  },
+  searchResultExchange: {
+    fontSize: 11,
+    color: '#007AFF',
+    fontWeight: '600',
+    backgroundColor: '#007AFF15',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  title: { 
+    fontSize: 20, 
+    fontWeight: '700',
+    color: '#000',
+    letterSpacing: 0.5
+  },
+  
+  // Sections
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: { 
+    fontSize: 22, 
+    fontWeight: '700',
+    color: '#000'
+  },
+  liveIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF3B3015',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FF3B30',
+    marginRight: 6,
+  },
+  liveText: { 
+    color: '#FF3B30', 
+    fontSize: 11, 
+    fontWeight: '700',
+    letterSpacing: 0.5
+  },
+  
+  // Market Indices
+  indicesSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  indicesGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  indexCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  indexSymbol: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8E8E93',
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  indexPrice: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 8,
+  },
+  indexChangePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  indexChange: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 4,
+  },
+  
+  // Portfolio Section
+  portfolioSection: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 24,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  portfolioTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  portfolioDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F7',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  portfolioDropdownText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginRight: 6,
+  },
+  eyeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  portfolioValueSection: {
+    marginBottom: 24,
+  },
+  portfolioValue: {
+    fontSize: 40,
+    fontWeight: '800',
+    color: '#000',
+    letterSpacing: -1,
+    marginBottom: 8,
+  },
+  portfolioChange: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  
+  // Chart
+  portfolioChartContainer: {
+    marginVertical: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 0,
+    padding: 0,
+  },
+  portfolioTooltip: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  portfolioTooltipLabel: {
+    color: '#000',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  xAxisLabel: {
+    color: '#8E8E93',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  timeRangeSelectorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    justifyContent: 'space-between',
+  },
+  timeRangeScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 12,
+  },
+  timeRangeButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    marginRight: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  timeRangeButtonActive: {
+    backgroundColor: '#D6F0FF',
+  },
+  timeRangeText: {
+    fontSize: 15,
+    color: '#000',
+    fontWeight: '600',
+  },
+  timeRangeTextActive: {
+    color: '#000',
+    fontWeight: '700',
+  },
+  expandButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  
+  // Holdings
+  holdingsList: {
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    paddingTop: 20,
+  },
+  holdingsTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 12,
+  },
+  holdingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  holdingLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  holdingIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  holdingIcon: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  holdingSymbol: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 2,
+  },
+  holdingShares: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  holdingRight: {
+    alignItems: 'flex-end',
+  },
+  holdingValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 2,
+  },
+  holdingGain: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  emptyPortfolio: {
+    alignItems: 'center',
+    paddingVertical: 48,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#007AFF10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 17,
+    color: '#000',
+    marginTop: 12,
+    fontWeight: '600',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 6,
+  },
+  
+  // Trending
+  trendingSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  loadingContainer: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  trendingScroll: { 
+    paddingRight: 20,
+  },
+  trendingCard: { 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 16, 
+    padding: 12, 
+    marginRight: 12, 
+    width: chartWidth + 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  trendingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  trendingSymbol: { 
+    fontWeight: '700', 
+    fontSize: 15,
+    color: '#000',
+  },
+  trendingPrice: { 
+    fontSize: 18, 
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 8,
+  },
+  miniChart: {
+    marginVertical: 4,
+    marginHorizontal: -12,
+  },
+  trendingChange: { 
+    fontSize: 13, 
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  
+  // AI Dashboard
+  aiDashboard: { 
+    marginHorizontal: 20,
+    marginBottom: 24,
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 20, 
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  aiHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  aiIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#007AFF15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aiTitle: { 
+    fontSize: 24, 
+    fontWeight: '700', 
+    color: '#000',
+    marginBottom: 4,
+  },
+  aiSubtitle: { 
+    fontSize: 14, 
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  aiInputContainer: { 
+    flexDirection: 'row',
+    gap: 12,
+  },
+  inputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F7',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  aiInput: { 
+    flex: 1,
+    paddingVertical: 14, 
+    fontSize: 15,
+    color: '#000',
+  },
+  aiButton: { 
+    backgroundColor: '#007AFF', 
+    paddingHorizontal: 20, 
+    paddingVertical: 14, 
+    borderRadius: 14, 
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    minWidth: 110,
+  },
+  aiButtonDisabled: { 
+    opacity: 0.6 
+  },
+  aiButtonText: { 
+    color: '#fff', 
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  aiResult: { 
+    marginTop: 20, 
+    backgroundColor: '#F9F9F9', 
+    padding: 20, 
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  aiResultText: { 
+    color: '#000', 
+    fontSize: 15, 
+    lineHeight: 24,
+    fontWeight: '500',
+  },
+  
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 4,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  modalForm: {
+    padding: 24,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
+  },
+  modalInput: {
+    backgroundColor: '#F5F5F7',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    color: '#000',
+  },
+  modalButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  modalButtonDisabled: {
+    opacity: 0.6,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+});

@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* === Root Theme Variables === */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -19,7 +20,6 @@ html {
 
 body {
   @apply text-lg;
-  
   color: var(--foreground);
   background: var(--background);
   font-family: "Source Sans 3", sans-serif;
@@ -33,6 +33,7 @@ body {
   }
 }
 
+/* === Fonts === */
 .manrope {
   font-family: "Manrope", sans-serif;
   font-optical-sizing: auto;
@@ -51,4 +52,181 @@ h1, h2, h3, h4, h5, h6 {
 
 .benefit-section:last-of-type > div {
   @apply mb-10;
+}
+
+/* ✅ Dropdown smooth fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.group:hover > div {
+  animation: fadeIn 0.15s ease-in-out forwards;
+}
+
+/* === Animated Gradient for Title === */
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradientFlow {
+  animation: gradientFlow 8s ease-in-out infinite;
+  background-size: 400% 400%;
+  background-image: linear-gradient(
+    270deg,
+    #facc15,
+    #fbbf24,
+    #f97316,
+    #fda4af,
+    #ffffff,
+    #fde68a,
+    #facc15
+  );
+}
+
+/* === Subtle shimmer for subtitle === */
+@keyframes subtleGradient {
+  0% { background-position: 0% 50%; opacity: 0.9; }
+  50% { background-position: 100% 50%; opacity: 1; }
+  100% { background-position: 0% 50%; opacity: 0.9; }
+}
+.animate-subtleGradient {
+  animation: subtleGradient 14s ease-in-out infinite;
+  background-size: 300% 300%;
+  background-image: linear-gradient(
+    270deg,
+    #9ca3af,
+    #facc15,
+    #fde68a,
+    #9ca3af
+  );
+}
+
+/* === Background gradient motion === */
+@keyframes bgShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-bgShift {
+  background-size: 200% 200%;
+  animation: bgShift 25s ease-in-out infinite;
+}
+
+/* === Radial Gradient Utility === */
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+/* === Floating Ticker Animations === */
+@keyframes ticker-scroll-left {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+.animate-ticker1 {
+  position: absolute;
+  top: 30%;
+  left: 0;
+  width: 200%;
+  animation: ticker-scroll-left 30s linear infinite;
+}
+.animate-ticker2 {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  width: 200%;
+  animation: ticker-scroll-left 40s linear infinite;
+}
+
+/* === Soft Pulse Background Motion === */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 6s ease-in-out infinite;
+}
+
+/* 🌇 Enhanced Skyline with Gold Shimmer Animation */
+.hero-skyline {
+  position: relative;
+  background: linear-gradient(to top, #000000 10%, #0b0903 55%, #2d230f 100%);
+  overflow: hidden;
+}
+
+/* 🏙️ City Silhouette */
+.hero-skyline::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 220px;
+  background: repeating-linear-gradient(
+    to right,
+    #050505 0px,
+    #050505 60px,
+    #0a0a0a 60px,
+    #0a0a0a 120px
+  );
+  clip-path: polygon(
+    0% 100%,
+    0% 60%,
+    10% 50%,
+    14% 70%,
+    20% 40%,
+    25% 65%,
+    35% 45%,
+    40% 75%,
+    50% 50%,
+    55% 70%,
+    65% 45%,
+    70% 68%,
+    80% 40%,
+    85% 60%,
+    95% 50%,
+    100% 70%,
+    100% 100%
+  );
+  box-shadow: 0 -15px 35px #000000 inset;
+  opacity: 0.95;
+}
+
+/* 🌅 Gold Horizon Glow */
+.hero-skyline::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 140px;
+  background: radial-gradient(
+    circle at 50% 100%,
+    rgba(255, 200, 90, 0.3) 0%,
+    rgba(255, 200, 90, 0.1) 40%,
+    transparent 80%
+  );
+  mix-blend-mode: screen;
+  opacity: 0.6;
+  animation: shimmerSweep 12s ease-in-out infinite;
+}
+
+/* ✨ Soft Gold Shimmer Effect */
+@keyframes shimmerSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  50% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

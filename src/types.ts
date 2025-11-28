@@ -7,15 +7,18 @@ export interface IMenuItem {
 export interface IBenefit {
   title: string;
   description: string;
-  imageSrc: string;
+  imageSrc?: string;       // make optional since we now use widgets
   bullets: IBenefitBullet[];
+  widget?: string;         // ✅ add this line (for TradingView widgets)
 }
+
 
 export interface IBenefitBullet {
   title: string;
   description: string;
-  icon: JSX.Element;
+  icon?: JSX.Element; // ✅ FIXED - optional 
 }
+
 
 export interface IPricing {
   name: string;

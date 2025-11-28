@@ -232,7 +232,7 @@ type FeatureItem = {
 const FEATURES: Record<string, FeatureItem[]> = {
   equities: [
     {
-      title: 'Equity Research & Valuation',
+      title: 'Market Research & Valuation',
       description:
         'AI-driven DCF and comparables with analyst consensus for intrinsic value.',
       icon: BarIcon,
@@ -291,12 +291,12 @@ const FEATURES: Record<string, FeatureItem[]> = {
       ),
     },
     {
-      title: 'Factor Explorer (Beta)',
+      title: 'ETF Screener & Analysis',
       description:
-        'Cross-sectional evaluation of style factors (Value, Quality, Momentum, Low Vol, Size).',
+        'Analyze ETF performance, flows, and exposures across sectors, regions, and asset classes.',
       icon: SparklesIcon,
-      badges: ['Alpha', 'Factors', 'Backtests'],
-      bullets: ['Factor spreads', 'Turnover', 'Exposure heatmaps'],
+      badges: ['ETFs', 'Flows', 'Performance'],
+      bullets: ['Top performing ETFs', 'Sector & region exposure', 'Daily inflows/outflows'],
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={equitiesData1}>
@@ -313,12 +313,12 @@ const FEATURES: Record<string, FeatureItem[]> = {
 
   derivatives: [
     {
-      title: 'Options Flow Analysis',
+      title: 'Futures Market Analysis',
       description:
-        'Detect unusual options activity, monitor flows, and visualize implied volatility shifts.',
+        'Analyze futures contracts, monitor open interest, and track price trends across commodities, indexes, and currencies.',
       icon: CandleIcon,
-      badges: ['UOA', 'IV', 'Flow'],
-      bullets: ['Sweeps', 'Blocks', 'Spreads'],
+      badges: ['Futures', 'Commodities', 'Derivatives'],
+      bullets: ['Open Interest', 'Price Momentum', 'Volume Trends'],
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={derivativesData1}>
@@ -332,12 +332,12 @@ const FEATURES: Record<string, FeatureItem[]> = {
       ),
     },
     {
-      title: 'AI Greeks Estimator',
+      title: 'Swaps Market Analysis',
       description:
-        'Predictive Greeks (Delta, Vega, Theta) using historical vols and structural features.',
+        'Monitor interest rate and currency swap spreads, and analyze yield differentials across global markets in real time.',
       icon: CpuIcon,
-      badges: ['Delta', 'Vega', 'Theta'],
-      bullets: ['Regimes', 'Smile/Skew', 'Surface'],
+      badges: ['IRS', 'FX Swap', 'Yield'],
+      bullets: ['Interest Rate Swaps', 'Currency Swaps', 'Credit Default Swaps'],
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={derivativesData2}>
@@ -351,12 +351,12 @@ const FEATURES: Record<string, FeatureItem[]> = {
       ),
     },
     {
-      title: 'Strategy Simulator',
+      title: 'Credit Derivatives Analysis',
       description:
-        'Backtest covered calls, spreads, and straddles with scenario testing.',
+        'Track credit default swaps (CDS) spreads, assess credit risk exposure, and monitor corporate bond sentiment in real time.',
       icon: ShieldIcon,
-      badges: ['Backtest', 'Scenario', 'PnL'],
-      bullets: ['Payoff diagrams', 'Greeks drift', 'Hedging'],
+       badges: ['CDS', 'Credit Risk', 'Default'],
+       bullets: ['Corporate CDS', 'Sovereign Risk', 'Credit Spread Index'],
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={derivativesData3}>
@@ -371,12 +371,12 @@ const FEATURES: Record<string, FeatureItem[]> = {
       ),
     },
     {
-      title: 'Volatility Surface Explorer',
+      title: 'Asset-Backed Securities Analysis',
       description:
-        'Visualize skew and term structures. Export ready-to-trade parameter sets.',
+        'Evaluate performance of mortgage-backed and consumer asset-backed securities, analyze yields, spreads, and prepayment risk dynamics.',
       icon: SparklesIcon,
-      badges: ['Skew', 'Term', 'Surface'],
-      bullets: ['Local vol', 'SABR fit', 'Smile drift'],
+      badges: ['ABS', 'MBS', 'Yield'],
+      bullets: ['Mortgage-Backed Securities', 'Auto Loans', 'Credit Card Pools'],
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={derivativesData1}>

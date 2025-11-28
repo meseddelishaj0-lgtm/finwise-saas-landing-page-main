@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
-    "baseUrl": "src",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "target": "ES2017",
+    "lib": ["DOM", "DOM.Iterable", "ES2017", "ESNext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,18 +19,18 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "*"
-      ]
-    }
+      "@/*": ["./src/*"]
+    },
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "wallstreetstocks-app/app/profile"  ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "wallstreetstocks-app"
   ]
 }

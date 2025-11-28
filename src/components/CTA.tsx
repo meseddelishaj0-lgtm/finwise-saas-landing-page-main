@@ -1,35 +1,34 @@
-import { ctaDetails } from "@/data/cta";
+"use client";
 
-const CTA: React.FC = () => {
-    return (
-        <section id="cta" className="mt-10 mb-5 lg:my-20">
-            <div className="relative h-full w-full z-10 mx-auto py-12 sm:py-20">
-                <div className="h-full w-full">
-                    {/* Background grid & radial gradient */}
-                    <div className="rounded-3xl opacity-95 absolute inset-0 -z-10 h-full w-full bg-[#050a02] bg-[linear-gradient(to_right,#12170f_1px,transparent_1px),linear-gradient(to_bottom,#12170f_1px,transparent_1px)] bg-[size:6rem_4rem]">
-                        <div className="rounded-3xl absolute bottom-0 left-0 right-0 top-0 bg-[radial-gradient(circle_600px_at_50%_500px,#1C1C02,transparent)]"></div>
-                    </div>
+import Link from "next/link";
 
-                    {/* Text content */}
-                    <div className="h-full flex flex-col items-center justify-center text-white text-center px-5">
-                        <h2 className="text-2xl sm:text-3xl md:text-5xl md:leading-tight font-semibold mb-4 max-w-2xl">
-                            {ctaDetails.heading}
-                        </h2>
+export default function CTA() {
+  return (
+    <section
+      id="cta"
+      className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a] py-10 md:py-14 -mt-10"
+      style={{ marginLeft: "calc(-50vw + 50%)" }}
+    >
+      {/* Gold glow background */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.12)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
 
-                        <p className="mx-auto max-w-xl md:px-5">
-                            {ctaDetails.subheading}
-                        </p>
+      {/* Content */}
+      <div className="relative z-10 max-w-3xl mx-auto text-center px-6 -mt-6">
+        <h2 className="text-4xl md:text-5xl font-bold text-yellow-400 mb-4">
+          Join Over 10,000 Users To Transform Your Finances
+        </h2>
+        <p className="text-gray-300 text-lg mb-8">
+          Your journey to financial freedom starts here. Sign Up today and take
+          the first step towards a brighter financial future!
+        </p>
 
-                        {/* Removed App Store & Google Play buttons */}
-                        {/* <div className="mt-4 flex flex-col sm:flex-row items-center sm:gap-4">
-                            <AppStoreButton />
-                            <PlayStoreButton />
-                        </div> */}
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
-};
-
-export default CTA;
+        <Link
+          href="/register"
+          className="inline-block bg-yellow-400 text-black font-semibold px-8 py-3 rounded-xl shadow-[0_0_25px_rgba(255,215,0,0.4)] hover:shadow-[0_0_35px_rgba(255,215,0,0.6)] hover:scale-105 transition-all duration-300"
+        >
+          Register Now
+        </Link>
+      </div>
+    </section>
+  );
+}

@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { CheckCircle } from "lucide-react";
 import { IPricing } from "@/types";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 interface PricingColumnProps {
   tier: IPricing;
@@ -11,9 +13,17 @@ interface PricingColumnProps {
 
 const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
   const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
 
   // 🔹 Stripe Checkout Handler
   const handleCheckout = async () => {
+    // 🔒 Require login before checkout
+    if (!session) {
+      router.push("/login"); // ✅ redirect to your custom login page
+      return;
+    }
+
     if (!tier.stripePriceId) {
       alert("Stripe price ID not set for this plan.");
       return;
@@ -26,17 +36,16 @@ const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          priceId: tier.stripePriceId, // ✅ Stripe price for this plan
-          plan: tier.name, // ✅ Gold / Platinum / Diamond
-          email: "testuser@example.com", // ⚙️ replace with real user email later
+          priceId: tier.stripePriceId,
+          plan: tier.name,
+          email: session?.user?.email || "unknown@example.com",
         }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.url) {
-        // ✅ Redirect to Stripe Checkout
-        window.location.href = data.url;
+        window.location.href = data.url; // ✅ Redirect to Stripe Checkout
       } else {
         console.error("Checkout error:", data.error);
         alert("⚠️ Checkout failed: " + (data.error || "Unknown error"));
@@ -100,7 +109,7 @@ const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
         ))}
       </ul>
 
-      {/* CTA Button (Stripe Checkout) */}
+      {/* CTA Button */}
       <button
         onClick={handleCheckout}
         disabled={loading}
@@ -113,6 +122,13 @@ const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
       >
         {loading ? "Processing..." : "Subscribe"}
       </button>
+
+      {/* Optional message for unregistered users */}
+      {!session && (
+        <p className="text-sm text-gray-500 text-center mt-3">
+          You must register or log in to subscribe.
+        </p>
+      )}
     </div>
   );
 };

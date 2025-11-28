@@ -1,54 +1,274 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Database } from 'lucide-react';
-import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useState, useMemo } from "react";
+import { motion } from "framer-motion";
+import { TrendingUp, TrendingDown, Search, ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-const data = [
-  { asset: 'BTC', value: 67000 },
-  { asset: 'ETH', value: 3400 },
-  { asset: 'SOL', value: 190 },
-  { asset: 'XRP', value: 0.55 },
-  { asset: 'DOGE', value: 0.12 },
-];
+interface CryptoQuote {
+  symbol: string;
+  name: string;
+  price: number;
+  changesPercentage: number;
+  marketCap: number;
+  volume: number;
+}
 
-export default function CryptoDigitalAssetsPage() {
+type SortKey = "marketCap" | "price" | "changesPercentage";
+
+export default function CryptoScreenerPage() {
+  const [cryptos, setCryptos] = useState<CryptoQuote[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("marketCap");
+  const [sortAsc, setSortAsc] = useState<boolean>(false);
+  const router = useRouter();
+
+  const apiKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
+
+  useEffect(() => {
+    const fetchCryptos = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(
+          `https://financialmodelingprep.com/api/v3/quotes/crypto?apikey=${apiKey}`
+        );
+        if (!res.ok) throw new Error("Failed to fetch crypto data");
+        const data = await res.json();
+        const top = data
+          .filter(
+            (coin: any) =>
+              coin.price && coin.marketCap && coin.changesPercentage !== null
+          )
+          .map((coin: any) => ({
+            symbol: coin.symbol,
+            name: coin.name,
+            price: coin.price,
+            changesPercentage: coin.changesPercentage,
+            marketCap: coin.marketCap,
+            volume: coin.volume ?? 0,
+          }))
+          .sort((a: CryptoQuote, b: CryptoQuote) => b.marketCap - a.marketCap)
+          .slice(0, 100);
+        setCryptos(top);
+      } catch (err: any) {
+        console.error(err);
+        setError("Unable to load crypto data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCryptos();
+  }, [apiKey]);
+
+  const filteredCryptos = useMemo(() => {
+    let filtered = cryptos.filter(
+      (coin) =>
+        coin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        coin.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    filtered = filtered.sort((a, b) => {
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
+      if (aVal === bVal) return 0;
+      return sortAsc ? aVal - bVal : bVal - aVal;
+    });
+    return filtered;
+  }, [cryptos, searchTerm, sortKey, sortAsc]);
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-500 text-lg">
+        Loading live crypto data...
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="flex items-center justify-center min-h-screen text-red-500">
+        {error}
+      </div>
+    );
+
+  const handleSortChange = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(false);
+    }
+  };
+
+  const handleRowClick = (coin: CryptoQuote) => {
+    router.push(
+      `/features/alternatives/crypto-digital-assets/coin/${coin.symbol}`
+    );
+  };
+
   return (
-    <section className="min-h-screen bg-white text-gray-900 py-20 px-6">
-      <div className="max-w-6xl mx-auto text-center">
-        <motion.h1
+    <main className="min-h-screen bg-white text-gray-900 px-6 pt-28 pb-20">
+      <div className="max-w-7xl mx-auto">
+        {/* 🔙 Back to Features */}
+        <div className="flex justify-start mb-6">
+          <button
+            onClick={() => router.push("/features")}
+            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to Features
+          </button>
+        </div>
+
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-5xl font-bold mb-4 text-yellow-500"
+          transition={{ duration: 0.7 }}
+          className="text-center mb-10"
         >
-          🪙 Crypto & Digital Assets
-        </motion.h1>
-        <p className="text-gray-700 text-lg mb-10 max-w-3xl mx-auto">
-          Explore real-time AI insights for Bitcoin, Ethereum, and alternative coins. Track volatility, sentiment, and correlations with traditional markets.
+          <h1 className="text-4xl md:text-5xl font-bold mb-3 mt-4">
+            🪙 Crypto & Digital Assets Screener
+          </h1>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Track live prices, performance, and market caps of top
+            cryptocurrencies — powered by your WallStreetStocks.ai
+          </p>
+        </motion.div>
+
+        {/* Search + Sort */}
+        <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
+          {/* Search bar */}
+          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-full px-4 py-2 w-full max-w-md shadow-sm">
+            <Search className="w-5 h-5 text-gray-500 mr-2" />
+            <input
+              type="text"
+              placeholder="Search crypto (e.g. BTC, Ethereum)"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
+            />
+          </div>
+
+          {/* Sort buttons */}
+          <div className="flex items-center gap-4">
+            <button
+              className={`px-4 py-2 rounded-full border ${
+                sortKey === "marketCap"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-gray-200 text-gray-700"
+              }`}
+              onClick={() => handleSortChange("marketCap")}
+            >
+              Market Cap {sortKey === "marketCap" && (sortAsc ? "↑" : "↓")}
+            </button>
+            <button
+              className={`px-4 py-2 rounded-full border ${
+                sortKey === "price"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-gray-200 text-gray-700"
+              }`}
+              onClick={() => handleSortChange("price")}
+            >
+              Price {sortKey === "price" && (sortAsc ? "↑" : "↓")}
+            </button>
+            <button
+              className={`px-4 py-2 rounded-full border ${
+                sortKey === "changesPercentage"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-gray-200 text-gray-700"
+              }`}
+              onClick={() => handleSortChange("changesPercentage")}
+            >
+              Change %{" "}
+              {sortKey === "changesPercentage" && (sortAsc ? "↑" : "↓")}
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto border rounded-2xl shadow-sm">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  #
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Price (USD)
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Change %
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Market Cap
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Volume
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredCryptos.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="text-center text-gray-500 py-6 text-sm"
+                  >
+                    No results found.
+                  </td>
+                </tr>
+              ) : (
+                filteredCryptos.map((coin, index) => (
+                  <tr
+                    key={coin.symbol}
+                    className="hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                    onClick={() => handleRowClick(coin)}
+                  >
+                    <td className="px-6 py-3 text-sm text-gray-600">
+                      {index + 1}
+                    </td>
+                    <td className="px-6 py-3 text-sm font-medium text-gray-900 flex items-center gap-2">
+                      {coin.name}
+                      <span className="text-gray-400 uppercase text-xs">
+                        ({coin.symbol})
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 text-sm text-right font-semibold">
+                      ${coin.price.toFixed(2)}
+                    </td>
+                    <td
+                      className={`px-6 py-3 text-sm text-right font-semibold flex items-center justify-end gap-1 ${
+                        coin.changesPercentage >= 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {coin.changesPercentage >= 0 ? (
+                        <TrendingUp className="w-4 h-4" />
+                      ) : (
+                        <TrendingDown className="w-4 h-4" />
+                      )}
+                      {coin.changesPercentage.toFixed(2)}%
+                    </td>
+                    <td className="px-6 py-3 text-sm text-right text-gray-700">
+                      ${coin.marketCap.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-right text-gray-700">
+                      ${coin.volume.toLocaleString()}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="text-xs text-gray-400 text-center mt-6">
+          Data auto-refreshes from WallStreetStocks.ai
         </p>
-
-        <div className="bg-gray-50 rounded-2xl shadow-lg p-8">
-          <h3 className="text-xl font-semibold mb-4 flex justify-center items-center gap-2">
-            <Database className="text-yellow-500" /> Current Market Prices
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data}>
-              <XAxis dataKey="asset" />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#FACC15" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="mt-10">
-          <Link href="/features" className="inline-block bg-yellow-400 text-black font-semibold px-6 py-3 rounded-full hover:bg-yellow-500 transition-all">
-            ← Back to Features
-          </Link>
-        </div>
       </div>
-    </section>
+    </main>
   );
 }

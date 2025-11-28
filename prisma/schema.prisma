@@ -1,20 +1,152 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
-  id               Int       @id @default(autoincrement())
+  id               Int           @id @default(autoincrement())
   name             String?
-  email            String    @unique
-  password         String //
-  createdAt        DateTime  @default(now())
+  email            String        @unique
+  password         String
+  createdAt        DateTime      @default(now())
   stripeCustomerId String?
   nextBillingDate  DateTime?
   currentPlan      String?
-  updatedAt        DateTime  @default(now()) @updatedAt
+  updatedAt        DateTime      @default(now()) @updatedAt
+  posts            Post[]
+  comments         Comment[]
+  commentLikes     CommentLike[] @relation("UserCommentLikes")
+  likes            Like[]
+  reactions        Reaction[]
+  following        Follow[]      @relation("Following")
+  followers        Follow[]      @relation("Followers")
+  notifications       Notification[]     @relation("NotificationReceiver")
+  notificationsFrom   Notification[]     @relation("NotificationFromUser")
+  profileImage String?
+}
+
+model Forum {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  posts       Post[]
+}
+
+model Post {
+  id           Int        @id @default(autoincrement())
+  title        String
+  content      String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  forumId      Int
+  userId       Int
+  forum        Forum      @relation(fields: [forumId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+  comments     Comment[]
+  likes        Like[]
+  commentLikes Int        @default(0)
+  mediaUrl     String?
+  reactions    Reaction[]
+  notifications       Notification[]
+}
+
+model Comment {
+  id         Int      @id @default(autoincrement())
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  postId     Int
+  userId     Int
+  parentId   Int?
+  mediaUrl   String?
+  mediaType  String?
+  likesCount Int      @default(0)
+  isDeleted  Boolean  @default(false)
+  isFlagged  Boolean  @default(false)
+
+  post              Post          @relation(fields: [postId], references: [id])
+  user              User          @relation(fields: [userId], references: [id])
+  likes             CommentLike[] @relation("CommentLikes")
+  parent            Comment?      @relation("CommentReplies", fields: [parentId], references: [id])
+  replies           Comment[]     @relation("CommentReplies")
+  likesViaLikeModel Like[]
+  reactions         Reaction[]
+
+  @@index([postId])
+  @@index([parentId])
+}
+
+model Like {
+  id        Int  @id @default(autoincrement())
+  userId    Int
+  postId    Int?
+  commentId Int?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post?    @relation(fields: [postId], references: [id])
+  comment Comment? @relation(fields: [commentId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model CommentLike {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  commentId Int
+  createdAt DateTime @default(now())
+
+  user    User    @relation("UserCommentLikes", fields: [userId], references: [id])
+  comment Comment @relation("CommentLikes", fields: [commentId], references: [id])
+
+  @@unique([userId, commentId])
+}
+
+model Reaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  postId    Int?
+  commentId Int?
+  emoji     String
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId, emoji])
+  @@unique([userId, commentId, emoji])
+}
+
+model Follow {
+  id          Int      @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+  follower    User     @relation("Following", fields: [followerId], references: [id])
+  following   User     @relation("Followers", fields: [followingId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  actorId     Int?
+  type        String
+  postId      Int?
+  message     String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  fromUserId  Int?
+  
+  fromUser    User?    @relation("NotificationFromUser", fields: [fromUserId], references: [id])
+  user        User     @relation("NotificationReceiver", fields: [userId], references: [id])
+  post        Post?    @relation(fields: [postId], references: [id])
 }

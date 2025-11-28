@@ -31,7 +31,9 @@ export default function DiamondDashboard() {
             deep valuation analysis and backtesting dashboards.
           </p>
           <button
-            onClick={() => router.push("/features/ai/ai-forecast-engine")}
+            onClick={() =>
+              router.push("/dashboard/diamond/full-ai-research-access")
+            }
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
           >
             Open Research
@@ -48,7 +50,9 @@ export default function DiamondDashboard() {
             technical indicators for global markets.
           </p>
           <button
-            onClick={() => router.push("/features/ai/macro-data-integration")}
+            onClick={() =>
+              router.push("/dashboard/diamond/predictive-market-outlooks")
+            }
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
           >
             View Outlooks
@@ -65,7 +69,9 @@ export default function DiamondDashboard() {
             covering macro, equity, and alternative asset strategies.
           </p>
           <button
-            onClick={() => router.push("/dashboard/reports")}
+            onClick={() =>
+              router.push("/dashboard/diamond/institutional-grade-reports")
+            }
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
           >
             Access Reports
@@ -82,7 +88,9 @@ export default function DiamondDashboard() {
             diversification scoring, and Sharpe ratio optimization models.
           </p>
           <button
-            onClick={() => router.push("/features/portfolio/ai-rebalancing")}
+            onClick={() =>
+              router.push("/dashboard/diamond/portfolio-optimization-tools")
+            }
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
           >
             Optimize Portfolio
@@ -99,7 +107,11 @@ export default function DiamondDashboard() {
             personalized portfolio reviews and insight sessions.
           </p>
           <button
-            onClick={() => router.push("/dashboard/research")}
+            onClick={() =>
+              router.push(
+                "/dashboard/diamond/priority-one-on-one-research-access"
+              )
+            }
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
           >
             Schedule Session
@@ -116,7 +128,9 @@ export default function DiamondDashboard() {
             exclusive datasets, and experimental forecasting systems.
           </p>
           <button
-            onClick={() => router.push("/features/ai/data-lake-pipeline")}
+            onClick={() =>
+              router.push("/dashboard/diamond/early-access-to-new-ai-models")
+            }
             className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full"
           >
             Try New Models
