@@ -5,7 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { router } from 'expo-router';
 
 const TOKEN_KEY = 'auth_token';
-const API_URL = 'https://wallstreetstocks.ai';
+const API_URL = 'https://www.wallstreetstocks.ai';
 
 interface User {
   id: string;
@@ -16,48 +16,151 @@ interface User {
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   loading: boolean;
-  login: (email: string, name?: string, profileImage?: string, provider?: 'email' | 'google' | 'apple') => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name?: string) => Promise<void>;
+  socialLogin: (email: string, name?: string, profileImage?: string, provider?: 'google' | 'apple') => Promise<void>;
+  forgotPassword: (email: string) => Promise<{ message: string; devCode?: string }>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   init: () => Promise<void>;
+  getToken: () => Promise<string | null>;
 }
 
 export const useAuth = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
+      token: null,
       loading: true,
 
       init: async () => {
         try {
           const token = await SecureStore.getItemAsync(TOKEN_KEY);
           if (token) {
-            set({ loading: false });
+            set({ token, loading: false });
           } else {
-            set({ user: null, loading: false });
+            set({ user: null, token: null, loading: false });
           }
-        } catch {
-          set({ user: null, loading: false });
+        } catch (error) {
+          console.error('Auth init error:', error);
+          set({ user: null, token: null, loading: false });
         }
       },
 
-      login: async (email: string, name?: string, profileImage?: string, provider: 'email' | 'google' | 'apple' = 'email') => {
+      getToken: async () => {
+        const token = await SecureStore.getItemAsync(TOKEN_KEY);
+        return token;
+      },
+
+      // Email/Password Login
+      login: async (email: string, password: string) => {
+        console.log('=== LOGIN ===');
+        console.log('Email:', email);
+
         try {
-          const userName = name || email.split('@')[0];
-          
-          // Use mobile-auth endpoints to avoid NextAuth conflict
-          let endpoint = '/api/mobile-auth/signup';
-          if (provider === 'google') {
-            endpoint = '/api/mobile-auth/google';
-          } else if (provider === 'apple') {
-            endpoint = '/api/mobile-auth/apple';
+          const response = await fetch(`${API_URL}/api/mobile-auth/login`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+          });
+
+          console.log('Status:', response.status);
+          const responseText = await response.text();
+          console.log('Response:', responseText);
+
+          if (!response.ok) {
+            const error = JSON.parse(responseText);
+            throw new Error(error.error || 'Login failed');
           }
 
-          const fullUrl = `${API_URL}${endpoint}`;
-          console.log('Calling API:', fullUrl);
+          const data = JSON.parse(responseText);
+          
+          await SecureStore.setItemAsync(TOKEN_KEY, data.token);
+          
+          set({ 
+            user: { 
+              id: data.user.id.toString(),
+              email: data.user.email,
+              name: data.user.name,
+              profileImage: data.user.profileImage || undefined,
+            },
+            token: data.token,
+            loading: false 
+          });
 
-          // Call backend API
-          const response = await fetch(fullUrl, {
+          console.log('Login complete!');
+        } catch (error: any) {
+          console.error('Login error:', error.message);
+          throw error;
+        }
+      },
+
+      // Email/Password Signup
+      signup: async (email: string, password: string, name?: string) => {
+        console.log('=== SIGNUP ===');
+        console.log('Email:', email);
+
+        try {
+          const response = await fetch(`${API_URL}/api/mobile-auth/signup`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ 
+              email, 
+              password,
+              name: name || email.split('@')[0],
+            }),
+          });
+
+          console.log('Status:', response.status);
+          const responseText = await response.text();
+          console.log('Response:', responseText);
+
+          if (!response.ok) {
+            const error = JSON.parse(responseText);
+            throw new Error(error.error || 'Signup failed');
+          }
+
+          const data = JSON.parse(responseText);
+          
+          await SecureStore.setItemAsync(TOKEN_KEY, data.token);
+          
+          set({ 
+            user: { 
+              id: data.user.id.toString(),
+              email: data.user.email,
+              name: data.user.name,
+              profileImage: data.user.profileImage || undefined,
+            },
+            token: data.token,
+            loading: false 
+          });
+
+          console.log('Signup complete!');
+        } catch (error: any) {
+          console.error('Signup error:', error.message);
+          throw error;
+        }
+      },
+
+      // Social Login (Google/Apple)
+      socialLogin: async (email: string, name?: string, profileImage?: string, provider: 'google' | 'apple' = 'google') => {
+        const userName = name || email.split('@')[0];
+        const endpoint = provider === 'google' ? '/api/mobile-auth/google' : '/api/mobile-auth/apple';
+
+        console.log('=== SOCIAL LOGIN ===');
+        console.log('Provider:', provider);
+        console.log('Email:', email);
+
+        try {
+          const response = await fetch(`${API_URL}${endpoint}`, {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
@@ -70,39 +173,115 @@ export const useAuth = create<AuthState>()(
             }),
           });
 
-          console.log('Response status:', response.status);
+          console.log('Status:', response.status);
+          const responseText = await response.text();
+          console.log('Response:', responseText);
 
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Auth API error:', errorText);
-            throw new Error(`Authentication failed: ${response.status}`);
+            throw new Error(`Auth failed: ${response.status}`);
           }
 
-          const data = await response.json();
-          console.log('Auth success:', data);
+          const data = JSON.parse(responseText);
           
-          // Store token
           await SecureStore.setItemAsync(TOKEN_KEY, data.token);
           
-          // Update state
           set({ 
             user: { 
               id: data.user.id.toString(),
               email: data.user.email,
               name: data.user.name,
-              profileImage: data.user.profileImage,
-            }, 
+              profileImage: data.user.profileImage || undefined,
+            },
+            token: data.token,
             loading: false 
           });
-        } catch (error) {
-          console.error('Login error:', error);
+
+          console.log('Social login complete!');
+        } catch (error: any) {
+          console.error('Social login error:', error.message);
+          throw error;
+        }
+      },
+
+      // Forgot Password
+      forgotPassword: async (email: string) => {
+        console.log('=== FORGOT PASSWORD ===');
+        console.log('Email:', email);
+
+        try {
+          const response = await fetch(`${API_URL}/api/mobile-auth/forgot-password`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ email }),
+          });
+
+          const responseText = await response.text();
+          console.log('Response:', responseText);
+
+          if (!response.ok) {
+            const error = JSON.parse(responseText);
+            throw new Error(error.error || 'Request failed');
+          }
+
+          return JSON.parse(responseText);
+        } catch (error: any) {
+          console.error('Forgot password error:', error.message);
+          throw error;
+        }
+      },
+
+      // Reset Password
+      resetPassword: async (email: string, code: string, newPassword: string) => {
+        console.log('=== RESET PASSWORD ===');
+        console.log('Email:', email);
+
+        try {
+          const response = await fetch(`${API_URL}/api/mobile-auth/reset-password`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({ email, code, newPassword }),
+          });
+
+          const responseText = await response.text();
+          console.log('Response:', responseText);
+
+          if (!response.ok) {
+            const error = JSON.parse(responseText);
+            throw new Error(error.error || 'Reset failed');
+          }
+
+          const data = JSON.parse(responseText);
+          
+          // Auto-login after password reset
+          await SecureStore.setItemAsync(TOKEN_KEY, data.token);
+          
+          set({ 
+            user: { 
+              id: data.user.id.toString(),
+              email: data.user.email,
+              name: data.user.name,
+              profileImage: data.user.profileImage || undefined,
+            },
+            token: data.token,
+            loading: false 
+          });
+
+          console.log('Password reset complete!');
+        } catch (error: any) {
+          console.error('Reset password error:', error.message);
           throw error;
         }
       },
 
       logout: async () => {
         await SecureStore.deleteItemAsync(TOKEN_KEY);
-        set({ user: null, loading: false });
+        set({ user: null, token: null, loading: false });
         router.replace('/login');
       },
     }),
@@ -110,8 +289,12 @@ export const useAuth = create<AuthState>()(
       name: 'auth-storage',
       storage: createJSONStorage(() => ({
         getItem: async (name) => {
-          const v = await SecureStore.getItemAsync(name);
-          return v ? JSON.parse(v) : null;
+          try {
+            const value = await SecureStore.getItemAsync(name);
+            return value ? JSON.parse(value) : null;
+          } catch {
+            return null;
+          }
         },
         setItem: async (name, value) => {
           await SecureStore.setItemAsync(name, JSON.stringify(value));
@@ -124,5 +307,4 @@ export const useAuth = create<AuthState>()(
   )
 );
 
-// Auto-init
 useAuth.getState().init();

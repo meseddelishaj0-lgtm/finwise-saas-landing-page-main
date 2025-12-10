@@ -1,4 +1,4 @@
-// app/(tabs)/index.tsx - REDESIGNED CLEAN WHITE VERSION
+// app/(tabs)/index.tsx - REDESIGNED CLEAN WHITE VERSION WITH WATCHLIST
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -29,9 +29,6 @@ const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 export default function Dashboard() {
   const router = useRouter();
-  const [tickerInput, setTickerInput] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Search state
@@ -46,15 +43,38 @@ export default function Dashboard() {
   const [newStockAvgCost, setNewStockAvgCost] = useState('');
   const [addingStock, setAddingStock] = useState(false);
 
+  // Watchlist Modal
+  const [watchlistModal, setWatchlistModal] = useState(false);
+  const [watchlistSymbol, setWatchlistSymbol] = useState('');
+  const [addingToWatchlist, setAddingToWatchlist] = useState(false);
+  const [watchlistSearchResults, setWatchlistSearchResults] = useState<any[]>([]);
+  const [showWatchlistSearchDropdown, setShowWatchlistSearchDropdown] = useState(false);
+
+  // Watchlist Filter & Sort
+  const [watchlistFilter, setWatchlistFilter] = useState<'All' | 'Gainers' | 'Losers'>('All');
+  const [watchlistSort, setWatchlistSort] = useState<'My Sort' | 'Name' | 'Price' | 'Change %' | 'Change $'>('My Sort');
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+
   // Portfolio graph time range
   const [portfolioTimeRange, setPortfolioTimeRange] = useState('1Y');
 
-  // Live Major Indices
+  // Live Major Indices - Expanded list
   const [majorIndices, setMajorIndices] = useState([
-    { symbol: 'DIA', name: 'DIA', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'SPY', name: 'SPY', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'QQQ', name: 'QQQ', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'SPY', name: 'S&P 500', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'QQQ', name: 'Nasdaq 100', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'DIA', name: 'Dow Jones', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'IWM', name: 'Russell 2000', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'VTI', name: 'Total Market', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'EFA', name: 'Intl Developed', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'EEM', name: 'Emerging Mkts', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'VXX', name: 'Volatility', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'GLD', name: 'Gold', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'SLV', name: 'Silver', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'USO', name: 'Oil', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'TLT', name: '20+ Yr Treasury', price: 0, change: 0, changePercent: 0, color: '#34C759' },
   ]);
+  const [indicesLoading, setIndicesLoading] = useState(true);
 
   // Live Trending
   const [trending, setTrending] = useState<any[]>([]);
@@ -79,28 +99,64 @@ export default function Dashboard() {
     { symbol: 'MSFT', shares: 8, avgCost: 300 },
   ]);
 
+  // Watchlist state
+  const [watchlist, setWatchlist] = useState<string[]>(['NVDA', 'GOOGL', 'AMZN', 'META']);
+  const [watchlistData, setWatchlistData] = useState<any[]>([]);
+  const [watchlistLoading, setWatchlistLoading] = useState(true);
+
   // Fetch live market indices data
   const fetchMarketChips = async () => {
+    setIndicesLoading(true);
     try {
-      const symbols = ['DIA', 'SPY', 'QQQ'];
+      const symbols = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'EFA', 'EEM', 'VXX', 'GLD', 'SLV', 'USO', 'TLT'];
+      const nameMap: { [key: string]: string } = {
+        'SPY': 'S&P 500',
+        'QQQ': 'Nasdaq 100',
+        'DIA': 'Dow Jones',
+        'IWM': 'Russell 2000',
+        'VTI': 'Total Market',
+        'EFA': 'Intl Developed',
+        'EEM': 'Emerging Mkts',
+        'VXX': 'Volatility',
+        'GLD': 'Gold',
+        'SLV': 'Silver',
+        'USO': 'Oil',
+        'TLT': '20+ Yr Treasury',
+      };
+      
       const res = await fetch(
         `${BASE_URL}/quote/${symbols.join(',')}?apikey=${FMP_API_KEY}`
       );
       const data = await res.json();
 
       if (data && Array.isArray(data)) {
-        const updated = data.map((item: any) => ({
-          symbol: item.symbol,
-          name: item.symbol,
-          price: item.price || 0,
-          change: item.change || 0,
-          changePercent: item.changesPercentage || 0,
-          color: (item.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30'
-        }));
+        const updated = symbols.map(symbol => {
+          const item = data.find((d: any) => d.symbol === symbol);
+          if (item) {
+            return {
+              symbol: item.symbol,
+              name: nameMap[item.symbol] || item.symbol,
+              price: item.price || 0,
+              change: item.change || 0,
+              changePercent: item.changesPercentage || 0,
+              color: (item.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30'
+            };
+          }
+          return {
+            symbol,
+            name: nameMap[symbol] || symbol,
+            price: 0,
+            change: 0,
+            changePercent: 0,
+            color: '#34C759'
+          };
+        });
         setMajorIndices(updated);
       }
     } catch (err) {
       console.error('Market chips fetch error:', err);
+    } finally {
+      setIndicesLoading(false);
     }
   };
 
@@ -157,6 +213,67 @@ export default function Dashboard() {
       console.error('Trending fetch error:', err);
     } finally {
       setTrendingLoading(false);
+    }
+  };
+
+  // Fetch watchlist data
+  const fetchWatchlist = async () => {
+    if (watchlist.length === 0) {
+      setWatchlistData([]);
+      setWatchlistLoading(false);
+      return;
+    }
+
+    setWatchlistLoading(true);
+    try {
+      const symbols = watchlist.join(',');
+      const res = await fetch(
+        `${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
+      );
+      const data = await res.json();
+
+      if (data && Array.isArray(data)) {
+        const watchlistWithCharts = await Promise.all(
+          data.map(async (stock: any) => {
+            try {
+              const chartRes = await fetch(
+                `${BASE_URL}/historical-chart/5min/${stock.symbol}?apikey=${FMP_API_KEY}`
+              );
+              const chartData = await chartRes.json();
+
+              const chartValues = chartData && Array.isArray(chartData)
+                ? chartData.slice(0, 30).reverse().map((d: any) => d.close)
+                : [stock.price, stock.price * 0.99, stock.price * 1.01, stock.price];
+
+              return {
+                symbol: stock.symbol,
+                name: stock.name || stock.symbol,
+                price: stock.price || 0,
+                change: stock.change || 0,
+                changePercent: stock.changesPercentage || 0,
+                color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
+                data: chartValues,
+              };
+            } catch (err) {
+              return {
+                symbol: stock.symbol,
+                name: stock.name || stock.symbol,
+                price: stock.price || 0,
+                change: stock.change || 0,
+                changePercent: stock.changesPercentage || 0,
+                color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
+                data: [stock.price, stock.price, stock.price, stock.price],
+              };
+            }
+          })
+        );
+
+        setWatchlistData(watchlistWithCharts);
+      }
+    } catch (err) {
+      console.error('Watchlist fetch error:', err);
+    } finally {
+      setWatchlistLoading(false);
     }
   };
 
@@ -319,7 +436,7 @@ export default function Dashboard() {
           
           return {
             value: value,
-            label: label,
+            label: '',
             dataPointText: fullLabel
           };
         });
@@ -428,6 +545,75 @@ export default function Dashboard() {
     );
   };
 
+  // Add to watchlist
+  const handleAddToWatchlist = async (symbol?: string) => {
+    const symbolToAdd = symbol || watchlistSymbol.toUpperCase().trim();
+    
+    if (!symbolToAdd) {
+      Alert.alert('Error', 'Please enter a stock symbol');
+      return;
+    }
+
+    if (watchlist.includes(symbolToAdd)) {
+      Alert.alert('Already Added', `${symbolToAdd} is already in your watchlist`);
+      setWatchlistSymbol('');
+      setShowWatchlistSearchDropdown(false);
+      return;
+    }
+
+    setAddingToWatchlist(true);
+
+    try {
+      // Verify the symbol exists
+      const quoteRes = await fetch(
+        `${BASE_URL}/quote/${symbolToAdd}?apikey=${FMP_API_KEY}`
+      );
+      const quoteData = await quoteRes.json();
+
+      if (!quoteData || !Array.isArray(quoteData) || quoteData.length === 0) {
+        Alert.alert('Error', `Stock ${symbolToAdd} not found`);
+        setAddingToWatchlist(false);
+        return;
+      }
+
+      setWatchlist(prev => [...prev, symbolToAdd]);
+      setWatchlistSymbol('');
+      setShowWatchlistSearchDropdown(false);
+      setWatchlistModal(false);
+
+      // Refresh watchlist data
+      setTimeout(() => {
+        fetchWatchlist();
+      }, 500);
+
+      Alert.alert('Success', `${symbolToAdd} added to your watchlist!`);
+    } catch (err) {
+      console.error('Add to watchlist error:', err);
+      Alert.alert('Error', 'Failed to add stock. Please try again.');
+    } finally {
+      setAddingToWatchlist(false);
+    }
+  };
+
+  // Remove from watchlist
+  const handleRemoveFromWatchlist = (symbol: string) => {
+    Alert.alert(
+      'Remove from Watchlist',
+      `Remove ${symbol} from your watchlist?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            setWatchlist(prev => prev.filter(s => s !== symbol));
+            setWatchlistData(prev => prev.filter(s => s.symbol !== symbol));
+          }
+        }
+      ]
+    );
+  };
+
   // Search for tickers
   const searchTickers = async (query: string) => {
     if (!query || query.length < 1) {
@@ -451,6 +637,29 @@ export default function Dashboard() {
     }
   };
 
+  // Search for watchlist tickers
+  const searchWatchlistTickers = async (query: string) => {
+    if (!query || query.length < 1) {
+      setWatchlistSearchResults([]);
+      setShowWatchlistSearchDropdown(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${BASE_URL}/search?query=${query}&limit=8&apikey=${FMP_API_KEY}`
+      );
+      const data = await res.json();
+
+      if (data && Array.isArray(data)) {
+        setWatchlistSearchResults(data);
+        setShowWatchlistSearchDropdown(true);
+      }
+    } catch (err) {
+      console.error('Watchlist search error:', err);
+    }
+  };
+
   // Debounce search
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
@@ -462,111 +671,16 @@ export default function Dashboard() {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
-  // AI Analysis with DCF Valuation
-  const handleAiAnalyze = async () => {
-    if (!tickerInput.trim()) return;
-
-    setAiLoading(true);
-    setAiResult(null);
-
-    try {
-      const ticker = tickerInput.toUpperCase();
-      
-      // Fetch quote data
-      const quoteRes = await fetch(
-        `${BASE_URL}/quote/${ticker}?apikey=${FMP_API_KEY}`
-      );
-      const quoteData = await quoteRes.json();
-
-      if (!quoteData || !Array.isArray(quoteData) || quoteData.length === 0) {
-        setAiResult(`❌ No data found for ${ticker}. Please check the symbol.`);
-        setAiLoading(false);
-        return;
+  // Debounce watchlist search
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (watchlistSymbol) {
+        searchWatchlistTickers(watchlistSymbol);
       }
+    }, 300);
 
-      const quote = quoteData[0];
-
-      // Fetch DCF (Discounted Cash Flow) intrinsic value
-      const dcfRes = await fetch(
-        `${BASE_URL}/discounted-cash-flow/${ticker}?apikey=${FMP_API_KEY}`
-      );
-      const dcfData = await dcfRes.json();
-
-      let intrinsicValue = null;
-      let dcfInfo = '';
-      
-      if (dcfData && Array.isArray(dcfData) && dcfData.length > 0 && dcfData[0].dcf) {
-        intrinsicValue = dcfData[0].dcf;
-        const currentPrice = quote.price;
-        const priceDiff = intrinsicValue - currentPrice;
-        const priceDiffPercent = (priceDiff / currentPrice) * 100;
-        
-        dcfInfo = `\n\nIntrinsic Value (DCF): $${intrinsicValue.toFixed(2)}
-Current Price: $${currentPrice.toFixed(2)}
-${priceDiff >= 0 ? 'Undervalued' : 'Overvalued'} by: $${Math.abs(priceDiff).toFixed(2)} (${Math.abs(priceDiffPercent).toFixed(2)}%)`;
-      }
-
-      // Get AI sentiment analysis
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 800,
-          messages: [
-            {
-              role: "user",
-              content: `Analyze this stock and provide a brief sentiment assessment:
-
-Symbol: ${ticker}
-Company: ${quote.name || ticker}
-Current Price: $${quote.price}
-Change: ${quote.change} (${quote.changesPercentage}%)
-Day Range: ${quote.dayLow} - ${quote.dayHigh}
-52 Week Range: ${quote.yearLow} - ${quote.yearHigh}
-Market Cap: ${quote.marketCap}
-PE Ratio: ${quote.pe || 'N/A'}
-${intrinsicValue ? `DCF Intrinsic Value: $${intrinsicValue.toFixed(2)}` : ''}
-
-Provide:
-1. Overall Sentiment: Positive, Negative, or Neutral
-2. AI Confidence Level: (percentage)
-3. Brief reasoning (2-3 sentences)
-
-Format your response as:
-Sentiment: [Positive/Negative/Neutral]
-Confidence: [XX]%
-Analysis: [Your brief analysis]`
-            }
-          ],
-        })
-      });
-
-      const data = await response.json();
-      const aiText = data.content?.[0]?.text || "Analysis complete.";
-
-      // Parse sentiment and confidence from AI response
-      let sentiment = "Neutral";
-      let confidence = "50";
-      
-      const sentimentMatch = aiText.match(/Sentiment:\s*(Positive|Negative|Neutral)/i);
-      const confidenceMatch = aiText.match(/Confidence:\s*(\d+)%?/i);
-      
-      if (sentimentMatch) sentiment = sentimentMatch[1];
-      if (confidenceMatch) confidence = confidenceMatch[1];
-
-      const resultText = `${quote.name || ticker} — Intrinsic Value: ${intrinsicValue ? `$${intrinsicValue.toFixed(2)}` : 'N/A'} | Sentiment: ${sentiment} (AI confidence ${confidence}%)${dcfInfo}\n\n${aiText}`;
-
-      setAiResult(resultText);
-    } catch (err) {
-      console.error('AI analysis error:', err);
-      setAiResult(`⚠️ Analysis failed. Please try again.`);
-    } finally {
-      setAiLoading(false);
-    }
-  };
+    return () => clearTimeout(delayDebounce);
+  }, [watchlistSymbol]);
 
   // Refresh all data
   const handleRefresh = async () => {
@@ -574,7 +688,8 @@ Analysis: [Your brief analysis]`
     await Promise.all([
       fetchMarketChips(),
       fetchTrending(),
-      fetchPortfolio()
+      fetchPortfolio(),
+      fetchWatchlist()
     ]);
     setRefreshing(false);
   };
@@ -584,11 +699,13 @@ Analysis: [Your brief analysis]`
     fetchMarketChips();
     fetchTrending();
     fetchPortfolio();
+    fetchWatchlist();
 
     const interval = setInterval(() => {
       fetchMarketChips();
       fetchTrending();
       fetchPortfolio();
+      fetchWatchlist();
     }, 30000);
 
     return () => clearInterval(interval);
@@ -600,6 +717,67 @@ Analysis: [Your brief analysis]`
       fetchPortfolio();
     }
   }, [portfolioTimeRange]);
+
+  // Refetch watchlist when watchlist changes
+  useEffect(() => {
+    fetchWatchlist();
+  }, [watchlist.length]);
+
+  // Compute filtered and sorted watchlist
+  const getFilteredSortedWatchlist = () => {
+    let filtered = [...watchlistData];
+
+    // Apply filter
+    if (watchlistFilter === 'Gainers') {
+      filtered = filtered.filter(stock => stock.changePercent >= 0);
+    } else if (watchlistFilter === 'Losers') {
+      filtered = filtered.filter(stock => stock.changePercent < 0);
+    }
+
+    // Apply sort
+    switch (watchlistSort) {
+      case 'Name':
+        filtered.sort((a, b) => a.symbol.localeCompare(b.symbol));
+        break;
+      case 'Price':
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case 'Change %':
+        filtered.sort((a, b) => b.changePercent - a.changePercent);
+        break;
+      case 'Change $':
+        filtered.sort((a, b) => b.change - a.change);
+        break;
+      case 'My Sort':
+      default:
+        // Keep original order (order added)
+        break;
+    }
+
+    return filtered;
+  };
+
+  const filteredWatchlist = getFilteredSortedWatchlist();
+
+  // Get icon for index type
+  const getIndexIcon = (symbol: string): string => {
+    switch (symbol) {
+      case 'GLD':
+      case 'SLV':
+        return 'flash';
+      case 'USO':
+        return 'water';
+      case 'TLT':
+        return 'document-text';
+      case 'VXX':
+        return 'pulse';
+      case 'EFA':
+      case 'EEM':
+        return 'globe';
+      default:
+        return 'stats-chart';
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -615,6 +793,10 @@ Analysis: [Your brief analysis]`
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#007AFF" />
         }
+        onScrollBeginDrag={() => {
+          setShowFilterDropdown(false);
+          setShowSortDropdown(false);
+        }}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -697,38 +879,58 @@ Analysis: [Your brief analysis]`
           </TouchableOpacity>
         </View>
 
-        {/* Live Major Indices - Enhanced Cards */}
+        {/* Live Major Indices - Horizontal Scrollable */}
         <View style={styles.indicesSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Market Indices</Text>
+            <Text style={styles.sectionTitle}>Market Overview</Text>
             <View style={styles.liveIndicatorContainer}>
               <View style={styles.liveDot} />
               <Text style={styles.liveText}>LIVE</Text>
             </View>
           </View>
           
-          <View style={styles.indicesGrid}>
-            {majorIndices.map((index, i) => (
-              <TouchableOpacity 
-                key={i} 
-                style={styles.indexCard}
-                onPress={() => router.push(`/symbol/${index.symbol}/chart`)}
-              >
-                <Text style={styles.indexSymbol}>{index.symbol}</Text>
-                <Text style={styles.indexPrice}>${index.price.toFixed(2)}</Text>
-                <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
-                  <Ionicons 
-                    name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'} 
-                    size={14} 
-                    color={index.color} 
-                  />
-                  <Text style={[styles.indexChange, { color: index.color }]}>
-                    {index.changePercent >= 0 ? '+' : ''}{index.changePercent.toFixed(2)}%
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {indicesLoading ? (
+            <View style={styles.indicesLoadingContainer}>
+              <ActivityIndicator size="small" color="#007AFF" />
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.indicesScrollContent}
+            >
+              {majorIndices.map((index, i) => (
+                <TouchableOpacity 
+                  key={i} 
+                  style={styles.indexCard}
+                  onPress={() => router.push(`/symbol/${index.symbol}/chart`)}
+                >
+                  <View style={styles.indexCardHeader}>
+                    <View style={[styles.indexIconContainer, { backgroundColor: index.color + '15' }]}>
+                      <Ionicons 
+                        name={getIndexIcon(index.symbol) as any} 
+                        size={16} 
+                        color={index.color} 
+                      />
+                    </View>
+                    <Text style={styles.indexSymbol}>{index.symbol}</Text>
+                  </View>
+                  <Text style={styles.indexName} numberOfLines={1}>{index.name}</Text>
+                  <Text style={styles.indexPrice}>${index.price.toFixed(2)}</Text>
+                  <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
+                    <Ionicons 
+                      name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'} 
+                      size={12} 
+                      color={index.color} 
+                    />
+                    <Text style={[styles.indexChange, { color: index.color }]}>
+                      {index.changePercent >= 0 ? '+' : ''}{index.changePercent.toFixed(2)}%
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         {/* Enhanced Portfolio Section */}
@@ -773,6 +975,7 @@ Analysis: [Your brief analysis]`
                 hideDataPoints
                 hideAxesAndRules
                 hideYAxisText
+                xAxisLabelsHeight={0}
                 yAxisLabelPrefix="$"
                 backgroundColor="transparent"
                 spacing={Math.max(1, (portfolioChartWidth - 40) / portfolio.chartData.length)}
@@ -883,6 +1086,196 @@ Analysis: [Your brief analysis]`
           )}
         </View>
 
+        {/* Watchlist Section */}
+        <View style={styles.watchlistSection}>
+          <View style={styles.watchlistHeader}>
+            <View style={styles.watchlistHeaderLeft}>
+              <Text style={styles.sectionTitle}>Watchlist</Text>
+              <TouchableOpacity 
+                style={styles.addWatchlistButtonHeader}
+                onPress={() => setWatchlistModal(true)}
+              >
+                <Ionicons name="add-circle-outline" size={24} color="#8E8E93" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.watchlistHeaderRight}>
+              {/* Filter Dropdown */}
+              <View style={styles.dropdownContainer}>
+                <TouchableOpacity 
+                  style={styles.filterButton}
+                  onPress={() => {
+                    setShowFilterDropdown(!showFilterDropdown);
+                    setShowSortDropdown(false);
+                  }}
+                >
+                  <Text style={styles.filterButtonText}>{watchlistFilter}</Text>
+                  <Ionicons name="chevron-down" size={16} color="#8E8E93" />
+                </TouchableOpacity>
+                {showFilterDropdown && (
+                  <View style={styles.dropdownMenu}>
+                    {(['All', 'Gainers', 'Losers'] as const).map((option) => (
+                      <TouchableOpacity
+                        key={option}
+                        style={[
+                          styles.dropdownItem,
+                          watchlistFilter === option && styles.dropdownItemActive
+                        ]}
+                        onPress={() => {
+                          setWatchlistFilter(option);
+                          setShowFilterDropdown(false);
+                        }}
+                      >
+                        <Text style={[
+                          styles.dropdownItemText,
+                          watchlistFilter === option && styles.dropdownItemTextActive
+                        ]}>
+                          {option}
+                        </Text>
+                        {watchlistFilter === option && (
+                          <Ionicons name="checkmark" size={16} color="#007AFF" />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+
+              {/* Sort Dropdown */}
+              <View style={styles.dropdownContainer}>
+                <TouchableOpacity 
+                  style={styles.filterButton}
+                  onPress={() => {
+                    setShowSortDropdown(!showSortDropdown);
+                    setShowFilterDropdown(false);
+                  }}
+                >
+                  <Text style={styles.filterButtonText}>{watchlistSort}</Text>
+                  <Ionicons name="chevron-down" size={16} color="#8E8E93" />
+                </TouchableOpacity>
+                {showSortDropdown && (
+                  <View style={[styles.dropdownMenu, styles.dropdownMenuRight]}>
+                    {(['My Sort', 'Name', 'Price', 'Change %', 'Change $'] as const).map((option) => (
+                      <TouchableOpacity
+                        key={option}
+                        style={[
+                          styles.dropdownItem,
+                          watchlistSort === option && styles.dropdownItemActive
+                        ]}
+                        onPress={() => {
+                          setWatchlistSort(option);
+                          setShowSortDropdown(false);
+                        }}
+                      >
+                        <Text style={[
+                          styles.dropdownItemText,
+                          watchlistSort === option && styles.dropdownItemTextActive
+                        ]}>
+                          {option}
+                        </Text>
+                        {watchlistSort === option && (
+                          <Ionicons name="checkmark" size={16} color="#007AFF" />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {watchlistLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+            </View>
+          ) : watchlistData.length === 0 ? (
+            <View style={styles.emptyWatchlist}>
+              <View style={styles.emptyWatchlistIconContainer}>
+                <Ionicons name="star-outline" size={40} color="#007AFF" />
+              </View>
+              <Text style={styles.emptyWatchlistText}>Your watchlist is empty</Text>
+              <Text style={styles.emptyWatchlistSubtext}>Add stocks to track their performance</Text>
+              <TouchableOpacity 
+                style={styles.addFirstButton}
+                onPress={() => setWatchlistModal(true)}
+              >
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={styles.addFirstButtonText}>Add Stock</Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredWatchlist.length === 0 ? (
+            <View style={styles.emptyWatchlist}>
+              <Text style={styles.emptyWatchlistText}>No {watchlistFilter.toLowerCase()} found</Text>
+              <Text style={styles.emptyWatchlistSubtext}>Try changing your filter</Text>
+            </View>
+          ) : (
+            <View style={styles.watchlistList}>
+              {filteredWatchlist.map((stock, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.watchlistRow}
+                  onPress={() => router.push(`/symbol/${stock.symbol}/chart`)}
+                  onLongPress={() => handleRemoveFromWatchlist(stock.symbol)}
+                >
+                  <View style={styles.watchlistRowLeft}>
+                    <Text style={styles.watchlistRowSymbol}>{stock.symbol}</Text>
+                    <Text style={styles.watchlistRowName} numberOfLines={1}>{stock.name}</Text>
+                  </View>
+                  
+                  <View style={styles.watchlistRowCenter}>
+                    <LineChart
+                      data={{ 
+                        labels: [], 
+                        datasets: [{ 
+                          data: stock.data.length > 1 ? stock.data : [stock.price, stock.price * 0.99, stock.price * 1.01, stock.price],
+                          strokeWidth: 1.5,
+                        }] 
+                      }}
+                      width={80}
+                      height={40}
+                      chartConfig={{ 
+                        backgroundGradientFrom: 'transparent', 
+                        backgroundGradientTo: 'transparent',
+                        backgroundGradientFromOpacity: 0,
+                        backgroundGradientToOpacity: 0,
+                        color: () => stock.color, 
+                        strokeWidth: 1.5,
+                        propsForDots: {
+                          r: '0',
+                        },
+                        propsForBackgroundLines: {
+                          stroke: 'transparent',
+                        },
+                      }}
+                      withDots={false}
+                      withShadow={false}
+                      withHorizontalLabels={false}
+                      withVerticalLabels={false}
+                      withInnerLines={false}
+                      withOuterLines={false}
+                      bezier
+                      style={styles.watchlistSparkline}
+                    />
+                  </View>
+                  
+                  <View style={styles.watchlistRowRight}>
+                    <Text style={styles.watchlistRowPrice}>${stock.price.toFixed(2)}</Text>
+                    <View style={styles.watchlistRowChangeContainer}>
+                      <Ionicons 
+                        name={stock.changePercent >= 0 ? 'arrow-up' : 'arrow-down'} 
+                        size={12} 
+                        color={stock.color} 
+                      />
+                      <Text style={[styles.watchlistRowChange, { color: stock.color }]}>
+                        ${Math.abs(stock.change).toFixed(2)} ({Math.abs(stock.changePercent).toFixed(2)}%)
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
         {/* Trending Section */}
         <View style={styles.trendingSection}>
           <View style={styles.sectionHeader}>
@@ -957,54 +1350,6 @@ Analysis: [Your brief analysis]`
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          )}
-        </View>
-
-        {/* AI Dashboard */}
-        <View style={styles.aiDashboard}>
-          <View style={styles.aiHeader}>
-            <View>
-              <Text style={styles.aiTitle}>AI Stock Analyzer</Text>
-              <Text style={styles.aiSubtitle}>DCF valuation + AI sentiment</Text>
-            </View>
-            <View style={styles.aiIconContainer}>
-              <Ionicons name="sparkles" size={24} color="#007AFF" />
-            </View>
-          </View>
-
-          <View style={styles.aiInputContainer}>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-              <TextInput
-                style={styles.aiInput}
-                placeholder="Enter ticker (e.g., AAPL, TSLA)"
-                placeholderTextColor="#999"
-                value={tickerInput}
-                onChangeText={setTickerInput}
-                autoCapitalize="characters"
-                editable={!aiLoading}
-              />
-            </View>
-            <TouchableOpacity 
-              style={[styles.aiButton, aiLoading && styles.aiButtonDisabled]} 
-              onPress={handleAiAnalyze}
-              disabled={aiLoading}
-            >
-              {aiLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="flash" size={20} color="#fff" />
-                  <Text style={styles.aiButtonText}>Analyze</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {aiResult && (
-            <View style={styles.aiResult}>
-              <Text style={styles.aiResultText}>{aiResult}</Text>
-            </View>
           )}
         </View>
 
@@ -1083,6 +1428,147 @@ Analysis: [Your brief analysis]`
                   <>
                     <Ionicons name="add-circle" size={20} color="#fff" />
                     <Text style={styles.modalButtonText}>Add to Portfolio</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Watchlist Modal */}
+      <Modal
+        visible={watchlistModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setWatchlistModal(false);
+          setWatchlistSymbol('');
+          setShowWatchlistSearchDropdown(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Add to Watchlist</Text>
+                <Text style={styles.modalSubtitle}>Track stocks you're interested in</Text>
+              </View>
+              <TouchableOpacity onPress={() => {
+                setWatchlistModal(false);
+                setWatchlistSymbol('');
+                setShowWatchlistSearchDropdown(false);
+              }}>
+                <Ionicons name="close-circle" size={32} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalForm}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Search Stock</Text>
+                <View style={styles.watchlistSearchContainer}>
+                  <Ionicons name="search" size={20} color="#8E8E93" style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={styles.watchlistSearchInput}
+                    placeholder="Search by symbol or company name"
+                    placeholderTextColor="#999"
+                    value={watchlistSymbol}
+                    onChangeText={(text) => {
+                      setWatchlistSymbol(text);
+                      if (text.length === 0) {
+                        setShowWatchlistSearchDropdown(false);
+                      }
+                    }}
+                    autoCapitalize="characters"
+                    editable={!addingToWatchlist}
+                  />
+                  {watchlistSymbol.length > 0 && (
+                    <TouchableOpacity onPress={() => {
+                      setWatchlistSymbol('');
+                      setShowWatchlistSearchDropdown(false);
+                    }}>
+                      <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Watchlist Search Dropdown */}
+                {showWatchlistSearchDropdown && watchlistSearchResults.length > 0 && (
+                  <View style={styles.watchlistSearchDropdown}>
+                    <ScrollView 
+                      style={styles.watchlistSearchScrollView}
+                      keyboardShouldPersistTaps="handled"
+                    >
+                      {watchlistSearchResults.map((result, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.watchlistSearchResultItem}
+                          onPress={() => handleAddToWatchlist(result.symbol)}
+                        >
+                          <View style={styles.watchlistSearchResultLeft}>
+                            <Text style={styles.watchlistSearchResultSymbol}>{result.symbol}</Text>
+                            <Text style={styles.watchlistSearchResultName} numberOfLines={1}>
+                              {result.name}
+                            </Text>
+                          </View>
+                          <View style={styles.watchlistSearchResultRight}>
+                            {watchlist.includes(result.symbol) ? (
+                              <View style={styles.alreadyAddedBadge}>
+                                <Ionicons name="checkmark" size={14} color="#34C759" />
+                                <Text style={styles.alreadyAddedText}>Added</Text>
+                              </View>
+                            ) : (
+                              <View style={styles.addBadge}>
+                                <Ionicons name="add" size={16} color="#007AFF" />
+                              </View>
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
+              {/* Popular Stocks Quick Add */}
+              <View style={styles.quickAddSection}>
+                <Text style={styles.quickAddTitle}>Popular Stocks</Text>
+                <View style={styles.quickAddGrid}>
+                  {['AAPL', 'GOOGL', 'TSLA', 'AMZN', 'NVDA', 'META'].map((symbol) => (
+                    <TouchableOpacity
+                      key={symbol}
+                      style={[
+                        styles.quickAddChip,
+                        watchlist.includes(symbol) && styles.quickAddChipAdded
+                      ]}
+                      onPress={() => !watchlist.includes(symbol) && handleAddToWatchlist(symbol)}
+                      disabled={watchlist.includes(symbol)}
+                    >
+                      {watchlist.includes(symbol) && (
+                        <Ionicons name="checkmark" size={14} color="#34C759" style={{ marginRight: 4 }} />
+                      )}
+                      <Text style={[
+                        styles.quickAddChipText,
+                        watchlist.includes(symbol) && styles.quickAddChipTextAdded
+                      ]}>
+                        {symbol}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.modalButton, (!watchlistSymbol.trim() || addingToWatchlist) && styles.modalButtonDisabled]}
+                onPress={() => handleAddToWatchlist()}
+                disabled={!watchlistSymbol.trim() || addingToWatchlist}
+              >
+                {addingToWatchlist ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="eye" size={20} color="#fff" />
+                    <Text style={styles.modalButtonText}>Add to Watchlist</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -1265,36 +1751,58 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5
   },
   
-  // Market Indices
+  // Market Indices - Horizontal Scroll
   indicesSection: {
-    paddingHorizontal: 20,
+    paddingLeft: 20,
     marginBottom: 24,
   },
-  indicesGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  indicesLoadingContainer: {
+    height: 130,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  indicesScrollContent: {
+    paddingRight: 20,
   },
   indexCard: {
-    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 4,
+    padding: 14,
+    marginRight: 12,
+    width: 130,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
+  indexCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  indexIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
   indexSymbol: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
+    color: '#000',
+    letterSpacing: 0.3,
+  },
+  indexName: {
+    fontSize: 11,
     color: '#8E8E93',
-    marginBottom: 4,
-    letterSpacing: 0.5,
+    fontWeight: '500',
+    marginBottom: 6,
   },
   indexPrice: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: '#000',
     marginBottom: 8,
@@ -1537,6 +2045,193 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginTop: 6,
   },
+
+  // Watchlist Section
+  watchlistSection: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 24,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  watchlistHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  watchlistHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  addWatchlistButtonHeader: {
+    marginLeft: 8,
+  },
+  watchlistHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dropdownContainer: {
+    position: 'relative',
+    zIndex: 100,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: '#F5F5F7',
+    borderRadius: 8,
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '500',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 36,
+    left: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    minWidth: 120,
+    zIndex: 1000,
+  },
+  dropdownMenuRight: {
+    left: 'auto',
+    right: 0,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dropdownItemActive: {
+    backgroundColor: '#007AFF10',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '500',
+  },
+  dropdownItemTextActive: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  addWatchlistButton: {
+    padding: 4,
+  },
+  watchlistList: {
+    marginTop: 8,
+  },
+  watchlistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  watchlistRowLeft: {
+    flex: 1,
+    minWidth: 100,
+  },
+  watchlistRowSymbol: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 4,
+  },
+  watchlistRowName: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  watchlistRowCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  watchlistSparkline: {
+    paddingRight: 0,
+    marginRight: -10,
+  },
+  watchlistRowRight: {
+    alignItems: 'flex-end',
+    minWidth: 110,
+  },
+  watchlistRowPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 4,
+  },
+  watchlistRowChangeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  watchlistRowChange: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  emptyWatchlist: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyWatchlistIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#007AFF10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  emptyWatchlistText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    marginTop: 8,
+  },
+  emptyWatchlistSubtext: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  addFirstButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 6,
+  },
+  addFirstButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
   
   // Trending
   trendingSection: {
@@ -1590,101 +2285,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   
-  // AI Dashboard
-  aiDashboard: { 
-    marginHorizontal: 20,
-    marginBottom: 24,
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 20, 
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  aiHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  aiIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#007AFF15',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  aiTitle: { 
-    fontSize: 24, 
-    fontWeight: '700', 
-    color: '#000',
-    marginBottom: 4,
-  },
-  aiSubtitle: { 
-    fontSize: 14, 
-    color: '#8E8E93',
-    fontWeight: '500',
-  },
-  aiInputContainer: { 
-    flexDirection: 'row',
-    gap: 12,
-  },
-  inputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F7',
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  aiInput: { 
-    flex: 1,
-    paddingVertical: 14, 
-    fontSize: 15,
-    color: '#000',
-  },
-  aiButton: { 
-    backgroundColor: '#007AFF', 
-    paddingHorizontal: 20, 
-    paddingVertical: 14, 
-    borderRadius: 14, 
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-    minWidth: 110,
-  },
-  aiButtonDisabled: { 
-    opacity: 0.6 
-  },
-  aiButtonText: { 
-    color: '#fff', 
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  aiResult: { 
-    marginTop: 20, 
-    backgroundColor: '#F9F9F9', 
-    padding: 20, 
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-  },
-  aiResultText: { 
-    color: '#000', 
-    fontSize: 15, 
-    lineHeight: 24,
-    fontWeight: '500',
-  },
-  
   // Modal
   modalOverlay: {
     flex: 1,
@@ -1696,6 +2296,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    maxHeight: '85%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1759,5 +2360,123 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+
+  // Watchlist Modal Specific
+  watchlistSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F7',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  watchlistSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000',
+  },
+  watchlistSearchDropdown: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    marginTop: 8,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  watchlistSearchScrollView: {
+    maxHeight: 200,
+  },
+  watchlistSearchResultItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  watchlistSearchResultLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  watchlistSearchResultSymbol: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 2,
+  },
+  watchlistSearchResultName: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  watchlistSearchResultRight: {
+    alignItems: 'flex-end',
+  },
+  alreadyAddedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#34C75915',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  alreadyAddedText: {
+    fontSize: 11,
+    color: '#34C759',
+    fontWeight: '600',
+  },
+  addBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#007AFF15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quickAddSection: {
+    marginBottom: 20,
+  },
+  quickAddTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginBottom: 12,
+  },
+  quickAddGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  quickAddChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F7',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  quickAddChipAdded: {
+    backgroundColor: '#34C75915',
+    borderColor: '#34C75930',
+  },
+  quickAddChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  quickAddChipTextAdded: {
+    color: '#34C759',
   },
 });

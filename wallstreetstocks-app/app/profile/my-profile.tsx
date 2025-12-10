@@ -1,283 +1,660 @@
-// app/profile/my-profile.tsx
-import React, { useState, useEffect } from 'react';
+// app/profile/personal-info.tsx
+import React, { useState, useEffect, useCallback } from "react";
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
+  Image,
   ScrollView,
-  ImageBackground,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+  ActivityIndicator,
+  Platform,
+  RefreshControl,
+  Linking,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
+import { useAuth } from "@/lib/auth";
 
-export default function MyProfile() {
+const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
+
+interface UserProfile {
+  id: number;
+  name: string;
+  email: string;
+  username?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  profileImage?: string;
+  bannerImage?: string;
+  subscriptionTier?: string;
+  createdAt: string;
+  _count?: {
+    posts: number;
+    followers: number;
+    following: number;
+    likes: number;
+  };
+}
+
+interface Post {
+  id: number;
+  content: string;
+  title?: string;
+  mediaUrl?: string;
+  createdAt: string;
+  _count?: {
+    likes: number;
+    comments: number;
+  };
+}
+
+export default function PersonalInfoScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'posts' | 'replies' | 'media' | 'likes'>('posts');
+  const { user: authUser } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<"posts" | "replies" | "media" | "likes">("posts");
+  
+  // Local storage fallback
+  const [localData, setLocalData] = useState<any>(null);
 
-  const [profile, setProfile] = useState({
-    name: 'John Doe',
-    username: 'johndoe',
-    bio: 'Building the future 🚀 | Investor | AI Enthusiast',
-    location: 'San Francisco, CA',
-    website: 'johndoe.com',
-    avatar: null as string | null,
-    followers: 1240,
-    following: 320,
-    posts: 892,
-  });
+  const getUserId = (): number | null => {
+    if (authUser?.id) return Number(authUser.id);
+    return null;
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      const userId = getUserId();
+      
+      // Also load local data as fallback
+      const savedLocal = await AsyncStorage.getItem("personalInfo");
+      if (savedLocal) {
+        setLocalData(JSON.parse(savedLocal));
+      }
+
+      if (!userId) {
+        // Use local data if not logged in
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
+      // Fetch user profile from API
+      const profileRes = await fetch(`${API_BASE_URL}/user/profile?userId=${userId}`);
+
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        setProfile(profileData);
+      }
+
+      // Fetch user's posts
+      const postsRes = await fetch(`${API_BASE_URL}/posts?userId=${userId}`);
+
+      if (postsRes.ok) {
+        const postsData = await postsRes.json();
+        setPosts(Array.isArray(postsData) ? postsData : []);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      const saved = await AsyncStorage.getItem('personalInfo');
-      if (saved) {
-        const data = JSON.parse(saved);
-        setProfile(prev => ({
-          ...prev,
-          name: data.name || prev.name,
-          username: data.username || prev.username,
-          avatar: data.avatar || prev.avatar,
-        }));
-      }
-    })();
+    fetchUserProfile();
+  }, [authUser]);
+
+  // Refresh when screen comes into focus (e.g., after editing profile)
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserProfile();
+    }, [authUser])
+  );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchUserProfile();
   }, []);
 
+  const pickBannerImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      // Save locally
+      const saved = await AsyncStorage.getItem("personalInfo");
+      const data = saved ? JSON.parse(saved) : {};
+      data.bannerImage = result.assets[0].uri;
+      await AsyncStorage.setItem("personalInfo", JSON.stringify(data));
+      setLocalData({ ...localData, bannerImage: result.assets[0].uri });
+    }
+  };
+
+  const pickProfileImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      // Save locally
+      const saved = await AsyncStorage.getItem("personalInfo");
+      const data = saved ? JSON.parse(saved) : {};
+      data.avatar = result.assets[0].uri;
+      await AsyncStorage.setItem("personalInfo", JSON.stringify(data));
+      setLocalData({ ...localData, avatar: result.assets[0].uri });
+    }
+  };
+
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+    return num.toString();
+  };
+
+  const formatTimeAgo = (dateString: string): string => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  const getInitials = (name: string): string => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Helper to get display name (like StockTwits - never show email)
+  const getCustomDisplayName = (): string => {
+    const emailPrefix = profile?.email?.split("@")[0] || "";
+    
+    // Check if profile.name is set and different from email prefix
+    if (profile?.name && profile.name !== emailPrefix && !profile.name.includes("@")) {
+      return profile.name;
+    }
+    // Fall back to local data name
+    if (localData?.name && localData.name !== emailPrefix && !localData.name.includes("@")) {
+      return localData.name;
+    }
+    // Fall back to username
+    if (profile?.username) return profile.username;
+    if (localData?.username) return localData.username;
+    // Default - prompt to set name
+    return "Set your name";
+  };
+
+  // Helper to get @handle (like StockTwits - never show email)
+  const getDisplayHandle = (): string => {
+    if (profile?.username) return profile.username;
+    if (localData?.username) return localData.username;
+    // Generate handle from user id if no username
+    if (profile?.id) return `user${profile.id}`;
+    return "username";
+  };
+
+  // Merge API data with local data
+  const displayName = getCustomDisplayName();
+  const displayUsername = getDisplayHandle();
+  const displayBio = profile?.bio || localData?.bio || "Tap Edit Profile to add a bio";
+  const displayLocation = profile?.location || localData?.location || "";
+  const displayWebsite = profile?.website || localData?.website || "";
+  const displayAvatar = profile?.profileImage || localData?.avatar;
+  const displayBanner = profile?.bannerImage || localData?.bannerImage;
+  const displayFollowing = profile?._count?.following ?? 0;
+  const displayFollowers = profile?._count?.followers ?? 0;
+  const displayPosts = profile?._count?.posts ?? posts.length ?? 0;
+  const displayLikes = profile?._count?.likes ?? 0;
+  const isPremium = profile?.subscriptionTier && profile.subscriptionTier !== "free";
+
+  const renderPost = (item: Post) => (
+    <TouchableOpacity key={item.id} style={styles.postItem} activeOpacity={0.7}>
+      <Text style={styles.postContent}>{item.content}</Text>
+      {item.mediaUrl && (
+        <Image source={{ uri: item.mediaUrl }} style={styles.postMedia} />
+      )}
+      <Text style={styles.postTime}>{formatTimeAgo(item.createdAt)}</Text>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header with Edit Button */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => router.push('/profile/personal-info' as any)}
-          >
-            <Text style={styles.editButtonText}>Edit Profile</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Cover Photo */}
-        <ImageBackground
-          source={{ uri: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80' }}
-          style={styles.coverPhoto}
+    <View style={styles.container}>
+      {/* Header - Floating over banner */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => router.push("/profile/edit-profile")}
         >
-          <View style={styles.coverOverlay} />
-        </ImageBackground>
+          <Text style={styles.editButtonText}>Edit Profile</Text>
+        </TouchableOpacity>
+      </View>
 
-        {/* Avatar + Basic Info */}
-        <View style={styles.profileSection}>
-          <View style={styles.avatarContainer}>
-            {profile.avatar ? (
-              <Image source={{ uri: profile.avatar }} style={styles.avatar} />
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Banner Image */}
+        <TouchableOpacity onPress={pickBannerImage} activeOpacity={0.9}>
+          {displayBanner ? (
+            <Image source={{ uri: displayBanner }} style={styles.bannerImage} />
+          ) : (
+            <Image
+              source={{
+                uri: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80",
+              }}
+              style={styles.bannerImage}
+            />
+          )}
+        </TouchableOpacity>
+
+        {/* Profile Image - Overlapping Banner */}
+        <View style={styles.profileImageWrapper}>
+          <TouchableOpacity onPress={pickProfileImage} activeOpacity={0.9}>
+            {displayAvatar ? (
+              <Image source={{ uri: displayAvatar }} style={styles.profileImage} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarEmoji}>👤</Text>
+              <View style={styles.profileImagePlaceholder}>
+                <Text style={styles.profileInitials}>{getInitials(displayName)}</Text>
               </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Profile Info */}
+        <View style={styles.profileInfo}>
+          <Text style={styles.userName}>{displayName}</Text>
+          <Text style={styles.userHandle}>@{displayUsername}</Text>
+
+          {/* Bio */}
+          <Text style={styles.bio}>{displayBio}</Text>
+
+          {/* Location & Website */}
+          <View style={styles.metaRow}>
+            {displayLocation && (
+              <View style={styles.metaItem}>
+                <Ionicons name="location-outline" size={16} color="#666" />
+                <Text style={styles.metaText}>{displayLocation}</Text>
+              </View>
+            )}
+            {displayWebsite && (
+              <TouchableOpacity
+                style={styles.metaItem}
+                onPress={() => {
+                  const url = displayWebsite.startsWith("http") 
+                    ? displayWebsite 
+                    : `https://${displayWebsite}`;
+                  Linking.openURL(url);
+                }}
+              >
+                <Ionicons name="link-outline" size={16} color="#007AFF" />
+                <Text style={[styles.metaText, styles.linkText]}>
+                  {displayWebsite.replace(/^https?:\/\//, "")}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
 
-          <View style={styles.infoContainer}>
-            <Text style={styles.name}>{profile.name}</Text>
-            <Text style={styles.username}>@{profile.username}</Text>
+          {/* Stats */}
+          <View style={styles.statsRow}>
+            <TouchableOpacity style={styles.statItem}>
+              <Text style={styles.statNumber}>{formatNumber(displayPosts)}</Text>
+              <Text style={styles.statLabel}>Posts</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.statItem}>
+              <Text style={styles.statNumber}>{formatNumber(displayFollowers)}</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.statItem}>
+              <Text style={styles.statNumber}>{formatNumber(displayFollowing)}</Text>
+              <Text style={styles.statLabel}>Following</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.statItem}>
+              <Text style={styles.statNumber}>{formatNumber(displayLikes)}</Text>
+              <Text style={styles.statLabel}>Likes</Text>
+            </TouchableOpacity>
+          </View>
 
-            <Text style={styles.bio}>{profile.bio}</Text>
-
-            {profile.location && (
-              <View style={styles.metaRow}>
-                <Ionicons name="location-outline" size={18} color="#666" />
-                <Text style={styles.metaText}>{profile.location}</Text>
-              </View>
-            )}
-
-            {profile.website && (
-              <View style={styles.metaRow}>
-                <Ionicons name="link-outline" size={18} color="#1D9BF0" />
-                <Text style={styles.websiteText}>{profile.website}</Text>
-              </View>
-            )}
-
-            <View style={styles.statsRow}>
-              <TouchableOpacity style={styles.stat}>
-                <Text style={styles.statNumber}>{profile.following}</Text>
-                <Text style={styles.statLabel}>Following</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.stat}>
-                <Text style={styles.statNumber}>{profile.followers}</Text>
-                <Text style={styles.statLabel}>Followers</Text>
-              </TouchableOpacity>
-              <View style={styles.stat}>
-                <Text style={styles.statNumber}>{profile.posts}</Text>
-                <Text style={styles.statLabel}>Posts</Text>
-              </View>
+          {/* Premium Badge */}
+          {isPremium && (
+            <View style={styles.premiumBadge}>
+              <Ionicons name="diamond-outline" size={16} color="#007AFF" />
+              <Text style={styles.premiumText}>Premium Member</Text>
             </View>
-          </View>
+          )}
         </View>
 
-        {/* Premium Badge */}
-        <View style={styles.premiumBadge}>
-          <Ionicons name="diamond" size={20} color="#1D9BF0" />
-          <Text style={styles.premiumText}>Premium Member</Text>
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "posts" && styles.activeTab]}
+            onPress={() => setActiveTab("posts")}
+          >
+            <Text style={[styles.tabText, activeTab === "posts" && styles.activeTabText]}>
+              Posts
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "replies" && styles.activeTab]}
+            onPress={() => setActiveTab("replies")}
+          >
+            <Text style={[styles.tabText, activeTab === "replies" && styles.activeTabText]}>
+              Replies
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "media" && styles.activeTab]}
+            onPress={() => setActiveTab("media")}
+          >
+            <Text style={[styles.tabText, activeTab === "media" && styles.activeTabText]}>
+              Media
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "likes" && styles.activeTab]}
+            onPress={() => setActiveTab("likes")}
+          >
+            <Text style={[styles.tabText, activeTab === "likes" && styles.activeTabText]}>
+              Likes
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Clickable Tabs */}
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tabContainer, activeTab === 'posts' && styles.activeTabContainer]}
-            onPress={() => setActiveTab('posts')}
-          >
-            <Text style={[styles.tab, activeTab === 'posts' && styles.activeTab]}>Posts</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabContainer, activeTab === 'replies' && styles.activeTabContainer]}
-            onPress={() => setActiveTab('replies')}
-          >
-            <Text style={[styles.tab, activeTab === 'replies' && styles.activeTab]}>Replies</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabContainer, activeTab === 'media' && styles.activeTabContainer]}
-            onPress={() => setActiveTab('media')}
-          >
-            <Text style={[styles.tab, activeTab === 'media' && styles.activeTab]}>Media</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabContainer, activeTab === 'likes' && styles.activeTabContainer]}
-            onPress={() => setActiveTab('likes')}
-          >
-            <Text style={[styles.tab, activeTab === 'likes' && styles.activeTab]}>Likes</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Tab Content */}
-        <View style={styles.tabContent}>
-          {activeTab === 'posts' && (
-            <View style={styles.post}>
-              <Text style={styles.postText}>
-                Just deployed the new AI dashboard 🔥 Real-time market predictions are looking sharp today 📈
+        {/* Posts List */}
+        <View style={styles.postsContainer}>
+          {posts.length > 0 ? (
+            posts.map((post) => renderPost(post))
+          ) : (
+            <View style={styles.emptyPosts}>
+              <Ionicons name="document-text-outline" size={48} color="#ccc" />
+              <Text style={styles.emptyPostsTitle}>No posts yet</Text>
+              <Text style={styles.emptyPostsSubtitle}>
+                Share your thoughts with the community
               </Text>
-              <Text style={styles.postDate}>2h ago</Text>
             </View>
-          )}
-          {activeTab === 'replies' && (
-            <Text style={styles.emptyText}>No replies yet</Text>
-          )}
-          {activeTab === 'media' && (
-            <Text style={styles.emptyText}>No media posts yet</Text>
-          )}
-          {activeTab === 'likes' && (
-            <Text style={styles.emptyText}>No liked posts yet</Text>
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    position: 'absolute',
+    paddingTop: Platform.OS === "ios" ? 50 : 40,
+    paddingBottom: 10,
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
     zIndex: 10,
   },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
   editButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#333',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    borderColor: "#E0E0E0",
+    backgroundColor: "rgba(255,255,255,0.95)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  editButtonText: { fontWeight: '600' },
-  coverPhoto: { height: 200, width: '100%' },
-  coverOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.1)' },
-  profileSection: { marginTop: -60 },
-  avatarContainer: { alignSelf: 'flex-start', marginLeft: 20 },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: '#fff',
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000",
   },
-  avatarPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#ddd',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 4,
-    borderColor: '#fff',
-  },
-  avatarEmoji: { fontSize: 60 },
-  infoContainer: { padding: 20 },
-  name: { fontSize: 24, fontWeight: 'bold' },
-  username: { fontSize: 16, color: '#666', marginBottom: 12 },
-  bio: { fontSize: 16, lineHeight: 22, marginBottom: 12 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  metaText: { marginLeft: 6, color: '#666', fontSize: 15 },
-  websiteText: { marginLeft: 6, color: '#1D9BF0', fontSize: 15 },
-  statsRow: { flexDirection: 'row', marginTop: 16, gap: 30 },
-  stat: { alignItems: 'center' },
-  statNumber: { fontSize: 20, fontWeight: 'bold' },
-  statLabel: { fontSize: 14, color: '#666' },
-  premiumBadge: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    backgroundColor: '#f0f8ff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginTop: -20,
-    marginBottom: 20,
-  },
-  premiumText: { marginLeft: 8, color: '#1D9BF0', fontWeight: '600' },
-  tabs: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  tabContainer: {
+  scrollView: {
     flex: 1,
-    alignItems: 'center',
-    paddingVertical: 16,
   },
-  activeTabContainer: {
-    borderBottomWidth: 3,
-    borderBottomColor: '#1D9BF0',
+  bannerImage: {
+    width: "100%",
+    height: 180,
+  },
+  profileImageWrapper: {
+    marginTop: -50,
+    marginLeft: 16,
+    marginBottom: 12,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 4,
+    borderColor: "#FFFFFF",
+  },
+  profileImagePlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 4,
+    borderColor: "#FFFFFF",
+    backgroundColor: "#1a1a1a",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  profileInitials: {
+    fontSize: 36,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  profileInfo: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  userName: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#000",
+  },
+  userHandle: {
+    fontSize: 15,
+    color: "#666",
+    marginTop: 2,
+  },
+  bio: {
+    fontSize: 15,
+    color: "#000",
+    marginTop: 12,
+    lineHeight: 22,
+  },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 12,
+    gap: 16,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  metaText: {
+    fontSize: 14,
+    color: "#666",
+  },
+  linkText: {
+    color: "#007AFF",
+  },
+  statsRow: {
+    flexDirection: "row",
+    marginTop: 16,
+    gap: 24,
+  },
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  statNumber: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#000",
+  },
+  statLabel: {
+    fontSize: 14,
+    color: "#666",
+  },
+  premiumBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: "#E8F4FD",
+    borderRadius: 20,
+    alignSelf: "flex-start",
+  },
+  premiumText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#007AFF",
+  },
+  tabsContainer: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
   },
   tab: {
-    fontSize: 16,
-    color: '#666',
+    flex: 1,
+    paddingVertical: 14,
+    alignItems: "center",
   },
   activeTab: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1D9BF0',
+    borderBottomWidth: 2,
+    borderBottomColor: "#007AFF",
   },
-  tabContent: { padding: 20 },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 40,
+  tabText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#666",
   },
-  post: { paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  postText: { fontSize: 16, lineHeight: 24 },
-  postDate: { fontSize: 14, color: '#999', marginTop: 8 },
+  activeTabText: {
+    color: "#007AFF",
+    fontWeight: "600",
+  },
+  postsContainer: {
+    paddingBottom: 100,
+  },
+  postItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  samplePost: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  postContent: {
+    fontSize: 15,
+    color: "#000",
+    lineHeight: 22,
+  },
+  postMedia: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+    marginTop: 12,
+  },
+  postTime: {
+    fontSize: 13,
+    color: "#999",
+    marginTop: 8,
+  },
+  emptyPosts: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  emptyPostsTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#333",
+    marginTop: 16,
+  },
+  emptyPostsSubtitle: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 8,
+  },
 });

@@ -1,5 +1,5 @@
 // app/menu.tsx
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -9,9 +9,10 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "@/lib/auth";
 import {
   ChevronRight,
   MessageSquare,
@@ -36,52 +37,9 @@ type MenuItem = {
   color?: string;
 };
 
-interface UserProfile {
-  name: string;
-  email: string;
-}
-
 export default function MenuPage() {
   const router = useRouter();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadUserProfile();
-  }, []);
-
-  const loadUserProfile = async () => {
-    try {
-      setLoading(true);
-      
-      // Get stored user info from AsyncStorage
-      const email = await AsyncStorage.getItem("userEmail");
-      
-      if (!email) {
-        // No user logged in, redirect to login
-        router.replace("/login");
-        return;
-      }
-
-      // For now, use email to create a display name
-      // You can enhance this later when you have a proper backend
-      const name = email.split('@')[0];
-      
-      setUserProfile({
-        name: name.charAt(0).toUpperCase() + name.slice(1), // Capitalize first letter
-        email: email,
-      });
-    } catch (error) {
-      console.error("Error loading user profile:", error);
-      // Use fallback
-      setUserProfile({
-        name: "User",
-        email: "",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { user, loading, logout } = useAuth();
 
   const handleSignOut = () => {
     Alert.alert(
@@ -97,8 +55,7 @@ export default function MenuPage() {
           style: "destructive",
           onPress: async () => {
             try {
-              await AsyncStorage.multiRemove(["authToken", "userId", "userEmail"]);
-              router.replace("/login");
+              await logout();
             } catch (error) {
               console.error("Error signing out:", error);
               Alert.alert("Error", "Failed to sign out");
@@ -111,7 +68,7 @@ export default function MenuPage() {
 
   const menuItems: MenuItem[] = [
     { label: "My Profile", route: "/profile/my-profile", icon: User, color: "#007AFF" },
-    { label: "Upgrade", route: "/profile/upgrade", icon: Gift, color: "#007AFF" },
+    { label: "Subscription", route: "/profile/subscription", icon: Gift, color: "#007AFF" },
     { label: "Trending", route: "/profile/trending", icon: TrendingUp },
     { label: "About", route: "/profile/about", icon: Info },
     { label: "House Rules", route: "/profile/house-rules", icon: Users },
@@ -130,8 +87,15 @@ export default function MenuPage() {
 
   // Get user initials for avatar
   const getUserInitial = () => {
-    if (!userProfile?.name) return "U";
-    return userProfile.name.charAt(0).toUpperCase();
+    if (!user?.name) return "U";
+    return user.name.charAt(0).toUpperCase();
+  };
+
+  // Get display name
+  const getDisplayName = () => {
+    if (user?.name) return user.name;
+    if (user?.email) return user.email.split('@')[0];
+    return "User";
   };
 
   return (
@@ -149,74 +113,83 @@ export default function MenuPage() {
           {loading ? (
             <ActivityIndicator size="small" color="#007AFF" />
           ) : (
-            <Text style={styles.username}>{userProfile?.name || "User"}</Text>
+            <Text style={styles.username}>{getDisplayName()}</Text>
           )}
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarInitial}>{getUserInitial()}</Text>
-          </View>
+          {user?.profileImage ? (
+            <Image 
+              source={{ uri: user.profileImage }} 
+              style={styles.avatar} 
+            />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarInitial}>{getUserInitial()}</Text>
+            </View>
+          )}
         </View>
       </View>
 
-      {/* === MAIN MENU === */}
-      <View style={styles.menuContainer}>
-        {menuItems.map((item, index) => {
-          const Icon = item.icon;
-          return (
-            <TouchableOpacity
-              key={index}
-              style={styles.menuItem}
-              onPress={() => router.push(item.route as any)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuItemLeft}>
-                {Icon && <Icon size={22} color={item.color || "#000000"} />}
-                <Text style={[styles.menuLabel, { color: item.color || "#000000" }]}>
-                  {item.label}
-                </Text>
-              </View>
-              <ChevronRight size={20} color="#8E8E93" />
-            </TouchableOpacity>
-          );
-        })}
-        
-        {/* Sign Out */}
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={handleSignOut}
-          activeOpacity={0.7}
-        >
-          <View style={styles.menuItemLeft}>
-            <LogOut size={22} color="#FF3B30" />
-            <Text style={[styles.menuLabel, { color: "#FF3B30" }]}>
-              Sign Out
-            </Text>
-          </View>
-          <ChevronRight size={20} color="#8E8E93" />
-        </TouchableOpacity>
-      </View>
+      <ScrollView style={styles.scrollView}>
+        {/* === MAIN MENU === */}
+        <View style={styles.menuContainer}>
+          {menuItems.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.menuItem}
+                onPress={() => router.push(item.route as any)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  {Icon && <Icon size={22} color={item.color || "#000000"} />}
+                  <Text style={[styles.menuLabel, { color: item.color || "#000000" }]}>
+                    {item.label}
+                  </Text>
+                </View>
+                <ChevronRight size={20} color="#8E8E93" />
+              </TouchableOpacity>
+            );
+          })}
+          
+          {/* Sign Out */}
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={handleSignOut}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuItemLeft}>
+              <LogOut size={22} color="#FF3B30" />
+              <Text style={[styles.menuLabel, { color: "#FF3B30" }]}>
+                Sign Out
+              </Text>
+            </View>
+            <ChevronRight size={20} color="#8E8E93" />
+          </TouchableOpacity>
+        </View>
 
-      {/* === SHARE SECTION === */}
-      <View style={styles.shareContainer}>
-        {shareItems.map((item, index) => {
-          const Icon = item.icon;
-          return (
-            <TouchableOpacity
-              key={index}
-              style={styles.shareItem}
-              onPress={() => router.push(item.route as any)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.shareLabel}>{item.label}</Text>
-              <Icon size={20} color="#8E8E93" />
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+        {/* === SHARE SECTION === */}
+        <View style={styles.shareContainer}>
+          {shareItems.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.shareItem}
+                onPress={() => router.push(item.route as any)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.shareLabel}>{item.label}</Text>
+                <Icon size={20} color="#8E8E93" />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-      {/* === VERSION FOOTER === */}
-      <View style={styles.footer}>
-        <Text style={styles.version}>App Version 7.13.0 (9613)</Text>
-      </View>
+        {/* === VERSION FOOTER === */}
+        <View style={styles.footer}>
+          <Text style={styles.version}>App Version 7.13.0 (9613)</Text>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -258,6 +231,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#000000",
   },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
   avatarPlaceholder: {
     width: 36,
     height: 36,
@@ -270,6 +248,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  scrollView: {
+    flex: 1,
   },
   menuContainer: {
     marginTop: 16,
@@ -309,10 +290,7 @@ const styles = StyleSheet.create({
     color: "#000000",
   },
   footer: {
-    position: "absolute",
-    bottom: 40,
-    left: 0,
-    right: 0,
+    paddingVertical: 40,
     alignItems: "center",
   },
   version: {
@@ -320,3 +298,4 @@ const styles = StyleSheet.create({
     color: "#8E8E93",
   },
 });
+

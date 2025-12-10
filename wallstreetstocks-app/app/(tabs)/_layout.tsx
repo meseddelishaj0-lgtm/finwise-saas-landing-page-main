@@ -62,10 +62,10 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="notifications"
+          name="screener"
           options={{
-            title: 'Notifications',
-            tabBarIcon: ({ color }) => <Ionicons name="notifications" size={24} color={color} />,
+            title: 'Screener',
+            tabBarIcon: ({ color }) => <Ionicons name="filter" size={24} color={color} />,
           }}
         />
       </Tabs>

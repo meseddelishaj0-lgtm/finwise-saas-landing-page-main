@@ -39,12 +39,13 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const { login, socialLogin } = useAuth();
   const router = useRouter();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
-    webClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com'
+    webClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com',
   });
 
   useEffect(() => {
@@ -55,18 +56,21 @@ export default function Login() {
   }, [response]);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Missing Fields', 'Please enter email and password');
+    if (!email) {
+      Alert.alert('Error', 'Please enter your email');
+      return;
+    }
+    if (!password) {
+      Alert.alert('Error', 'Please enter your password');
       return;
     }
 
     setLoading(true);
     try {
-      await login(email, undefined, undefined, 'email');
+      await login(email, password);
       router.replace('/(tabs)');
-    } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Error', 'Failed to log in. Please try again.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to log in');
     } finally {
       setLoading(false);
     }
@@ -79,19 +83,14 @@ export default function Login() {
     try {
       const userInfoResponse = await fetch(
         'https://www.googleapis.com/userinfo/v2/me',
-        {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        }
+        { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       const userInfo = await userInfoResponse.json();
       
-      console.log('Google user info:', userInfo);
-      
-      await login(userInfo.email, userInfo.name, userInfo.picture, 'google');
+      await socialLogin(userInfo.email, userInfo.name, userInfo.picture, 'google');
       router.replace('/(tabs)');
-    } catch (error) {
-      console.error('Google sign-in error:', error);
-      Alert.alert('Error', 'Google sign-in failed. Please try again.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Google sign-in failed');
     } finally {
       setLoading(false);
     }
@@ -99,7 +98,7 @@ export default function Login() {
 
   const handleAppleSignIn = async () => {
     if (Platform.OS !== 'ios') {
-      Alert.alert('Error', 'Apple Sign In is only available on iOS devices');
+      Alert.alert('Error', 'Apple Sign In is only available on iOS');
       return;
     }
 
@@ -113,17 +112,13 @@ export default function Login() {
       });
 
       let appleEmail = credential.email;
-      
       if (!appleEmail && credential.identityToken) {
         const decoded = decodeJWT(credential.identityToken);
         appleEmail = decoded?.email ?? null;
       }
       
       if (!appleEmail) {
-        Alert.alert(
-          'Email Required',
-          'We couldn\'t retrieve your email from Apple. Please log in with your email address instead.',
-        );
+        Alert.alert('Error', 'Could not retrieve email from Apple');
         return;
       }
 
@@ -132,21 +127,14 @@ export default function Login() {
         const { givenName, familyName } = credential.fullName;
         fullName = [givenName, familyName].filter(Boolean).join(' ');
       }
-      
-      if (!fullName) {
-        fullName = appleEmail.split('@')[0];
-      }
+      if (!fullName) fullName = appleEmail.split('@')[0];
 
-      console.log('Apple user info:', { email: appleEmail, name: fullName });
-
-      await login(appleEmail, fullName, undefined, 'apple');
+      await socialLogin(appleEmail, fullName, undefined, 'apple');
       router.replace('/(tabs)');
     } catch (error: any) {
-      if (error.code === 'ERR_CANCELED') {
-        return;
+      if (error.code !== 'ERR_CANCELED') {
+        Alert.alert('Error', error.message || 'Apple sign-in failed');
       }
-      console.error('Apple Sign-In Error:', error);
-      Alert.alert('Error', 'Apple sign-in failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -167,18 +155,30 @@ export default function Login() {
         editable={!loading}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#999"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        editable={!loading}
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          placeholder="Password"
+          placeholderTextColor="#999"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!showPassword}
+          editable={!loading}
+        />
+        <TouchableOpacity 
+          onPress={() => setShowPassword(!showPassword)}
+          style={styles.eyeButton}
+        >
+          <Ionicons 
+            name={showPassword ? "eye-off" : "eye"} 
+            size={22} 
+            color="#999" 
+          />
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity 
-        onPress={() => Alert.alert('Reset', 'Password reset will be added soon')}
+        onPress={() => router.push('/forgot-password')}
         disabled={loading}
       >
         <Text style={styles.forgot}>Forgot your password?</Text>
@@ -217,17 +217,6 @@ export default function Login() {
         />
       )}
 
-      {Platform.OS !== 'ios' && (
-        <TouchableOpacity 
-          style={[styles.socialButton, styles.appleButtonFallback]} 
-          onPress={() => Alert.alert('Info', 'Apple Sign In is only available on iOS devices')}
-          disabled={loading}
-        >
-          <Ionicons name="logo-apple" size={20} color="#fff" style={styles.socialIcon} />
-          <Text style={[styles.socialText, { color: '#fff' }]}>Continue with Apple</Text>
-        </TouchableOpacity>
-      )}
-
       <TouchableOpacity onPress={() => router.push('/signup')} disabled={loading}>
         <Text style={styles.link}>Don't have an account? Sign Up</Text>
       </TouchableOpacity>
@@ -247,7 +236,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#000',
     marginBottom: 40,
-    textAlign: 'left',
   },
   input: {
     borderBottomWidth: 1,
@@ -256,6 +244,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 20,
     color: '#000',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
+    marginBottom: 20,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#000',
+  },
+  eyeButton: {
+    padding: 8,
   },
   forgot: {
     color: '#007AFF',
@@ -283,7 +287,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#999',
     marginVertical: 16,
-    fontSize: 14,
   },
   socialButton: {
     borderWidth: 1,
@@ -294,7 +297,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'center',
-    position: 'relative',
   },
   socialIcon: {
     position: 'absolute',
@@ -308,9 +310,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 48,
     marginBottom: 12,
-  },
-  appleButtonFallback: {
-    backgroundColor: '#000',
   },
   link: {
     color: '#007AFF',

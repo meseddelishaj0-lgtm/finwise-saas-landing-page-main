@@ -1,6 +1,15 @@
-import { PrismaClient } from '@prisma/client';
+import 'dotenv/config'
+import { PrismaClient } from '@prisma/client'
+import { PrismaNeon } from '@prisma/adapter-neon'
+import { neonConfig } from '@neondatabase/serverless'
+import ws from 'ws'
 
-const prisma = new PrismaClient();
+// Configure Neon WebSocket for Node.js
+neonConfig.webSocketConstructor = ws
+
+const connectionString = process.env.DATABASE_URL!
+const adapter = new PrismaNeon({ connectionString })
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
   // Default forum categories
@@ -30,13 +39,13 @@ async function main() {
       slug: 'lounge',
       description: 'A relaxed space for anything outside finance.',
     },
-  ];
+  ]
 
-  console.log('🌱 Seeding forums...');
+  console.log('🌱 Seeding forums...')
 
-  const clientKey = Object.keys(prisma).find((k) => k.toLowerCase().includes('forum'));
+  const clientKey = Object.keys(prisma).find((k) => k.toLowerCase().includes('forum'))
   if (!clientKey) {
-    throw new Error('No forum model found in Prisma client');
+    throw new Error('No forum model found in Prisma client')
   }
 
   for (const forum of forums) {
@@ -44,17 +53,18 @@ async function main() {
       where: { slug: forum.slug },
       update: {},
       create: forum,
-    });
+    })
   }
 
-  console.log('✅ Forums seeded successfully!');
+  console.log('✅ Forums seeded successfully!')
 }
 
 main()
   .catch((e) => {
-    console.error(e);
-    process.exit(1);
+    console.error(e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })
+  

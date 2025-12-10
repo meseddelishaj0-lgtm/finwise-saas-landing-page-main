@@ -1,6 +1,6 @@
 // app/symbol/[symbol]/chart.tsx - Robinhood-Style Chart with Baseline
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -67,12 +67,24 @@ export default function ChartTab() {
   const [pointerPrice, setPointerPrice] = useState<number | null>(null); // Price at pointer position
 
   const intervalRef = useRef<number | null>(null);
+  const pointerValueRef = useRef<number | null>(null);
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const priceAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Callback to update pointer price safely (not during render)
+  const updatePointerPrice = useCallback((value: number | null) => {
+    if (pointerValueRef.current !== value) {
+      pointerValueRef.current = value;
+      // Use setTimeout to defer the setState call outside of render
+      setTimeout(() => {
+        setPointerPrice(value);
+      }, 0);
+    }
+  }, []);
 
   // Fetch live quote
   const fetchQuote = async () => {
@@ -427,6 +439,11 @@ export default function ChartTab() {
     fetchChartData();
   };
 
+  // Reset pointer price when touch ends
+  const handleTouchEnd = useCallback(() => {
+    updatePointerPrice(null);
+  }, [updatePointerPrice]);
+
   if (loading && !chartData.length) {
     return (
       <View style={styles.container}>
@@ -512,7 +529,7 @@ export default function ChartTab() {
         {/* Chart Container */}
         <View 
           style={styles.chartWrapper}
-          onTouchEnd={() => setPointerPrice(null)}
+          onTouchEnd={handleTouchEnd}
         >
           {/* Horizontal Centerline at 0% */}
           {chartData.length > 0 && baseValue !== null && (
@@ -584,8 +601,16 @@ export default function ChartTab() {
                   const diffFromBase = baseValue ? currentValue - baseValue : 0;
                   const percentChange = baseValue ? ((diffFromBase / baseValue) * 100) : 0;
                   
-                  // Update the pointer price to show at the top
-                  setPointerPrice(currentValue);
+                  // Store the value in ref (don't call setState here)
+                  pointerValueRef.current = currentValue;
+                  
+                  // Update pointer price using deferred setState
+                  if (pointerValueRef.current !== currentValue) {
+                    pointerValueRef.current = currentValue;
+                    setTimeout(() => {
+                      setPointerPrice(currentValue);
+                    }, 0);
+                  }
                   
                   return (
                     <View style={styles.tooltip}>
@@ -601,10 +626,7 @@ export default function ChartTab() {
                     </View>
                   );
                 },
-              }}
-              onEndReached={() => {
-                // Reset pointer price when user stops touching
-                setPointerPrice(null);
+                pointerEvents: 'auto',
               }}
               noOfSections={4}
             />
@@ -831,3 +853,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

@@ -28,7 +28,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-, "wallstreetstocks-app/app/profile"  ],
+, "wallstreetstocks-app/app/profile", "src/app/api/mobile-auth/apple"  ],
   "exclude": [
     "node_modules",
     "wallstreetstocks-app"

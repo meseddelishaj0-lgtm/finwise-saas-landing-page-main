@@ -41,7 +41,6 @@ export default function LoanCalculatorPage() {
 
   return (
     <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center pt-36 md:pt-44 pb-16 px-6">
-
       {/* Header */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}

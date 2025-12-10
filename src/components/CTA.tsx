@@ -6,7 +6,7 @@ export default function CTA() {
   return (
     <section
       id="cta"
-      className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a] py-10 md:py-14 -mt-10"
+      className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a] md:pt-0 py-10 md:py-14 -mt-10"
       style={{ marginLeft: "calc(-50vw + 50%)" }}
     >
       {/* Gold glow background */}

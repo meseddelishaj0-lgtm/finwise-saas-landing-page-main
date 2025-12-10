@@ -1,4 +1,4 @@
-// app/(tabs)/explore.tsx - WITH MINI SPARKLINE CHARTS + DIVIDENDS TAB
+// app/(tabs)/explore.tsx - WITH LARGER SECTION HEADER CARDS
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -11,10 +11,14 @@ import {
   FlatList,
   Keyboard,
   ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
 
 type Tab = "stocks" | "crypto" | "etf" | "bonds" | "ipo" | "ma" | "dividends";
 
@@ -34,7 +38,6 @@ interface MarketItem {
   dealDate?: string;
   dealValue?: string;
   dealType?: string;
-  // Dividend fields
   dividend?: number;
   dividendYield?: number;
   paymentDate?: string;
@@ -56,8 +59,8 @@ interface ChipData {
 const MiniSparkline = ({ 
   data, 
   isPositive, 
-  width = 60, 
-  height = 28 
+  width = 70, 
+  height = 32 
 }: { 
   data: number[]; 
   isPositive: boolean; 
@@ -65,7 +68,6 @@ const MiniSparkline = ({
   height?: number;
 }) => {
   if (!data || data.length < 2) {
-    // Generate placeholder data if no data available
     data = isPositive 
       ? [40, 42, 38, 45, 43, 48, 46, 52, 50, 55]
       : [55, 52, 54, 48, 50, 45, 47, 42, 44, 40];
@@ -81,7 +83,6 @@ const MiniSparkline = ({
     return { x, y };
   });
 
-  // Create smooth curve path
   let pathD = `M ${points[0].x} ${points[0].y}`;
   
   for (let i = 1; i < points.length; i++) {
@@ -92,9 +93,7 @@ const MiniSparkline = ({
     pathD += ` Q ${midX + (curr.x - midX) * 0.5} ${curr.y}, ${curr.x} ${curr.y}`;
   }
 
-  // Create area path for gradient fill
   const areaPath = `${pathD} L ${width} ${height} L 0 ${height} Z`;
-
   const color = isPositive ? "#00C853" : "#FF1744";
   const gradientId = `gradient-${isPositive ? 'green' : 'red'}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -106,10 +105,7 @@ const MiniSparkline = ({
           <Stop offset="100%" stopColor={color} stopOpacity={0} />
         </LinearGradient>
       </Defs>
-      <Path
-        d={areaPath}
-        fill={`url(#${gradientId})`}
-      />
+      <Path d={areaPath} fill={`url(#${gradientId})`} />
       <Path
         d={pathD}
         stroke={color}
@@ -122,6 +118,63 @@ const MiniSparkline = ({
   );
 };
 
+// Large Header Card Component
+const HeaderCard = ({ 
+  item, 
+  onPress,
+  showSparkline = true,
+}: { 
+  item: ChipData; 
+  onPress: () => void;
+  showSparkline?: boolean;
+}) => {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.headerCard,
+        item.isPositive ? styles.headerCardPositive : styles.headerCardNegative
+      ]}
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
+      <View style={styles.headerCardTop}>
+        <View style={styles.headerCardInfo}>
+          <Text style={styles.headerCardSymbol}>{item.name}</Text>
+          <Text style={styles.headerCardPrice}>
+            ${item.value !== "..." ? Number(item.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "..."}
+          </Text>
+        </View>
+        {showSparkline && (
+          <View style={styles.headerCardSparkline}>
+            <MiniSparkline 
+              data={item.sparklineData} 
+              isPositive={item.isPositive}
+              width={40}
+              height={22}
+            />
+          </View>
+        )}
+      </View>
+      <View style={[
+        styles.headerCardChangeBadge,
+        item.isPositive ? styles.headerCardChangeBadgePositive : styles.headerCardChangeBadgeNegative
+      ]}>
+        <Ionicons
+          name={item.isPositive ? "trending-up" : "trending-down"}
+          size={10}
+          color={item.isPositive ? "#00C853" : "#FF1744"}
+        />
+        <Text style={[
+          styles.headerCardChangeText,
+          item.isPositive ? styles.positive : styles.negative
+        ]}>
+          {item.isPositive ? "+" : ""}{item.change}%
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 export default function Explore() {
   const [activeTab, setActiveTab] = useState<Tab>("stocks");
   const [searchQuery, setSearchQuery] = useState("");
@@ -129,12 +182,7 @@ export default function Explore() {
   const [data, setData] = useState<MarketItem[]>([]);
   const [searchResults, setSearchResults] = useState<MarketItem[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [chips, setChips] = useState<ChipData[]>([
-    { name: "SPY", symbol: "SPY", value: "...", change: "...", isPositive: true, sparklineData: [] },
-    { name: "DIA", symbol: "DIA", value: "...", change: "...", isPositive: true, sparklineData: [] },
-    { name: "QQQ", symbol: "QQQ", value: "...", change: "...", isPositive: true, sparklineData: [] },
-    { name: "BTC", symbol: "BTCUSD", value: "...", change: "...", isPositive: true, sparklineData: [] },
-  ]);
+  const [headerCards, setHeaderCards] = useState<ChipData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -143,6 +191,40 @@ export default function Explore() {
 
   const FMP_API_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
   const BASE_URL = "https://financialmodelingprep.com/api/v3";
+
+  // Define header cards for each tab
+  const TAB_HEADER_SYMBOLS: Record<Tab, string[]> = {
+    stocks: ["SPY", "QQQ", "DIA", "IWM"],
+    crypto: ["BTCUSD", "ETHUSD", "SOLUSD", "XRPUSD"],
+    etf: ["VOO", "VTI", "ARKK", "XLF"],
+    bonds: ["TLT", "AGG", "BND", "LQD"],
+    ipo: [],
+    ma: [],
+    dividends: ["VYM", "SCHD", "HDV", "DVY"],
+  };
+
+  const TAB_HEADER_NAMES: Record<string, string> = {
+    "SPY": "S&P 500",
+    "QQQ": "Nasdaq 100",
+    "DIA": "Dow Jones",
+    "IWM": "Russell 2000",
+    "BTCUSD": "Bitcoin",
+    "ETHUSD": "Ethereum",
+    "SOLUSD": "Solana",
+    "XRPUSD": "XRP",
+    "VOO": "Vanguard S&P",
+    "VTI": "Total Market",
+    "ARKK": "ARK Innovation",
+    "XLF": "Financials",
+    "TLT": "20+ Year Treasury",
+    "AGG": "US Aggregate",
+    "BND": "Total Bond",
+    "LQD": "Investment Grade",
+    "VYM": "High Dividend",
+    "SCHD": "Schwab Dividend",
+    "HDV": "High Dividend",
+    "DVY": "Dividend Select",
+  };
 
   // Fetch historical data for sparklines
   const fetchSparklineData = async (symbol: string): Promise<number[]> => {
@@ -153,7 +235,6 @@ export default function Explore() {
       const data = await response.json();
       
       if (Array.isArray(data) && data.length > 0) {
-        // Get last 24 data points (24 hours) and reverse for chronological order
         return data.slice(0, 24).map((item: any) => item.close).reverse();
       }
       return [];
@@ -163,84 +244,52 @@ export default function Explore() {
     }
   };
 
-  // Fetch market chips data - SPY, DIA, QQQ, BTC
-  const fetchChipsData = async () => {
+  // Fetch header cards data based on active tab
+  const fetchHeaderCards = async () => {
+    const symbols = TAB_HEADER_SYMBOLS[activeTab];
+    if (symbols.length === 0) {
+      setHeaderCards([]);
+      return;
+    }
+
     try {
-      // Fetch quotes
+      const symbolsStr = symbols.join(",");
       const response = await fetch(
-        `${BASE_URL}/quote/SPY,DIA,QQQ,BTCUSD?apikey=${FMP_API_KEY}`
+        `${BASE_URL}/quote/${symbolsStr}?apikey=${FMP_API_KEY}`
       );
       const data = await response.json();
 
       // Fetch sparkline data for each symbol
-      const [spySparkline, diaSparkline, qqqSparkline, btcSparkline] = await Promise.all([
-        fetchSparklineData("SPY"),
-        fetchSparklineData("DIA"),
-        fetchSparklineData("QQQ"),
-        fetchSparklineData("BTCUSD"),
-      ]);
+      const sparklinePromises = symbols.map(symbol => fetchSparklineData(symbol));
+      const sparklines = await Promise.all(sparklinePromises);
 
       if (Array.isArray(data) && data.length > 0) {
-        const newChips: ChipData[] = [];
+        const cards: ChipData[] = symbols.map((symbol, index) => {
+          const quote = data.find((item: any) => item.symbol === symbol);
+          if (quote) {
+            return {
+              name: TAB_HEADER_NAMES[symbol] || symbol,
+              symbol: symbol,
+              value: quote.price?.toFixed(2) || "0.00",
+              change: quote.changesPercentage?.toFixed(2) || "0.00",
+              isPositive: (quote.changesPercentage || 0) >= 0,
+              sparklineData: sparklines[index] || [],
+            };
+          }
+          return {
+            name: TAB_HEADER_NAMES[symbol] || symbol,
+            symbol: symbol,
+            value: "...",
+            change: "0.00",
+            isPositive: true,
+            sparklineData: [],
+          };
+        });
 
-        // SPY
-        const spy = data.find((item: any) => item.symbol === "SPY");
-        if (spy) {
-          newChips.push({
-            name: "SPY",
-            symbol: "SPY",
-            value: spy.price?.toFixed(2) || "...",
-            change: spy.changesPercentage?.toFixed(2) || "0.00",
-            isPositive: (spy.changesPercentage || 0) >= 0,
-            sparklineData: spySparkline,
-          });
-        }
-
-        // DIA
-        const dia = data.find((item: any) => item.symbol === "DIA");
-        if (dia) {
-          newChips.push({
-            name: "DIA",
-            symbol: "DIA",
-            value: dia.price?.toFixed(2) || "...",
-            change: dia.changesPercentage?.toFixed(2) || "0.00",
-            isPositive: (dia.changesPercentage || 0) >= 0,
-            sparklineData: diaSparkline,
-          });
-        }
-
-        // QQQ
-        const qqq = data.find((item: any) => item.symbol === "QQQ");
-        if (qqq) {
-          newChips.push({
-            name: "QQQ",
-            symbol: "QQQ",
-            value: qqq.price?.toFixed(2) || "...",
-            change: qqq.changesPercentage?.toFixed(2) || "0.00",
-            isPositive: (qqq.changesPercentage || 0) >= 0,
-            sparklineData: qqqSparkline,
-          });
-        }
-
-        // BTC
-        const btc = data.find((item: any) => item.symbol === "BTCUSD");
-        if (btc) {
-          newChips.push({
-            name: "BTC",
-            symbol: "BTCUSD",
-            value: btc.price?.toFixed(0) || "...",
-            change: btc.changesPercentage?.toFixed(2) || "0.00",
-            isPositive: (btc.changesPercentage || 0) >= 0,
-            sparklineData: btcSparkline,
-          });
-        }
-
-        if (newChips.length > 0) {
-          setChips(newChips);
-        }
+        setHeaderCards(cards);
       }
     } catch (err) {
-      console.error("Chips fetch failed:", err);
+      console.error("Header cards fetch failed:", err);
     }
   };
 
@@ -290,7 +339,6 @@ export default function Explore() {
     }
   };
 
-  // Handle search input with debounce
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
 
@@ -316,13 +364,13 @@ export default function Explore() {
           url = `${BASE_URL}/stock_market/actives?apikey=${FMP_API_KEY}`;
           break;
         case "crypto":
-          url = `${BASE_URL}/quote/BTCUSD,ETHUSD,SOLUSD,ADAUSD,XRPUSD,DOGEUSD,MATICUSD,DOTUSD,LINKUSD,UNIUSD?apikey=${FMP_API_KEY}`;
+          url = `${BASE_URL}/quote/BTCUSD,ETHUSD,SOLUSD,ADAUSD,XRPUSD,DOGEUSD,MATICUSD,DOTUSD,LINKUSD,UNIUSD,AVAXUSD,LTCUSD?apikey=${FMP_API_KEY}`;
           break;
         case "etf":
           url = `${BASE_URL}/etf/list?apikey=${FMP_API_KEY}`;
           break;
         case "bonds":
-          url = `${BASE_URL}/quote/TLT,AGG,BND,VCIT,LQD?apikey=${FMP_API_KEY}`;
+          url = `${BASE_URL}/quote/TLT,AGG,BND,VCIT,LQD,HYG,JNK,MUB,SHY,IEF,GOVT,TIP?apikey=${FMP_API_KEY}`;
           break;
         case "ipo":
           url = `https://financialmodelingprep.com/stable/ipos-calendar?apikey=${FMP_API_KEY}`;
@@ -331,7 +379,6 @@ export default function Explore() {
           url = `https://financialmodelingprep.com/stable/mergers-acquisitions-latest?page=0&limit=100&apikey=${FMP_API_KEY}`;
           break;
         case "dividends":
-          // Fetch dividends for popular dividend-paying stocks
           break;
         default:
           url = `${BASE_URL}/stock_market/actives?apikey=${FMP_API_KEY}`;
@@ -357,7 +404,7 @@ export default function Explore() {
                 changePercent: 0,
                 type: "stock" as any,
                 dividend: latest.dividend || latest.adjDividend || 0,
-                dividendYield: (latest.yield || 0) * 100, // Convert to percentage
+                dividendYield: (latest.yield || 0) * 100,
                 paymentDate: latest.paymentDate || "N/A",
                 recordDate: latest.recordDate || "N/A",
                 declarationDate: latest.declarationDate || "N/A",
@@ -373,8 +420,6 @@ export default function Explore() {
 
         const dividendResults = await Promise.all(dividendPromises);
         const validDividends = dividendResults.filter((d) => d !== null) as MarketItem[];
-        
-        // Sort by dividend yield (highest first)
         validDividends.sort((a, b) => (b.dividendYield || 0) - (a.dividendYield || 0));
         
         setData(validDividends);
@@ -447,7 +492,7 @@ export default function Explore() {
 
   useEffect(() => {
     fetchLiveData();
-    fetchChipsData();
+    fetchHeaderCards();
 
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -455,7 +500,7 @@ export default function Explore() {
 
     intervalRef.current = setInterval(() => {
       fetchLiveData();
-      fetchChipsData();
+      fetchHeaderCards();
     }, 30000);
 
     return () => {
@@ -483,7 +528,9 @@ export default function Explore() {
         >
           <View style={styles.maTopSection}>
             <View style={styles.maCompanyBox}>
-              <View style={styles.maIconCircle} />
+              <View style={[styles.maIconCircle, { backgroundColor: "#dbeafe" }]}>
+                <Ionicons name="business" size={18} color="#3b82f6" />
+              </View>
               <View style={styles.maCompanyInfo}>
                 <Text style={styles.maCompanyLabel}>Acquirer</Text>
                 <Text style={styles.maCompanyName} numberOfLines={2}>
@@ -493,11 +540,15 @@ export default function Explore() {
             </View>
             
             <View style={styles.maCenterArrow}>
-              <Ionicons name="arrow-forward" size={24} color="#9ca3af" />
+              <View style={styles.arrowCircle}>
+                <Ionicons name="arrow-forward" size={16} color="#fff" />
+              </View>
             </View>
             
             <View style={styles.maCompanyBox}>
-              <View style={styles.maIconCircle} />
+              <View style={[styles.maIconCircle, { backgroundColor: "#fce7f3" }]}>
+                <Ionicons name="business-outline" size={18} color="#ec4899" />
+              </View>
               <View style={styles.maCompanyInfo}>
                 <Text style={styles.maCompanyLabel}>Target</Text>
                 <Text style={styles.maCompanyName} numberOfLines={2}>
@@ -677,6 +728,29 @@ export default function Explore() {
     );
   };
 
+  // Header Cards Section
+  const renderHeaderCards = () => {
+    if (headerCards.length === 0 || searchQuery) return null;
+
+    return (
+      <View style={styles.headerCardsContainer}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.headerCardsContent}
+        >
+          {headerCards.map((card, index) => (
+            <HeaderCard
+              key={card.symbol}
+              item={card}
+              onPress={() => router.push(`/symbol/${card.symbol}/chart`)}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
   if (loading && data.length === 0) {
     return (
       <View style={styles.container}>
@@ -729,61 +803,6 @@ export default function Explore() {
           )}
         </View>
       </View>
-
-      {/* Market Chips with Sparklines */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        style={styles.chipsRow}
-        contentContainerStyle={styles.chipsContent}
-      >
-        {chips.map((chip, index) => (
-          <TouchableOpacity 
-            key={index} 
-            style={[
-              styles.chip,
-              chip.isPositive ? styles.chipPositive : styles.chipNegative
-            ]}
-            activeOpacity={0.7}
-            onPress={() => router.push(`/symbol/${chip.symbol}/chart`)}
-          >
-            <View style={styles.chipHeader}>
-              <View style={styles.chipLeft}>
-                <Text style={styles.chipName}>{chip.name}</Text>
-                <Text style={styles.chipValue}>
-                  ${chip.value !== "..." ? Number(chip.value).toLocaleString() : "..."}
-                </Text>
-              </View>
-              <View style={styles.chipSparkline}>
-                <MiniSparkline 
-                  data={chip.sparklineData} 
-                  isPositive={chip.isPositive}
-                  width={56}
-                  height={28}
-                />
-              </View>
-            </View>
-            <View style={styles.chipFooter}>
-              <View style={[
-                styles.chipChangeBadge,
-                chip.isPositive ? styles.chipChangeBadgePositive : styles.chipChangeBadgeNegative
-              ]}>
-                <Ionicons
-                  name={chip.isPositive ? "trending-up" : "trending-down"}
-                  size={12}
-                  color={chip.isPositive ? "#00C853" : "#FF1744"}
-                />
-                <Text style={[
-                  styles.chipChangeText,
-                  chip.isPositive ? styles.positive : styles.negative
-                ]}>
-                  {chip.isPositive ? "+" : ""}{chip.change}%
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
 
       {/* Sticky Tabs */}
       <View style={styles.tabBar}>
@@ -851,20 +870,26 @@ export default function Explore() {
           )
         }
         ListHeaderComponent={
-          !searchQuery && data.length > 0 ? (
-            <Text style={styles.sectionTitle}>
-              {activeTab === "stocks" ? "Most Active" :
-               activeTab === "crypto" ? "Top Cryptos" :
-               activeTab === "etf" ? "Popular ETFs" :
-               activeTab === "bonds" ? "Bond ETFs" : 
-               activeTab === "ipo" ? "IPO Calendar" : 
-               activeTab === "ma" ? "Latest M&A Deals" : "Top Dividend Stocks"}
-            </Text>
-          ) : searchQuery ? (
-            <Text style={styles.sectionTitle}>
-              Search Results
-            </Text>
-          ) : null
+          <>
+            {/* Header Cards */}
+            {renderHeaderCards()}
+            
+            {/* Section Title */}
+            {!searchQuery && data.length > 0 ? (
+              <Text style={styles.sectionTitle}>
+                {activeTab === "stocks" ? "Most Active" :
+                 activeTab === "crypto" ? "Top Cryptos" :
+                 activeTab === "etf" ? "Popular ETFs" :
+                 activeTab === "bonds" ? "Bond ETFs" : 
+                 activeTab === "ipo" ? "IPO Calendar" : 
+                 activeTab === "ma" ? "Latest M&A Deals" : "Top Dividend Stocks"}
+              </Text>
+            ) : searchQuery ? (
+              <Text style={styles.sectionTitle}>
+                Search Results
+              </Text>
+            ) : null}
+          </>
         }
         refreshing={loading && data.length > 0}
         onRefresh={fetchLiveData}
@@ -914,80 +939,73 @@ const styles = StyleSheet.create({
     color: "#000",
     paddingVertical: 8,
   },
-  chipsRow: { 
-    paddingLeft: 20, 
-    marginVertical: 12,
-    backgroundColor: "#fff",
+  // Header Cards Styles
+  headerCardsContainer: {
+    marginBottom: 16,
   },
-  chipsContent: {
+  headerCardsContent: {
     paddingRight: 20,
   },
-  chip: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 16,
-    marginRight: 12,
-    minWidth: 140,
-    borderWidth: 1.5,
+  headerCard: {
+    width: CARD_WIDTH,
+    padding: 10,
+    borderRadius: 12,
+    marginRight: 8,
+    borderWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  chipPositive: {
-    borderColor: "#00C85330",
-    backgroundColor: "#fafffe",
+  headerCardPositive: {
+    backgroundColor: "#f0fdf4",
+    borderColor: "#bbf7d0",
   },
-  chipNegative: {
-    borderColor: "#FF174430",
-    backgroundColor: "#fffafa",
+  headerCardNegative: {
+    backgroundColor: "#fef2f2",
+    borderColor: "#fecaca",
   },
-  chipHeader: {
+  headerCardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  chipLeft: {
+  headerCardInfo: {
     flex: 1,
   },
-  chipName: {
-    fontSize: 14,
+  headerCardSymbol: {
+    fontSize: 11,
     fontWeight: "700",
-    color: "#111827",
-    marginBottom: 4,
+    color: "#374151",
+    marginBottom: 2,
   },
-  chipValue: {
-    fontSize: 17,
+  headerCardPrice: {
+    fontSize: 14,
     fontWeight: "800",
     color: "#111827",
   },
-  chipSparkline: {
+  headerCardSparkline: {
     marginLeft: 8,
-    marginTop: 2,
   },
-  chipFooter: {
+  headerCardChangeBadge: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 2,
   },
-  chipChangeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    gap: 4,
+  headerCardChangeBadgePositive: {
+    backgroundColor: "#dcfce7",
   },
-  chipChangeBadgePositive: {
-    backgroundColor: "#00C85315",
+  headerCardChangeBadgeNegative: {
+    backgroundColor: "#fee2e2",
   },
-  chipChangeBadgeNegative: {
-    backgroundColor: "#FF174415",
-  },
-  chipChangeText: {
-    fontSize: 13,
+  headerCardChangeText: {
+    fontSize: 10,
     fontWeight: "700",
   },
   positive: { color: "#00C853" },
@@ -1000,16 +1018,17 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f0f0f0",
   },
   tab: { 
-    marginRight: 24, 
+    marginRight: 8, 
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
+    backgroundColor: "#f3f4f6",
   },
   tabActive: { 
-    backgroundColor: "#00C853",
+    backgroundColor: "#111827",
   },
-  tabText: { fontSize: 15, color: "#9ca3af", fontWeight: "600" },
-  tabTextActive: { color: "#000", fontWeight: "700" },
+  tabText: { fontSize: 14, color: "#6b7280", fontWeight: "600" },
+  tabTextActive: { color: "#fff", fontWeight: "700" },
   errorBanner: {
     backgroundColor: "#FF1744",
     padding: 12,
@@ -1192,8 +1211,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#fecaca",
-    marginRight: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
   },
   maCompanyInfo: {
     flex: 1,
@@ -1203,17 +1223,27 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     marginBottom: 4,
     fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   maCompanyName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#111827",
-    lineHeight: 18,
+    lineHeight: 17,
   },
   maCenterArrow: {
-    marginHorizontal: 8,
+    marginHorizontal: 6,
     alignItems: "center",
     justifyContent: "center",
+  },
+  arrowCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#6b7280",
+    justifyContent: "center",
+    alignItems: "center",
   },
   maBottomSection: {
     flexDirection: "row",

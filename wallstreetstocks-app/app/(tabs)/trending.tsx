@@ -1,5 +1,5 @@
-// app/(tabs)/trending.tsx - FINAL VERSION (No Menu, Centered Title, Touchable Chips)
-import React, { useState, useEffect, useCallback } from "react";
+// app/(tabs)/trending.tsx - WITH AUTO-SCROLLING HEADER CARDS + TAB ICONS
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,15 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Dimensions,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
 
 type TabType = "trending" | "gainers" | "losers" | "indices" | "forex" | "commodities";
 
@@ -24,12 +30,156 @@ interface StockItem {
   change?: number;
 }
 
+interface ChipData {
+  name: string;
+  symbol: string;
+  value: string;
+  change: string;
+  isPositive: boolean;
+  sparklineData: number[];
+}
+
+// Tab configuration with icons
+const TAB_CONFIG: { id: TabType; label: string; icon: string }[] = [
+  { id: "trending", label: "Hot", icon: "flame" },
+  { id: "gainers", label: "Gainers", icon: "trending-up" },
+  { id: "losers", label: "Losers", icon: "trending-down" },
+  { id: "indices", label: "Indices", icon: "stats-chart" },
+  { id: "forex", label: "Forex", icon: "swap-horizontal" },
+  { id: "commodities", label: "Commodities", icon: "cube" },
+];
+
+// Mini Sparkline Component
+const MiniSparkline = ({ 
+  data, 
+  isPositive, 
+  width = 60, 
+  height = 30 
+}: { 
+  data: number[]; 
+  isPositive: boolean; 
+  width?: number; 
+  height?: number;
+}) => {
+  if (!data || data.length < 2) {
+    data = isPositive 
+      ? [40, 42, 38, 45, 43, 48, 46, 52, 50, 55]
+      : [55, 52, 54, 48, 50, 45, 47, 42, 44, 40];
+  }
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  const points = data.map((value, index) => {
+    const x = (index / (data.length - 1)) * width;
+    const y = height - ((value - min) / range) * (height - 4) - 2;
+    return { x, y };
+  });
+
+  let pathD = `M ${points[0].x} ${points[0].y}`;
+  
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const midX = (prev.x + curr.x) / 2;
+    pathD += ` Q ${prev.x + (midX - prev.x) * 0.5} ${prev.y}, ${midX} ${(prev.y + curr.y) / 2}`;
+    pathD += ` Q ${midX + (curr.x - midX) * 0.5} ${curr.y}, ${curr.x} ${curr.y}`;
+  }
+
+  const areaPath = `${pathD} L ${width} ${height} L 0 ${height} Z`;
+  const color = isPositive ? "#00C853" : "#FF1744";
+  const gradientId = `gradient-${isPositive ? 'green' : 'red'}-${Math.random().toString(36).substr(2, 9)}`;
+
+  return (
+    <Svg width={width} height={height}>
+      <Defs>
+        <LinearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
+          <Stop offset="0%" stopColor={color} stopOpacity={0.3} />
+          <Stop offset="100%" stopColor={color} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Path d={areaPath} fill={`url(#${gradientId})`} />
+      <Path
+        d={pathD}
+        stroke={color}
+        strokeWidth={2}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+};
+
+// Header Card Component
+const HeaderCard = ({ 
+  item, 
+  onPress,
+}: { 
+  item: ChipData; 
+  onPress: () => void;
+}) => {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.headerCard,
+        item.isPositive ? styles.headerCardPositive : styles.headerCardNegative
+      ]}
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
+      <View style={styles.headerCardTop}>
+        <View style={styles.headerCardInfo}>
+          <Text style={styles.headerCardSymbol}>{item.name}</Text>
+          <Text style={styles.headerCardPrice}>
+            ${item.value !== "..." ? Number(item.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "..."}
+          </Text>
+        </View>
+        <View style={styles.headerCardSparkline}>
+          <MiniSparkline 
+            data={item.sparklineData} 
+            isPositive={item.isPositive}
+            width={40}
+            height={22}
+          />
+        </View>
+      </View>
+      <View style={[
+        styles.headerCardChangeBadge,
+        item.isPositive ? styles.headerCardChangeBadgePositive : styles.headerCardChangeBadgeNegative
+      ]}>
+        <Ionicons
+          name={item.isPositive ? "trending-up" : "trending-down"}
+          size={10}
+          color={item.isPositive ? "#00C853" : "#FF1744"}
+        />
+        <Text style={[
+          styles.headerCardChangeText,
+          item.isPositive ? styles.positive : styles.negative
+        ]}>
+          {item.isPositive ? "+" : ""}{item.change}%
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 export default function Trending() {
   const [activeTab, setActiveTab] = useState<TabType>("trending");
   const [data, setData] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [headerCards, setHeaderCards] = useState<ChipData[]>([]);
   const router = useRouter();
+  
+  // Auto-scroll refs
+  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollPosition = useRef(0);
+  const animationFrameRef = useRef<number | null>(null);
+  const isUserScrolling = useRef(false);
+  const lastTimestamp = useRef<number>(0);
+  const pauseTimeoutRef = useRef<number | null>(null);
 
   const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
   const BASE = "https://financialmodelingprep.com/api/v3";
@@ -41,6 +191,166 @@ export default function Trending() {
     indices: `${BASE}/quote/%5EGSPC,%5EDJI,%5EIXIC,%5ERUT,%5EVIX?apikey=${FMP_API_KEY}`,
     forex: `${BASE}/fx?apikey=${FMP_API_KEY}`,
     commodities: `${BASE}/quote/GCUSD,SIUSD,CLUSD,NGUSD,HGUSD?apikey=${FMP_API_KEY}`,
+  };
+
+  const HEADER_SYMBOLS = ["SPY", "QQQ", "DIA", "IWM", "AAPL", "MSFT", "GOOGL", "AMZN"];
+  const HEADER_NAMES: Record<string, string> = {
+    "SPY": "S&P 500",
+    "QQQ": "Nasdaq 100",
+    "DIA": "Dow Jones",
+    "IWM": "Russell 2000",
+    "AAPL": "Apple",
+    "MSFT": "Microsoft",
+    "GOOGL": "Google",
+    "AMZN": "Amazon",
+  };
+
+  // Fetch sparkline data
+  const fetchSparklineData = async (symbol: string): Promise<number[]> => {
+    try {
+      const response = await fetch(
+        `${BASE}/historical-chart/1hour/${symbol}?apikey=${FMP_API_KEY}`
+      );
+      const data = await response.json();
+      
+      if (Array.isArray(data) && data.length > 0) {
+        return data.slice(0, 24).map((item: any) => item.close).reverse();
+      }
+      return [];
+    } catch (err) {
+      console.error(`Sparkline fetch failed for ${symbol}:`, err);
+      return [];
+    }
+  };
+
+  // Fetch header cards data
+  const fetchHeaderCards = async () => {
+    try {
+      const symbolsStr = HEADER_SYMBOLS.join(",");
+      const response = await fetch(
+        `${BASE}/quote/${symbolsStr}?apikey=${FMP_API_KEY}`
+      );
+      const data = await response.json();
+
+      const sparklinePromises = HEADER_SYMBOLS.map(symbol => fetchSparklineData(symbol));
+      const sparklines = await Promise.all(sparklinePromises);
+
+      if (Array.isArray(data) && data.length > 0) {
+        const cards: ChipData[] = HEADER_SYMBOLS.map((symbol, index) => {
+          const quote = data.find((item: any) => item.symbol === symbol);
+          if (quote) {
+            return {
+              name: HEADER_NAMES[symbol] || symbol,
+              symbol: symbol,
+              value: quote.price?.toFixed(2) || "0.00",
+              change: quote.changesPercentage?.toFixed(2) || "0.00",
+              isPositive: (quote.changesPercentage || 0) >= 0,
+              sparklineData: sparklines[index] || [],
+            };
+          }
+          return {
+            name: HEADER_NAMES[symbol] || symbol,
+            symbol: symbol,
+            value: "...",
+            change: "0.00",
+            isPositive: true,
+            sparklineData: [],
+          };
+        });
+
+        setHeaderCards(cards);
+      }
+    } catch (err) {
+      console.error("Header cards fetch failed:", err);
+    }
+  };
+
+  // Smooth auto-scroll
+  const startAutoScroll = useCallback(() => {
+    const cardTotalWidth = CARD_WIDTH + 8;
+    const totalWidth = headerCards.length * cardTotalWidth;
+    const visibleWidth = SCREEN_WIDTH - 40;
+    const maxScroll = Math.max(0, totalWidth - visibleWidth + 20);
+
+    if (maxScroll <= 0 || headerCards.length === 0) return;
+
+    const scrollSpeed = 0.5;
+    let direction = 1;
+
+    const animate = (timestamp: number) => {
+      if (isUserScrolling.current) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
+
+      if (!lastTimestamp.current) lastTimestamp.current = timestamp;
+      const delta = timestamp - lastTimestamp.current;
+      lastTimestamp.current = timestamp;
+
+      scrollPosition.current += scrollSpeed * direction * (delta / 16.67);
+
+      if (scrollPosition.current >= maxScroll) {
+        scrollPosition.current = maxScroll;
+        direction = -1;
+      } else if (scrollPosition.current <= 0) {
+        scrollPosition.current = 0;
+        direction = 1;
+      }
+
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({
+          x: scrollPosition.current,
+          animated: false,
+        });
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+  }, [headerCards.length]);
+
+  useEffect(() => {
+    if (headerCards.length > 0) {
+      const timer = setTimeout(() => {
+        startAutoScroll();
+      }, 1500);
+
+      return () => {
+        clearTimeout(timer);
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+      };
+    }
+  }, [headerCards.length, startAutoScroll]);
+
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (pauseTimeoutRef.current) {
+        clearTimeout(pauseTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleScrollBegin = () => {
+    isUserScrolling.current = true;
+  };
+
+  const handleScrollEnd = (event: any) => {
+    scrollPosition.current = event.nativeEvent.contentOffset.x;
+    lastTimestamp.current = 0;
+    
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+    }
+    
+    pauseTimeoutRef.current = setTimeout(() => {
+      isUserScrolling.current = false;
+    }, 4000);
   };
 
   const fetchLiveData = useCallback(async () => {
@@ -70,14 +380,12 @@ export default function Trending() {
           cleaned = json
             .slice(0, 30)
             .map(item => {
-              // Normalize forex symbols: remove slashes for routing
-              // EUR/USD -> EURUSD for the symbol navigation
               const rawSymbol = item.ticker || item.symbol || "N/A";
               const normalizedSymbol = rawSymbol.replace(/\//g, '');
               
               return {
                 symbol: normalizedSymbol,
-                companyName: rawSymbol, // Keep the original with slash for display
+                companyName: rawSymbol,
                 changesPercentage: item.changes || item.changesPercentage || 0,
                 price: item.bid,
               };
@@ -114,7 +422,11 @@ export default function Trending() {
 
   useEffect(() => {
     fetchLiveData();
-    const interval = setInterval(fetchLiveData, 5 * 60 * 1000);
+    fetchHeaderCards();
+    const interval = setInterval(() => {
+      fetchLiveData();
+      fetchHeaderCards();
+    }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchLiveData]);
 
@@ -128,7 +440,6 @@ export default function Trending() {
       <TouchableOpacity
         style={styles.row}
         onPress={() => {
-          // URL encode the symbol to handle special characters like ^
           const encodedSymbol = encodeURIComponent(item.symbol);
           router.push(`/symbol/${encodedSymbol}/chart`);
         }}
@@ -167,7 +478,13 @@ export default function Trending() {
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         <View style={styles.header}>
-          <Text style={styles.titleCentered}>Trending</Text>
+          <View style={styles.headerTopRow}>
+            <Text style={styles.title}>Trending</Text>
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>Live</Text>
+            </View>
+          </View>
         </View>
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#00C853" />
@@ -182,62 +499,76 @@ export default function Trending() {
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
 
       <View style={styles.header}>
-        {/* Centered Title Only */}
-        <Text style={styles.titleCentered}>Trending</Text>
+        {/* Header Top Row */}
+        <View style={styles.headerTopRow}>
+          <Text style={styles.title}>Trending</Text>
+          <View style={styles.headerRight}>
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>Live</Text>
+            </View>
+            <TouchableOpacity style={styles.refreshBtn} onPress={fetchLiveData}>
+              <Ionicons name="refresh" size={20} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-        {/* Touchable Major Indices Chips */}
+        {/* Subtitle */}
+        <Text style={styles.subtitle}>
+          Real-time market movers & top performers
+        </Text>
+
+        {/* Auto-scrolling Header Cards */}
         <ScrollView 
+          ref={scrollViewRef}
           horizontal 
           showsHorizontalScrollIndicator={false} 
-          style={styles.chipsRow}
-          contentContainerStyle={styles.chipsContent}
+          style={styles.headerCardsContainer}
+          contentContainerStyle={styles.headerCardsContent}
+          onScrollBeginDrag={handleScrollBegin}
+          onScrollEndDrag={handleScrollEnd}
+          onMomentumScrollEnd={handleScrollEnd}
+          scrollEventThrottle={16}
         >
-          {[
-            { symbol: "DIA", change: -0.92 },
-            { symbol: "SPY", change: -0.86 },
-            { symbol: "QQQ", change: -0.87 },
-          ].map((item) => (
-            <TouchableOpacity
-              key={item.symbol}
+          {headerCards.map((card) => (
+            <HeaderCard
+              key={card.symbol}
+              item={card}
               onPress={() => {
-                const encodedSymbol = encodeURIComponent(item.symbol);
+                const encodedSymbol = encodeURIComponent(card.symbol);
                 router.push(`/symbol/${encodedSymbol}/chart`);
               }}
-              style={styles.chip}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.chipSymbol}>{item.symbol}</Text>
-              <Text style={styles.chipDown}>{item.change}%</Text>
-            </TouchableOpacity>
+            />
           ))}
         </ScrollView>
 
-        <Text style={styles.subtitle}>
-          Live market movers • Updates every 5 minutes
-        </Text>
-
+        {/* Tab Pills with Icons */}
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
           style={styles.tabsScroll}
           contentContainerStyle={styles.tabsContent}
         >
-          {(["trending", "gainers", "losers", "indices", "forex", "commodities"] as TabType[]).map((tab) => (
-            <TouchableOpacity 
-              key={tab} 
-              onPress={() => setActiveTab(tab)}
-              style={styles.tabButton}
-            >
-              <Text style={activeTab === tab ? styles.tabActive : styles.tabInactive}>
-                {tab === "trending" ? "Trending" :
-                 tab === "gainers" ? "Gainers" :
-                 tab === "losers" ? "Losers" :
-                 tab === "indices" ? "Indices" :
-                 tab === "forex" ? "Forex" : "Commodities"}
-              </Text>
-              {activeTab === tab && <View style={styles.tabUnderline} />}
-            </TouchableOpacity>
-          ))}
+          {TAB_CONFIG.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <TouchableOpacity 
+                key={tab.id} 
+                onPress={() => setActiveTab(tab.id)}
+                style={[styles.tabPill, isActive && styles.tabPillActive]}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={tab.icon as any}
+                  size={16}
+                  color={isActive ? "#fff" : "#6b7280"}
+                />
+                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
@@ -277,83 +608,161 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#fff",
     paddingTop: 60,
-    paddingHorizontal: 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
-  titleCentered: { 
-    fontSize: 34, 
+  headerTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 4,
+  },
+  title: { 
+    fontSize: 32, 
     fontWeight: "800", 
     color: "#000",
     letterSpacing: -0.5,
-    textAlign: "center",
-    marginBottom: 16,
   },
-  chipsRow: { 
-    marginBottom: 12,
-  },
-  chipsContent: {
-    paddingRight: 20,
-  },
-  chip: {
+  headerRight: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 16,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+    gap: 12,
   },
-  chipSymbol: { 
-    fontSize: 14, 
-    fontWeight: "700", 
-    color: "#111827",
-    marginRight: 6,
+  liveIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0fdf4",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
   },
-  chipDown: { 
-    fontSize: 13, 
-    color: "#FF1744", 
-    fontWeight: "600",
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#00C853",
+  },
+  liveText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#00C853",
+  },
+  refreshBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f3f4f6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   subtitle: { 
-    fontSize: 13, 
+    fontSize: 14, 
     color: "#6b7280", 
+    paddingHorizontal: 20,
     marginBottom: 16,
-    textAlign: "center",
   },
+  // Header Cards
+  headerCardsContainer: {
+    marginBottom: 16,
+  },
+  headerCardsContent: {
+    paddingHorizontal: 20,
+  },
+  headerCard: {
+    width: CARD_WIDTH,
+    padding: 10,
+    borderRadius: 12,
+    marginRight: 8,
+    borderWidth: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  headerCardPositive: {
+    backgroundColor: "#f0fdf4",
+    borderColor: "#bbf7d0",
+  },
+  headerCardNegative: {
+    backgroundColor: "#fef2f2",
+    borderColor: "#fecaca",
+  },
+  headerCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 6,
+  },
+  headerCardInfo: {
+    flex: 1,
+  },
+  headerCardSymbol: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#374151",
+    marginBottom: 2,
+  },
+  headerCardPrice: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  headerCardSparkline: {
+    marginLeft: 4,
+  },
+  headerCardChangeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    gap: 2,
+  },
+  headerCardChangeBadgePositive: {
+    backgroundColor: "#dcfce7",
+  },
+  headerCardChangeBadgeNegative: {
+    backgroundColor: "#fee2e2",
+  },
+  headerCardChangeText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  positive: { color: "#00C853" },
+  negative: { color: "#FF1744" },
+  // Tab Pills
   tabsScroll: {
-    marginHorizontal: -20,
     paddingHorizontal: 20,
   },
   tabsContent: {
-    paddingRight: 20,
+    gap: 8,
   },
-  tabButton: {
-    marginRight: 28,
-    paddingBottom: 12,
+  tabPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 24,
+    backgroundColor: "#f3f4f6",
+    gap: 6,
   },
-  tabActive: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111827",
+  tabPillActive: {
+    backgroundColor: "#111827",
   },
-  tabInactive: { 
-    fontSize: 15, 
-    color: "#9ca3af", 
+  tabText: {
+    fontSize: 13,
     fontWeight: "600",
+    color: "#6b7280",
   },
-  tabUnderline: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: "#00C853",
-    borderRadius: 2,
+  tabTextActive: {
+    color: "#fff",
   },
+  // Loading & Error
   center: { 
     flex: 1, 
     justifyContent: "center", 
@@ -391,6 +800,7 @@ const styles = StyleSheet.create({
     fontWeight: "700", 
     fontSize: 14 
   },
+  // List
   listContent: {
     paddingBottom: 100,
   },

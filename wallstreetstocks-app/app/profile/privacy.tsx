@@ -12,11 +12,11 @@ import { Shield, ExternalLink, ChevronLeft } from 'lucide-react-native';
 
 export default function PrivacyScreen({ navigation }: any) {
   const openPrivacyPolicy = () => {
-    Linking.openURL('https://wallstreetstocks.com/privacy-policy');
+    Linking.openURL('https://wallstreetstocks.ai/privacy-policy');
   };
 
   const openTerms = () => {
-    Linking.openURL('https://wallstreetstocks.com/terms');
+    Linking.openURL('https://wallstreetstocks.ai/terms');
   };
 
   return (
