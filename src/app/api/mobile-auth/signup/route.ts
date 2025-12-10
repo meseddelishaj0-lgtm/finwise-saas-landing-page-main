@@ -7,9 +7,9 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, name, password } = await request.json();
+    const { email, name, password, username } = await request.json();
 
-    console.log("Mobile email signup request:", { email, name });
+    console.log("Mobile email signup request:", { email, name, username });
 
     if (!email) {
       return NextResponse.json(
@@ -26,6 +26,17 @@ export async function POST(request: NextRequest) {
     }
 
     const userName = name || email.split("@")[0];
+    
+    // Generate username if not provided
+    let finalUsername = username;
+    if (!finalUsername) {
+      // Create username from name or email
+      const baseUsername = (name || email.split("@")[0])
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '')
+        .substring(0, 15);
+      finalUsername = baseUsername + Math.floor(Math.random() * 10000);
+    }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -39,6 +50,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if username is taken
+    if (username) {
+      const existingUsername = await prisma.user.findFirst({
+        where: { username: username.toLowerCase() },
+      });
+
+      if (existingUsername) {
+        return NextResponse.json(
+          { error: "This username is already taken" },
+          { status: 409 }
+        );
+      }
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -47,11 +72,12 @@ export async function POST(request: NextRequest) {
       data: {
         email,
         name: userName,
+        username: finalUsername.toLowerCase(),
         password: hashedPassword,
       },
     });
 
-    console.log("User created:", user.id);
+    console.log("User created:", user.id, "username:", user.username);
 
     // Create JWT token
     const token = jwt.sign(
@@ -67,6 +93,7 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
+        username: user.username,
       },
     });
   } catch (error) {

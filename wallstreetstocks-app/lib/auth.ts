@@ -11,6 +11,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  username?: string;
   profileImage?: string;
 }
 
@@ -19,7 +20,7 @@ interface AuthState {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name?: string) => Promise<void>;
+  signup: (email: string, password: string, name?: string, username?: string) => Promise<void>;
   socialLogin: (email: string, name?: string, profileImage?: string, provider?: 'google' | 'apple') => Promise<void>;
   forgotPassword: (email: string) => Promise<{ message: string; devCode?: string }>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
@@ -87,6 +88,7 @@ export const useAuth = create<AuthState>()(
               id: data.user.id.toString(),
               email: data.user.email,
               name: data.user.name,
+              username: data.user.username || undefined,
               profileImage: data.user.profileImage || undefined,
             },
             token: data.token,
@@ -101,9 +103,10 @@ export const useAuth = create<AuthState>()(
       },
 
       // Email/Password Signup
-      signup: async (email: string, password: string, name?: string) => {
+      signup: async (email: string, password: string, name?: string, username?: string) => {
         console.log('=== SIGNUP ===');
         console.log('Email:', email);
+        console.log('Username:', username);
 
         try {
           const response = await fetch(`${API_URL}/api/mobile-auth/signup`, {
@@ -116,6 +119,7 @@ export const useAuth = create<AuthState>()(
               email, 
               password,
               name: name || email.split('@')[0],
+              username: username || undefined,
             }),
           });
 
@@ -137,6 +141,7 @@ export const useAuth = create<AuthState>()(
               id: data.user.id.toString(),
               email: data.user.email,
               name: data.user.name,
+              username: data.user.username || undefined,
               profileImage: data.user.profileImage || undefined,
             },
             token: data.token,
@@ -190,6 +195,7 @@ export const useAuth = create<AuthState>()(
               id: data.user.id.toString(),
               email: data.user.email,
               name: data.user.name,
+              username: data.user.username || undefined,
               profileImage: data.user.profileImage || undefined,
             },
             token: data.token,

@@ -1,5 +1,5 @@
 // app/signup.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const API_URL = 'https://www.wallstreetstocks.ai';
+
 function decodeJWT(token: string): { email?: string; sub?: string } | null {
   try {
     const payload = token.split('.')[1];
@@ -36,11 +38,17 @@ function decodeJWT(token: string): { email?: string; sub?: string } | null {
 }
 
 export default function Signup() {
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const usernameCheckTimeout = useRef<NodeJS.Timeout | null>(null);
   const { signup, socialLogin } = useAuth();
   const router = useRouter();
 
@@ -56,7 +64,76 @@ export default function Signup() {
     }
   }, [response]);
 
+  // Validate username format and check availability
+  const validateUsername = (text: string) => {
+    const cleaned = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    setUsername(cleaned);
+    setUsernameAvailable(null);
+    
+    // Clear previous timeout
+    if (usernameCheckTimeout.current) {
+      clearTimeout(usernameCheckTimeout.current);
+    }
+    
+    if (cleaned.length === 0) {
+      setUsernameError('');
+      return;
+    }
+    
+    if (cleaned.length < 3) {
+      setUsernameError('Username must be at least 3 characters');
+      return;
+    }
+    
+    if (cleaned.length > 20) {
+      setUsernameError('Username must be 20 characters or less');
+      return;
+    }
+    
+    setUsernameError('');
+    
+    // Check availability after 500ms debounce
+    usernameCheckTimeout.current = setTimeout(async () => {
+      setCheckingUsername(true);
+      try {
+        const response = await fetch(`${API_URL}/api/user/check-username?username=${cleaned}`);
+        const data = await response.json();
+        if (data.available) {
+          setUsernameAvailable(true);
+          setUsernameError('');
+        } else {
+          setUsernameAvailable(false);
+          setUsernameError('Username is already taken');
+        }
+      } catch (error) {
+        console.error('Username check failed:', error);
+      } finally {
+        setCheckingUsername(false);
+      }
+    }, 500);
+  };
+
   const handleSignup = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter your name');
+      return;
+    }
+    if (!username.trim()) {
+      Alert.alert('Error', 'Please choose a username');
+      return;
+    }
+    if (username.length < 3 || username.length > 20) {
+      Alert.alert('Error', 'Username must be 3-20 characters');
+      return;
+    }
+    if (usernameError) {
+      Alert.alert('Error', usernameError);
+      return;
+    }
+    if (usernameAvailable === false) {
+      Alert.alert('Error', 'This username is already taken');
+      return;
+    }
     if (!email) {
       Alert.alert('Error', 'Please enter your email');
       return;
@@ -76,7 +153,7 @@ export default function Signup() {
 
     setLoading(true);
     try {
-      await signup(email, password);
+      await signup(email, password, name, username);
       router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to create account');
@@ -152,6 +229,44 @@ export default function Signup() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Create Account</Text>
+      <Text style={styles.subtitle}>Join the community</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Full Name"
+        placeholderTextColor="#999"
+        value={name}
+        onChangeText={setName}
+        autoCapitalize="words"
+        editable={!loading}
+      />
+
+      <View>
+        <View style={styles.usernameRow}>
+          <TextInput
+            style={[styles.input, { flex: 1 }, usernameError ? styles.inputErrorBorder : usernameAvailable === true ? styles.inputSuccessBorder : null]}
+            placeholder="Username (e.g. wallstreetbull)"
+            placeholderTextColor="#999"
+            value={username}
+            onChangeText={validateUsername}
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!loading}
+          />
+          {checkingUsername && (
+            <ActivityIndicator size="small" color="#007AFF" style={styles.usernameLoader} />
+          )}
+        </View>
+        {usernameError ? (
+          <Text style={styles.errorText}>{usernameError}</Text>
+        ) : usernameAvailable === true && username.length >= 3 ? (
+          <Text style={styles.successText}>✓ @{username} is available!</Text>
+        ) : username.length >= 3 && !checkingUsername ? (
+          <Text style={styles.hintText}>Checking availability...</Text>
+        ) : username.length > 0 ? (
+          <Text style={styles.hintText}>3-20 characters, letters, numbers, underscores only</Text>
+        ) : null}
+      </View>
 
       <TextInput
         style={styles.input}
@@ -334,5 +449,80 @@ const styles = StyleSheet.create({
   },
   underline: { 
     textDecorationLine: 'underline' 
+  },
+  usernameInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  usernamePrefix: {
+    color: '#999',
+    fontSize: 16,
+    paddingLeft: 16,
+    paddingRight: 4,
+  },
+  usernameInput: {
+    flex: 1,
+    color: '#fff',
+    padding: 16,
+    paddingLeft: 0,
+    fontSize: 16,
+  },
+  inputHint: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputError: {
+    fontSize: 12,
+    color: '#FF3B30',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputSuccess: {
+    fontSize: 12,
+    color: '#34C759',
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#FF3B30',
+    marginTop: 4,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  successText: {
+    fontSize: 12,
+    color: '#34C759',
+    marginTop: 4,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputErrorBorder: {
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+  },
+  inputSuccessBorder: {
+    borderWidth: 1,
+    borderColor: '#34C759',
+  },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  usernameLoader: {
+    position: 'absolute',
+    right: 16,
+  },
+  hintText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    marginBottom: 8,
+    marginLeft: 4,
   },
 });
