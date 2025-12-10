@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/posts/search?q=...&ticker=... - Search posts (PUBLIC)
 export async function GET(req: NextRequest) {
   try {
@@ -39,7 +41,7 @@ export async function GET(req: NextRequest) {
     const posts = await prisma.post.findMany({
       where,
       include: {
-        user: { select: { id: true, name: true, email: true } },
+        user: { select: { id: true, name: true, email: true, username: true, profileImage: true } },
         forum: { select: { id: true, title: true, slug: true } },
         _count: { select: { comments: true, likes: true } },
       },

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/notifications?userId=123 - Get notifications
 export async function GET(req: NextRequest) {
   try {
@@ -26,7 +28,7 @@ export async function GET(req: NextRequest) {
         ...(unread === "true" ? { isRead: false } : {})
       },
       include: {
-        fromUser: { select: { id: true, name: true, email: true } },
+        fromUser: { select: { id: true, name: true, email: true, username: true, profileImage: true } },
         post: { select: { id: true, title: true } }
       },
       orderBy: { createdAt: "desc" },

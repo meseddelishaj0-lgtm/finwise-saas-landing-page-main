@@ -25,7 +25,7 @@ export async function GET(
       orderBy: { createdAt: "desc" }
     });
 
-    const followerUsers = followers.map(f => f.follower);
+    const followerUsers = followers.map((f: any) => f.follower);
 
     return NextResponse.json(followerUsers, { status: 200 });
   } catch (err) {

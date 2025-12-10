@@ -2,17 +2,14 @@
 // React Native API client for Next.js backend
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 // ===== CONFIGURATION =====
-// Update this to your Next.js website URL
-const API_BASE_URL = 'https://wallstreetstocks.ai';
-
-// For local development:
-// const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
 // ===== AUTH TOKEN MANAGEMENT =====
 
-const getAuthToken = async () => {
+const getAuthToken = async (): Promise<string | null> => {
   try {
     return await AsyncStorage.getItem('authToken');
   } catch (error) {
@@ -21,7 +18,7 @@ const getAuthToken = async () => {
   }
 };
 
-export const storeAuthToken = async (token: string) => {
+export const storeAuthToken = async (token: string): Promise<void> => {
   try {
     await AsyncStorage.setItem('authToken', token);
   } catch (error) {
@@ -29,7 +26,7 @@ export const storeAuthToken = async (token: string) => {
   }
 };
 
-export const clearAuthToken = async () => {
+export const clearAuthToken = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem('authToken');
   } catch (error) {
@@ -39,7 +36,7 @@ export const clearAuthToken = async () => {
 
 // ===== API REQUEST HELPER =====
 
-const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
+const apiRequest = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
   const token = await getAuthToken();
   
   const headers: HeadersInit = {
@@ -59,415 +56,393 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 
     console.log(`📡 Response Status: ${response.status}`);
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ API Error Response:', errorText);
-      
-      let errorData;
+      let errorMessage = `HTTP ${response.status}`;
       try {
-        errorData = JSON.parse(errorText);
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.error || errorData.message || errorMessage;
       } catch {
-        errorData = { error: errorText || 'Request failed' };
+        errorMessage = responseText || errorMessage;
       }
-      
-      throw new Error(errorData.error || errorData.message || `HTTP ${response.status}`);
+      throw new Error(errorMessage);
     }
 
-    const responseText = await response.text();
-    
-    // Handle empty responses
     if (!responseText || responseText.trim() === '') {
-      console.log('✅ Empty response (success)');
       return { success: true };
     }
 
     try {
       const data = JSON.parse(responseText);
-      console.log('✅ Response data:', data);
       return data;
     } catch (parseError) {
       console.error('⚠️ JSON Parse Error:', parseError);
-      return { success: true, data: responseText };
+      return { success: true, raw: responseText };
     }
-  } catch (error) {
-    console.error(`💥 API Request Failed: ${endpoint}`, error);
+  } catch (error: any) {
+    console.error(`💥 API Request Failed: ${endpoint}`, error?.message || error);
     throw error;
   }
 };
 
 // ===== POSTS API =====
-// Connects to: api/posts/route.ts
 
-export const fetchPosts = async (forumSlug?: string) => {
-  const query = forumSlug ? `?forum=${forumSlug}` : '';
-  return apiRequest(`/api/posts${query}`, { method: 'GET' });
+export const fetchPosts = async (forumSlug?: string, currentUserId?: number): Promise<any[]> => {
+  try {
+    const params = new URLSearchParams();
+    if (forumSlug) params.append('forum', forumSlug);
+    if (currentUserId) params.append('currentUserId', currentUserId.toString());
+    
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const result = await apiRequest(`/api/posts${query}`, { method: 'GET' });
+    return Array.isArray(result) ? result : [];
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    return [];
+  }
 };
 
 export const createPost = async (data: {
   title: string;
   content: string;
-  forumId: string;
+  forumId: number;
   userId: number;
   ticker?: string;
-  image?: string;
-}) => {
-  return apiRequest('/api/posts', {
+  mediaUrl?: string;
+}): Promise<any> => {
+  console.log('🚀 createPost called');
+  
+  const payload = {
+    title: String(data.title || ''),
+    content: String(data.content || ''),
+    forumId: Number(data.forumId) || 1,
+    userId: Number(data.userId),
+    ...(data.ticker && { ticker: String(data.ticker) }),
+    ...(data.mediaUrl && { mediaUrl: String(data.mediaUrl) }),
+  };
+  
+  console.log('📤 Payload:', JSON.stringify(payload));
+
+  const result = await apiRequest('/api/posts', {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
   });
+  
+  console.log('🎉 Post created successfully');
+  return result;
 };
 
-export const deletePost = async (postId: string, userId: number) => {
+export const deletePost = async (postId: string, userId: number): Promise<any> => {
   return apiRequest(`/api/posts/${postId}?userId=${userId}`, {
     method: 'DELETE',
   });
 };
 
-export const searchPosts = async (query: string, ticker?: string) => {
-  const params = new URLSearchParams();
-  if (query) params.append('q', query);
-  if (ticker) params.append('ticker', ticker);
-  
-  return apiRequest(`/api/posts/search?${params.toString()}`, { 
-    method: 'GET' 
-  });
+export const searchPosts = async (query: string, ticker?: string): Promise<any[]> => {
+  try {
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (ticker) params.append('ticker', ticker);
+    
+    const result = await apiRequest(`/api/posts/search?${params.toString()}`, { 
+      method: 'GET' 
+    });
+    return Array.isArray(result) ? result : [];
+  } catch (error) {
+    console.error('Error searching posts:', error);
+    return [];
+  }
 };
 
 // ===== COMMENTS API =====
-// Connects to: api/comments/route.ts
 
-export const fetchComments = async (postId: string) => {
-  return apiRequest(`/api/comments?postId=${postId}`, { method: 'GET' });
+export const fetchComments = async (postId: string): Promise<any[]> => {
+  try {
+    const result = await apiRequest(`/api/comments?postId=${postId}`, { method: 'GET' });
+    return Array.isArray(result) ? result : [];
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    return [];
+  }
 };
 
-export const createComment = async (postId: string, content: string, userId: number) => {
+export const createComment = async (postId: string, content: string, userId: number): Promise<any> => {
   return apiRequest('/api/comments', {
     method: 'POST',
-    body: JSON.stringify({ postId, content, userId }),
+    body: JSON.stringify({ 
+      postId: Number(postId), 
+      content, 
+      userId: Number(userId) 
+    }),
   });
 };
 
-export const deleteComment = async (commentId: string, userId: number) => {
+export const deleteComment = async (commentId: string, userId: number): Promise<any> => {
   return apiRequest(`/api/comments/${commentId}?userId=${userId}`, {
     method: 'DELETE',
   });
 };
 
 // ===== LIKES API =====
-// Connects to: api/likes/route.ts
 
-export const likePost = async (postId: string, userId: number) => {
+export const likePost = async (postId: string, userId: number): Promise<{ liked: boolean; likesCount?: number }> => {
   try {
     console.log('👍 Liking post:', postId);
     const result = await apiRequest('/api/likes', {
       method: 'POST',
-      body: JSON.stringify({ postId, userId }),
+      body: JSON.stringify({ 
+        postId: Number(postId), 
+        userId: Number(userId) 
+      }),
     });
     
-    console.log('✅ Like result:', result);
-    
-    // Normalize response format
-    if (result && typeof result === 'object') {
-      return {
-        liked: result.liked ?? result.isLiked ?? result.success ?? true,
-        likesCount: result.likesCount ?? result.count ?? result.likes ?? undefined
-      };
-    }
-    
-    return { liked: true };
+    return {
+      liked: result?.liked ?? result?.isLiked ?? true,
+      likesCount: result?.likesCount ?? result?.count ?? undefined
+    };
   } catch (error) {
     console.error('❌ Error liking post:', error);
     throw error;
   }
 };
 
-export const likeComment = async (commentId: string, userId: number) => {
+export const likeComment = async (commentId: string, userId: number): Promise<{ liked: boolean; likesCount?: number }> => {
   try {
     console.log('👍 Liking comment:', commentId);
     const result = await apiRequest('/api/likes', {
       method: 'POST',
-      body: JSON.stringify({ commentId, userId }),
+      body: JSON.stringify({ 
+        commentId: Number(commentId), 
+        userId: Number(userId) 
+      }),
     });
     
-    console.log('✅ Like comment result:', result);
-    
-    // Normalize response format
-    if (result && typeof result === 'object') {
-      return {
-        liked: result.liked ?? result.isLiked ?? result.success ?? true,
-        likesCount: result.likesCount ?? result.count ?? result.likes ?? undefined
-      };
-    }
-    
-    return { liked: true };
+    return {
+      liked: result?.liked ?? result?.isLiked ?? true,
+      likesCount: result?.likesCount ?? result?.count ?? undefined
+    };
   } catch (error) {
     console.error('❌ Error liking comment:', error);
     throw error;
   }
 };
 
-export const toggleLike = async (data: { postId?: string; commentId?: string; userId: number }) => {
-  if (data.postId) {
-    return await likePost(data.postId, data.userId);
-  } else if (data.commentId) {
-    return await likeComment(data.commentId, data.userId);
-  }
-  throw new Error('Either postId or commentId is required');
-};
-
 // ===== NOTIFICATIONS API =====
-// Connects to: api/notifications/route.ts
 
-export const fetchNotifications = async (userId: number) => {
+export const fetchNotifications = async (userId: number): Promise<any[]> => {
   try {
-    if (!userId) {
-      console.warn('fetchNotifications called without userId');
-      return [];
-    }
-    return await apiRequest(`/api/notifications?userId=${userId}`, { method: 'GET' });
+    if (!userId) return [];
+    const result = await apiRequest(`/api/notifications?userId=${userId}`, { method: 'GET' });
+    return Array.isArray(result) ? result : [];
   } catch (error) {
     console.error('Error fetching notifications:', error);
     return [];
   }
 };
 
-export const fetchUnreadNotifications = async (userId: number) => {
-  try {
-    if (!userId) {
-      console.warn('fetchUnreadNotifications called without userId');
-      return [];
-    }
-    return await apiRequest(`/api/notifications?userId=${userId}&unread=true`, { method: 'GET' });
-  } catch (error) {
-    console.error('Error fetching unread notifications:', error);
-    return [];
-  }
-};
-
-export const markNotificationRead = async (notificationId: string, userId: number) => {
-  return apiRequest(`/api/notifications/${notificationId}/read`, {
-    method: 'POST',
-    body: JSON.stringify({ userId }),
-  });
-};
-
-export const markAllNotificationsRead = async (userId: number) => {
+export const markAllNotificationsRead = async (userId: number): Promise<any> => {
   return apiRequest('/api/notifications/read-all', {
     method: 'POST',
-    body: JSON.stringify({ userId }),
-  });
-};
-
-// ===== REACTIONS API =====
-// Connects to: api/reactions/route.ts
-
-export const addReaction = async (data: { 
-  postId?: string; 
-  commentId?: string; 
-  type: string;
-  userId: number;
-}) => {
-  return apiRequest('/api/reactions', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-};
-
-export const removeReaction = async (reactionId: string, userId: number) => {
-  return apiRequest(`/api/reactions/${reactionId}?userId=${userId}`, {
-    method: 'DELETE',
+    body: JSON.stringify({ userId: Number(userId) }),
   });
 };
 
 // ===== FOLLOWS API =====
-// Connects to: api/follows/route.ts
 
-export const followUser = async (targetUserId: string, userId: number) => {
+export const followUser = async (targetUserId: string, userId: number): Promise<any> => {
   return apiRequest('/api/follows', {
     method: 'POST',
-    body: JSON.stringify({ targetUserId, userId }),
+    body: JSON.stringify({ 
+      targetUserId: Number(targetUserId), 
+      userId: Number(userId) 
+    }),
   });
 };
 
-export const unfollowUser = async (targetUserId: string, userId: number) => {
+export const unfollowUser = async (targetUserId: string, userId: number): Promise<any> => {
   return apiRequest(`/api/follows/${targetUserId}?userId=${userId}`, {
     method: 'DELETE',
   });
 };
 
-export const getFollowers = async (userId: string) => {
+export const getFollowers = async (userId: string): Promise<any[]> => {
   try {
-    return await apiRequest(`/api/follows/followers/${userId}`, { method: 'GET' });
+    const result = await apiRequest(`/api/follows/followers/${userId}`, { method: 'GET' });
+    return Array.isArray(result) ? result : [];
   } catch (error) {
     console.error('Error getting followers:', error);
     return [];
   }
 };
 
-export const getFollowing = async (userId: string) => {
+export const getFollowing = async (userId: string): Promise<any[]> => {
   try {
-    return await apiRequest(`/api/follows/following/${userId}`, { method: 'GET' });
+    const result = await apiRequest(`/api/follows/following/${userId}`, { method: 'GET' });
+    return Array.isArray(result) ? result : [];
   } catch (error) {
     console.error('Error getting following:', error);
     return [];
   }
 };
 
-// ===== AUTH & USER API =====
-// Connects to: api/auth/* (NextAuth)
+// ===== AUTH API =====
 
-export const login = async (email: string, password: string) => {
-  // For NextAuth, you might use signIn from next-auth/react
-  // This is a placeholder - adjust based on your NextAuth setup
-  const response = await apiRequest('/api/auth/signin', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
-  });
-  
-  if (response.token) {
-    await storeAuthToken(response.token);
-  }
-  
-  return response;
-};
-
-export const register = async (email: string, password: string, name: string) => {
-  const response = await apiRequest('/api/auth/register', {
-    method: 'POST',
-    body: JSON.stringify({ email, password, name }),
-  });
-  
-  if (response.token) {
-    await storeAuthToken(response.token);
-  }
-  
-  return response;
-};
-
-export const logout = async () => {
-  await clearAuthToken();
-  try {
-    return await apiRequest('/api/auth/signout', { method: 'POST' });
-  } catch (error) {
-    console.log('Logged out locally');
-    return { success: true };
-  }
-};
-
-export const getCurrentUser = async () => {
+export const getCurrentUser = async (): Promise<any> => {
   try {
     return await apiRequest('/api/auth/session', { method: 'GET' });
-    // Alternative if you have a dedicated endpoint:
-    // return await apiRequest('/api/users/me', { method: 'GET' });
   } catch (error) {
     console.error('Error getting current user:', error);
-    // Return mock user for development
-    return {
-      id: 'mock-user-id',
-      name: 'Test User',
-      email: 'test@example.com',
-      image: null,
-    };
-  }
-};
-
-// ===== TRENDING API =====
-// Connects to: api/posts/trending-tickers or similar
-
-export const fetchTrendingTickers = async () => {
-  try {
-    return await apiRequest('/api/posts/trending-tickers', { method: 'GET' });
-  } catch (error) {
-    console.error('Error fetching trending tickers:', error);
-    return [];
+    return null;
   }
 };
 
 // ===== IMAGE UPLOAD =====
-// Connects to: api/upload/route.ts
 
-export const uploadImage = async (uri: string) => {
+export const uploadImage = async (uri: string): Promise<{ url: string }> => {
+  console.log('📷 Starting image upload...');
+  console.log('📍 Image URI:', uri);
+
   const formData = new FormData();
   const filename = uri.split('/').pop() || 'image.jpg';
   const match = /\.(\w+)$/.exec(filename);
-  const type = match ? `image/${match[1]}` : 'image/jpeg';
+  const extension = match ? match[1].toLowerCase() : 'jpg';
+  
+  const mimeTypes: { [key: string]: string } = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+  };
+  const type = mimeTypes[extension] || 'image/jpeg';
 
-  formData.append('image', {
-    uri,
+  console.log('📦 File info:', { filename, extension, type });
+
+  // Format URI correctly for each platform
+  const fileUri = Platform.OS === 'ios' ? uri.replace('file://', '') : uri;
+
+  formData.append('file', {
+    uri: fileUri,
     name: filename,
-    type,
+    type: type,
   } as any);
 
   const token = await getAuthToken();
-  
+
   try {
+    console.log('🌐 Uploading to:', `${API_BASE_URL}/api/upload`);
+    
     const response = await fetch(`${API_BASE_URL}/api/upload`, {
       method: 'POST',
       headers: {
+        'Accept': 'application/json',
         ...(token && { 'Authorization': `Bearer ${token}` }),
-        // Don't set Content-Type for FormData
       },
       body: formData,
     });
 
+    console.log('📡 Upload response status:', response.status);
+
+    const responseText = await response.text();
+    console.log('📄 Upload response:', responseText?.substring(0, 200));
+
     if (!response.ok) {
-      throw new Error('Upload failed');
+      let errorMsg = `Upload failed with status ${response.status}`;
+      try {
+        const errData = JSON.parse(responseText);
+        errorMsg = errData.error || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
     }
 
-    return await response.json();
-  } catch (error) {
-    console.error('Error uploading image:', error);
+    const result = JSON.parse(responseText);
+    console.log('✅ Upload successful, URL:', result.url);
+    
+    if (!result.url) {
+      throw new Error('No URL in upload response');
+    }
+    
+    return { url: result.url };
+  } catch (error: any) {
+    console.error('❌ Upload error:', error?.message || error);
     throw error;
   }
+};
+
+// ===== SENTIMENT API =====
+
+export const voteSentiment = async (userId: number, postId: number, type: 'bullish' | 'bearish'): Promise<any> => {
+  return apiRequest('/api/sentiment', {
+    method: 'POST',
+    body: JSON.stringify({ userId, postId, type }),
+  });
+};
+
+export const getSentiment = async (postId: number, userId?: number): Promise<any> => {
+  let url = `/api/sentiment?postId=${postId}`;
+  if (userId) url += `&userId=${userId}`;
+  return apiRequest(url);
+};
+
+// ===== TRENDING API =====
+
+export const getTrendingTickers = async (timeframe: string = '24h', limit: number = 10): Promise<any> => {
+  return apiRequest(`/api/trending?timeframe=${timeframe}&limit=${limit}`);
+};
+
+// ===== WATCHLIST API =====
+
+export const getWatchlist = async (userId: number): Promise<any> => {
+  return apiRequest(`/api/watchlist?userId=${userId}`);
+};
+
+export const addToWatchlist = async (userId: number, ticker: string, notes?: string): Promise<any> => {
+  return apiRequest('/api/watchlist', {
+    method: 'POST',
+    body: JSON.stringify({ userId, ticker, notes }),
+  });
+};
+
+export const removeFromWatchlist = async (userId: number, ticker: string): Promise<any> => {
+  return apiRequest(`/api/watchlist?userId=${userId}&ticker=${ticker}`, {
+    method: 'DELETE',
+  });
+};
+
+// ===== KARMA API =====
+
+export const getUserKarma = async (userId: number): Promise<any> => {
+  return apiRequest(`/api/user/karma?userId=${userId}`);
 };
 
 // ===== DEFAULT EXPORT =====
 
 export default {
-  // Posts
   fetchPosts,
   createPost,
   deletePost,
   searchPosts,
-  
-  // Comments
   fetchComments,
   createComment,
   deleteComment,
-  
-  // Likes
   likePost,
   likeComment,
-  toggleLike,
-  
-  // Notifications
   fetchNotifications,
-  fetchUnreadNotifications,
-  markNotificationRead,
   markAllNotificationsRead,
-  
-  // Reactions
-  addReaction,
-  removeReaction,
-  
-  // Follows
   followUser,
   unfollowUser,
   getFollowers,
   getFollowing,
-  
-  // Auth
-  login,
-  register,
-  logout,
   getCurrentUser,
-  
-  // Helpers
-  fetchTrendingTickers,
   uploadImage,
-  
-  // Token management
   storeAuthToken,
   clearAuthToken,
+  voteSentiment,
+  getSentiment,
+  getTrendingTickers,
+  getWatchlist,
+  addToWatchlist,
+  removeFromWatchlist,
+  getUserKarma,
 };
-

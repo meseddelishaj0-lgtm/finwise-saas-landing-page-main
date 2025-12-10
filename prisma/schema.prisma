@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client"
+  output     = "../src/generated/prisma/client"
   engineType = "binary"
 }
 
@@ -8,25 +9,49 @@ datasource db {
 }
 
 model User {
-  id               Int           @id @default(autoincrement())
-  name             String?
-  email            String        @unique
-  password         String
-  createdAt        DateTime      @default(now())
-  stripeCustomerId String?
-  nextBillingDate  DateTime?
-  currentPlan      String?
-  updatedAt        DateTime      @default(now()) @updatedAt
-  posts            Post[]
-  comments         Comment[]
-  commentLikes     CommentLike[] @relation("UserCommentLikes")
-  likes            Like[]
-  reactions        Reaction[]
-  following        Follow[]      @relation("Following")
-  followers        Follow[]      @relation("Followers")
-  notifications       Notification[]     @relation("NotificationReceiver")
-  notificationsFrom   Notification[]     @relation("NotificationFromUser")
-  profileImage String?
+  id                    Int            @id @default(autoincrement())
+  name                  String?
+  email                 String         @unique
+  username              String?        @unique
+  bio                   String?
+  location              String?
+  website               String?
+  password              String
+  resetCode             String?
+  resetCodeExpiry       DateTime?
+  createdAt             DateTime       @default(now())
+  stripeCustomerId      String?
+  nextBillingDate       DateTime?
+  currentPlan           String?
+  updatedAt             DateTime       @default(now()) @updatedAt
+  subscriptionTier      String?        @default("free")
+  subscriptionExpiry    DateTime?
+  subscriptionProductId String?
+  subscriptionStatus    String?        @default("active")
+  subscriptionUpdatedAt DateTime?
+  karma                 Int            @default(0)
+  isVerified            Boolean        @default(false)
+  verifiedBadge         String?
+  posts                 Post[]
+  comments              Comment[]
+  commentLikes          CommentLike[]  @relation("UserCommentLikes")
+  likes                 Like[]
+  reactions             Reaction[]
+  following             Follow[]       @relation("Following")
+  followers             Follow[]       @relation("Followers")
+  notifications         Notification[] @relation("NotificationReceiver")
+  notificationsFrom     Notification[] @relation("NotificationFromUser")
+  profileImage          String?
+  bannerImage           String?
+  reportsMade           Report[]       @relation("ReportsMade")
+  reportsReceived       Report[]       @relation("ReportsReceived")
+  mutersOf              Mute[]         @relation("MutedRelation")
+  mutedUsers            Mute[]         @relation("MuterRelation")
+  blockedBy             Block[]        @relation("BlockedRelation")
+  blockedUsers          Block[]        @relation("BlockerRelation")
+  sentiments            Sentiment[]
+  mentionedIn           Mention[]      @relation("MentionedUser")
+  watchlist             WatchlistItem[]
 }
 
 model Forum {
@@ -40,21 +65,25 @@ model Forum {
 }
 
 model Post {
-  id           Int        @id @default(autoincrement())
-  title        String
-  content      String
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  forumId      Int
-  userId       Int
-  forum        Forum      @relation(fields: [forumId], references: [id])
-  user         User       @relation(fields: [userId], references: [id])
-  comments     Comment[]
-  likes        Like[]
-  commentLikes Int        @default(0)
-  mediaUrl     String?
-  reactions    Reaction[]
-  notifications       Notification[]
+  id            Int            @id @default(autoincrement())
+  title         String
+  content       String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  forumId       Int
+  userId        Int
+  forum         Forum          @relation(fields: [forumId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  comments      Comment[]
+  likes         Like[]
+  commentLikes  Int            @default(0)
+  mediaUrl      String?
+  reactions     Reaction[]
+  notifications Notification[]
+  reports       Report[]
+  sentiments    Sentiment[]
+  tickerMentions TickerMention[]
+  mentions      Mention[]
 }
 
 model Comment {
@@ -78,6 +107,7 @@ model Comment {
   replies           Comment[]     @relation("CommentReplies")
   likesViaLikeModel Like[]
   reactions         Reaction[]
+  reports           Report[]
 
   @@index([postId])
   @@index([parentId])
@@ -136,17 +166,125 @@ model Follow {
 }
 
 model Notification {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  actorId     Int?
-  type        String
-  postId      Int?
-  message     String
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  fromUserId  Int?
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  actorId    Int?
+  type       String
+  postId     Int?
+  message    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  fromUserId Int?
+
+  fromUser User? @relation("NotificationFromUser", fields: [fromUserId], references: [id])
+  user     User  @relation("NotificationReceiver", fields: [userId], references: [id])
+  post     Post? @relation(fields: [postId], references: [id])
+}
+
+model Report {
+  id             Int       @id @default(autoincrement())
+  reporterId     Int
+  reportedUserId Int?
+  postId         Int?
+  commentId      Int?
+  reason         String
+  description    String?
+  status         String    @default("pending")
+  priority       String?
+  resolution     String?
+  resolvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  reporter     User     @relation("ReportsMade", fields: [reporterId], references: [id])
+  reportedUser User?    @relation("ReportsReceived", fields: [reportedUserId], references: [id])
+  post         Post?    @relation(fields: [postId], references: [id])
+  comment      Comment? @relation(fields: [commentId], references: [id])
+}
+
+model Mute {
+  id       Int      @id @default(autoincrement())
+  oderId   Int
+  mutedId  Int
+  createdAt DateTime @default(now())
   
-  fromUser    User?    @relation("NotificationFromUser", fields: [fromUserId], references: [id])
-  user        User     @relation("NotificationReceiver", fields: [userId], references: [id])
-  post        Post?    @relation(fields: [postId], references: [id])
+  oder     User     @relation("MuterRelation", fields: [oderId], references: [id])
+  muted    User     @relation("MutedRelation", fields: [mutedId], references: [id])
+  
+  @@unique([oderId, mutedId], name: "oderId_mutedId")
+}
+
+model Block {
+  id         Int      @id @default(autoincrement())
+  blockerId  Int
+  blockedId  Int
+  createdAt  DateTime @default(now())
+
+  blocker    User     @relation("BlockerRelation", fields: [blockerId], references: [id])
+  blocked    User     @relation("BlockedRelation", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId], name: "blockerId_blockedId")
+}
+
+// Sentiment voting (Bullish/Bearish like StockTwits)
+model Sentiment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  postId    Int
+  type      String   // "bullish" or "bearish"
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+}
+
+// Ticker mentions ($AAPL, $TSLA, etc.)
+model TickerMention {
+  id        Int      @id @default(autoincrement())
+  ticker    String   // e.g., "AAPL", "TSLA"
+  postId    Int
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([ticker])
+  @@index([postId])
+}
+
+// User mentions (@username)
+model Mention {
+  id              Int      @id @default(autoincrement())
+  mentionedUserId Int
+  postId          Int
+  createdAt       DateTime @default(now())
+
+  mentionedUser   User     @relation("MentionedUser", fields: [mentionedUserId], references: [id], onDelete: Cascade)
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([mentionedUserId])
+  @@index([postId])
+}
+
+// Watchlist items (add stocks to watchlist from posts)
+model WatchlistItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  ticker    String
+  notes     String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ticker])
+}
+
+// Trending tickers (aggregated data)
+model TrendingTicker {
+  id           Int      @id @default(autoincrement())
+  ticker       String   @unique
+  mentionCount Int      @default(0)
+  sentiment    Float?   // -1 to 1 (bearish to bullish)
+  lastUpdated  DateTime @default(now())
 }

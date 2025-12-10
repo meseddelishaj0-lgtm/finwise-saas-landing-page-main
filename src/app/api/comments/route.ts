@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const comments = await prisma.comment.findMany({
       where: { postId: parseInt(postId, 10) },
       include: {
-        user: { select: { id: true, name: true, email: true } },
+        user: { select: { id: true, name: true, email: true, username: true, profileImage: true } },
         _count: { select: { likes: true } },
       },
       orderBy: { createdAt: "asc" },
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         userId: user.id,
       },
       include: {
-        user: { select: { id: true, name: true, email: true } },
+        user: { select: { id: true, name: true, email: true, username: true, profileImage: true } },
         _count: { select: { likes: true } },
       }
     });

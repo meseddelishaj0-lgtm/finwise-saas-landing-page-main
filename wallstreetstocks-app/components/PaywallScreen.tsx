@@ -1,0 +1,552 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { PurchasesPackage } from 'react-native-purchases';
+import { Ionicons } from '@expo/vector-icons';
+import { useSubscription, PRODUCT_IDS } from '../context/SubscriptionContext';
+
+const { width } = Dimensions.get('window');
+
+// Feature lists for each tier
+const TIER_FEATURES: Record<string, string[]> = {
+  [PRODUCT_IDS.GOLD_MONTHLY]: [
+    'Ad-free experience',
+    'Basic stock analysis',
+    'Watchlist (up to 20 stocks)',
+    'Daily market summary',
+    'Email support',
+  ],
+  [PRODUCT_IDS.PLATINUM_MONTHLY]: [
+    'Everything in Gold',
+    'Advanced stock analysis',
+    'AI-powered insights',
+    'Unlimited watchlists',
+    'Real-time alerts',
+    'Priority support',
+  ],
+  [PRODUCT_IDS.DIAMOND_MONTHLY]: [
+    'Everything in Platinum',
+    'Exclusive research reports',
+    'Portfolio optimization',
+    'Custom screeners',
+    'API access',
+    'Dedicated account manager',
+  ],
+};
+
+const TIER_COLORS: Record<string, string> = {
+  [PRODUCT_IDS.GOLD_MONTHLY]: '#FFD700',
+  [PRODUCT_IDS.PLATINUM_MONTHLY]: '#E5E4E2',
+  [PRODUCT_IDS.DIAMOND_MONTHLY]: '#B9F2FF',
+};
+
+const TIER_NAMES: Record<string, string> = {
+  [PRODUCT_IDS.GOLD_MONTHLY]: 'Gold',
+  [PRODUCT_IDS.PLATINUM_MONTHLY]: 'Platinum',
+  [PRODUCT_IDS.DIAMOND_MONTHLY]: 'Diamond',
+};
+
+interface SubscriptionCardProps {
+  pkg: PurchasesPackage;
+  isSelected: boolean;
+  onSelect: () => void;
+  isPopular?: boolean;
+}
+
+function SubscriptionCard({ pkg, isSelected, onSelect, isPopular }: SubscriptionCardProps) {
+  const productId = pkg.product.identifier;
+  const tierColor = TIER_COLORS[productId] || '#666';
+  const tierName = TIER_NAMES[productId] || 'Premium';
+  const features = TIER_FEATURES[productId] || [];
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.card,
+        isSelected && styles.cardSelected,
+        isSelected && { borderColor: tierColor },
+      ]}
+      onPress={onSelect}
+      activeOpacity={0.8}
+    >
+      {isPopular && (
+        <View style={[styles.popularBadge, { backgroundColor: tierColor }]}>
+          <Text style={styles.popularText}>MOST POPULAR</Text>
+        </View>
+      )}
+      
+      <View style={styles.cardHeader}>
+        <View style={[styles.tierBadge, { backgroundColor: tierColor }]}>
+          <Text style={styles.tierBadgeText}>{tierName}</Text>
+        </View>
+        
+        <View style={styles.priceContainer}>
+          <Text style={styles.price}>{pkg.product.priceString}</Text>
+          <Text style={styles.period}>/month</Text>
+        </View>
+      </View>
+
+      <View style={styles.featuresContainer}>
+        {features.map((feature, index) => (
+          <View key={index} style={styles.featureRow}>
+            <Ionicons name="checkmark-circle" size={18} color={tierColor} />
+            <Text style={styles.featureText}>{feature}</Text>
+          </View>
+        ))}
+      </View>
+
+      {isSelected && (
+        <View style={[styles.selectedIndicator, { backgroundColor: tierColor }]}>
+          <Ionicons name="checkmark" size={20} color="#000" />
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+export default function PaywallScreen() {
+  const {
+    packages,
+    isLoading,
+    isPremium,
+    loadOfferings,
+    purchase,
+    restore,
+    error,
+  } = useSubscription();
+
+  const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+
+  useEffect(() => {
+    loadOfferings();
+  }, []);
+
+  useEffect(() => {
+    // Auto-select platinum (middle tier) as default
+    if (packages.length > 0 && !selectedPackage) {
+      const platinumPkg = packages.find(
+        (pkg: PurchasesPackage) => pkg.product.identifier === PRODUCT_IDS.PLATINUM_MONTHLY
+      );
+      setSelectedPackage(platinumPkg || packages[0]);
+    }
+  }, [packages]);
+
+  const handlePurchase = async () => {
+    if (!selectedPackage) {
+      Alert.alert('Error', 'Please select a subscription plan');
+      return;
+    }
+
+    setIsPurchasing(true);
+    
+    try {
+      const success = await purchase(selectedPackage);
+      
+      if (success) {
+        Alert.alert(
+          'Success!',
+          'Welcome to WallStreetStocks Premium! Your subscription is now active.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      }
+    } catch (err) {
+      // Error is handled in context
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setIsPurchasing(true);
+    
+    try {
+      const success = await restore();
+      
+      if (success) {
+        Alert.alert(
+          'Restored!',
+          'Your subscription has been restored.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      } else {
+        Alert.alert('No Purchases Found', 'We couldn\'t find any previous purchases to restore.');
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to restore purchases. Please try again.');
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const handleClose = () => {
+    router.back();
+  };
+
+  // Sort packages by tier (Gold, Platinum, Diamond)
+  const sortedPackages = [...packages].sort((a, b) => {
+    const tierOrder: Record<string, number> = {
+      [PRODUCT_IDS.GOLD_MONTHLY]: 1,
+      [PRODUCT_IDS.PLATINUM_MONTHLY]: 2,
+      [PRODUCT_IDS.DIAMOND_MONTHLY]: 3,
+    };
+    return (tierOrder[a.product.identifier] || 0) - (tierOrder[b.product.identifier] || 0);
+  });
+
+  if (isPremium) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <Ionicons name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.alreadyPremiumContainer}>
+          <Ionicons name="checkmark-circle" size={80} color="#4CAF50" />
+          <Text style={styles.alreadyPremiumTitle}>You're Premium!</Text>
+          <Text style={styles.alreadyPremiumText}>
+            You already have an active subscription. Enjoy all premium features!
+          </Text>
+          <TouchableOpacity style={styles.backButton} onPress={handleClose}>
+            <Text style={styles.backButtonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+          <Ionicons name="close" size={28} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Upgrade to Premium</Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      {isLoading && packages.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.loadingText}>Loading plans...</Text>
+        </View>
+      ) : (
+        <>
+          <ScrollView 
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.heroSection}>
+              <Text style={styles.heroTitle}>Unlock Premium Features</Text>
+              <Text style={styles.heroSubtitle}>
+                Get access to advanced stock analysis, AI insights, and more.
+              </Text>
+            </View>
+
+            <View style={styles.cardsContainer}>
+              {sortedPackages.map((pkg, index) => (
+                <SubscriptionCard
+                  key={pkg.identifier}
+                  pkg={pkg}
+                  isSelected={selectedPackage?.identifier === pkg.identifier}
+                  onSelect={() => setSelectedPackage(pkg)}
+                  isPopular={pkg.product.identifier === PRODUCT_IDS.PLATINUM_MONTHLY}
+                />
+              ))}
+            </View>
+
+            {error && (
+              <Text style={styles.errorText}>{error}</Text>
+            )}
+
+            <View style={styles.termsContainer}>
+              <Text style={styles.termsText}>
+                Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period.
+              </Text>
+              <View style={styles.termsLinks}>
+                <TouchableOpacity>
+                  <Text style={styles.termsLink}>Terms of Service</Text>
+                </TouchableOpacity>
+                <Text style={styles.termsDivider}>•</Text>
+                <TouchableOpacity>
+                  <Text style={styles.termsLink}>Privacy Policy</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[
+                styles.purchaseButton,
+                (isPurchasing || !selectedPackage) && styles.purchaseButtonDisabled,
+              ]}
+              onPress={handlePurchase}
+              disabled={isPurchasing || !selectedPackage}
+            >
+              {isPurchasing ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={styles.purchaseButtonText}>
+                  Subscribe Now
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.restoreButton}
+              onPress={handleRestore}
+              disabled={isPurchasing}
+            >
+              <Text style={styles.restoreButtonText}>Restore Purchases</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  placeholder: {
+    width: 36,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#888',
+    marginTop: 12,
+    fontSize: 16,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  heroSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingTop: 8,
+  },
+  heroTitle: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  heroSubtitle: {
+    color: '#888',
+    fontSize: 16,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  cardsContainer: {
+    gap: 16,
+  },
+  card: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#333',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  cardSelected: {
+    borderWidth: 2,
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderBottomLeftRadius: 12,
+  },
+  popularText: {
+    color: '#000',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  tierBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  tierBadgeText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  price: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  period: {
+    color: '#888',
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  featuresContainer: {
+    gap: 10,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  featureText: {
+    color: '#ccc',
+    fontSize: 14,
+    flex: 1,
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#ff4444',
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 14,
+  },
+  termsContainer: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  termsText: {
+    color: '#666',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 20,
+  },
+  termsLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  termsLink: {
+    color: '#888',
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+  termsDivider: {
+    color: '#666',
+    marginHorizontal: 8,
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#222',
+  },
+  purchaseButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  purchaseButtonDisabled: {
+    opacity: 0.6,
+  },
+  purchaseButtonText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  restoreButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  restoreButtonText: {
+    color: '#888',
+    fontSize: 14,
+  },
+  alreadyPremiumContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  alreadyPremiumTitle: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  alreadyPremiumText: {
+    color: '#888',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  backButton: {
+    marginTop: 30,
+    backgroundColor: '#333',
+    paddingHorizontal: 40,
+    paddingVertical: 14,
+    borderRadius: 10,
+  },
+  backButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});

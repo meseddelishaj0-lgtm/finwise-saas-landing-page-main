@@ -1,6 +1,6 @@
-import { PrismaClient } from '../generated/prisma/client'
+import { PrismaClient } from '@/generated/prisma/client/client'
 import { PrismaNeon } from '@prisma/adapter-neon'
-import { neonConfig, Pool } from '@neondatabase/serverless'
+import { neonConfig } from '@neondatabase/serverless'
 
 // Use fetch-based queries for serverless (no WebSocket needed)
 neonConfig.poolQueryViaFetch = true
@@ -20,3 +20,4 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export default prisma
+
