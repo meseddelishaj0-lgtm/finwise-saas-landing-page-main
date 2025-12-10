@@ -121,13 +121,13 @@ export async function POST(req: NextRequest) {
 
     // Extract tickers ($AAPL, $TSLA) from content
     const tickerRegex = /\$([A-Za-z]{1,5})\b/g;
-    const tickerMatches = content.match(tickerRegex) || [];
-    const tickers = [...new Set(tickerMatches.map((m: string) => m.substring(1).toUpperCase()))];
+    const tickerMatches: string[] = (content.match(tickerRegex) || []) as string[];
+    const tickers: string[] = Array.from(new Set(tickerMatches.map((m) => m.substring(1).toUpperCase())));
 
     // Extract mentions (@username) from content
     const mentionRegex = /@([A-Za-z0-9_]{1,30})\b/g;
-    const mentionMatches = content.match(mentionRegex) || [];
-    const mentions = [...new Set(mentionMatches.map((m: string) => m.substring(1).toLowerCase()))];
+    const mentionMatches: string[] = (content.match(mentionRegex) || []) as string[];
+    const mentions: string[] = Array.from(new Set(mentionMatches.map((m) => m.substring(1).toLowerCase())));
 
     const newPost = await prisma.post.create({
       data: {
