@@ -1,17 +1,15 @@
 import { PrismaClient } from '@/generated/prisma/client/client'
 import { PrismaNeon } from '@prisma/adapter-neon'
-import { Pool, neonConfig } from '@neondatabase/serverless'
+import { neonConfig } from '@neondatabase/serverless'
 
-// Use HTTP fetch-based queries for serverless (better for writes)
+// Enable fetch-based queries for Vercel Edge / serverless environments
 neonConfig.poolQueryViaFetch = true
-neonConfig.fetchConnectionCache = true
 
-// Use the pooler connection string
+// Use the database connection string
 const connectionString = process.env.DATABASE_URL!
 
-// Create a Pool for better connection management
-const pool = new Pool({ connectionString })
-const adapter = new PrismaNeon(pool)
+// Create adapter with connection string (NOT Pool for serverless)
+const adapter = new PrismaNeon({ connectionString })
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
