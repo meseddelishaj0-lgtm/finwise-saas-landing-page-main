@@ -174,7 +174,14 @@ export default function Signup() {
       const userInfo = await userInfoResponse.json();
       
       await socialLogin(userInfo.email, userInfo.name, userInfo.picture, 'google');
-      router.replace('/(tabs)');
+      
+      // Social login users should always go to profile setup
+      const { isNewUser: newUser, user } = useAuth.getState();
+      if (newUser || !user?.profileComplete) {
+        router.replace('/profile-setup');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Google sign-in failed');
     } finally {
@@ -216,7 +223,14 @@ export default function Signup() {
       if (!fullName) fullName = appleEmail.split('@')[0];
 
       await socialLogin(appleEmail, fullName, undefined, 'apple');
-      router.replace('/(tabs)');
+      
+      // Social login users should always go to profile setup
+      const { isNewUser: newUser, user } = useAuth.getState();
+      if (newUser || !user?.profileComplete) {
+        router.replace('/profile-setup');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (error: any) {
       if (error.code !== 'ERR_CANCELED') {
         Alert.alert('Error', error.message || 'Apple sign-in failed');

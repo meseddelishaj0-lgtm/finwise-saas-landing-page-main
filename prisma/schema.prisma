@@ -32,6 +32,7 @@ model User {
   karma                 Int            @default(0)
   isVerified            Boolean        @default(false)
   verifiedBadge         String?
+  profileComplete       Boolean        @default(false)
   posts                 Post[]
   comments              Comment[]
   commentLikes          CommentLike[]  @relation("UserCommentLikes")

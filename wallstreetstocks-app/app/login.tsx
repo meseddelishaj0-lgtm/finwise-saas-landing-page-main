@@ -40,7 +40,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login, socialLogin } = useAuth();
+  const { login, socialLogin, isNewUser } = useAuth();
   const router = useRouter();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -88,7 +88,14 @@ export default function Login() {
       const userInfo = await userInfoResponse.json();
       
       await socialLogin(userInfo.email, userInfo.name, userInfo.picture, 'google');
-      router.replace('/(tabs)');
+      
+      // Check if new user needs profile setup
+      const { isNewUser: newUser, user } = useAuth.getState();
+      if (newUser || !user?.profileComplete) {
+        router.replace('/profile-setup');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Google sign-in failed');
     } finally {
@@ -130,7 +137,14 @@ export default function Login() {
       if (!fullName) fullName = appleEmail.split('@')[0];
 
       await socialLogin(appleEmail, fullName, undefined, 'apple');
-      router.replace('/(tabs)');
+      
+      // Check if new user needs profile setup
+      const { isNewUser: newUser, user } = useAuth.getState();
+      if (newUser || !user?.profileComplete) {
+        router.replace('/profile-setup');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (error: any) {
       if (error.code !== 'ERR_CANCELED') {
         Alert.alert('Error', error.message || 'Apple sign-in failed');

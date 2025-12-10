@@ -13,20 +13,33 @@ interface User {
   name: string;
   username?: string;
   profileImage?: string;
+  bio?: string;
+  profileComplete?: boolean;
+}
+
+interface ProfileUpdateData {
+  name?: string;
+  username?: string;
+  bio?: string;
+  profileImage?: string;
+  profileComplete?: boolean;
 }
 
 interface AuthState {
   user: User | null;
   token: string | null;
   loading: boolean;
+  isNewUser: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name?: string, username?: string) => Promise<void>;
   socialLogin: (email: string, name?: string, profileImage?: string, provider?: 'google' | 'apple') => Promise<void>;
+  updateProfile: (data: ProfileUpdateData) => Promise<void>;
   forgotPassword: (email: string) => Promise<{ message: string; devCode?: string }>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   init: () => Promise<void>;
   getToken: () => Promise<string | null>;
+  setIsNewUser: (value: boolean) => void;
 }
 
 export const useAuth = create<AuthState>()(
@@ -35,6 +48,11 @@ export const useAuth = create<AuthState>()(
       user: null,
       token: null,
       loading: true,
+      isNewUser: false,
+
+      setIsNewUser: (value: boolean) => {
+        set({ isNewUser: value });
+      },
 
       init: async () => {
         try {
@@ -190,6 +208,9 @@ export const useAuth = create<AuthState>()(
           
           await SecureStore.setItemAsync(TOKEN_KEY, data.token);
           
+          // Check if this is a new user (no username set or isNewUser flag from API)
+          const isNewUser = data.isNewUser || !data.user.username || !data.user.profileComplete;
+          
           set({ 
             user: { 
               id: data.user.id.toString(),
@@ -197,14 +218,70 @@ export const useAuth = create<AuthState>()(
               name: data.user.name,
               username: data.user.username || undefined,
               profileImage: data.user.profileImage || undefined,
+              bio: data.user.bio || undefined,
+              profileComplete: data.user.profileComplete || false,
             },
             token: data.token,
-            loading: false 
+            loading: false,
+            isNewUser,
           });
 
-          console.log('Social login complete!');
+          console.log('Social login complete! isNewUser:', isNewUser);
         } catch (error: any) {
           console.error('Social login error:', error.message);
+          throw error;
+        }
+      },
+
+      // Update Profile
+      updateProfile: async (data: ProfileUpdateData) => {
+        const { token, user } = get();
+        
+        if (!token || !user) {
+          throw new Error('Not authenticated');
+        }
+
+        console.log('=== UPDATE PROFILE ===');
+        console.log('Data:', data);
+
+        try {
+          const response = await fetch(`${API_URL}/api/user/profile`, {
+            method: 'PUT',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+          });
+
+          console.log('Status:', response.status);
+          const responseText = await response.text();
+          console.log('Response:', responseText);
+
+          if (!response.ok) {
+            const error = JSON.parse(responseText);
+            throw new Error(error.error || 'Failed to update profile');
+          }
+
+          const result = JSON.parse(responseText);
+          
+          // Update local user state
+          set({ 
+            user: { 
+              ...user,
+              name: result.user.name || user.name,
+              username: result.user.username || user.username,
+              bio: result.user.bio || user.bio,
+              profileImage: result.user.profileImage || user.profileImage,
+              profileComplete: result.user.profileComplete ?? true,
+            },
+            isNewUser: false,
+          });
+
+          console.log('Profile updated!');
+        } catch (error: any) {
+          console.error('Update profile error:', error.message);
           throw error;
         }
       },

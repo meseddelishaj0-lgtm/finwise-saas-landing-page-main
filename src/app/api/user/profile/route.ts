@@ -1,7 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
+
+// Helper to get user ID from either query param or JWT token
+async function getUserIdFromRequest(request: NextRequest): Promise<number | null> {
+  // First check query param
+  const { searchParams } = new URL(request.url);
+  const queryUserId = searchParams.get('userId');
+  if (queryUserId) {
+    return parseInt(queryUserId);
+  }
+  
+  // Then check Authorization header
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
+      return parseInt(decoded.userId);
+    } catch (error) {
+      console.error('JWT verification failed:', error);
+      return null;
+    }
+  }
+  
+  return null;
+}
 
 // GET /api/user/profile - Get current user's profile
 export async function GET(request: NextRequest) {
@@ -57,8 +83,24 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     console.log('Profile update received:', JSON.stringify(body));
-    const { userId, username, name, bio, location, website, profileImage, bannerImage } = body;
-    console.log('Parsed values - name:', name, 'username:', username);
+    const { userId: bodyUserId, username, name, bio, location, website, profileImage, bannerImage, profileComplete } = body;
+    
+    // Get userId from body or JWT token
+    let userId = bodyUserId;
+    if (!userId) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
+          userId = decoded.userId;
+        } catch (error) {
+          return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+        }
+      }
+    }
+    
+    console.log('Parsed values - userId:', userId, 'name:', name, 'username:', username);
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
@@ -91,13 +133,14 @@ export async function PUT(request: NextRequest) {
     }
 
     const updateData = {
-      ...(username && { username }),
+      ...(username && { username: username.toLowerCase() }),
       ...(name !== undefined && { name }),
       ...(bio !== undefined && { bio }),
       ...(location !== undefined && { location }),
       ...(website !== undefined && { website }),
       ...(profileImage !== undefined && { profileImage }),
       ...(bannerImage !== undefined && { bannerImage }),
+      ...(profileComplete !== undefined && { profileComplete }),
     };
     console.log('Update data:', JSON.stringify(updateData));
 
@@ -114,6 +157,7 @@ export async function PUT(request: NextRequest) {
         website: true,
         profileImage: true,
         bannerImage: true,
+        profileComplete: true,
         createdAt: true,
         subscriptionTier: true,
         _count: {
@@ -127,7 +171,7 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(updatedUser);
+    return NextResponse.json({ user: updatedUser });
   } catch (error) {
     console.error('Error updating user profile:', error);
     return NextResponse.json(
