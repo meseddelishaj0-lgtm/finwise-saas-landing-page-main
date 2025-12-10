@@ -242,6 +242,7 @@ export const useAuth = create<AuthState>()(
         }
 
         console.log('=== UPDATE PROFILE ===');
+        console.log('User ID:', user.id);
         console.log('Data:', data);
 
         try {
@@ -252,7 +253,10 @@ export const useAuth = create<AuthState>()(
               'Accept': 'application/json',
               'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify({
+              ...data,
+              userId: user.id, // Always include userId in body
+            }),
           });
 
           console.log('Status:', response.status);
