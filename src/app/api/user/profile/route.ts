@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
+    // Force fresh database query (no caching)
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
       select: {
@@ -68,7 +69,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    // Return with no-cache headers
+    return new NextResponse(JSON.stringify(user), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
   } catch (error) {
     console.error('Error fetching user profile:', error);
     return NextResponse.json(
