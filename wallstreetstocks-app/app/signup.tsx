@@ -96,7 +96,7 @@ export default function Signup() {
     usernameCheckTimeout.current = setTimeout(async () => {
       setCheckingUsername(true);
       try {
-        const response = await fetch(`${API_URL}/api/user/check-username?username=${cleaned}`);
+        const response = await fetch(`${API_URL}/api/check-username?username=${cleaned}`);
         const data = await response.json();
         if (data.available) {
           setUsernameAvailable(true);
