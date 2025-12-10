@@ -97,7 +97,17 @@ export default function Signup() {
       setCheckingUsername(true);
       try {
         const response = await fetch(`${API_URL}/api/check-username?username=${cleaned}`);
-        const data = await response.json();
+        const text = await response.text();
+        
+        // Check if response is JSON
+        if (text.startsWith('<') || text.startsWith('<!')) {
+          // API returned HTML (404 page), skip check
+          console.log('Username check API not available, skipping');
+          setUsernameAvailable(true);
+          return;
+        }
+        
+        const data = JSON.parse(text);
         if (data.available) {
           setUsernameAvailable(true);
           setUsernameError('');
@@ -106,7 +116,8 @@ export default function Signup() {
           setUsernameError('Username is already taken');
         }
       } catch (error) {
-        console.error('Username check failed:', error);
+        console.log('Username check failed, allowing username:', error);
+        setUsernameAvailable(true);
       } finally {
         setCheckingUsername(false);
       }

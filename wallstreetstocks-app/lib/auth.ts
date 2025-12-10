@@ -263,22 +263,34 @@ export const useAuth = create<AuthState>()(
           const responseText = await response.text();
           console.log('Response:', responseText);
 
+          // Check if response is HTML (error page)
+          if (responseText.startsWith('<') || responseText.startsWith('<!')) {
+            throw new Error('Server error - please try again');
+          }
+
           if (!response.ok) {
-            const error = JSON.parse(responseText);
-            throw new Error(error.error || 'Failed to update profile');
+            try {
+              const error = JSON.parse(responseText);
+              throw new Error(error.error || 'Failed to update profile');
+            } catch {
+              throw new Error('Failed to update profile');
+            }
           }
 
           const result = JSON.parse(responseText);
+          
+          // Handle both response formats: { user: {...} } or direct user object
+          const updatedUser = result.user || result;
           
           // Update local user state
           set({ 
             user: { 
               ...user,
-              name: result.user.name || user.name,
-              username: result.user.username || user.username,
-              bio: result.user.bio || user.bio,
-              profileImage: result.user.profileImage || user.profileImage,
-              profileComplete: result.user.profileComplete ?? true,
+              name: updatedUser.name || data.name || user.name,
+              username: updatedUser.username || data.username || user.username,
+              bio: updatedUser.bio || data.bio || user.bio,
+              profileImage: updatedUser.profileImage || user.profileImage,
+              profileComplete: updatedUser.profileComplete ?? data.profileComplete ?? true,
             },
             isNewUser: false,
           });
