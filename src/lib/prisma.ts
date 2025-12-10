@@ -1,13 +1,17 @@
 import { PrismaClient } from '@/generated/prisma/client/client'
 import { PrismaNeon } from '@prisma/adapter-neon'
-import { neonConfig } from '@neondatabase/serverless'
+import { Pool, neonConfig } from '@neondatabase/serverless'
 
-// Use fetch-based queries for serverless (no WebSocket needed)
+// Use HTTP fetch-based queries for serverless (better for writes)
 neonConfig.poolQueryViaFetch = true
+neonConfig.fetchConnectionCache = true
 
+// Use the pooler connection string
 const connectionString = process.env.DATABASE_URL!
 
-const adapter = new PrismaNeon({ connectionString })
+// Create a Pool for better connection management
+const pool = new Pool({ connectionString })
+const adapter = new PrismaNeon(pool)
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
