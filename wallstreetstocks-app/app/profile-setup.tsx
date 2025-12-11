@@ -1,119 +1,116 @@
-// app/profile-setup.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
+  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth';
+import { useUserProfile } from '@/context/UserProfileContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const API_URL = 'https://www.wallstreetstocks.ai';
 
-export default function ProfileSetup() {
-  const { user, token, updateProfile } = useAuth();
-  const router = useRouter();
+export default function ProfileSetupScreen() {
+  const { user, updateProfile } = useAuth();
+  const { refreshProfile } = useUserProfile();
   
-  const [displayName, setDisplayName] = useState(user?.name || '');
+  const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(false);
-  const [usernameError, setUsernameError] = useState('');
-  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
-  const usernameCheckTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameError, setUsernameError] = useState('');
 
-  // Generate username suggestion from name or email
+  // Pre-fill with existing data
   useEffect(() => {
-    if (user && !username) {
-      const baseName = (user.name || user.email.split('@')[0])
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '');
-      const suggestion = baseName.substring(0, 12) + Math.floor(Math.random() * 1000);
-      setUsername(suggestion);
-      validateUsername(suggestion);
+    if (user) {
+      if (user.name) setDisplayName(user.name);
+      if (user.username) setUsername(user.username);
+      if (user.bio) setBio(user.bio);
     }
   }, [user]);
 
-  const validateUsername = (text: string) => {
-    const cleaned = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
-    setUsername(cleaned);
-    setUsernameAvailable(null);
-    
-    if (usernameCheckTimeout.current) {
-      clearTimeout(usernameCheckTimeout.current);
-    }
-    
-    if (cleaned.length === 0) {
-      setUsernameError('');
+  // Debounced username check
+  const checkUsername = useCallback((value: string) => {
+    if (!value || value.length < 3) {
+      setUsernameAvailable(null);
+      setUsernameError(value.length > 0 ? 'Username must be at least 3 characters' : '');
       return;
     }
-    
-    if (cleaned.length < 3) {
-      setUsernameError('Username must be at least 3 characters');
-      return;
-    }
-    
-    if (cleaned.length > 20) {
+
+    if (value.length > 20) {
+      setUsernameAvailable(false);
       setUsernameError('Username must be 20 characters or less');
       return;
     }
-    
+
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+      setUsernameAvailable(false);
+      setUsernameError('Only letters, numbers, and underscores allowed');
+      return;
+    }
+
+    setCheckingUsername(true);
     setUsernameError('');
-    
-    usernameCheckTimeout.current = setTimeout(async () => {
-      setCheckingUsername(true);
+
+    // Debounce the API call
+    const timer = setTimeout(async () => {
       try {
-        const response = await fetch(`${API_URL}/api/check-username?username=${cleaned}`);
+        const response = await fetch(`${API_URL}/api/username/check?username=${value}`);
         const text = await response.text();
         
-        // Check if response is JSON
-        if (text.startsWith('<') || text.startsWith('<!')) {
-          // API returned HTML (404 page), skip check
-          console.log('Username check API not available, skipping');
-          setUsernameAvailable(true); // Allow username, will be validated on submit
+        // Check if response is HTML (404 page)
+        if (text.startsWith('<')) {
+          console.log('Username check API not available');
+          setUsernameAvailable(true);
+          setCheckingUsername(false);
           return;
         }
         
         const data = JSON.parse(text);
-        if (data.available) {
-          setUsernameAvailable(true);
-          setUsernameError('');
-        } else {
-          setUsernameAvailable(false);
+        setUsernameAvailable(data.available);
+        if (!data.available) {
           setUsernameError('Username is already taken');
         }
       } catch (error) {
-        console.log('Username check failed, allowing username:', error);
-        setUsernameAvailable(true); // Allow on error, will be validated on submit
+        console.log('Username check failed:', error);
+        setUsernameAvailable(true); // Allow on error, server will validate
       } finally {
         setCheckingUsername(false);
       }
     }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleUsernameChange = (value: string) => {
+    const cleaned = value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    setUsername(cleaned);
+    checkUsername(cleaned);
   };
 
-  const handleSaveProfile = async () => {
+  const handleSave = async () => {
     if (!displayName.trim()) {
       Alert.alert('Error', 'Please enter a display name');
       return;
     }
-    if (!username.trim()) {
-      Alert.alert('Error', 'Please choose a username');
+    
+    if (!username.trim() || username.length < 3) {
+      Alert.alert('Error', 'Please choose a username (at least 3 characters)');
       return;
     }
-    if (username.length < 3 || username.length > 20) {
-      Alert.alert('Error', 'Username must be 3-20 characters');
-      return;
-    }
-    if (usernameError || usernameAvailable === false) {
+
+    if (usernameAvailable === false) {
       Alert.alert('Error', 'Please choose an available username');
       return;
     }
@@ -124,8 +121,10 @@ export default function ProfileSetup() {
         name: displayName.trim(),
         username: username.toLowerCase(),
         bio: bio.trim() || undefined,
-        profileComplete: true,
       });
+      
+      // Refresh the profile context to get updated data
+      await refreshProfile();
       
       // Navigate to main app
       router.replace('/(tabs)');
@@ -137,150 +136,152 @@ export default function ProfileSetup() {
   };
 
   const handleSkip = () => {
-    // Allow skipping but still mark as having seen the setup
     Alert.alert(
       'Skip Profile Setup?',
-      'You can always update your profile later in Settings. Your username will be auto-generated.',
+      'You can set up your profile later in Settings.',
       [
         { text: 'Go Back', style: 'cancel' },
         { 
-          text: 'Skip for Now', 
-          onPress: async () => {
-            try {
-              // Generate a random username
-              const autoUsername = `user${Date.now().toString(36)}`;
-              await updateProfile({
-                username: autoUsername,
-                profileComplete: true,
-              });
-              router.replace('/(tabs)');
-            } catch (error) {
-              router.replace('/(tabs)');
-            }
-          }
+          text: 'Skip', 
+          onPress: () => router.replace('/(tabs)'),
         },
       ]
     );
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
       >
-        <View style={styles.header}>
-          <Ionicons name="person-circle-outline" size={80} color="#007AFF" />
-          <Text style={styles.title}>Set Up Your Profile</Text>
-          <Text style={styles.subtitle}>
-            Choose how you'll appear in the community
-          </Text>
-        </View>
-
-        <View style={styles.form}>
-          {/* Display Name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Display Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="How should we call you?"
-              placeholderTextColor="#666"
-              value={displayName}
-              onChangeText={setDisplayName}
-              autoCapitalize="words"
-              editable={!loading}
-              maxLength={50}
-            />
-            <Text style={styles.hint}>
-              This is shown on your posts and profile
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Set Up Your Profile</Text>
+            <Text style={styles.subtitle}>
+              Choose how you appear in the community
             </Text>
           </View>
 
-          {/* Username */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Username</Text>
-            <View style={styles.usernameRow}>
-              <View style={styles.usernameInputContainer}>
-                <Text style={styles.atSymbol}>@</Text>
+          {/* Form */}
+          <View style={styles.form}>
+            {/* Display Name */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Display Name</Text>
+              <TextInput
+                style={styles.input}
+                value={displayName}
+                onChangeText={setDisplayName}
+                placeholder="Your name"
+                placeholderTextColor="#666"
+                autoCapitalize="words"
+                maxLength={50}
+              />
+              <Text style={styles.hint}>
+                This is how your name appears on posts and comments
+              </Text>
+            </View>
+
+            {/* Username */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Username</Text>
+              <View style={styles.usernameContainer}>
+                <Text style={styles.usernamePrefix}>@</Text>
                 <TextInput
-                  style={[
-                    styles.usernameInput,
-                    usernameError ? styles.inputErrorBorder : 
-                    usernameAvailable === true ? styles.inputSuccessBorder : null
-                  ]}
-                  placeholder="your_username"
-                  placeholderTextColor="#666"
+                  style={styles.usernameInput}
                   value={username}
-                  onChangeText={validateUsername}
+                  onChangeText={handleUsernameChange}
+                  placeholder="username"
+                  placeholderTextColor="#666"
                   autoCapitalize="none"
                   autoCorrect={false}
-                  editable={!loading}
                   maxLength={20}
                 />
+                {checkingUsername && (
+                  <ActivityIndicator size="small" color="#FFD700" />
+                )}
+                {!checkingUsername && usernameAvailable === true && username.length >= 3 && (
+                  <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
+                )}
+                {!checkingUsername && usernameAvailable === false && (
+                  <Ionicons name="close-circle" size={20} color="#F44336" />
+                )}
               </View>
-              {checkingUsername && (
-                <ActivityIndicator size="small" color="#007AFF" style={styles.loader} />
+              {usernameError ? (
+                <Text style={styles.errorText}>{usernameError}</Text>
+              ) : (
+                <Text style={styles.hint}>
+                  Unique identifier for your profile (3-20 characters)
+                </Text>
               )}
             </View>
-            {usernameError ? (
-              <Text style={styles.errorText}>{usernameError}</Text>
-            ) : usernameAvailable === true ? (
-              <Text style={styles.successText}>✓ @{username} is available!</Text>
-            ) : (
-              <Text style={styles.hint}>
-                3-20 characters: letters, numbers, underscores
-              </Text>
-            )}
+
+            {/* Bio */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Bio (Optional)</Text>
+              <TextInput
+                style={[styles.input, styles.bioInput]}
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Tell others about yourself..."
+                placeholderTextColor="#666"
+                multiline
+                numberOfLines={3}
+                maxLength={160}
+              />
+              <Text style={styles.hint}>{bio.length}/160</Text>
+            </View>
           </View>
 
-          {/* Bio (Optional) */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Bio <Text style={styles.optional}>(optional)</Text></Text>
-            <TextInput
-              style={[styles.input, styles.bioInput]}
-              placeholder="Tell the community about yourself..."
-              placeholderTextColor="#666"
-              value={bio}
-              onChangeText={setBio}
-              multiline
-              numberOfLines={3}
-              editable={!loading}
-              maxLength={160}
-            />
-            <Text style={styles.charCount}>{bio.length}/160</Text>
+          {/* Preview */}
+          <View style={styles.preview}>
+            <Text style={styles.previewTitle}>Preview</Text>
+            <View style={styles.previewCard}>
+              <View style={styles.previewAvatar}>
+                <Text style={styles.previewAvatarText}>
+                  {displayName.charAt(0).toUpperCase() || '?'}
+                </Text>
+              </View>
+              <View style={styles.previewInfo}>
+                <Text style={styles.previewName}>
+                  {displayName || 'Your Name'}
+                </Text>
+                <Text style={styles.previewUsername}>
+                  @{username || 'username'}
+                </Text>
+              </View>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.saveButton, loading && styles.buttonDisabled]}
-            onPress={handleSaveProfile}
-            disabled={loading || !!usernameError || checkingUsername}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.saveButtonText}>Continue</Text>
-            )}
-          </TouchableOpacity>
+          {/* Buttons */}
+          <View style={styles.buttons}>
+            <TouchableOpacity
+              style={[
+                styles.saveButton,
+                (!displayName.trim() || !username.trim() || username.length < 3 || usernameAvailable === false) && 
+                styles.saveButtonDisabled
+              ]}
+              onPress={handleSave}
+              disabled={loading || !displayName.trim() || !username.trim() || username.length < 3 || usernameAvailable === false}
+            >
+              {loading ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={styles.saveButtonText}>Continue</Text>
+              )}
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkip}
-            disabled={loading}
-          >
-            <Text style={styles.skipButtonText}>Skip for now</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.note}>
-          You can change these anytime in your profile settings
-        </Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+              <Text style={styles.skipButtonText}>Skip for now</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -289,143 +290,148 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+  keyboardView: {
+    flex: 1,
+  },
   scrollContent: {
-    flexGrow: 1,
     padding: 24,
+    paddingBottom: 40,
   },
   header: {
-    alignItems: 'center',
-    marginTop: 40,
     marginBottom: 32,
+    alignItems: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
-    marginTop: 16,
+    color: '#FFF',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#999',
-    marginTop: 8,
+    color: '#888',
     textAlign: 'center',
   },
   form: {
-    marginBottom: 24,
+    gap: 24,
   },
   inputGroup: {
-    marginBottom: 20,
+    gap: 8,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  optional: {
-    color: '#666',
-    fontWeight: '400',
+    color: '#FFD700',
   },
   input: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#1A1A1A',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#fff',
+    color: '#FFF',
+    borderWidth: 1,
+    borderColor: '#333',
   },
   bioInput: {
     height: 100,
     textAlignVertical: 'top',
   },
-  hint: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 6,
-  },
-  charCount: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'right',
-    marginTop: 4,
-  },
-  usernameRow: {
+  usernameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  usernameInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1C1C1E',
+    backgroundColor: '#1A1A1A',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+    paddingHorizontal: 16,
   },
-  atSymbol: {
+  usernamePrefix: {
     fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
-    paddingLeft: 16,
+    color: '#888',
+    marginRight: 4,
   },
   usernameInput: {
     flex: 1,
     padding: 16,
-    paddingLeft: 4,
+    paddingLeft: 0,
     fontSize: 16,
-    color: '#fff',
+    color: '#FFF',
   },
-  inputErrorBorder: {
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-    borderRadius: 12,
-  },
-  inputSuccessBorder: {
-    borderWidth: 1,
-    borderColor: '#34C759',
-    borderRadius: 12,
-  },
-  loader: {
-    marginLeft: 12,
+  hint: {
+    fontSize: 12,
+    color: '#666',
   },
   errorText: {
     fontSize: 12,
-    color: '#FF3B30',
-    marginTop: 6,
+    color: '#F44336',
   },
-  successText: {
+  preview: {
+    marginTop: 32,
+    padding: 16,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 16,
+  },
+  previewTitle: {
     fontSize: 12,
-    color: '#34C759',
-    marginTop: 6,
+    color: '#888',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
-  buttonContainer: {
-    marginTop: 16,
+  previewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  previewAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewAvatarText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  previewInfo: {
+    flex: 1,
+  },
+  previewName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  previewUsername: {
+    fontSize: 14,
+    color: '#888',
+  },
+  buttons: {
+    marginTop: 32,
+    gap: 12,
   },
   saveButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#FFD700',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  saveButtonDisabled: {
+    backgroundColor: '#333',
   },
   saveButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
+    color: '#000',
   },
   skipButton: {
     padding: 16,
     alignItems: 'center',
-    marginTop: 8,
   },
   skipButtonText: {
-    color: '#666',
-    fontSize: 16,
-  },
-  note: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 24,
+    fontSize: 14,
+    color: '#888',
   },
 });

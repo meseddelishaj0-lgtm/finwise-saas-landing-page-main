@@ -1,64 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-
-export const PRODUCT_IDS = {
-  GOLD_MONTHLY: 'gold_monthly',
-  GOLD_YEARLY: 'gold_yearly',
-  PLATINUM_MONTHLY: 'platinum_monthly',
-  PLATINUM_YEARLY: 'platinum_yearly',
-  DIAMOND_MONTHLY: 'diamond_monthly',
-  DIAMOND_YEARLY: 'diamond_yearly',
-} as const;
-
-interface Subscription {
-  productId: string;
-  tier: number;
-  isActive: boolean;
-}
-
-interface SubscriptionContextType {
-  isPremium: boolean;
-  activeSubscription: Subscription | null;
-  hasFeatureAccess: (requiredTier: number) => boolean;
-  getActiveSubscriptionTier: () => number;
-}
-
-const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
-
-export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const [activeSubscription, setActiveSubscription] = useState<Subscription | null>(null);
-
-  const isPremium = activeSubscription?.isActive ?? false;
-
-  const getActiveSubscriptionTier = useCallback((): number => {
-    return activeSubscription?.tier ?? 0;
-  }, [activeSubscription]);
-
-  const hasFeatureAccess = useCallback((requiredTier: number): boolean => {
-    const currentTier = getActiveSubscriptionTier();
-    return currentTier >= requiredTier;
-  }, [getActiveSubscriptionTier]);
-
-  return (
-    <SubscriptionContext.Provider
-      value={{
-        isPremium,
-        activeSubscription,
-        hasFeatureAccess,
-        getActiveSubscriptionTier,
-      }}
-    >
-      {children}
-    </SubscriptionContext.Provider>
-  );
-}
-
-export function useSubscription(): SubscriptionContextType {
-  const context = useContext(SubscriptionContext);
-  if (context === undefined) {
-    throw new Error('useSubscription must be used within a SubscriptionProvider');
-  }
-  return context;
-}
+import { Alert } from 'react-native';
+import { router } from 'expo-router';
+import { useSubscription } from '../context/SubscriptionContext';
 
 // Feature tier requirements
 // 1 = Gold, 2 = Platinum, 3 = Diamond
@@ -223,4 +166,11 @@ export function useUpgradePrompt() {
   };
 }
 
-export { PRODUCT_IDS };
+export const PRODUCT_IDS = {
+  GOLD_MONTHLY: 'gold_monthly',
+  GOLD_YEARLY: 'gold_yearly',
+  PLATINUM_MONTHLY: 'platinum_monthly',
+  PLATINUM_YEARLY: 'platinum_yearly',
+  DIAMOND_MONTHLY: 'diamond_monthly',
+  DIAMOND_YEARLY: 'diamond_yearly',
+} as const;

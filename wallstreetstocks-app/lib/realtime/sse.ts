@@ -1,7 +1,7 @@
 // lib/realtime/sse.ts
 // React Native compatible - uses polling instead of EventSource
 
-const API_BASE_URL = 'https://wallstreetstocks.ai';
+const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
 export function openSSEConnection(
   userId: number,

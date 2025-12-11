@@ -1,93 +1,182 @@
-// utils/textParser.ts
-// Parse $TICKER and @username mentions from text
+// utils/textParser.tsx
+import React from 'react';
+import { Text, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
 
-export interface ParsedText {
-  tickers: string[];
-  mentions: string[];
-  formattedText: string;
+// Regex patterns
+const TICKER_REGEX = /\$([A-Za-z]{1,5})\b/g;  // $AAPL, $TSLA
+const MENTION_REGEX = /@([a-zA-Z0-9_]{3,20})\b/g;  // @username
+const HASHTAG_REGEX = /#([a-zA-Z0-9_]+)\b/g;  // #bullish
+
+interface ParsedSegment {
+  type: 'text' | 'ticker' | 'mention' | 'hashtag';
+  value: string;
+  raw: string;
 }
 
-// Extract all $TICKER mentions from text
-export function extractTickers(text: string): string[] {
-  const tickerRegex = /\$([A-Za-z]{1,5})\b/g;
-  const matches = text.match(tickerRegex) || [];
-  return [...new Set(matches.map(m => m.substring(1).toUpperCase()))];
-}
-
-// Extract all @username mentions from text
-export function extractMentions(text: string): string[] {
-  const mentionRegex = /@([A-Za-z0-9_]{1,30})\b/g;
-  const matches = text.match(mentionRegex) || [];
-  return [...new Set(matches.map(m => m.substring(1).toLowerCase()))];
-}
-
-// Parse text and return tickers, mentions, and formatted text
-export function parseText(text: string): ParsedText {
-  const tickers = extractTickers(text);
-  const mentions = extractMentions(text);
-  
-  return {
-    tickers,
-    mentions,
-    formattedText: text,
-  };
-}
-
-// Check if a string is a valid ticker format
-export function isValidTicker(ticker: string): boolean {
-  return /^[A-Za-z]{1,5}$/.test(ticker);
-}
-
-// Check if a string is a valid username format
-export function isValidUsername(username: string): boolean {
-  return /^[A-Za-z0-9_]{1,30}$/.test(username);
-}
-
-// Format content with clickable tickers and mentions (for display)
-export function formatContentForDisplay(content: string): {
-  parts: Array<{ type: 'text' | 'ticker' | 'mention'; value: string }>;
-} {
-  const parts: Array<{ type: 'text' | 'ticker' | 'mention'; value: string }> = [];
-  
-  // Combined regex for both tickers and mentions
-  const regex = /(\$[A-Za-z]{1,5})|(@[A-Za-z0-9_]{1,30})/g;
-  
+// Parse text into segments
+export function parseText(text: string): ParsedSegment[] {
+  const segments: ParsedSegment[] = [];
   let lastIndex = 0;
-  let match;
   
-  while ((match = regex.exec(content)) !== null) {
+  // Combined regex to find all special tokens
+  const combinedRegex = /(\$[A-Za-z]{1,5})|(@[a-zA-Z0-9_]{3,20})|(#[a-zA-Z0-9_]+)/g;
+  
+  let match;
+  while ((match = combinedRegex.exec(text)) !== null) {
     // Add text before this match
     if (match.index > lastIndex) {
-      parts.push({
+      segments.push({
         type: 'text',
-        value: content.substring(lastIndex, match.index),
+        value: text.slice(lastIndex, match.index),
+        raw: text.slice(lastIndex, match.index),
       });
     }
     
-    // Add the match
-    const matchValue = match[0];
-    if (matchValue.startsWith('$')) {
-      parts.push({
+    const token = match[0];
+    if (token.startsWith('$')) {
+      segments.push({
         type: 'ticker',
-        value: matchValue.substring(1).toUpperCase(),
+        value: token.slice(1).toUpperCase(),
+        raw: token,
       });
-    } else {
-      parts.push({
+    } else if (token.startsWith('@')) {
+      segments.push({
         type: 'mention',
-        value: matchValue.substring(1),
+        value: token.slice(1),
+        raw: token,
+      });
+    } else if (token.startsWith('#')) {
+      segments.push({
+        type: 'hashtag',
+        value: token.slice(1),
+        raw: token,
       });
     }
     
-    lastIndex = match.index + match[0].length;
+    lastIndex = match.index + token.length;
   }
   
   // Add remaining text
-  if (lastIndex < content.length) {
-    parts.push({
+  if (lastIndex < text.length) {
+    segments.push({
       type: 'text',
-      value: content.substring(lastIndex),
+      value: text.slice(lastIndex),
+      raw: text.slice(lastIndex),
     });
   }
   
-  return { parts };
+  return segments;
 }
+
+// Extract all tickers from text
+export function extractTickers(text: string): string[] {
+  const matches = text.match(TICKER_REGEX);
+  if (!matches) return [];
+  return [...new Set(matches.map(t => t.slice(1).toUpperCase()))];
+}
+
+// Extract all mentions from text
+export function extractMentions(text: string): string[] {
+  const matches = text.match(MENTION_REGEX);
+  if (!matches) return [];
+  return [...new Set(matches.map(m => m.slice(1).toLowerCase()))];
+}
+
+// Render parsed text with clickable links
+interface RenderTextProps {
+  text: string;
+  style?: any;
+  onTickerPress?: (ticker: string) => void;
+  onMentionPress?: (username: string) => void;
+  onHashtagPress?: (hashtag: string) => void;
+}
+
+export function RenderParsedText({ 
+  text, 
+  style,
+  onTickerPress,
+  onMentionPress,
+  onHashtagPress,
+}: RenderTextProps) {
+  const segments = parseText(text);
+  
+  const handleTickerPress = (ticker: string) => {
+    if (onTickerPress) {
+      onTickerPress(ticker);
+    } else {
+      router.push(`/symbol/${ticker}` as any);
+    }
+  };
+  
+  const handleMentionPress = (username: string) => {
+    if (onMentionPress) {
+      onMentionPress(username);
+    } else {
+      // Navigate to user profile
+      router.push(`/profile/my-profile?username=${username}`);
+    }
+  };
+  
+  const handleHashtagPress = (hashtag: string) => {
+    if (onHashtagPress) {
+      onHashtagPress(hashtag);
+    }
+  };
+  
+  return React.createElement(
+    Text,
+    { style },
+    segments.map((segment, index) => {
+      switch (segment.type) {
+        case 'ticker':
+          return React.createElement(
+            Text,
+            {
+              key: index,
+              style: styles.ticker,
+              onPress: () => handleTickerPress(segment.value),
+            },
+            '$' + segment.value
+          );
+        case 'mention':
+          return React.createElement(
+            Text,
+            {
+              key: index,
+              style: styles.mention,
+              onPress: () => handleMentionPress(segment.value),
+            },
+            '@' + segment.value
+          );
+        case 'hashtag':
+          return React.createElement(
+            Text,
+            {
+              key: index,
+              style: styles.hashtag,
+              onPress: () => handleHashtagPress(segment.value),
+            },
+            '#' + segment.value
+          );
+        default:
+          return React.createElement(Text, { key: index }, segment.value);
+      }
+    })
+  );
+}
+
+const styles = StyleSheet.create({
+  ticker: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  mention: {
+    color: '#5856D6',
+    fontWeight: '500',
+  },
+  hashtag: {
+    color: '#34C759',
+    fontWeight: '500',
+  },
+});

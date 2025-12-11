@@ -18,6 +18,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
+import { useUserProfile } from "@/context/UserProfileContext";
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -56,7 +57,7 @@ interface Post {
 export default function PersonalInfoScreen() {
   const router = useRouter();
   const { user: authUser } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { profile: userProfile, loading: profileLoading, refreshProfile, getDisplayName, getUsername, getHandle } = useUserProfile();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -87,13 +88,8 @@ export default function PersonalInfoScreen() {
         return;
       }
 
-      // Fetch user profile from API
-      const profileRes = await fetch(`${API_BASE_URL}/user/profile?userId=${userId}`);
-
-      if (profileRes.ok) {
-        const profileData = await profileRes.json();
-        setProfile(profileData);
-      }
+      // Refresh profile from context
+      await refreshProfile();
 
       // Fetch user's posts
       const postsRes = await fetch(`${API_BASE_URL}/posts?userId=${userId}`);
@@ -198,47 +194,20 @@ export default function PersonalInfoScreen() {
       .slice(0, 2);
   };
 
-  // Helper to get display name (like StockTwits - never show email)
-  const getCustomDisplayName = (): string => {
-    const emailPrefix = profile?.email?.split("@")[0] || "";
-    
-    // Check if profile.name is set and different from email prefix
-    if (profile?.name && profile.name !== emailPrefix && !profile.name.includes("@")) {
-      return profile.name;
-    }
-    // Fall back to local data name
-    if (localData?.name && localData.name !== emailPrefix && !localData.name.includes("@")) {
-      return localData.name;
-    }
-    // Fall back to username
-    if (profile?.username) return profile.username;
-    if (localData?.username) return localData.username;
-    // Default - prompt to set name
-    return "Set your name";
-  };
-
-  // Helper to get @handle (like StockTwits - never show email)
-  const getDisplayHandle = (): string => {
-    if (profile?.username) return profile.username;
-    if (localData?.username) return localData.username;
-    // Generate handle from user id if no username
-    if (profile?.id) return `user${profile.id}`;
-    return "username";
-  };
-
-  // Merge API data with local data
-  const displayName = getCustomDisplayName();
-  const displayUsername = getDisplayHandle();
-  const displayBio = profile?.bio || localData?.bio || "Tap Edit Profile to add a bio";
-  const displayLocation = profile?.location || localData?.location || "";
-  const displayWebsite = profile?.website || localData?.website || "";
-  const displayAvatar = profile?.profileImage || localData?.avatar;
-  const displayBanner = profile?.bannerImage || localData?.bannerImage;
-  const displayFollowing = profile?._count?.following ?? 0;
-  const displayFollowers = profile?._count?.followers ?? 0;
-  const displayPosts = profile?._count?.posts ?? posts.length ?? 0;
-  const displayLikes = profile?._count?.likes ?? 0;
-  const isPremium = profile?.subscriptionTier && profile.subscriptionTier !== "free";
+  // Use context functions for consistent display
+  const displayName = getDisplayName();
+  const displayUsername = getUsername();
+  const displayHandle = getHandle();
+  const displayBio = userProfile?.bio || localData?.bio || "Tap Edit Profile to add a bio";
+  const displayLocation = userProfile?.location || localData?.location || "";
+  const displayWebsite = userProfile?.website || localData?.website || "";
+  const displayAvatar = userProfile?.profileImage || localData?.avatar;
+  const displayBanner = userProfile?.bannerImage || localData?.bannerImage;
+  const displayFollowing = userProfile?._count?.following ?? 0;
+  const displayFollowers = userProfile?._count?.followers ?? 0;
+  const displayPosts = userProfile?._count?.posts ?? posts.length ?? 0;
+  const displayLikes = userProfile?._count?.likes ?? 0;
+  const isPremium = userProfile?.subscriptionTier && userProfile.subscriptionTier !== "free";
 
   const renderPost = (item: Post) => (
     <TouchableOpacity key={item.id} style={styles.postItem} activeOpacity={0.7}>
@@ -250,7 +219,7 @@ export default function PersonalInfoScreen() {
     </TouchableOpacity>
   );
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />

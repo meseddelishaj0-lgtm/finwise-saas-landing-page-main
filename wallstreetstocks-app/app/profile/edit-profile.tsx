@@ -19,12 +19,14 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/lib/auth';
+import { useUserProfile } from '@/context/UserProfileContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
 export default function EditProfile() {
   const router = useRouter();
   const { user: authUser } = useAuth();
+  const { refreshProfile } = useUserProfile();
   
   // Form State
   const [name, setName] = useState('');
@@ -198,6 +200,9 @@ export default function EditProfile() {
       // Also save to local storage as backup
       const data = { name, username, email, bio, location, website, avatar, bannerImage };
       await AsyncStorage.setItem('personalInfo', JSON.stringify(data));
+      
+      // Refresh the profile context
+      await refreshProfile();
       
       Alert.alert('Saved!', 'Your profile has been updated.', [
         { text: 'OK', onPress: () => router.back() }

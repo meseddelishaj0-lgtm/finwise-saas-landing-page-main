@@ -16,6 +16,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
+import GoogleLogo from '../components/GoogleLogo';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -48,7 +49,7 @@ export default function Signup() {
   const [usernameError, setUsernameError] = useState('');
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
-  const usernameCheckTimeout = useRef<NodeJS.Timeout | null>(null);
+  const usernameCheckTimeout = useRef<number | null>(null);
   const { signup, socialLogin } = useAuth();
   const router = useRouter();
 
@@ -355,7 +356,9 @@ export default function Signup() {
         onPress={() => promptAsync()}
         disabled={loading || !request}
       >
-        <Ionicons name="logo-google" size={20} color="#DB4437" style={styles.socialIcon} />
+        <View style={styles.socialIcon}>
+          <GoogleLogo size={20} />
+        </View>
         <Text style={styles.socialText}>Continue with Google</Text>
       </TouchableOpacity>
 
@@ -392,6 +395,11 @@ const styles = StyleSheet.create({
     fontSize: 28, 
     fontWeight: 'bold', 
     marginBottom: 40 
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 20,
   },
   input: { 
     borderBottomWidth: 1, 

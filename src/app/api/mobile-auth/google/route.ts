@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userName = name || email.split("@")[0];
-
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -26,22 +24,30 @@ export async function POST(request: NextRequest) {
 
     const isNewUser = !existingUser;
 
-    // Find or create user
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {
-        // Only update name if provided and user doesn't have a custom name yet
-        ...(name && !existingUser?.name ? { name: userName } : {}),
-        ...(profileImage ? { profileImage } : {}),
-      },
-      create: {
-        email,
-        name: userName,
-        password: "",
-        profileComplete: false,
-        ...(profileImage ? { profileImage } : {}),
-      },
-    });
+    let user;
+    if (existingUser) {
+      // EXISTING USER: Never overwrite their custom name/username/bio
+      // Only update profileImage if they don't have one and one was provided
+      user = await prisma.user.update({
+        where: { email },
+        data: {
+          // Only update profile image if user doesn't have one
+          ...(profileImage && !existingUser.profileImage ? { profileImage } : {}),
+        },
+      });
+    } else {
+      // NEW USER: Create with Google-provided name as initial value
+      const initialName = name || email.split("@")[0];
+      user = await prisma.user.create({
+        data: {
+          email,
+          name: initialName,
+          password: "",
+          profileComplete: false,
+          ...(profileImage ? { profileImage } : {}),
+        },
+      });
+    }
 
     console.log("User created/updated:", user.id, "isNewUser:", isNewUser);
 

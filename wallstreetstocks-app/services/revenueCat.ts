@@ -30,8 +30,8 @@ export const SUBSCRIPTION_TIERS = {
  */
 export async function initializeRevenueCat(userId?: string): Promise<void> {
   try {
-    // Set log level for debugging (change to WARN or ERROR in production)
-    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    // Set log level (DEBUG for development, ERROR for production to reduce noise)
+    Purchases.setLogLevel(LOG_LEVEL.ERROR);
 
     // Configure with platform-specific API key
     const apiKey = Platform.OS === 'ios' ? API_KEYS.ios : API_KEYS.android;
@@ -46,8 +46,8 @@ export async function initializeRevenueCat(userId?: string): Promise<void> {
 
     console.log('RevenueCat initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize RevenueCat:', error);
-    throw error;
+    // Don't throw - let app continue without RevenueCat
+    console.warn('RevenueCat initialization failed (non-blocking):', error);
   }
 }
 
@@ -141,8 +141,9 @@ export async function getOfferings(): Promise<PurchasesPackage[]> {
     console.warn('No offerings available');
     return [];
   } catch (error) {
-    console.error('Failed to get offerings:', error);
-    throw error;
+    // Don't throw - return empty array so app continues
+    console.warn('Failed to get offerings (non-blocking):', error);
+    return [];
   }
 }
 

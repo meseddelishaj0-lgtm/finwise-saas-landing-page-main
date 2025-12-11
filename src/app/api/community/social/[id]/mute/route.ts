@@ -1,6 +1,6 @@
 // app/api/community/users/[id]/mute/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '../../../../../../lib/prisma';
 
 export async function POST(
   request: NextRequest,

@@ -4,6 +4,8 @@ import { neonConfig } from '@neondatabase/serverless'
 
 // Enable fetch-based queries for Vercel Edge / serverless environments
 neonConfig.poolQueryViaFetch = true
+// Disable connection caching to ensure fresh reads
+neonConfig.fetchConnectionCache = false
 
 // Use the database connection string
 const connectionString = process.env.DATABASE_URL!

@@ -1,35 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
 
 export const dynamic = 'force-dynamic';
 
-// Helper to get user ID from either query param or JWT token
-async function getUserIdFromRequest(request: NextRequest): Promise<number | null> {
-  // First check query param
-  const { searchParams } = new URL(request.url);
-  const queryUserId = searchParams.get('userId');
-  if (queryUserId) {
-    return parseInt(queryUserId);
-  }
-  
-  // Then check Authorization header
-  const authHeader = request.headers.get('Authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
-      return parseInt(decoded.userId);
-    } catch (error) {
-      console.error('JWT verification failed:', error);
-      return null;
-    }
-  }
-  
-  return null;
-}
-
-// GET /api/user/profile - Get current user's profile
+// GET /api/user/profile - Get user profile by userId
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -39,7 +13,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    // Force fresh database query (no caching)
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
       select: {
@@ -52,14 +25,16 @@ export async function GET(request: NextRequest) {
         website: true,
         profileImage: true,
         bannerImage: true,
+        profileComplete: true,
         createdAt: true,
         subscriptionTier: true,
+        karma: true,
+        isVerified: true,
         _count: {
           select: {
             posts: true,
             followers: true,
             following: true,
-            likes: true,
           },
         },
       },
@@ -69,11 +44,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Return with no-cache headers
-    return new NextResponse(JSON.stringify(user), {
-      status: 200,
+    // Prevent caching to ensure fresh data
+    return NextResponse.json(user, {
       headers: {
-        'Content-Type': 'application/json',
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
@@ -81,10 +54,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch profile' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
   }
 }
 
@@ -92,70 +62,55 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('Profile update received:', JSON.stringify(body));
-    const { userId: bodyUserId, username, name, bio, location, website, profileImage, bannerImage, profileComplete } = body;
-    
-    // Get userId from body or JWT token
-    let userId = bodyUserId;
-    if (!userId) {
-      const authHeader = request.headers.get('Authorization');
-      if (authHeader?.startsWith('Bearer ')) {
-        const token = authHeader.split(' ')[1];
-        try {
-          const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
-          userId = decoded.userId;
-        } catch (error) {
-          return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
-      }
-    }
-    
-    console.log('Parsed values - userId:', userId, 'name:', name, 'username:', username);
+    const { userId, username, name, bio, location, website, profileImage, bannerImage } = body;
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    // Check if username is already taken by another user
+    const numericUserId = parseInt(userId);
+
+    // Check if username is taken by another user
     if (username) {
       const existingUser = await prisma.user.findFirst({
         where: {
-          username: username,
-          NOT: { id: parseInt(userId) },
+          username: username.toLowerCase(),
+          NOT: { id: numericUserId },
         },
       });
 
       if (existingUser) {
-        return NextResponse.json(
-          { error: 'Username is already taken' },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: 'Username is already taken' }, { status: 409 });
       }
 
-      // Validate username format (alphanumeric, underscores, 3-20 chars)
+      // Validate username format
       const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
       if (!usernameRegex.test(username)) {
         return NextResponse.json(
-          { error: 'Username must be 3-20 characters and contain only letters, numbers, and underscores' },
+          { error: 'Username must be 3-20 characters, letters, numbers, and underscores only' },
           { status: 400 }
         );
       }
     }
 
-    const updateData = {
-      ...(username && { username: username.toLowerCase() }),
-      ...(name !== undefined && { name }),
-      ...(bio !== undefined && { bio }),
-      ...(location !== undefined && { location }),
-      ...(website !== undefined && { website }),
-      ...(profileImage !== undefined && { profileImage }),
-      ...(bannerImage !== undefined && { bannerImage }),
-      ...(profileComplete !== undefined && { profileComplete }),
-    };
-    console.log('Update data:', JSON.stringify(updateData));
+    // Build update data - only include fields that were provided
+    const updateData: Record<string, any> = {};
+    
+    if (username !== undefined) updateData.username = username.toLowerCase();
+    if (name !== undefined) updateData.name = name;
+    if (bio !== undefined) updateData.bio = bio;
+    if (location !== undefined) updateData.location = location;
+    if (website !== undefined) updateData.website = website;
+    if (profileImage !== undefined) updateData.profileImage = profileImage;
+    if (bannerImage !== undefined) updateData.bannerImage = bannerImage;
+    
+    // Mark profile as complete if username and name are set
+    if (username && name) {
+      updateData.profileComplete = true;
+    }
 
     const updatedUser = await prisma.user.update({
-      where: { id: parseInt(userId) },
+      where: { id: numericUserId },
       data: updateData,
       select: {
         id: true,
@@ -170,23 +125,14 @@ export async function PUT(request: NextRequest) {
         profileComplete: true,
         createdAt: true,
         subscriptionTier: true,
-        _count: {
-          select: {
-            posts: true,
-            followers: true,
-            following: true,
-            likes: true,
-          },
-        },
+        karma: true,
+        isVerified: true,
       },
     });
 
-    return NextResponse.json({ user: updatedUser });
+    return NextResponse.json(updatedUser);
   } catch (error) {
     console.error('Error updating user profile:', error);
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
 }

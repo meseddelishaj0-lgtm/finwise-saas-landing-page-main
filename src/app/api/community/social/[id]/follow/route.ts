@@ -1,6 +1,6 @@
 // app/api/community/users/[id]/follow/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '../../../../../../lib/prisma';
 
 export async function POST(
   request: NextRequest,
@@ -79,7 +79,7 @@ export async function POST(
             type: 'follow',
             userId: targetUserId,
             fromUserId: userId,
-            message: 'Someone started following you',
+            message: `User ${userId} started following you.`,
           },
         });
       } catch (notifError) {

@@ -181,7 +181,7 @@ export default function RealEstateResource() {
                         <Text style={styles.articleText}>{article.content}</Text>
                         <TouchableOpacity 
                           style={[styles.learnMoreButton, { backgroundColor: `${CATEGORY_COLOR}15` }]}
-                          onPress={() => Linking.openURL('https://wallstreetstocks.ai')}
+                          onPress={() => Linking.openURL('https://www.wallstreetstocks.ai')}
                         >
                           <Text style={[styles.learnMoreText, { color: CATEGORY_COLOR }]}>
                             Learn More on Website

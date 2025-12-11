@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/lib/auth';
+import { useAuth } from '../../lib/auth';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 

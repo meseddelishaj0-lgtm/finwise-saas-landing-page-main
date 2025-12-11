@@ -41,10 +41,20 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    // Toggle behavior: if already following, unfollow
     if (existingFollow) {
-      return NextResponse.json({ error: "Already following this user" }, { status: 400 });
+      await prisma.follow.delete({
+        where: { id: existingFollow.id }
+      });
+      return NextResponse.json({
+        success: true,
+        action: 'unfollowed',
+        isFollowing: false,
+        message: "Unfollowed successfully"
+      }, { status: 200 });
     }
 
+    // Otherwise, create new follow
     const follow = await prisma.follow.create({
       data: {
         followerId: followerId,
@@ -55,7 +65,12 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return NextResponse.json(follow, { status: 201 });
+    return NextResponse.json({
+      ...follow,
+      success: true,
+      action: 'followed',
+      isFollowing: true
+    }, { status: 201 });
   } catch (err) {
     console.error("❌ Error following user:", err);
     return NextResponse.json({ error: "Failed to follow user" }, { status: 500 });

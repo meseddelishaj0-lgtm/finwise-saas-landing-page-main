@@ -44,7 +44,7 @@ export interface SubscriptionContextType extends SubscriptionState {
 
 const initialState: SubscriptionState = {
   isInitialized: false,
-  isLoading: true,
+  isLoading: false,  // Don't block app on subscription loading
   isPremium: false,
   activeSubscription: null,
   currentTier: null,

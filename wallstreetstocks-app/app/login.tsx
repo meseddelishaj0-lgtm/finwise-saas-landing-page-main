@@ -16,6 +16,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
+import GoogleLogo from '../components/GoogleLogo';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -217,7 +218,9 @@ export default function Login() {
         onPress={() => promptAsync()}
         disabled={loading || !request}
       >
-        <Ionicons name="logo-google" size={20} color="#DB4437" style={styles.socialIcon} />
+        <View style={styles.socialIcon}>
+          <GoogleLogo size={20} />
+        </View>
         <Text style={styles.socialText}>Continue with Google</Text>
       </TouchableOpacity>
 

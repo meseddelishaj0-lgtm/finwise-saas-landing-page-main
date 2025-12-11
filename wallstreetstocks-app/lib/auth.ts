@@ -1,5 +1,6 @@
 // wallstreetstocks-app/lib/auth.ts
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { router } from 'expo-router';
@@ -58,6 +59,7 @@ export const useAuth = create<AuthState>()(
         try {
           const token = await SecureStore.getItemAsync(TOKEN_KEY);
           if (token) {
+            await AsyncStorage.setItem('authToken', token);
             set({ token, loading: false });
           } else {
             set({ user: null, token: null, loading: false });
@@ -100,6 +102,7 @@ export const useAuth = create<AuthState>()(
           const data = JSON.parse(responseText);
           
           await SecureStore.setItemAsync(TOKEN_KEY, data.token);
+          await AsyncStorage.setItem('authToken', data.token);
           
           set({ 
             user: { 
@@ -112,6 +115,9 @@ export const useAuth = create<AuthState>()(
             token: data.token,
             loading: false 
           });
+
+          // Store userId for community pages
+          await AsyncStorage.setItem('userId', data.user.id.toString());
 
           console.log('Login complete!');
         } catch (error: any) {
@@ -153,6 +159,7 @@ export const useAuth = create<AuthState>()(
           const data = JSON.parse(responseText);
           
           await SecureStore.setItemAsync(TOKEN_KEY, data.token);
+          await AsyncStorage.setItem('authToken', data.token);
           
           set({ 
             user: { 
@@ -165,6 +172,9 @@ export const useAuth = create<AuthState>()(
             token: data.token,
             loading: false 
           });
+
+          // Store userId for community pages
+          await AsyncStorage.setItem('userId', data.user.id.toString());
 
           console.log('Signup complete!');
         } catch (error: any) {
@@ -207,6 +217,7 @@ export const useAuth = create<AuthState>()(
           const data = JSON.parse(responseText);
           
           await SecureStore.setItemAsync(TOKEN_KEY, data.token);
+          await AsyncStorage.setItem('authToken', data.token);
           
           // Check if this is a new user (no username set or isNewUser flag from API)
           const isNewUser = data.isNewUser || !data.user.username || !data.user.profileComplete;
@@ -225,6 +236,9 @@ export const useAuth = create<AuthState>()(
             loading: false,
             isNewUser,
           });
+
+          // Store userId for community pages
+          await AsyncStorage.setItem('userId', data.user.id.toString());
 
           console.log('Social login complete! isNewUser:', isNewUser);
         } catch (error: any) {
@@ -359,6 +373,7 @@ export const useAuth = create<AuthState>()(
           
           // Auto-login after password reset
           await SecureStore.setItemAsync(TOKEN_KEY, data.token);
+          await AsyncStorage.setItem('authToken', data.token);
           
           set({ 
             user: { 
@@ -380,7 +395,12 @@ export const useAuth = create<AuthState>()(
 
       logout: async () => {
         await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await AsyncStorage.removeItem('authToken');
         set({ user: null, token: null, loading: false });
+        
+        // Clear userId from AsyncStorage
+        await AsyncStorage.removeItem('userId');
+        
         router.replace('/login');
       },
     }),
