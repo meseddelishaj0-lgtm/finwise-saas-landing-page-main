@@ -204,15 +204,15 @@ model Report {
 }
 
 model Mute {
-  id       Int      @id @default(autoincrement())
-  oderId   Int
-  mutedId  Int
+  id        Int      @id @default(autoincrement())
+  muterId   Int
+  mutedId   Int
   createdAt DateTime @default(now())
-  
-  oder     User     @relation("MuterRelation", fields: [oderId], references: [id])
-  muted    User     @relation("MutedRelation", fields: [mutedId], references: [id])
-  
-  @@unique([oderId, mutedId], name: "oderId_mutedId")
+
+  muter     User     @relation("MuterRelation", fields: [muterId], references: [id])
+  muted     User     @relation("MutedRelation", fields: [mutedId], references: [id])
+
+  @@unique([muterId, mutedId], name: "muterId_mutedId")
 }
 
 model Block {

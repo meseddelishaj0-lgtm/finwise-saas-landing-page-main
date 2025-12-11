@@ -39,8 +39,8 @@ export async function POST(
     // Check if already muted
     const existingMute = await prisma.mute.findUnique({
       where: {
-        oderId_mutedId: {
-          oderId: userId,
+        muterId_mutedId: {
+          muterId: userId,
           mutedId: targetUserId,
         },
       },
@@ -50,8 +50,8 @@ export async function POST(
       // Unmute
       await prisma.mute.delete({
         where: {
-          oderId_mutedId: {
-            oderId: userId,
+          muterId_mutedId: {
+            muterId: userId,
             mutedId: targetUserId,
           },
         },
@@ -67,7 +67,7 @@ export async function POST(
       // Mute the user
       await prisma.mute.create({
         data: {
-          oderId: userId,
+          muterId: userId,
           mutedId: targetUserId,
         },
       });
@@ -107,8 +107,8 @@ export async function GET(
 
     const existingMute = await prisma.mute.findUnique({
       where: {
-        oderId_mutedId: {
-          oderId: parseInt(userId),
+        muterId_mutedId: {
+          muterId: parseInt(userId),
           mutedId: targetUserId,
         },
       },
@@ -145,8 +145,8 @@ export async function DELETE(
 
     await prisma.mute.delete({
       where: {
-        oderId_mutedId: {
-          oderId: parseInt(userId),
+        muterId_mutedId: {
+          muterId: parseInt(userId),
           mutedId: targetUserId,
         },
       },

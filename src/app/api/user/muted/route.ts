@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const mutedUsers = await prisma.mute.findMany({
       where: {
-        oderId: parseInt(userId),
+        muterId: parseInt(userId),
       },
       include: {
         muted: {

@@ -2,15 +2,42 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+interface Forum {
+  id: number;
+  title: string;
+  slug: string;
+  description?: string;
+}
 
 export default function CommunityPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [forums, setForums] = useState<Forum[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
+
+  useEffect(() => {
+    const fetchForums = async () => {
+      try {
+        const res = await fetch("/api/forums");
+        if (res.ok) {
+          const data = await res.json();
+          setForums(data);
+        }
+      } catch (error) {
+        console.error("Error fetching forums:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchForums();
+  }, []);
 
   if (status === "loading") {
     return (
@@ -29,7 +56,7 @@ export default function CommunityPage() {
             onClick={() => router.push("/dashboard")}
             className="text-2xl font-semibold text-gray-900 cursor-pointer"
           >
-            🧠 WallStreetStocks
+            WallStreetStocks
           </h1>
 
           <div className="flex items-center gap-4">
@@ -52,24 +79,111 @@ export default function CommunityPage() {
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-6 py-14">
         <div className="bg-white p-10 rounded-2xl shadow-md text-center mb-12">
-          <h2 className="text-3xl font-bold mb-2 text-gray-900">💬 Community</h2>
+          <h2 className="text-3xl font-bold mb-2 text-gray-900">Community</h2>
           <p className="text-gray-600">
             Join discussions, share insights, and collaborate with other investors.
           </p>
         </div>
 
-        {/* Community Placeholder */}
-        <div className="bg-white p-8 rounded-2xl shadow-sm text-center">
-          <h3 className="text-xl font-semibold mb-4">Coming Soon 🚀</h3>
-          <p className="text-gray-600 mb-6">
-            Our investor community is launching soon. You'll be able to connect with
-            like-minded investors, share stock ideas, and access live AI market chats.
-          </p>
+        {/* Community Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {/* Discussion Forums */}
+          <Link
+            href="/community/forums"
+            className="bg-white shadow-sm rounded-2xl p-8 hover:shadow-md transition-all group"
+          >
+            <h3 className="text-xl font-semibold mb-3 group-hover:text-yellow-600 transition-colors">
+              Discussion Forums
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Talk about the latest market trends, AI forecasts, and investing ideas
+              with like-minded people.
+            </p>
+            <span className="text-yellow-600 font-semibold">
+              Explore Forums &rarr;
+            </span>
+          </Link>
+
+          {/* Market Rooms */}
+          <Link
+            href="/community/rooms"
+            className="bg-white shadow-sm rounded-2xl p-8 hover:shadow-md transition-all group"
+          >
+            <h3 className="text-xl font-semibold mb-3 group-hover:text-yellow-600 transition-colors">
+              Market Rooms
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Join focused rooms for stocks, crypto, real estate, and macro economy
+              insights.
+            </p>
+            <span className="text-yellow-600 font-semibold">
+              Join a Room &rarr;
+            </span>
+          </Link>
+
+          {/* Member Network */}
+          <Link
+            href="/community/members"
+            className="bg-white shadow-sm rounded-2xl p-8 hover:shadow-md transition-all group"
+          >
+            <h3 className="text-xl font-semibold mb-3 group-hover:text-yellow-600 transition-colors">
+              Member Network
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Build relationships, share research, and grow your influence in the
+              financial world.
+            </p>
+            <span className="text-yellow-600 font-semibold">
+              Meet Members &rarr;
+            </span>
+          </Link>
+        </div>
+
+        {/* Forums List */}
+        {loading ? (
+          <div className="text-center text-gray-500">Loading forums...</div>
+        ) : forums.length > 0 ? (
+          <div className="bg-white rounded-2xl shadow-sm p-8">
+            <h3 className="text-2xl font-bold mb-6 text-gray-900">
+              Quick Access to Forums
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {forums.map((forum) => (
+                <Link
+                  key={forum.id}
+                  href={`/community/forums/${forum.slug}`}
+                  className="flex items-center p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group"
+                >
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 group-hover:text-yellow-600 transition-colors">
+                      {forum.title}
+                    </h4>
+                    {forum.description && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        {forum.description}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-yellow-600">&rarr;</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm p-8 text-center">
+            <p className="text-gray-600">
+              No forums available yet. Check back soon!
+            </p>
+          </div>
+        )}
+
+        {/* Back to Dashboard */}
+        <div className="mt-8 text-center">
           <button
             onClick={() => router.push("/dashboard")}
             className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-8 rounded-full transition-all"
           >
-            ← Back to Dashboard
+            &larr; Back to Dashboard
           </button>
         </div>
       </main>
