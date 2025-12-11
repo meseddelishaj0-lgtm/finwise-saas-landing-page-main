@@ -45,11 +45,11 @@ export default function BacktestingResultsPage() {
     fetchData();
   }, []);
 
-  // Derive summary metrics
-  const totalStrategyReturn = data.length
+  // Derive summary metrics (with division by zero protection)
+  const totalStrategyReturn = data.length && data[0].strategyReturn !== 0
     ? ((data[data.length - 1].strategyReturn / data[0].strategyReturn) - 1) * 100
     : 0;
-  const totalBenchmarkReturn = data.length
+  const totalBenchmarkReturn = data.length && data[0].benchmarkReturn !== 0
     ? ((data[data.length - 1].benchmarkReturn / data[0].benchmarkReturn) - 1) * 100
     : 0;
 
