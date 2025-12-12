@@ -26,16 +26,54 @@ const { width } = Dimensions.get('window');
 const chartWidth = 110;
 const portfolioChartWidth = width - 80;
 
+// Clean and validate chart data - fill gaps and remove invalid values
+const cleanChartData = (data: number[]): number[] => {
+  if (!data || data.length === 0) return [0];
+
+  // Filter out null, undefined, NaN, and non-finite values
+  const cleaned: number[] = [];
+  let lastValidValue = 0;
+
+  // Find first valid value
+  for (const val of data) {
+    if (typeof val === 'number' && isFinite(val) && !isNaN(val)) {
+      lastValidValue = val;
+      break;
+    }
+  }
+
+  // Fill array, replacing invalid values with last known good value
+  for (let i = 0; i < data.length; i++) {
+    const val = data[i];
+    if (typeof val === 'number' && isFinite(val) && !isNaN(val)) {
+      cleaned.push(val);
+      lastValidValue = val;
+    } else {
+      // Fill gap with last valid value
+      cleaned.push(lastValidValue);
+    }
+  }
+
+  // Ensure we have at least 2 points for a line
+  if (cleaned.length === 0) return [0, 0];
+  if (cleaned.length === 1) return [cleaned[0], cleaned[0]];
+
+  return cleaned;
+};
+
 // Smooth data using moving average to eliminate jaggedness
 const smoothData = (data: number[], windowSize: number = 3): number[] => {
-  if (data.length <= windowSize) return data;
+  // First clean the data to remove gaps
+  const cleanedData = cleanChartData(data);
+
+  if (cleanedData.length <= windowSize) return cleanedData;
 
   const smoothed: number[] = [];
-  for (let i = 0; i < data.length; i++) {
+  for (let i = 0; i < cleanedData.length; i++) {
     let sum = 0;
     let count = 0;
-    for (let j = Math.max(0, i - Math.floor(windowSize / 2)); j <= Math.min(data.length - 1, i + Math.floor(windowSize / 2)); j++) {
-      sum += data[j];
+    for (let j = Math.max(0, i - Math.floor(windowSize / 2)); j <= Math.min(cleanedData.length - 1, i + Math.floor(windowSize / 2)); j++) {
+      sum += cleanedData[j];
       count++;
     }
     smoothed.push(sum / count);
@@ -300,8 +338,8 @@ export default function Dashboard() {
               );
               const chartData = await chartRes.json();
 
-              const chartValues = chartData && Array.isArray(chartData) 
-                ? chartData.slice(0, 30).reverse().map((d: any) => d.close)
+              const chartValues = chartData && Array.isArray(chartData) && chartData.length > 0
+                ? cleanChartData(chartData.slice(0, 30).reverse().map((d: any) => d.close))
                 : [stock.price, stock.price * 0.99, stock.price * 1.01, stock.price];
 
               return {
@@ -322,7 +360,7 @@ export default function Dashboard() {
                 change: stock.change || 0,
                 changePercent: stock.changesPercentage || 0,
                 color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-                data: [stock.price, stock.price, stock.price, stock.price],
+                data: cleanChartData([stock.price || 0, stock.price || 0, stock.price || 0, stock.price || 0]),
                 rank: idx + 1
               };
             }
@@ -363,8 +401,8 @@ export default function Dashboard() {
               );
               const chartData = await chartRes.json();
 
-              const chartValues = chartData && Array.isArray(chartData)
-                ? chartData.slice(0, 30).reverse().map((d: any) => d.close)
+              const chartValues = chartData && Array.isArray(chartData) && chartData.length > 0
+                ? cleanChartData(chartData.slice(0, 30).reverse().map((d: any) => d.close))
                 : [stock.price, stock.price * 0.99, stock.price * 1.01, stock.price];
 
               return {
@@ -384,7 +422,7 @@ export default function Dashboard() {
                 change: stock.change || 0,
                 changePercent: stock.changesPercentage || 0,
                 color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-                data: [stock.price, stock.price, stock.price, stock.price],
+                data: cleanChartData([stock.price || 0, stock.price || 0, stock.price || 0, stock.price || 0]),
               };
             }
           })
