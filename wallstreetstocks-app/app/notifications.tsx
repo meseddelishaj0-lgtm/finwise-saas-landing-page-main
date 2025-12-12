@@ -19,11 +19,11 @@ const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
 interface Notification {
   id: number;
-  type: 'like' | 'comment' | 'follow' | 'mention' | 'reply';
+  type: 'like' | 'comment' | 'follow' | 'mention' | 'reply' | 'price_alert';
   message: string;
   isRead: boolean;
   createdAt: string;
-  fromUser: {
+  fromUser?: {
     id: number;
     name: string;
     username: string;
@@ -31,7 +31,7 @@ interface Notification {
   };
   post?: {
     id: number;
-    content: string;
+    title: string;
   };
 }
 
@@ -43,65 +43,24 @@ export default function Notifications() {
 
   const fetchNotifications = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        setLoading(false);
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/notifications?userId=${userId}`);
 
       if (res.ok) {
         const data = await res.json();
         setNotifications(Array.isArray(data) ? data : []);
       } else {
-        // Mock data for testing
-        setNotifications([
-          {
-            id: 1,
-            type: 'like',
-            message: 'liked your post',
-            isRead: false,
-            createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-            fromUser: { id: 2, name: 'Sarah Chen', username: 'sarahc', profileImage: undefined },
-            post: { id: 1, content: 'Just bought more $NVDA on this dip! 🚀' },
-          },
-          {
-            id: 2,
-            type: 'mention',
-            message: 'mentioned you in a post',
-            isRead: false,
-            createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-            fromUser: { id: 3, name: 'Mike Trading', username: 'miketrader', profileImage: undefined },
-            post: { id: 2, content: '@sedi1995 what do you think about $TSLA earnings?' },
-          },
-          {
-            id: 3,
-            type: 'follow',
-            message: 'started following you',
-            isRead: true,
-            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-            fromUser: { id: 4, name: 'Alex Investor', username: 'alexinv', profileImage: undefined },
-          },
-          {
-            id: 4,
-            type: 'comment',
-            message: 'commented on your post',
-            isRead: true,
-            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-            fromUser: { id: 5, name: 'Trading Pro', username: 'tradingpro', profileImage: undefined },
-            post: { id: 3, content: 'Great analysis! I agree with your $AAPL thesis.' },
-          },
-          {
-            id: 5,
-            type: 'reply',
-            message: 'replied to your comment',
-            isRead: true,
-            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-            fromUser: { id: 6, name: 'Market Watch', username: 'marketwatch', profileImage: undefined },
-            post: { id: 4, content: 'Thanks for the insight!' },
-          },
-        ]);
+        console.error('Failed to fetch notifications:', res.status);
+        setNotifications([]);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
+      setNotifications([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -119,10 +78,11 @@ export default function Notifications() {
 
   const markAsRead = async (notificationId: number) => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const userId = await AsyncStorage.getItem('userId');
       await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
       });
 
       setNotifications(prev =>
@@ -135,10 +95,11 @@ export default function Notifications() {
 
   const markAllAsRead = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const userId = await AsyncStorage.getItem('userId');
       await fetch(`${API_BASE_URL}/notifications/read-all`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
       });
 
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -160,7 +121,16 @@ export default function Notifications() {
         }
         break;
       case 'follow':
-        router.push(`/profile/my-profile?userId=${notification.fromUser.id}`);
+        if (notification.fromUser) {
+          router.push(`/profile/my-profile?userId=${notification.fromUser.id}`);
+        }
+        break;
+      case 'price_alert':
+        // Extract symbol from message (e.g., "AAPL is now above $150")
+        const symbolMatch = notification.message.match(/^([A-Z]+)/);
+        if (symbolMatch) {
+          router.push(`/symbol/${symbolMatch[1]}/chart` as any);
+        }
         break;
     }
   };
@@ -177,6 +147,8 @@ export default function Notifications() {
         return { name: 'at', color: '#5856D6' };
       case 'reply':
         return { name: 'arrow-undo', color: '#FF9500' };
+      case 'price_alert':
+        return { name: 'trending-up', color: '#FFD700' };
       default:
         return { name: 'notifications', color: '#666' };
     }
@@ -199,6 +171,7 @@ export default function Notifications() {
 
   const renderNotification = ({ item }: { item: Notification }) => {
     const icon = getNotificationIcon(item.type);
+    const isPriceAlert = item.type === 'price_alert';
 
     return (
       <TouchableOpacity
@@ -214,19 +187,29 @@ export default function Notifications() {
         {/* Content */}
         <View style={styles.notificationContent}>
           <View style={styles.notificationHeader}>
-            {item.fromUser.profileImage ? (
+            {isPriceAlert ? (
+              <View style={[styles.avatarPlaceholder, { backgroundColor: '#FFD700' }]}>
+                <Ionicons name="cash-outline" size={18} color="#000" />
+              </View>
+            ) : item.fromUser?.profileImage ? (
               <Image source={{ uri: item.fromUser.profileImage }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarInitial}>
-                  {item.fromUser.name[0].toUpperCase()}
+                  {item.fromUser?.name?.[0]?.toUpperCase() || '?'}
                 </Text>
               </View>
             )}
             <View style={styles.textContainer}>
               <Text style={styles.notificationText}>
-                <Text style={styles.username}>{item.fromUser.name}</Text>
-                {' '}{item.message}
+                {isPriceAlert ? (
+                  item.message
+                ) : (
+                  <>
+                    <Text style={styles.username}>{item.fromUser?.name || 'Someone'}</Text>
+                    {' '}{item.message}
+                  </>
+                )}
               </Text>
               <Text style={styles.timeText}>{formatTimeAgo(item.createdAt)}</Text>
             </View>
@@ -236,7 +219,7 @@ export default function Notifications() {
           {item.post && (
             <View style={styles.postPreview}>
               <Text style={styles.postPreviewText} numberOfLines={2}>
-                {item.post.content}
+                {item.post.title}
               </Text>
             </View>
           )}

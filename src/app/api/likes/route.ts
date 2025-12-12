@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { sendPushNotificationToUser, NotificationMessages } from "@/lib/pushNotifications";
 
 // POST /api/likes - Toggle like
 export async function POST(req: NextRequest) {
@@ -18,7 +19,8 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      select: { id: true, name: true, username: true },
     });
 
     if (!user) {
@@ -53,6 +55,70 @@ export async function POST(req: NextRequest) {
       const likesCount = await prisma.like.count({
         where: postId ? { postId } : { commentId }
       });
+
+      // Send notification to the post/comment author
+      try {
+        const likerName = user.username || user.name || 'Someone';
+
+        if (postId) {
+          const post = await prisma.post.findUnique({
+            where: { id: postId },
+            select: { userId: true, title: true },
+          });
+
+          // Don't notify if user likes their own post
+          if (post && post.userId !== userId) {
+            await prisma.notification.create({
+              data: {
+                type: 'like',
+                userId: post.userId,
+                fromUserId: userId,
+                postId: postId,
+                message: `${likerName} liked your post`,
+              },
+            });
+
+            const { title, body } = NotificationMessages.like(likerName);
+            await sendPushNotificationToUser(
+              post.userId,
+              title,
+              body,
+              { type: 'like', postId },
+              { channelId: 'social' }
+            );
+          }
+        } else if (commentId) {
+          const comment = await prisma.comment.findUnique({
+            where: { id: commentId },
+            select: { userId: true, postId: true },
+          });
+
+          // Don't notify if user likes their own comment
+          if (comment && comment.userId !== userId) {
+            await prisma.notification.create({
+              data: {
+                type: 'like',
+                userId: comment.userId,
+                fromUserId: userId,
+                postId: comment.postId,
+                message: `${likerName} liked your comment`,
+              },
+            });
+
+            const { title, body } = NotificationMessages.like(likerName);
+            await sendPushNotificationToUser(
+              comment.userId,
+              title,
+              body,
+              { type: 'like', postId: comment.postId, commentId },
+              { channelId: 'social' }
+            );
+          }
+        }
+      } catch (notifError) {
+        console.error('Error creating like notification:', notifError);
+        // Don't fail the like if notification fails
+      }
 
       return NextResponse.json({ liked: true, likesCount }, { status: 201 });
     }

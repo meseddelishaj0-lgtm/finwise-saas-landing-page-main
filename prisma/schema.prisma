@@ -53,6 +53,8 @@ model User {
   sentiments            Sentiment[]
   mentionedIn           Mention[]      @relation("MentionedUser")
   watchlist             WatchlistItem[]
+  deviceTokens          DeviceToken[]
+  priceAlerts           PriceAlert[]
 }
 
 model Forum {
@@ -288,4 +290,41 @@ model TrendingTicker {
   mentionCount Int      @default(0)
   sentiment    Float?   // -1 to 1 (bearish to bullish)
   lastUpdated  DateTime @default(now())
+}
+
+// Device tokens for push notifications
+model DeviceToken {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  pushToken  String   @unique
+  platform   String   // "ios" or "android"
+  deviceName String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([pushToken])
+}
+
+// Price alerts for stock price notifications
+model PriceAlert {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  symbol      String   // Stock ticker symbol (e.g., "AAPL")
+  targetPrice Float    // Target price to trigger alert
+  direction   String   // "above" or "below"
+  isActive    Boolean  @default(true)
+  isTriggered Boolean  @default(false)
+  triggeredAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([symbol])
+  @@index([isActive, isTriggered])
 }

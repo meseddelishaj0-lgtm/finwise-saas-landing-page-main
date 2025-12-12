@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { sendPushNotificationToUser, NotificationMessages } from "@/lib/pushNotifications";
 
 // GET /api/comments?postId=123 - Get comments (PUBLIC)
 export async function GET(req: NextRequest) {
@@ -47,7 +48,8 @@ export async function POST(req: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
+      select: { id: true, name: true, username: true },
     });
 
     if (!user) {
@@ -55,7 +57,8 @@ export async function POST(req: NextRequest) {
     }
 
     const post = await prisma.post.findUnique({
-      where: { id: postId }
+      where: { id: postId },
+      select: { id: true, userId: true, title: true },
     });
 
     if (!post) {
@@ -73,6 +76,36 @@ export async function POST(req: NextRequest) {
         _count: { select: { likes: true } },
       }
     });
+
+    // Send notification to post author
+    try {
+      // Don't notify if user comments on their own post
+      if (post.userId !== userId) {
+        const commenterName = user.username || user.name || 'Someone';
+
+        await prisma.notification.create({
+          data: {
+            type: 'comment',
+            userId: post.userId,
+            fromUserId: userId,
+            postId: postId,
+            message: `${commenterName} commented on your post`,
+          },
+        });
+
+        const { title, body } = NotificationMessages.comment(commenterName);
+        await sendPushNotificationToUser(
+          post.userId,
+          title,
+          body,
+          { type: 'comment', postId },
+          { channelId: 'social' }
+        );
+      }
+    } catch (notifError) {
+      console.error('Error creating comment notification:', notifError);
+      // Don't fail the comment if notification fails
+    }
 
     return NextResponse.json(newComment, { status: 201 });
   } catch (err) {

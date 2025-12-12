@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SubscriptionProvider, useSubscription } from "../context/SubscriptionContext";
 import { StockProvider } from "../context/StockContext";
 import { UserProfileProvider } from "../context/UserProfileContext";
+import { NotificationProvider } from "../context/NotificationContext";
 import { useAuth } from "@/lib/auth";
 
 const queryClient = new QueryClient();
@@ -31,15 +32,17 @@ export default function RootLayout() {
         <SubscriptionProvider>
           <StockProvider>
             <UserProfileProvider>
-              <AppInitializer>
-                <View style={{ flex: 1, backgroundColor: "black" }}>
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                    }}
-                  />
-                </View>
-              </AppInitializer>
+              <NotificationProvider>
+                <AppInitializer>
+                  <View style={{ flex: 1, backgroundColor: "black" }}>
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                      }}
+                    />
+                  </View>
+                </AppInitializer>
+              </NotificationProvider>
             </UserProfileProvider>
           </StockProvider>
         </SubscriptionProvider>

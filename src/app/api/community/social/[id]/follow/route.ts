@@ -1,6 +1,7 @@
 // app/api/community/users/[id]/follow/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '../../../../../../lib/prisma';
+import { sendPushNotificationToUser, NotificationMessages } from '@/lib/pushNotifications';
 
 export async function POST(
   request: NextRequest,
@@ -74,14 +75,34 @@ export async function POST(
 
       // Create notification for the target user
       try {
+        // Get follower's name for the notification
+        const follower = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, username: true },
+        });
+        const followerName = follower?.username || follower?.name || 'Someone';
+
         await prisma.notification.create({
           data: {
             type: 'follow',
             userId: targetUserId,
             fromUserId: userId,
-            message: `User ${userId} started following you.`,
+            message: `${followerName} started following you.`,
           },
         });
+
+        // Send push notification
+        const { title, body } = NotificationMessages.follow(followerName);
+        await sendPushNotificationToUser(
+          targetUserId,
+          title,
+          body,
+          {
+            type: 'follow',
+            userId: userId,
+          },
+          { channelId: 'social' }
+        );
       } catch (notifError) {
         console.error('Error creating follow notification:', notifError);
         // Don't fail the follow if notification fails
