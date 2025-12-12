@@ -1,5 +1,5 @@
 // app/(tabs)/index.tsx - REDESIGNED CLEAN WHITE VERSION WITH WATCHLIST
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -20,10 +20,56 @@ import { Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSubscription } from '@/context/SubscriptionContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
 const portfolioChartWidth = width - 80;
+
+// Smooth data using moving average to eliminate jaggedness
+const smoothData = (data: number[], windowSize: number = 3): number[] => {
+  if (data.length <= windowSize) return data;
+
+  const smoothed: number[] = [];
+  for (let i = 0; i < data.length; i++) {
+    let sum = 0;
+    let count = 0;
+    for (let j = Math.max(0, i - Math.floor(windowSize / 2)); j <= Math.min(data.length - 1, i + Math.floor(windowSize / 2)); j++) {
+      sum += data[j];
+      count++;
+    }
+    smoothed.push(sum / count);
+  }
+  return smoothed;
+};
+
+// Interpolate data to create more points for smoother curves
+const interpolateData = (data: { value: number; label: string; dataPointText?: string }[], targetPoints: number = 60): { value: number; label: string; dataPointText?: string }[] => {
+  if (data.length <= 2 || data.length >= targetPoints) return data;
+
+  const result: { value: number; label: string; dataPointText?: string }[] = [];
+  const step = (data.length - 1) / (targetPoints - 1);
+
+  for (let i = 0; i < targetPoints; i++) {
+    const pos = i * step;
+    const lower = Math.floor(pos);
+    const upper = Math.min(Math.ceil(pos), data.length - 1);
+    const fraction = pos - lower;
+
+    const interpolatedValue = data[lower].value + fraction * (data[upper].value - data[lower].value);
+
+    // Only keep labels from original data points at intervals
+    const isOriginalPoint = i === 0 || i === targetPoints - 1 || Math.abs(pos - Math.round(pos)) < 0.01;
+
+    result.push({
+      value: interpolatedValue,
+      label: '',
+      dataPointText: isOriginalPoint && data[Math.round(pos)] ? data[Math.round(pos)].dataPointText : ''
+    });
+  }
+
+  return result;
+};
 
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
@@ -102,17 +148,83 @@ export default function Dashboard() {
     chartLabels: [] as string[]
   });
 
-  // User's stock holdings
-  const [userHoldings, setUserHoldings] = useState([
-    { symbol: 'AAPL', shares: 10, avgCost: 150 },
-    { symbol: 'TSLA', shares: 5, avgCost: 200 },
-    { symbol: 'MSFT', shares: 8, avgCost: 300 },
-  ]);
+  // User's stock holdings - persisted with AsyncStorage
+  const [userHoldings, setUserHoldings] = useState<{symbol: string; shares: number; avgCost: number}[]>([]);
+  const [holdingsInitialized, setHoldingsInitialized] = useState(false);
 
-  // Watchlist state
-  const [watchlist, setWatchlist] = useState<string[]>(['NVDA', 'GOOGL', 'AMZN', 'META']);
+  // Load holdings from AsyncStorage on mount
+  useEffect(() => {
+    const loadHoldings = async () => {
+      try {
+        const saved = await AsyncStorage.getItem('user_portfolio_holdings');
+        if (saved) {
+          setUserHoldings(JSON.parse(saved));
+        } else {
+          // Default holdings for demo
+          const defaultHoldings = [
+            { symbol: 'AAPL', shares: 10, avgCost: 150 },
+            { symbol: 'TSLA', shares: 5, avgCost: 200 },
+            { symbol: 'MSFT', shares: 8, avgCost: 300 },
+          ];
+          setUserHoldings(defaultHoldings);
+          await AsyncStorage.setItem('user_portfolio_holdings', JSON.stringify(defaultHoldings));
+        }
+      } catch (err) {
+        console.error('Error loading holdings:', err);
+        setUserHoldings([
+          { symbol: 'AAPL', shares: 10, avgCost: 150 },
+          { symbol: 'TSLA', shares: 5, avgCost: 200 },
+          { symbol: 'MSFT', shares: 8, avgCost: 300 },
+        ]);
+      } finally {
+        setHoldingsInitialized(true);
+      }
+    };
+    loadHoldings();
+  }, []);
+
+  // Save holdings to AsyncStorage whenever it changes
+  useEffect(() => {
+    if (holdingsInitialized) {
+      AsyncStorage.setItem('user_portfolio_holdings', JSON.stringify(userHoldings));
+    }
+  }, [userHoldings, holdingsInitialized]);
+
+  // Watchlist state - persisted with AsyncStorage
+  const [watchlist, setWatchlist] = useState<string[]>([]);
   const [watchlistData, setWatchlistData] = useState<any[]>([]);
   const [watchlistLoading, setWatchlistLoading] = useState(true);
+  const [watchlistInitialized, setWatchlistInitialized] = useState(false);
+
+  // Load watchlist from AsyncStorage on mount
+  useEffect(() => {
+    const loadWatchlist = async () => {
+      try {
+        const saved = await AsyncStorage.getItem('user_watchlist');
+        if (saved) {
+          setWatchlist(JSON.parse(saved));
+        } else {
+          // Default watchlist for new users
+          const defaultWatchlist = ['NVDA', 'GOOGL', 'AMZN', 'META'];
+          setWatchlist(defaultWatchlist);
+          await AsyncStorage.setItem('user_watchlist', JSON.stringify(defaultWatchlist));
+        }
+      } catch (err) {
+        console.error('Error loading watchlist:', err);
+        setWatchlist(['NVDA', 'GOOGL', 'AMZN', 'META']);
+      } finally {
+        setWatchlistInitialized(true);
+      }
+    };
+    loadWatchlist();
+  }, []);
+
+  // Save watchlist to AsyncStorage whenever it changes
+  useEffect(() => {
+    if (watchlistInitialized) {
+      AsyncStorage.setItem('user_watchlist', JSON.stringify(watchlist));
+    }
+  }, [watchlist, watchlistInitialized]);
 
   // Fetch live market indices data
   const fetchMarketChips = async () => {
@@ -729,13 +841,15 @@ export default function Dashboard() {
     setRefreshing(false);
   };
 
-  // Initial fetch
+  // Initial fetch - only start after data is loaded from AsyncStorage
   useEffect(() => {
+    if (!holdingsInitialized || !watchlistInitialized) return;
+
     fetchMarketChips();
     fetchTrending();
     fetchPortfolio();
-    fetchWatchlist();
     fetchStockPicks();
+    // Watchlist is fetched by its own useEffect
 
     const interval = setInterval(() => {
       fetchMarketChips();
@@ -746,7 +860,7 @@ export default function Dashboard() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [holdingsInitialized, watchlistInitialized]);
 
   // Refetch portfolio when time range changes
   useEffect(() => {
@@ -755,10 +869,15 @@ export default function Dashboard() {
     }
   }, [portfolioTimeRange]);
 
-  // Refetch watchlist when watchlist changes
+  // Refetch watchlist when watchlist changes (only after initialized)
   useEffect(() => {
-    fetchWatchlist();
-  }, [watchlist.length]);
+    if (watchlistInitialized && watchlist.length > 0) {
+      fetchWatchlist();
+    } else if (watchlistInitialized && watchlist.length === 0) {
+      setWatchlistData([]);
+      setWatchlistLoading(false);
+    }
+  }, [watchlist, watchlistInitialized]);
 
   // Compute filtered and sorted watchlist
   const getFilteredSortedWatchlist = () => {
@@ -995,49 +1114,55 @@ export default function Dashboard() {
           </View>
 
           {/* Portfolio Chart */}
-          {portfolio.chartData.length > 1 && (
+          {portfolio.chartData.length > 1 && (() => {
+            // Smooth and interpolate data for cleaner curves
+            const smoothedChartData = interpolateData(portfolio.chartData, 80);
+            const chartSpacing = Math.max(2, (portfolioChartWidth - 40) / smoothedChartData.length);
+
+            return (
             <View style={styles.portfolioChartContainer}>
               <GiftedLineChart
                 areaChart
-                data={portfolio.chartData}
+                data={smoothedChartData}
                 height={200}
                 width={portfolioChartWidth}
                 curved
-                curvature={0.2}
-                startFillColor={portfolio.yearChange >= 0 ? '#86EFAC' : '#FCA5A5'}
-                startOpacity={0.2}
-                endOpacity={0.02}
-                color={portfolio.yearChange >= 0 ? '#34D399' : '#FF3B30'}
-                thickness={2}
+                curvature={0.15}
+                curveType={1}
+                startFillColor={portfolio.yearChange >= 0 ? '#10B981' : '#EF4444'}
+                startOpacity={0.25}
+                endOpacity={0.01}
+                color={portfolio.yearChange >= 0 ? '#10B981' : '#EF4444'}
+                thickness={2.5}
                 hideDataPoints
                 hideAxesAndRules
                 hideYAxisText
                 xAxisLabelsHeight={0}
                 yAxisLabelPrefix="$"
                 backgroundColor="transparent"
-                spacing={Math.max(1, (portfolioChartWidth - 40) / portfolio.chartData.length)}
-                initialSpacing={10}
-                endSpacing={10}
+                spacing={chartSpacing}
+                initialSpacing={5}
+                endSpacing={5}
+                adjustToWidth
+                disableScroll
                 pointerConfig={{
                   pointerStripHeight: 200,
-                  pointerStripColor: '#8E8E93',
-                  pointerStripWidth: 2,
-                  strokeDashArray: [0],
-                  pointerColor: portfolio.yearChange >= 0 ? '#34D399' : '#FF3B30',
-                  radius: 7,
-                  pointerLabelWidth: 140,
-                  pointerLabelHeight: 70,
+                  pointerStripColor: 'rgba(142, 142, 147, 0.3)',
+                  pointerStripWidth: 1,
+                  strokeDashArray: [4, 4],
+                  pointerColor: portfolio.yearChange >= 0 ? '#10B981' : '#EF4444',
+                  radius: 6,
+                  pointerLabelWidth: 120,
+                  pointerLabelHeight: 50,
                   activatePointersOnLongPress: false,
                   autoAdjustPointerLabelPosition: true,
                   pointerLabelComponent: (items: any) => {
                     if (!items?.[0]) return null;
-                    
-                    const dataPointText = items[0].dataPointText;
-                    
+                    const value = items[0].value;
                     return (
                       <View style={styles.portfolioTooltip}>
-                        <Text style={styles.portfolioTooltipLabel}>
-                          {dataPointText || ''}
+                        <Text style={styles.portfolioTooltipValue}>
+                          ${value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Text>
                       </View>
                     );
@@ -1075,7 +1200,8 @@ export default function Dashboard() {
                 </TouchableOpacity>
               </View>
             </View>
-          )}
+            );
+          })()}
 
           {/* Holdings List */}
           {portfolio.holdings.length > 0 && (
@@ -1260,22 +1386,26 @@ export default function Dashboard() {
                   
                   <View style={styles.watchlistRowCenter}>
                     <LineChart
-                      data={{ 
-                        labels: [], 
-                        datasets: [{ 
-                          data: stock.data.length > 1 ? stock.data : [stock.price, stock.price * 0.99, stock.price * 1.01, stock.price],
-                          strokeWidth: 1.5,
-                        }] 
+                      data={{
+                        labels: [],
+                        datasets: [{
+                          data: smoothData(stock.data.length > 1 ? stock.data : [stock.price, stock.price * 0.99, stock.price * 1.01, stock.price], 5),
+                          strokeWidth: 2,
+                        }]
                       }}
-                      width={80}
-                      height={40}
-                      chartConfig={{ 
-                        backgroundGradientFrom: 'transparent', 
+                      width={90}
+                      height={44}
+                      chartConfig={{
+                        backgroundGradientFrom: 'transparent',
                         backgroundGradientTo: 'transparent',
                         backgroundGradientFromOpacity: 0,
                         backgroundGradientToOpacity: 0,
-                        color: () => stock.color, 
-                        strokeWidth: 1.5,
+                        color: () => stock.color,
+                        strokeWidth: 2,
+                        fillShadowGradientFrom: stock.color,
+                        fillShadowGradientTo: stock.color,
+                        fillShadowGradientFromOpacity: 0.15,
+                        fillShadowGradientToOpacity: 0,
                         propsForDots: {
                           r: '0',
                         },
@@ -1284,7 +1414,7 @@ export default function Dashboard() {
                         },
                       }}
                       withDots={false}
-                      withShadow={false}
+                      withShadow={true}
                       withHorizontalLabels={false}
                       withVerticalLabels={false}
                       withInnerLines={false}
@@ -1446,28 +1576,32 @@ export default function Dashboard() {
                   <Text style={styles.trendingPrice}>${stock.price.toFixed(2)}</Text>
                   
                   <LineChart
-                    data={{ 
-                      labels: stock.data.map(() => ''), 
-                      datasets: [{ 
-                        data: stock.data.length > 0 ? stock.data : [stock.price],
+                    data={{
+                      labels: stock.data.map(() => ''),
+                      datasets: [{
+                        data: smoothData(stock.data.length > 0 ? stock.data : [stock.price, stock.price], 5),
                         strokeWidth: 2,
-                      }] 
+                      }]
                     }}
                     width={chartWidth}
                     height={50}
-                    chartConfig={{ 
-                      backgroundGradientFrom: '#fff', 
+                    chartConfig={{
+                      backgroundGradientFrom: '#fff',
                       backgroundGradientTo: '#fff',
                       backgroundGradientFromOpacity: 0,
                       backgroundGradientToOpacity: 0,
-                      color: (opacity = 1) => stock.color, 
+                      color: () => stock.color,
                       strokeWidth: 2,
+                      fillShadowGradientFrom: stock.color,
+                      fillShadowGradientTo: stock.color,
+                      fillShadowGradientFromOpacity: 0.12,
+                      fillShadowGradientToOpacity: 0,
                       propsForDots: {
                         r: '0',
                       },
                     }}
                     withDots={false}
-                    withShadow={false}
+                    withShadow={true}
                     withHorizontalLabels={false}
                     withVerticalLabels={false}
                     withInnerLines={false}
@@ -2044,6 +2178,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     fontWeight: '600',
+  },
+  portfolioTooltipValue: {
+    color: '#000',
+    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: '700',
   },
   xAxisLabel: {
     color: '#8E8E93',
