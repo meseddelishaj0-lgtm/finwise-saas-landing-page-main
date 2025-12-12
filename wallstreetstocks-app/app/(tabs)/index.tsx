@@ -28,15 +28,15 @@ const portfolioChartWidth = width - 80;
 
 // Clean and validate chart data - fill gaps and remove invalid values
 const cleanChartData = (data: number[]): number[] => {
-  if (!data || data.length === 0) return [0];
+  if (!data || data.length === 0) return [1, 1];
 
-  // Filter out null, undefined, NaN, and non-finite values
+  // Filter out null, undefined, NaN, non-finite, and zero/negative values
   const cleaned: number[] = [];
-  let lastValidValue = 0;
+  let lastValidValue = 1; // Default to 1 to avoid zero issues
 
   // Find first valid value
   for (const val of data) {
-    if (typeof val === 'number' && isFinite(val) && !isNaN(val)) {
+    if (typeof val === 'number' && isFinite(val) && !isNaN(val) && val > 0) {
       lastValidValue = val;
       break;
     }
@@ -45,7 +45,7 @@ const cleanChartData = (data: number[]): number[] => {
   // Fill array, replacing invalid values with last known good value
   for (let i = 0; i < data.length; i++) {
     const val = data[i];
-    if (typeof val === 'number' && isFinite(val) && !isNaN(val)) {
+    if (typeof val === 'number' && isFinite(val) && !isNaN(val) && val > 0) {
       cleaned.push(val);
       lastValidValue = val;
     } else {
@@ -54,11 +54,31 @@ const cleanChartData = (data: number[]): number[] => {
     }
   }
 
-  // Ensure we have at least 2 points for a line
-  if (cleaned.length === 0) return [0, 0];
-  if (cleaned.length === 1) return [cleaned[0], cleaned[0]];
+  // Ensure we have at least 4 points for a smooth line
+  if (cleaned.length === 0) return [1, 1, 1, 1];
+  if (cleaned.length === 1) return [cleaned[0], cleaned[0], cleaned[0], cleaned[0]];
+  if (cleaned.length === 2) return [cleaned[0], cleaned[0], cleaned[1], cleaned[1]];
+  if (cleaned.length === 3) return [cleaned[0], cleaned[1], cleaned[1], cleaned[2]];
 
   return cleaned;
+};
+
+// Normalize data to prevent extreme spikes that break bezier curves
+const normalizeChartData = (data: number[]): number[] => {
+  const cleaned = cleanChartData(data);
+  if (cleaned.length < 2) return cleaned;
+
+  const min = Math.min(...cleaned);
+  const max = Math.max(...cleaned);
+  const range = max - min;
+
+  // If range is too small, return flat line
+  if (range < 0.001) {
+    return cleaned.map(() => 50);
+  }
+
+  // Normalize to 0-100 range to prevent extreme bezier artifacts
+  return cleaned.map(val => ((val - min) / range) * 100);
 };
 
 // Smooth data using moving average to eliminate jaggedness
@@ -1427,7 +1447,7 @@ export default function Dashboard() {
                       data={{
                         labels: [],
                         datasets: [{
-                          data: smoothData(stock.data.length > 1 ? stock.data : [stock.price, stock.price * 0.99, stock.price * 1.01, stock.price], 5),
+                          data: normalizeChartData(smoothData(stock.data.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.99, (stock.price || 100) * 1.01, stock.price || 100], 3)),
                           strokeWidth: 2,
                         }]
                       }}
@@ -1615,9 +1635,9 @@ export default function Dashboard() {
                   
                   <LineChart
                     data={{
-                      labels: stock.data.map(() => ''),
+                      labels: [],
                       datasets: [{
-                        data: smoothData(stock.data.length > 0 ? stock.data : [stock.price, stock.price], 5),
+                        data: normalizeChartData(smoothData(stock.data.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.99, (stock.price || 100) * 1.01, stock.price || 100], 3)),
                         strokeWidth: 2,
                       }]
                     }}
