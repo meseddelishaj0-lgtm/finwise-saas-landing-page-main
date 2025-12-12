@@ -153,18 +153,43 @@ export default function AITools() {
   const [activeTab, setActiveTab] = useState<'analyzer' | 'compare' | 'forecast' | 'assistant' | 'resources' | 'calculator'>('analyzer');
 
   // Calculator state
+  const [calcType, setCalcType] = useState<'investment' | 'mortgage' | 'loan' | 'bond' | 'retirement'>('investment');
+
+  // Investment Calculator
   const [calcInitialAmount, setCalcInitialAmount] = useState('10000');
   const [calcMonthlyContribution, setCalcMonthlyContribution] = useState('500');
   const [calcYears, setCalcYears] = useState('10');
   const [calcAnnualReturn, setCalcAnnualReturn] = useState('8');
   const [calcInflationRate, setCalcInflationRate] = useState('3');
-  const [calcResult, setCalcResult] = useState<{
-    futureValue: number;
-    totalContributions: number;
-    totalInterest: number;
-    inflationAdjusted: number;
-    yearlyBreakdown: { year: number; balance: number; contributions: number; interest: number }[];
-  } | null>(null);
+  const [calcResult, setCalcResult] = useState<any>(null);
+
+  // Mortgage Calculator
+  const [mortgageHomePrice, setMortgageHomePrice] = useState('400000');
+  const [mortgageDownPayment, setMortgageDownPayment] = useState('80000');
+  const [mortgageInterestRate, setMortgageInterestRate] = useState('6.5');
+  const [mortgageTerm, setMortgageTerm] = useState('30');
+  const [mortgagePropertyTax, setMortgagePropertyTax] = useState('3600');
+  const [mortgageInsurance, setMortgageInsurance] = useState('1200');
+
+  // Loan Calculator
+  const [loanAmount, setLoanAmount] = useState('25000');
+  const [loanInterestRate, setLoanInterestRate] = useState('7.5');
+  const [loanTerm, setLoanTerm] = useState('5');
+
+  // Bond Calculator
+  const [bondFaceValue, setBondFaceValue] = useState('1000');
+  const [bondCouponRate, setBondCouponRate] = useState('5');
+  const [bondYearsToMaturity, setBondYearsToMaturity] = useState('10');
+  const [bondMarketRate, setBondMarketRate] = useState('4');
+  const [bondPaymentFrequency, setBondPaymentFrequency] = useState('2');
+
+  // Retirement Calculator
+  const [retireCurrentAge, setRetireCurrentAge] = useState('30');
+  const [retireTargetAge, setRetireTargetAge] = useState('65');
+  const [retireCurrentSavings, setRetireCurrentSavings] = useState('50000');
+  const [retireMonthlyContrib, setRetireMonthlyContrib] = useState('1000');
+  const [retireExpectedReturn, setRetireExpectedReturn] = useState('7');
+  const [retireMonthlyExpense, setRetireMonthlyExpense] = useState('5000');
 
   // Stock Analyzer
   const [analyzerTicker, setAnalyzerTicker] = useState('');
@@ -1575,243 +1600,498 @@ Return JSON only:
           </View>
         )}
 
-        {/* Investment Calculator Tab */}
+        {/* Advanced Calculator Tab */}
         {activeTab === 'calculator' && (
           <View style={styles.calculatorContainer}>
+            {/* Header */}
             <View style={styles.calcHeader}>
               <View style={styles.calcHeaderIcon}>
                 <Ionicons name="calculator" size={28} color="#34C759" />
               </View>
               <View>
-                <Text style={styles.calcHeaderTitle}>Investment Calculator</Text>
+                <Text style={styles.calcHeaderTitle}>Financial Calculators</Text>
                 <Text style={styles.calcHeaderSubtitle}>Plan your financial future</Text>
               </View>
             </View>
 
-            {/* Input Card */}
-            <View style={styles.calcCard}>
-              <Text style={styles.calcCardTitle}>Investment Details</Text>
+            {/* Calculator Type Selector */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.calcTypeScroll}>
+              {[
+                { key: 'investment', label: 'Investment', icon: 'trending-up', color: '#34C759' },
+                { key: 'mortgage', label: 'Mortgage', icon: 'home', color: '#007AFF' },
+                { key: 'loan', label: 'Loan', icon: 'card', color: '#FF9500' },
+                { key: 'bond', label: 'Bond', icon: 'ribbon', color: '#5856D6' },
+                { key: 'retirement', label: 'Retirement', icon: 'sunny', color: '#FF3B30' },
+              ].map((type) => (
+                <TouchableOpacity
+                  key={type.key}
+                  style={[
+                    styles.calcTypeButton,
+                    calcType === type.key && { backgroundColor: `${type.color}15`, borderColor: type.color },
+                  ]}
+                  onPress={() => { setCalcType(type.key as any); setCalcResult(null); }}
+                >
+                  <Ionicons name={type.icon as any} size={18} color={calcType === type.key ? type.color : '#8E8E93'} />
+                  <Text style={[styles.calcTypeText, calcType === type.key && { color: type.color }]}>
+                    {type.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
-              <View style={styles.calcInputGroup}>
-                <Text style={styles.calcInputLabel}>Initial Investment</Text>
-                <View style={styles.calcInputWrapper}>
-                  <Text style={styles.calcInputPrefix}>$</Text>
-                  <TextInput
-                    style={styles.calcInput}
-                    value={calcInitialAmount}
-                    onChangeText={setCalcInitialAmount}
-                    keyboardType="numeric"
-                    placeholder="10,000"
-                    placeholderTextColor="#C7C7CC"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.calcInputGroup}>
-                <Text style={styles.calcInputLabel}>Monthly Contribution</Text>
-                <View style={styles.calcInputWrapper}>
-                  <Text style={styles.calcInputPrefix}>$</Text>
-                  <TextInput
-                    style={styles.calcInput}
-                    value={calcMonthlyContribution}
-                    onChangeText={setCalcMonthlyContribution}
-                    keyboardType="numeric"
-                    placeholder="500"
-                    placeholderTextColor="#C7C7CC"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.calcRow}>
-                <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.calcInputLabel}>Years</Text>
+            {/* Investment Calculator */}
+            {calcType === 'investment' && (
+              <View style={styles.calcCard}>
+                <Text style={styles.calcCardTitle}>Investment Growth Calculator</Text>
+                <View style={styles.calcInputGroup}>
+                  <Text style={styles.calcInputLabel}>Initial Investment</Text>
                   <View style={styles.calcInputWrapper}>
-                    <TextInput
-                      style={styles.calcInput}
-                      value={calcYears}
-                      onChangeText={setCalcYears}
-                      keyboardType="numeric"
-                      placeholder="10"
-                      placeholderTextColor="#C7C7CC"
-                    />
-                    <Text style={styles.calcInputSuffix}>yrs</Text>
+                    <Text style={styles.calcInputPrefix}>$</Text>
+                    <TextInput style={styles.calcInput} value={calcInitialAmount} onChangeText={setCalcInitialAmount} keyboardType="numeric" placeholder="10,000" placeholderTextColor="#C7C7CC" />
                   </View>
                 </View>
-
-                <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={styles.calcInputLabel}>Annual Return</Text>
+                <View style={styles.calcInputGroup}>
+                  <Text style={styles.calcInputLabel}>Monthly Contribution</Text>
                   <View style={styles.calcInputWrapper}>
-                    <TextInput
-                      style={styles.calcInput}
-                      value={calcAnnualReturn}
-                      onChangeText={setCalcAnnualReturn}
-                      keyboardType="numeric"
-                      placeholder="8"
-                      placeholderTextColor="#C7C7CC"
-                    />
-                    <Text style={styles.calcInputSuffix}>%</Text>
+                    <Text style={styles.calcInputPrefix}>$</Text>
+                    <TextInput style={styles.calcInput} value={calcMonthlyContribution} onChangeText={setCalcMonthlyContribution} keyboardType="numeric" placeholder="500" placeholderTextColor="#C7C7CC" />
                   </View>
                 </View>
-              </View>
-
-              <View style={styles.calcInputGroup}>
-                <Text style={styles.calcInputLabel}>Inflation Rate (optional)</Text>
-                <View style={styles.calcInputWrapper}>
-                  <TextInput
-                    style={styles.calcInput}
-                    value={calcInflationRate}
-                    onChangeText={setCalcInflationRate}
-                    keyboardType="numeric"
-                    placeholder="3"
-                    placeholderTextColor="#C7C7CC"
-                  />
-                  <Text style={styles.calcInputSuffix}>%</Text>
+                <View style={styles.calcRow}>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Years</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={calcYears} onChangeText={setCalcYears} keyboardType="numeric" placeholder="10" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>yrs</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Annual Return</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={calcAnnualReturn} onChangeText={setCalcAnnualReturn} keyboardType="numeric" placeholder="8" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>%</Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-
-              <TouchableOpacity
-                style={styles.calcButton}
-                onPress={() => {
+                <TouchableOpacity style={[styles.calcButton, { backgroundColor: '#34C759' }]} onPress={() => {
                   const initial = parseFloat(calcInitialAmount) || 0;
                   const monthly = parseFloat(calcMonthlyContribution) || 0;
                   const years = parseInt(calcYears) || 10;
                   const rate = (parseFloat(calcAnnualReturn) || 8) / 100;
-                  const inflation = (parseFloat(calcInflationRate) || 0) / 100;
                   const monthlyRate = rate / 12;
                   const months = years * 12;
-
                   let balance = initial;
                   let totalContributions = initial;
-                  const yearlyBreakdown: { year: number; balance: number; contributions: number; interest: number }[] = [];
-
                   for (let month = 1; month <= months; month++) {
                     balance = balance * (1 + monthlyRate) + monthly;
                     totalContributions += monthly;
-
-                    if (month % 12 === 0) {
-                      yearlyBreakdown.push({
-                        year: month / 12,
-                        balance: Math.round(balance),
-                        contributions: Math.round(totalContributions),
-                        interest: Math.round(balance - totalContributions),
-                      });
-                    }
                   }
+                  setCalcResult({ type: 'investment', futureValue: Math.round(balance), totalContributions: Math.round(totalContributions), totalInterest: Math.round(balance - totalContributions), years });
+                }}>
+                  <Ionicons name="calculator" size={20} color="#FFF" />
+                  <Text style={styles.calcButtonText}>Calculate Growth</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
-                  const futureValue = Math.round(balance);
-                  const totalInterest = Math.round(balance - totalContributions);
-                  const inflationAdjusted = Math.round(futureValue / Math.pow(1 + inflation, years));
-
-                  setCalcResult({
-                    futureValue,
-                    totalContributions: Math.round(totalContributions),
-                    totalInterest,
-                    inflationAdjusted,
-                    yearlyBreakdown,
-                  });
-                }}
-              >
-                <Ionicons name="calculator" size={20} color="#FFF" />
-                <Text style={styles.calcButtonText}>Calculate</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Results */}
-            {calcResult && (
-              <>
-                <View style={styles.calcResultCard}>
-                  <Text style={styles.calcResultTitle}>Your Investment Growth</Text>
-
-                  <View style={styles.calcResultMain}>
-                    <Text style={styles.calcResultLabel}>Future Value</Text>
-                    <Text style={styles.calcResultValue}>
-                      ${calcResult.futureValue.toLocaleString()}
-                    </Text>
-                  </View>
-
-                  <View style={styles.calcResultGrid}>
-                    <View style={styles.calcResultItem}>
-                      <Ionicons name="wallet-outline" size={20} color="#007AFF" />
-                      <Text style={styles.calcResultItemLabel}>Total Invested</Text>
-                      <Text style={styles.calcResultItemValue}>
-                        ${calcResult.totalContributions.toLocaleString()}
-                      </Text>
-                    </View>
-                    <View style={styles.calcResultItem}>
-                      <Ionicons name="trending-up" size={20} color="#34C759" />
-                      <Text style={styles.calcResultItemLabel}>Interest Earned</Text>
-                      <Text style={[styles.calcResultItemValue, { color: '#34C759' }]}>
-                        +${calcResult.totalInterest.toLocaleString()}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {parseFloat(calcInflationRate) > 0 && (
-                    <View style={styles.calcInflationBox}>
-                      <Ionicons name="information-circle" size={18} color="#FF9500" />
-                      <View style={{ flex: 1, marginLeft: 10 }}>
-                        <Text style={styles.calcInflationLabel}>Inflation-Adjusted Value</Text>
-                        <Text style={styles.calcInflationValue}>
-                          ${calcResult.inflationAdjusted.toLocaleString()}
-                        </Text>
-                        <Text style={styles.calcInflationNote}>
-                          In today's dollars ({calcInflationRate}% annual inflation)
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-                </View>
-
-                {/* Year by Year Breakdown */}
-                <View style={styles.calcBreakdownCard}>
-                  <Text style={styles.calcBreakdownTitle}>Year-by-Year Growth</Text>
-                  <View style={styles.calcBreakdownHeader}>
-                    <Text style={[styles.calcBreakdownHeaderText, { flex: 0.5 }]}>Year</Text>
-                    <Text style={[styles.calcBreakdownHeaderText, { flex: 1 }]}>Balance</Text>
-                    <Text style={[styles.calcBreakdownHeaderText, { flex: 1 }]}>Contributed</Text>
-                    <Text style={[styles.calcBreakdownHeaderText, { flex: 1 }]}>Interest</Text>
-                  </View>
-                  {calcResult.yearlyBreakdown.slice(0, 10).map((row) => (
-                    <View key={row.year} style={styles.calcBreakdownRow}>
-                      <Text style={[styles.calcBreakdownCell, { flex: 0.5 }]}>{row.year}</Text>
-                      <Text style={[styles.calcBreakdownCell, { flex: 1 }]}>${row.balance.toLocaleString()}</Text>
-                      <Text style={[styles.calcBreakdownCell, { flex: 1, color: '#007AFF' }]}>${row.contributions.toLocaleString()}</Text>
-                      <Text style={[styles.calcBreakdownCell, { flex: 1, color: '#34C759' }]}>+${row.interest.toLocaleString()}</Text>
-                    </View>
-                  ))}
-                  {calcResult.yearlyBreakdown.length > 10 && (
-                    <Text style={styles.calcBreakdownMore}>
-                      ... and {calcResult.yearlyBreakdown.length - 10} more years
-                    </Text>
-                  )}
-                </View>
-
-                {/* Tips */}
-                <View style={styles.calcTipsCard}>
-                  <View style={styles.calcTipsHeader}>
-                    <Ionicons name="bulb" size={20} color="#FF9500" />
-                    <Text style={styles.calcTipsTitle}>Investment Tips</Text>
-                  </View>
-                  <View style={styles.calcTip}>
-                    <Text style={styles.calcTipBullet}>•</Text>
-                    <Text style={styles.calcTipText}>
-                      The power of compound interest means your money grows exponentially over time.
-                    </Text>
-                  </View>
-                  <View style={styles.calcTip}>
-                    <Text style={styles.calcTipBullet}>•</Text>
-                    <Text style={styles.calcTipText}>
-                      Increasing monthly contributions by even $100 can add significantly to your final balance.
-                    </Text>
-                  </View>
-                  <View style={styles.calcTip}>
-                    <Text style={styles.calcTipBullet}>•</Text>
-                    <Text style={styles.calcTipText}>
-                      Historical S&P 500 average return is ~10% annually, but past performance doesn't guarantee future results.
-                    </Text>
+            {/* Mortgage Calculator */}
+            {calcType === 'mortgage' && (
+              <View style={styles.calcCard}>
+                <Text style={styles.calcCardTitle}>Mortgage Payment Calculator</Text>
+                <View style={styles.calcInputGroup}>
+                  <Text style={styles.calcInputLabel}>Home Price</Text>
+                  <View style={styles.calcInputWrapper}>
+                    <Text style={styles.calcInputPrefix}>$</Text>
+                    <TextInput style={styles.calcInput} value={mortgageHomePrice} onChangeText={setMortgageHomePrice} keyboardType="numeric" placeholder="400,000" placeholderTextColor="#C7C7CC" />
                   </View>
                 </View>
-              </>
+                <View style={styles.calcInputGroup}>
+                  <Text style={styles.calcInputLabel}>Down Payment</Text>
+                  <View style={styles.calcInputWrapper}>
+                    <Text style={styles.calcInputPrefix}>$</Text>
+                    <TextInput style={styles.calcInput} value={mortgageDownPayment} onChangeText={setMortgageDownPayment} keyboardType="numeric" placeholder="80,000" placeholderTextColor="#C7C7CC" />
+                  </View>
+                </View>
+                <View style={styles.calcRow}>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Interest Rate</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={mortgageInterestRate} onChangeText={setMortgageInterestRate} keyboardType="numeric" placeholder="6.5" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>%</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Loan Term</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={mortgageTerm} onChangeText={setMortgageTerm} keyboardType="numeric" placeholder="30" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>yrs</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.calcRow}>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Property Tax/yr</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <Text style={styles.calcInputPrefix}>$</Text>
+                      <TextInput style={styles.calcInput} value={mortgagePropertyTax} onChangeText={setMortgagePropertyTax} keyboardType="numeric" placeholder="3,600" placeholderTextColor="#C7C7CC" />
+                    </View>
+                  </View>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Insurance/yr</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <Text style={styles.calcInputPrefix}>$</Text>
+                      <TextInput style={styles.calcInput} value={mortgageInsurance} onChangeText={setMortgageInsurance} keyboardType="numeric" placeholder="1,200" placeholderTextColor="#C7C7CC" />
+                    </View>
+                  </View>
+                </View>
+                <TouchableOpacity style={[styles.calcButton, { backgroundColor: '#007AFF' }]} onPress={() => {
+                  const principal = (parseFloat(mortgageHomePrice) || 0) - (parseFloat(mortgageDownPayment) || 0);
+                  const rate = (parseFloat(mortgageInterestRate) || 6.5) / 100 / 12;
+                  const payments = (parseInt(mortgageTerm) || 30) * 12;
+                  const monthlyPI = principal * (rate * Math.pow(1 + rate, payments)) / (Math.pow(1 + rate, payments) - 1);
+                  const monthlyTax = (parseFloat(mortgagePropertyTax) || 0) / 12;
+                  const monthlyIns = (parseFloat(mortgageInsurance) || 0) / 12;
+                  const totalMonthly = monthlyPI + monthlyTax + monthlyIns;
+                  const totalPayments = totalMonthly * payments;
+                  const totalInterest = (monthlyPI * payments) - principal;
+                  setCalcResult({ type: 'mortgage', monthlyPayment: Math.round(totalMonthly), principalInterest: Math.round(monthlyPI), propertyTax: Math.round(monthlyTax), insurance: Math.round(monthlyIns), loanAmount: Math.round(principal), totalPayments: Math.round(totalPayments), totalInterest: Math.round(totalInterest), downPaymentPercent: Math.round(((parseFloat(mortgageDownPayment) || 0) / (parseFloat(mortgageHomePrice) || 1)) * 100) });
+                }}>
+                  <Ionicons name="home" size={20} color="#FFF" />
+                  <Text style={styles.calcButtonText}>Calculate Mortgage</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Loan Calculator */}
+            {calcType === 'loan' && (
+              <View style={styles.calcCard}>
+                <Text style={styles.calcCardTitle}>Loan Payment Calculator</Text>
+                <View style={styles.calcInputGroup}>
+                  <Text style={styles.calcInputLabel}>Loan Amount</Text>
+                  <View style={styles.calcInputWrapper}>
+                    <Text style={styles.calcInputPrefix}>$</Text>
+                    <TextInput style={styles.calcInput} value={loanAmount} onChangeText={setLoanAmount} keyboardType="numeric" placeholder="25,000" placeholderTextColor="#C7C7CC" />
+                  </View>
+                </View>
+                <View style={styles.calcRow}>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Interest Rate</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={loanInterestRate} onChangeText={setLoanInterestRate} keyboardType="numeric" placeholder="7.5" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>%</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Loan Term</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={loanTerm} onChangeText={setLoanTerm} keyboardType="numeric" placeholder="5" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>yrs</Text>
+                    </View>
+                  </View>
+                </View>
+                <TouchableOpacity style={[styles.calcButton, { backgroundColor: '#FF9500' }]} onPress={() => {
+                  const principal = parseFloat(loanAmount) || 0;
+                  const rate = (parseFloat(loanInterestRate) || 7.5) / 100 / 12;
+                  const payments = (parseInt(loanTerm) || 5) * 12;
+                  const monthlyPayment = principal * (rate * Math.pow(1 + rate, payments)) / (Math.pow(1 + rate, payments) - 1);
+                  const totalPayments = monthlyPayment * payments;
+                  const totalInterest = totalPayments - principal;
+                  setCalcResult({ type: 'loan', monthlyPayment: Math.round(monthlyPayment), totalPayments: Math.round(totalPayments), totalInterest: Math.round(totalInterest), principal: Math.round(principal) });
+                }}>
+                  <Ionicons name="card" size={20} color="#FFF" />
+                  <Text style={styles.calcButtonText}>Calculate Loan</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Bond Calculator */}
+            {calcType === 'bond' && (
+              <View style={styles.calcCard}>
+                <Text style={styles.calcCardTitle}>Bond Valuation Calculator</Text>
+                <View style={styles.calcRow}>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Face Value</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <Text style={styles.calcInputPrefix}>$</Text>
+                      <TextInput style={styles.calcInput} value={bondFaceValue} onChangeText={setBondFaceValue} keyboardType="numeric" placeholder="1,000" placeholderTextColor="#C7C7CC" />
+                    </View>
+                  </View>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Coupon Rate</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={bondCouponRate} onChangeText={setBondCouponRate} keyboardType="numeric" placeholder="5" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>%</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.calcRow}>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Years to Maturity</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={bondYearsToMaturity} onChangeText={setBondYearsToMaturity} keyboardType="numeric" placeholder="10" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>yrs</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Market Rate</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={bondMarketRate} onChangeText={setBondMarketRate} keyboardType="numeric" placeholder="4" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>%</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.calcInputGroup}>
+                  <Text style={styles.calcInputLabel}>Payments per Year</Text>
+                  <View style={styles.calcInputWrapper}>
+                    <TextInput style={styles.calcInput} value={bondPaymentFrequency} onChangeText={setBondPaymentFrequency} keyboardType="numeric" placeholder="2" placeholderTextColor="#C7C7CC" />
+                    <Text style={styles.calcInputSuffix}>/yr</Text>
+                  </View>
+                </View>
+                <TouchableOpacity style={[styles.calcButton, { backgroundColor: '#5856D6' }]} onPress={() => {
+                  const faceValue = parseFloat(bondFaceValue) || 1000;
+                  const couponRate = (parseFloat(bondCouponRate) || 5) / 100;
+                  const years = parseInt(bondYearsToMaturity) || 10;
+                  const marketRate = (parseFloat(bondMarketRate) || 4) / 100;
+                  const frequency = parseInt(bondPaymentFrequency) || 2;
+                  const couponPayment = (faceValue * couponRate) / frequency;
+                  const periodicRate = marketRate / frequency;
+                  const totalPeriods = years * frequency;
+                  let pvCoupons = 0;
+                  for (let t = 1; t <= totalPeriods; t++) {
+                    pvCoupons += couponPayment / Math.pow(1 + periodicRate, t);
+                  }
+                  const pvFaceValue = faceValue / Math.pow(1 + periodicRate, totalPeriods);
+                  const bondPrice = pvCoupons + pvFaceValue;
+                  const ytm = couponRate;
+                  const currentYield = (couponPayment * frequency) / bondPrice * 100;
+                  setCalcResult({ type: 'bond', bondPrice: Math.round(bondPrice * 100) / 100, couponPayment: Math.round(couponPayment * 100) / 100, annualIncome: Math.round(couponPayment * frequency * 100) / 100, totalIncome: Math.round(couponPayment * totalPeriods * 100) / 100, currentYield: Math.round(currentYield * 100) / 100, isPremium: bondPrice > faceValue, faceValue });
+                }}>
+                  <Ionicons name="ribbon" size={20} color="#FFF" />
+                  <Text style={styles.calcButtonText}>Calculate Bond Value</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Retirement Calculator */}
+            {calcType === 'retirement' && (
+              <View style={styles.calcCard}>
+                <Text style={styles.calcCardTitle}>Retirement Planning Calculator</Text>
+                <View style={styles.calcRow}>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Current Age</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={retireCurrentAge} onChangeText={setRetireCurrentAge} keyboardType="numeric" placeholder="30" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>yrs</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Retirement Age</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={retireTargetAge} onChangeText={setRetireTargetAge} keyboardType="numeric" placeholder="65" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>yrs</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.calcRow}>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Current Savings</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <Text style={styles.calcInputPrefix}>$</Text>
+                      <TextInput style={styles.calcInput} value={retireCurrentSavings} onChangeText={setRetireCurrentSavings} keyboardType="numeric" placeholder="50,000" placeholderTextColor="#C7C7CC" />
+                    </View>
+                  </View>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Monthly Savings</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <Text style={styles.calcInputPrefix}>$</Text>
+                      <TextInput style={styles.calcInput} value={retireMonthlyContrib} onChangeText={setRetireMonthlyContrib} keyboardType="numeric" placeholder="1,000" placeholderTextColor="#C7C7CC" />
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.calcRow}>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Expected Return</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <TextInput style={styles.calcInput} value={retireExpectedReturn} onChangeText={setRetireExpectedReturn} keyboardType="numeric" placeholder="7" placeholderTextColor="#C7C7CC" />
+                      <Text style={styles.calcInputSuffix}>%</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
+                    <Text style={styles.calcInputLabel}>Monthly Expense</Text>
+                    <View style={styles.calcInputWrapper}>
+                      <Text style={styles.calcInputPrefix}>$</Text>
+                      <TextInput style={styles.calcInput} value={retireMonthlyExpense} onChangeText={setRetireMonthlyExpense} keyboardType="numeric" placeholder="5,000" placeholderTextColor="#C7C7CC" />
+                    </View>
+                  </View>
+                </View>
+                <TouchableOpacity style={[styles.calcButton, { backgroundColor: '#FF3B30' }]} onPress={() => {
+                  const currentAge = parseInt(retireCurrentAge) || 30;
+                  const targetAge = parseInt(retireTargetAge) || 65;
+                  const currentSavings = parseFloat(retireCurrentSavings) || 0;
+                  const monthlyContrib = parseFloat(retireMonthlyContrib) || 0;
+                  const expectedReturn = (parseFloat(retireExpectedReturn) || 7) / 100;
+                  const monthlyExpense = parseFloat(retireMonthlyExpense) || 5000;
+                  const yearsToRetire = targetAge - currentAge;
+                  const monthsToRetire = yearsToRetire * 12;
+                  const monthlyReturn = expectedReturn / 12;
+                  let balance = currentSavings;
+                  for (let m = 0; m < monthsToRetire; m++) {
+                    balance = balance * (1 + monthlyReturn) + monthlyContrib;
+                  }
+                  const annualExpense = monthlyExpense * 12;
+                  const withdrawalRate = 0.04;
+                  const neededForRetirement = annualExpense / withdrawalRate;
+                  const yearsOfRetirement = balance / annualExpense;
+                  const monthlyIncome = balance * withdrawalRate / 12;
+                  setCalcResult({ type: 'retirement', retirementSavings: Math.round(balance), neededForRetirement: Math.round(neededForRetirement), yearsOfRetirement: Math.round(yearsOfRetirement * 10) / 10, monthlyIncome: Math.round(monthlyIncome), totalContributions: Math.round(currentSavings + (monthlyContrib * monthsToRetire)), isOnTrack: balance >= neededForRetirement, gap: Math.round(neededForRetirement - balance) });
+                }}>
+                  <Ionicons name="sunny" size={20} color="#FFF" />
+                  <Text style={styles.calcButtonText}>Calculate Retirement</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Results Display */}
+            {calcResult && calcResult.type === 'investment' && (
+              <View style={styles.calcResultCard}>
+                <Text style={styles.calcResultTitle}>Investment Growth Results</Text>
+                <View style={styles.calcResultMain}>
+                  <Text style={styles.calcResultLabel}>Future Value</Text>
+                  <Text style={[styles.calcResultValue, { color: '#34C759' }]}>${calcResult.futureValue.toLocaleString()}</Text>
+                </View>
+                <View style={styles.calcResultGrid}>
+                  <View style={styles.calcResultItem}>
+                    <Ionicons name="wallet-outline" size={20} color="#007AFF" />
+                    <Text style={styles.calcResultItemLabel}>Total Invested</Text>
+                    <Text style={styles.calcResultItemValue}>${calcResult.totalContributions.toLocaleString()}</Text>
+                  </View>
+                  <View style={styles.calcResultItem}>
+                    <Ionicons name="trending-up" size={20} color="#34C759" />
+                    <Text style={styles.calcResultItemLabel}>Interest Earned</Text>
+                    <Text style={[styles.calcResultItemValue, { color: '#34C759' }]}>+${calcResult.totalInterest.toLocaleString()}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {calcResult && calcResult.type === 'mortgage' && (
+              <View style={styles.calcResultCard}>
+                <Text style={styles.calcResultTitle}>Mortgage Payment Breakdown</Text>
+                <View style={styles.calcResultMain}>
+                  <Text style={styles.calcResultLabel}>Monthly Payment</Text>
+                  <Text style={[styles.calcResultValue, { color: '#007AFF' }]}>${calcResult.monthlyPayment.toLocaleString()}</Text>
+                </View>
+                <View style={styles.calcResultGrid}>
+                  <View style={styles.calcResultItem}>
+                    <Ionicons name="home-outline" size={20} color="#007AFF" />
+                    <Text style={styles.calcResultItemLabel}>Principal & Interest</Text>
+                    <Text style={styles.calcResultItemValue}>${calcResult.principalInterest.toLocaleString()}</Text>
+                  </View>
+                  <View style={styles.calcResultItem}>
+                    <Ionicons name="document-text-outline" size={20} color="#FF9500" />
+                    <Text style={styles.calcResultItemLabel}>Tax & Insurance</Text>
+                    <Text style={styles.calcResultItemValue}>${(calcResult.propertyTax + calcResult.insurance).toLocaleString()}</Text>
+                  </View>
+                </View>
+                <View style={[styles.calcInflationBox, { backgroundColor: '#007AFF15' }]}>
+                  <Ionicons name="information-circle" size={18} color="#007AFF" />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.calcInflationLabel}>Loan Details</Text>
+                    <Text style={[styles.calcInflationValue, { color: '#007AFF' }]}>Loan: ${calcResult.loanAmount.toLocaleString()}</Text>
+                    <Text style={styles.calcInflationNote}>Down Payment: {calcResult.downPaymentPercent}% | Total Interest: ${calcResult.totalInterest.toLocaleString()}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {calcResult && calcResult.type === 'loan' && (
+              <View style={styles.calcResultCard}>
+                <Text style={styles.calcResultTitle}>Loan Payment Summary</Text>
+                <View style={styles.calcResultMain}>
+                  <Text style={styles.calcResultLabel}>Monthly Payment</Text>
+                  <Text style={[styles.calcResultValue, { color: '#FF9500' }]}>${calcResult.monthlyPayment.toLocaleString()}</Text>
+                </View>
+                <View style={styles.calcResultGrid}>
+                  <View style={styles.calcResultItem}>
+                    <Ionicons name="cash-outline" size={20} color="#007AFF" />
+                    <Text style={styles.calcResultItemLabel}>Total Payments</Text>
+                    <Text style={styles.calcResultItemValue}>${calcResult.totalPayments.toLocaleString()}</Text>
+                  </View>
+                  <View style={styles.calcResultItem}>
+                    <Ionicons name="trending-up" size={20} color="#FF3B30" />
+                    <Text style={styles.calcResultItemLabel}>Total Interest</Text>
+                    <Text style={[styles.calcResultItemValue, { color: '#FF3B30' }]}>${calcResult.totalInterest.toLocaleString()}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {calcResult && calcResult.type === 'bond' && (
+              <View style={styles.calcResultCard}>
+                <Text style={styles.calcResultTitle}>Bond Valuation Results</Text>
+                <View style={styles.calcResultMain}>
+                  <Text style={styles.calcResultLabel}>Bond Price</Text>
+                  <Text style={[styles.calcResultValue, { color: '#5856D6' }]}>${calcResult.bondPrice.toLocaleString()}</Text>
+                </View>
+                <View style={[styles.calcInflationBox, { backgroundColor: calcResult.isPremium ? '#34C75915' : '#FF3B3015' }]}>
+                  <Ionicons name={calcResult.isPremium ? 'arrow-up-circle' : 'arrow-down-circle'} size={18} color={calcResult.isPremium ? '#34C759' : '#FF3B30'} />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.calcInflationLabel}>Bond Status</Text>
+                    <Text style={[styles.calcInflationValue, { color: calcResult.isPremium ? '#34C759' : '#FF3B30' }]}>
+                      Trading at {calcResult.isPremium ? 'Premium' : 'Discount'}
+                    </Text>
+                    <Text style={styles.calcInflationNote}>
+                      {calcResult.isPremium ? 'Above' : 'Below'} face value of ${calcResult.faceValue.toLocaleString()}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.calcResultGrid}>
+                  <View style={styles.calcResultItem}>
+                    <Ionicons name="cash-outline" size={20} color="#5856D6" />
+                    <Text style={styles.calcResultItemLabel}>Annual Income</Text>
+                    <Text style={styles.calcResultItemValue}>${calcResult.annualIncome.toLocaleString()}</Text>
+                  </View>
+                  <View style={styles.calcResultItem}>
+                    <Ionicons name="trending-up" size={20} color="#34C759" />
+                    <Text style={styles.calcResultItemLabel}>Current Yield</Text>
+                    <Text style={[styles.calcResultItemValue, { color: '#34C759' }]}>{calcResult.currentYield}%</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {calcResult && calcResult.type === 'retirement' && (
+              <View style={styles.calcResultCard}>
+                <Text style={styles.calcResultTitle}>Retirement Projection</Text>
+                <View style={styles.calcResultMain}>
+                  <Text style={styles.calcResultLabel}>Projected Savings at Retirement</Text>
+                  <Text style={[styles.calcResultValue, { color: '#FF3B30' }]}>${calcResult.retirementSavings.toLocaleString()}</Text>
+                </View>
+                <View style={[styles.calcInflationBox, { backgroundColor: calcResult.isOnTrack ? '#34C75915' : '#FF950015' }]}>
+                  <Ionicons name={calcResult.isOnTrack ? 'checkmark-circle' : 'alert-circle'} size={18} color={calcResult.isOnTrack ? '#34C759' : '#FF9500'} />
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={styles.calcInflationLabel}>Retirement Status</Text>
+                    <Text style={[styles.calcInflationValue, { color: calcResult.isOnTrack ? '#34C759' : '#FF9500' }]}>
+                      {calcResult.isOnTrack ? 'On Track!' : 'Gap: $' + Math.abs(calcResult.gap).toLocaleString()}
+                    </Text>
+                    <Text style={styles.calcInflationNote}>
+                      Target: ${calcResult.neededForRetirement.toLocaleString()} (4% withdrawal rule)
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.calcResultGrid}>
+                  <View style={styles.calcResultItem}>
+                    <Ionicons name="time-outline" size={20} color="#007AFF" />
+                    <Text style={styles.calcResultItemLabel}>Years in Retirement</Text>
+                    <Text style={styles.calcResultItemValue}>{calcResult.yearsOfRetirement} yrs</Text>
+                  </View>
+                  <View style={styles.calcResultItem}>
+                    <Ionicons name="cash-outline" size={20} color="#34C759" />
+                    <Text style={styles.calcResultItemLabel}>Monthly Income</Text>
+                    <Text style={[styles.calcResultItemValue, { color: '#34C759' }]}>${calcResult.monthlyIncome.toLocaleString()}</Text>
+                  </View>
+                </View>
+              </View>
             )}
           </View>
         )}
@@ -2191,4 +2471,7 @@ const styles = StyleSheet.create({
   calcTip: { flexDirection: 'row', marginBottom: 12 },
   calcTipBullet: { fontSize: 16, color: '#FF9500', marginRight: 10, fontWeight: '700' },
   calcTipText: { flex: 1, fontSize: 14, color: '#333', lineHeight: 20, fontWeight: '500' },
+  calcTypeScroll: { marginBottom: 16 },
+  calcTypeButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, marginRight: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: '#E5E5EA', gap: 6 },
+  calcTypeText: { fontSize: 14, fontWeight: '600', color: '#8E8E93' },
 });
