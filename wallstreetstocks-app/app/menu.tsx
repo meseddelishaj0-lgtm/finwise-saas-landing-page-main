@@ -113,6 +113,18 @@ export default function MenuPage() {
           color: "#007AFF"
         },
         {
+          label: "Portfolio",
+          route: "/portfolio",
+          icon: "pie-chart-outline",
+          color: "#34C759",
+        },
+        {
+          label: "Messages",
+          route: "/messages",
+          icon: "chatbubble-outline",
+          color: "#5856D6",
+        },
+        {
           label: "Subscription",
           route: "/(modals)/paywall",
           icon: "diamond-outline",
