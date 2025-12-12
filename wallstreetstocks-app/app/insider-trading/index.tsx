@@ -1,0 +1,642 @@
+// app/insider-trading/index.tsx
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  TextInput,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+
+const FMP_API_KEY = 'jmAb5Qb7thHIdRjm07wvRsWIDMpLYZW7';
+const BASE_URL = 'https://financialmodelingprep.com/api/v4';
+
+interface InsiderTrade {
+  symbol: string;
+  filingDate: string;
+  transactionDate: string;
+  reportingCik: string;
+  transactionType: string;
+  securitiesOwned: number;
+  companyCik: string;
+  reportingName: string;
+  typeOfOwner: string;
+  acquistionOrDisposition: string;
+  formType: string;
+  securitiesTransacted: number;
+  price: number;
+  securityName: string;
+  link: string;
+}
+
+const TRANSACTION_TYPES: { [key: string]: { label: string; color: string; icon: string } } = {
+  'P-Purchase': { label: 'Purchase', color: '#34C759', icon: 'arrow-up' },
+  'S-Sale': { label: 'Sale', color: '#FF3B30', icon: 'arrow-down' },
+  'A-Grant': { label: 'Grant', color: '#007AFF', icon: 'gift' },
+  'M-Exempt': { label: 'Option Exercise', color: '#FF9500', icon: 'swap-horizontal' },
+  'G-Gift': { label: 'Gift', color: '#AF52DE', icon: 'heart' },
+  'D-Sale to Issuer': { label: 'Sale to Issuer', color: '#FF3B30', icon: 'arrow-down' },
+  'F-Tax': { label: 'Tax Payment', color: '#8E8E93', icon: 'receipt' },
+};
+
+export default function InsiderTradingScreen() {
+  const router = useRouter();
+  const [trades, setTrades] = useState<InsiderTrade[]>([]);
+  const [filteredTrades, setFilteredTrades] = useState<InsiderTrade[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'buys' | 'sells'>('all');
+  const [stats, setStats] = useState({ totalBuys: 0, totalSells: 0, netActivity: 0 });
+
+  const fetchInsiderTrades = async () => {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/insider-trading?page=0&apikey=${FMP_API_KEY}`
+      );
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        setTrades(data.slice(0, 100));
+        setFilteredTrades(data.slice(0, 100));
+
+        // Calculate stats
+        let buys = 0;
+        let sells = 0;
+        data.slice(0, 100).forEach((trade: InsiderTrade) => {
+          const value = (trade.securitiesTransacted || 0) * (trade.price || 0);
+          if (trade.acquistionOrDisposition === 'A') {
+            buys += value;
+          } else if (trade.acquistionOrDisposition === 'D') {
+            sells += value;
+          }
+        });
+        setStats({
+          totalBuys: buys,
+          totalSells: sells,
+          netActivity: buys - sells,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching insider trades:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInsiderTrades();
+  }, []);
+
+  useEffect(() => {
+    let filtered = trades;
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toUpperCase();
+      filtered = filtered.filter(
+        (trade) =>
+          trade.symbol?.toUpperCase().includes(query) ||
+          trade.reportingName?.toUpperCase().includes(query)
+      );
+    }
+
+    // Apply transaction type filter
+    if (activeFilter === 'buys') {
+      filtered = filtered.filter((trade) => trade.acquistionOrDisposition === 'A');
+    } else if (activeFilter === 'sells') {
+      filtered = filtered.filter((trade) => trade.acquistionOrDisposition === 'D');
+    }
+
+    setFilteredTrades(filtered);
+  }, [searchQuery, activeFilter, trades]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchInsiderTrades();
+  }, []);
+
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
+    return `$${value.toFixed(0)}`;
+  };
+
+  const formatNumber = (value: number) => {
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
+    return value.toLocaleString();
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  const getTransactionInfo = (trade: InsiderTrade) => {
+    const type = TRANSACTION_TYPES[trade.transactionType] || {
+      label: trade.acquistionOrDisposition === 'A' ? 'Acquisition' : 'Disposition',
+      color: trade.acquistionOrDisposition === 'A' ? '#34C759' : '#FF3B30',
+      icon: trade.acquistionOrDisposition === 'A' ? 'arrow-up' : 'arrow-down',
+    };
+    return type;
+  };
+
+  const renderTrade = (trade: InsiderTrade, index: number) => {
+    const transactionInfo = getTransactionInfo(trade);
+    const totalValue = (trade.securitiesTransacted || 0) * (trade.price || 0);
+
+    return (
+      <TouchableOpacity
+        key={`${trade.symbol}-${trade.filingDate}-${index}`}
+        style={styles.tradeCard}
+        onPress={() => router.push(`/symbol/${trade.symbol}/chart`)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.tradeHeader}>
+          <View style={styles.tradeSymbolContainer}>
+            <Text style={styles.tradeSymbol}>{trade.symbol}</Text>
+            <View style={[styles.transactionBadge, { backgroundColor: `${transactionInfo.color}15` }]}>
+              <Ionicons name={transactionInfo.icon as any} size={12} color={transactionInfo.color} />
+              <Text style={[styles.transactionBadgeText, { color: transactionInfo.color }]}>
+                {transactionInfo.label}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.tradeDate}>{formatDate(trade.filingDate)}</Text>
+        </View>
+
+        <View style={styles.tradeDetails}>
+          <View style={styles.tradeInsider}>
+            <Ionicons name="person" size={14} color="#8E8E93" />
+            <Text style={styles.insiderName} numberOfLines={1}>
+              {trade.reportingName || 'Unknown'}
+            </Text>
+            {trade.typeOfOwner && (
+              <View style={styles.ownerBadge}>
+                <Text style={styles.ownerBadgeText}>
+                  {trade.typeOfOwner === 'director' ? 'DIR' :
+                   trade.typeOfOwner === 'officer' ? 'OFF' :
+                   trade.typeOfOwner === '10 percent owner' ? '10%' : 'INS'}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.tradeNumbers}>
+          <View style={styles.tradeNumberItem}>
+            <Text style={styles.tradeNumberLabel}>Shares</Text>
+            <Text style={styles.tradeNumberValue}>
+              {formatNumber(trade.securitiesTransacted || 0)}
+            </Text>
+          </View>
+          <View style={styles.tradeNumberItem}>
+            <Text style={styles.tradeNumberLabel}>Price</Text>
+            <Text style={styles.tradeNumberValue}>
+              ${(trade.price || 0).toFixed(2)}
+            </Text>
+          </View>
+          <View style={styles.tradeNumberItem}>
+            <Text style={styles.tradeNumberLabel}>Value</Text>
+            <Text style={[styles.tradeNumberValue, { color: transactionInfo.color }]}>
+              {formatCurrency(totalValue)}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Insider Trading</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          <View style={styles.heroIcon}>
+            <Ionicons name="briefcase" size={32} color="#5856D6" />
+          </View>
+          <Text style={styles.heroTitle}>Track Insider Activity</Text>
+          <Text style={styles.heroSubtitle}>
+            See what executives and major shareholders are buying and selling
+          </Text>
+        </View>
+
+        {/* Stats Cards */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: '#34C75915' }]}>
+              <Ionicons name="trending-up" size={20} color="#34C759" />
+            </View>
+            <Text style={styles.statLabel}>Insider Buys</Text>
+            <Text style={[styles.statValue, { color: '#34C759' }]}>
+              {formatCurrency(stats.totalBuys)}
+            </Text>
+          </View>
+          <View style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: '#FF3B3015' }]}>
+              <Ionicons name="trending-down" size={20} color="#FF3B30" />
+            </View>
+            <Text style={styles.statLabel}>Insider Sells</Text>
+            <Text style={[styles.statValue, { color: '#FF3B30' }]}>
+              {formatCurrency(stats.totalSells)}
+            </Text>
+          </View>
+          <View style={styles.statCard}>
+            <View style={[styles.statIcon, { backgroundColor: stats.netActivity >= 0 ? '#34C75915' : '#FF3B3015' }]}>
+              <Ionicons
+                name={stats.netActivity >= 0 ? 'arrow-up-circle' : 'arrow-down-circle'}
+                size={20}
+                color={stats.netActivity >= 0 ? '#34C759' : '#FF3B30'}
+              />
+            </View>
+            <Text style={styles.statLabel}>Net Activity</Text>
+            <Text style={[styles.statValue, { color: stats.netActivity >= 0 ? '#34C759' : '#FF3B30' }]}>
+              {stats.netActivity >= 0 ? '+' : ''}{formatCurrency(stats.netActivity)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Search Bar */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={20} color="#8E8E93" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by symbol or insider name..."
+              placeholderTextColor="#8E8E93"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color="#8E8E93" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Filter Tabs */}
+        <View style={styles.filterContainer}>
+          {[
+            { key: 'all', label: 'All Trades' },
+            { key: 'buys', label: 'Buys Only' },
+            { key: 'sells', label: 'Sells Only' },
+          ].map((filter) => (
+            <TouchableOpacity
+              key={filter.key}
+              style={[
+                styles.filterTab,
+                activeFilter === filter.key && styles.filterTabActive,
+              ]}
+              onPress={() => setActiveFilter(filter.key as any)}
+            >
+              <Text
+                style={[
+                  styles.filterTabText,
+                  activeFilter === filter.key && styles.filterTabTextActive,
+                ]}
+              >
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Trades List */}
+        <View style={styles.tradesSection}>
+          <Text style={styles.sectionTitle}>
+            Recent Filings ({filteredTrades.length})
+          </Text>
+
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.loadingText}>Loading insider trades...</Text>
+            </View>
+          ) : filteredTrades.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="document-text-outline" size={48} color="#C7C7CC" />
+              <Text style={styles.emptyText}>No trades found</Text>
+              <Text style={styles.emptySubtext}>
+                Try adjusting your search or filter
+              </Text>
+            </View>
+          ) : (
+            filteredTrades.map((trade, index) => renderTrade(trade, index))
+          )}
+        </View>
+
+        {/* Disclaimer */}
+        <View style={styles.disclaimerContainer}>
+          <Ionicons name="information-circle" size={16} color="#8E8E93" />
+          <Text style={styles.disclaimerText}>
+            Insider trading data is sourced from SEC Form 4 filings. This information is for educational purposes only and should not be considered investment advice.
+          </Text>
+        </View>
+
+        <View style={{ height: 100 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F7',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  content: {
+    flex: 1,
+  },
+  heroSection: {
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#F0EFFF',
+  },
+  heroIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: '#5856D6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 6,
+  },
+  heroSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 10,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderRadius: 14,
+    padding: 14,
+    alignItems: 'center',
+  },
+  statIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#8E8E93',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  searchSection: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#000',
+    marginLeft: 10,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    gap: 8,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  filterTabActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  filterTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  filterTabTextActive: {
+    color: '#FFF',
+  },
+  tradesSection: {
+    paddingHorizontal: 16,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 12,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 12,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000',
+    marginTop: 12,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 4,
+  },
+  tradeCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+  },
+  tradeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  tradeSymbolContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  tradeSymbol: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#000',
+  },
+  transactionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  transactionBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  tradeDate: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  tradeDetails: {
+    marginBottom: 12,
+  },
+  tradeInsider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  insiderName: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+    flex: 1,
+  },
+  ownerBadge: {
+    backgroundColor: '#F5F5F7',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  ownerBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#8E8E93',
+  },
+  tradeNumbers: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  tradeNumberItem: {
+    alignItems: 'center',
+  },
+  tradeNumberLabel: {
+    fontSize: 11,
+    color: '#8E8E93',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  tradeNumberValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+  },
+  disclaimerContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 8,
+  },
+  disclaimerText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#8E8E93',
+    lineHeight: 18,
+  },
+});

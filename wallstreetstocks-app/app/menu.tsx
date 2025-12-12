@@ -144,6 +144,14 @@ export default function MenuPage() {
           icon: "trending-up",
           color: "#FFD700",
         },
+        {
+          label: "Insider Trading",
+          route: "/insider-trading",
+          icon: "briefcase-outline",
+          color: "#5856D6",
+          badge: "New",
+          badgeColor: "#FF3B30",
+        },
       ],
     },
     {

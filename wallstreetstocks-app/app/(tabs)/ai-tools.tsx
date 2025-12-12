@@ -150,7 +150,21 @@ const QUICK_PICKS = ['AAPL', 'NVDA', 'TSLA', 'MSFT', 'GOOGL', 'AMZN'];
 
 export default function AITools() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'analyzer' | 'compare' | 'forecast' | 'assistant' | 'resources'>('analyzer');
+  const [activeTab, setActiveTab] = useState<'analyzer' | 'compare' | 'forecast' | 'assistant' | 'resources' | 'calculator'>('analyzer');
+
+  // Calculator state
+  const [calcInitialAmount, setCalcInitialAmount] = useState('10000');
+  const [calcMonthlyContribution, setCalcMonthlyContribution] = useState('500');
+  const [calcYears, setCalcYears] = useState('10');
+  const [calcAnnualReturn, setCalcAnnualReturn] = useState('8');
+  const [calcInflationRate, setCalcInflationRate] = useState('3');
+  const [calcResult, setCalcResult] = useState<{
+    futureValue: number;
+    totalContributions: number;
+    totalInterest: number;
+    inflationAdjusted: number;
+    yearlyBreakdown: { year: number; balance: number; contributions: number; interest: number }[];
+  } | null>(null);
 
   // Stock Analyzer
   const [analyzerTicker, setAnalyzerTicker] = useState('');
@@ -493,6 +507,7 @@ Return JSON only:
               { key: 'analyzer', icon: 'analytics', label: 'Analyzer' },
               { key: 'compare', icon: 'git-compare', label: 'Compare' },
               { key: 'forecast', icon: 'trending-up', label: 'Forecast' },
+              { key: 'calculator', icon: 'calculator', label: 'Calculator' },
               { key: 'assistant', icon: 'chatbubbles', label: 'Assistant' },
               { key: 'resources', icon: 'library', label: 'Resources' },
             ].map((tab) => (
@@ -1560,6 +1575,247 @@ Return JSON only:
           </View>
         )}
 
+        {/* Investment Calculator Tab */}
+        {activeTab === 'calculator' && (
+          <View style={styles.calculatorContainer}>
+            <View style={styles.calcHeader}>
+              <View style={styles.calcHeaderIcon}>
+                <Ionicons name="calculator" size={28} color="#34C759" />
+              </View>
+              <View>
+                <Text style={styles.calcHeaderTitle}>Investment Calculator</Text>
+                <Text style={styles.calcHeaderSubtitle}>Plan your financial future</Text>
+              </View>
+            </View>
+
+            {/* Input Card */}
+            <View style={styles.calcCard}>
+              <Text style={styles.calcCardTitle}>Investment Details</Text>
+
+              <View style={styles.calcInputGroup}>
+                <Text style={styles.calcInputLabel}>Initial Investment</Text>
+                <View style={styles.calcInputWrapper}>
+                  <Text style={styles.calcInputPrefix}>$</Text>
+                  <TextInput
+                    style={styles.calcInput}
+                    value={calcInitialAmount}
+                    onChangeText={setCalcInitialAmount}
+                    keyboardType="numeric"
+                    placeholder="10,000"
+                    placeholderTextColor="#C7C7CC"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.calcInputGroup}>
+                <Text style={styles.calcInputLabel}>Monthly Contribution</Text>
+                <View style={styles.calcInputWrapper}>
+                  <Text style={styles.calcInputPrefix}>$</Text>
+                  <TextInput
+                    style={styles.calcInput}
+                    value={calcMonthlyContribution}
+                    onChangeText={setCalcMonthlyContribution}
+                    keyboardType="numeric"
+                    placeholder="500"
+                    placeholderTextColor="#C7C7CC"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.calcRow}>
+                <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
+                  <Text style={styles.calcInputLabel}>Years</Text>
+                  <View style={styles.calcInputWrapper}>
+                    <TextInput
+                      style={styles.calcInput}
+                      value={calcYears}
+                      onChangeText={setCalcYears}
+                      keyboardType="numeric"
+                      placeholder="10"
+                      placeholderTextColor="#C7C7CC"
+                    />
+                    <Text style={styles.calcInputSuffix}>yrs</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
+                  <Text style={styles.calcInputLabel}>Annual Return</Text>
+                  <View style={styles.calcInputWrapper}>
+                    <TextInput
+                      style={styles.calcInput}
+                      value={calcAnnualReturn}
+                      onChangeText={setCalcAnnualReturn}
+                      keyboardType="numeric"
+                      placeholder="8"
+                      placeholderTextColor="#C7C7CC"
+                    />
+                    <Text style={styles.calcInputSuffix}>%</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={styles.calcInputGroup}>
+                <Text style={styles.calcInputLabel}>Inflation Rate (optional)</Text>
+                <View style={styles.calcInputWrapper}>
+                  <TextInput
+                    style={styles.calcInput}
+                    value={calcInflationRate}
+                    onChangeText={setCalcInflationRate}
+                    keyboardType="numeric"
+                    placeholder="3"
+                    placeholderTextColor="#C7C7CC"
+                  />
+                  <Text style={styles.calcInputSuffix}>%</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={styles.calcButton}
+                onPress={() => {
+                  const initial = parseFloat(calcInitialAmount) || 0;
+                  const monthly = parseFloat(calcMonthlyContribution) || 0;
+                  const years = parseInt(calcYears) || 10;
+                  const rate = (parseFloat(calcAnnualReturn) || 8) / 100;
+                  const inflation = (parseFloat(calcInflationRate) || 0) / 100;
+                  const monthlyRate = rate / 12;
+                  const months = years * 12;
+
+                  let balance = initial;
+                  let totalContributions = initial;
+                  const yearlyBreakdown: { year: number; balance: number; contributions: number; interest: number }[] = [];
+
+                  for (let month = 1; month <= months; month++) {
+                    balance = balance * (1 + monthlyRate) + monthly;
+                    totalContributions += monthly;
+
+                    if (month % 12 === 0) {
+                      yearlyBreakdown.push({
+                        year: month / 12,
+                        balance: Math.round(balance),
+                        contributions: Math.round(totalContributions),
+                        interest: Math.round(balance - totalContributions),
+                      });
+                    }
+                  }
+
+                  const futureValue = Math.round(balance);
+                  const totalInterest = Math.round(balance - totalContributions);
+                  const inflationAdjusted = Math.round(futureValue / Math.pow(1 + inflation, years));
+
+                  setCalcResult({
+                    futureValue,
+                    totalContributions: Math.round(totalContributions),
+                    totalInterest,
+                    inflationAdjusted,
+                    yearlyBreakdown,
+                  });
+                }}
+              >
+                <Ionicons name="calculator" size={20} color="#FFF" />
+                <Text style={styles.calcButtonText}>Calculate</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Results */}
+            {calcResult && (
+              <>
+                <View style={styles.calcResultCard}>
+                  <Text style={styles.calcResultTitle}>Your Investment Growth</Text>
+
+                  <View style={styles.calcResultMain}>
+                    <Text style={styles.calcResultLabel}>Future Value</Text>
+                    <Text style={styles.calcResultValue}>
+                      ${calcResult.futureValue.toLocaleString()}
+                    </Text>
+                  </View>
+
+                  <View style={styles.calcResultGrid}>
+                    <View style={styles.calcResultItem}>
+                      <Ionicons name="wallet-outline" size={20} color="#007AFF" />
+                      <Text style={styles.calcResultItemLabel}>Total Invested</Text>
+                      <Text style={styles.calcResultItemValue}>
+                        ${calcResult.totalContributions.toLocaleString()}
+                      </Text>
+                    </View>
+                    <View style={styles.calcResultItem}>
+                      <Ionicons name="trending-up" size={20} color="#34C759" />
+                      <Text style={styles.calcResultItemLabel}>Interest Earned</Text>
+                      <Text style={[styles.calcResultItemValue, { color: '#34C759' }]}>
+                        +${calcResult.totalInterest.toLocaleString()}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {parseFloat(calcInflationRate) > 0 && (
+                    <View style={styles.calcInflationBox}>
+                      <Ionicons name="information-circle" size={18} color="#FF9500" />
+                      <View style={{ flex: 1, marginLeft: 10 }}>
+                        <Text style={styles.calcInflationLabel}>Inflation-Adjusted Value</Text>
+                        <Text style={styles.calcInflationValue}>
+                          ${calcResult.inflationAdjusted.toLocaleString()}
+                        </Text>
+                        <Text style={styles.calcInflationNote}>
+                          In today's dollars ({calcInflationRate}% annual inflation)
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+
+                {/* Year by Year Breakdown */}
+                <View style={styles.calcBreakdownCard}>
+                  <Text style={styles.calcBreakdownTitle}>Year-by-Year Growth</Text>
+                  <View style={styles.calcBreakdownHeader}>
+                    <Text style={[styles.calcBreakdownHeaderText, { flex: 0.5 }]}>Year</Text>
+                    <Text style={[styles.calcBreakdownHeaderText, { flex: 1 }]}>Balance</Text>
+                    <Text style={[styles.calcBreakdownHeaderText, { flex: 1 }]}>Contributed</Text>
+                    <Text style={[styles.calcBreakdownHeaderText, { flex: 1 }]}>Interest</Text>
+                  </View>
+                  {calcResult.yearlyBreakdown.slice(0, 10).map((row) => (
+                    <View key={row.year} style={styles.calcBreakdownRow}>
+                      <Text style={[styles.calcBreakdownCell, { flex: 0.5 }]}>{row.year}</Text>
+                      <Text style={[styles.calcBreakdownCell, { flex: 1 }]}>${row.balance.toLocaleString()}</Text>
+                      <Text style={[styles.calcBreakdownCell, { flex: 1, color: '#007AFF' }]}>${row.contributions.toLocaleString()}</Text>
+                      <Text style={[styles.calcBreakdownCell, { flex: 1, color: '#34C759' }]}>+${row.interest.toLocaleString()}</Text>
+                    </View>
+                  ))}
+                  {calcResult.yearlyBreakdown.length > 10 && (
+                    <Text style={styles.calcBreakdownMore}>
+                      ... and {calcResult.yearlyBreakdown.length - 10} more years
+                    </Text>
+                  )}
+                </View>
+
+                {/* Tips */}
+                <View style={styles.calcTipsCard}>
+                  <View style={styles.calcTipsHeader}>
+                    <Ionicons name="bulb" size={20} color="#FF9500" />
+                    <Text style={styles.calcTipsTitle}>Investment Tips</Text>
+                  </View>
+                  <View style={styles.calcTip}>
+                    <Text style={styles.calcTipBullet}>•</Text>
+                    <Text style={styles.calcTipText}>
+                      The power of compound interest means your money grows exponentially over time.
+                    </Text>
+                  </View>
+                  <View style={styles.calcTip}>
+                    <Text style={styles.calcTipBullet}>•</Text>
+                    <Text style={styles.calcTipText}>
+                      Increasing monthly contributions by even $100 can add significantly to your final balance.
+                    </Text>
+                  </View>
+                  <View style={styles.calcTip}>
+                    <Text style={styles.calcTipBullet}>•</Text>
+                    <Text style={styles.calcTipText}>
+                      Historical S&P 500 average return is ~10% annually, but past performance doesn't guarantee future results.
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
         <View style={{ height: 100 }} />
       </ScrollView>
     </View>
@@ -1891,4 +2147,48 @@ const styles = StyleSheet.create({
   chatSendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#34C759', justifyContent: 'center', alignItems: 'center' },
   chatSendButtonDisabled: { backgroundColor: '#C7C7CC' },
   chatDisclaimer: { fontSize: 11, color: '#8E8E93', textAlign: 'center', marginTop: 12 },
+
+  // Calculator Styles
+  calculatorContainer: { paddingHorizontal: 16, paddingTop: 16 },
+  calcHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 16, gap: 12 },
+  calcHeaderIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: '#34C75915', justifyContent: 'center', alignItems: 'center' },
+  calcHeaderTitle: { fontSize: 22, fontWeight: '800', color: '#000' },
+  calcHeaderSubtitle: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
+  calcCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 3 },
+  calcCardTitle: { fontSize: 18, fontWeight: '700', color: '#000', marginBottom: 20 },
+  calcInputGroup: { marginBottom: 16 },
+  calcInputLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 8 },
+  calcInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: '#E5E5EA' },
+  calcInputPrefix: { fontSize: 18, fontWeight: '700', color: '#8E8E93' },
+  calcInputSuffix: { fontSize: 16, fontWeight: '600', color: '#8E8E93' },
+  calcInput: { flex: 1, paddingVertical: 14, fontSize: 18, fontWeight: '700', color: '#000', marginLeft: 8 },
+  calcRow: { flexDirection: 'row' },
+  calcButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#34C759', borderRadius: 14, paddingVertical: 16, marginTop: 8, gap: 10 },
+  calcButtonText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
+  calcResultCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginTop: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 3 },
+  calcResultTitle: { fontSize: 18, fontWeight: '700', color: '#000', marginBottom: 20 },
+  calcResultMain: { alignItems: 'center', paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
+  calcResultLabel: { fontSize: 14, color: '#8E8E93', fontWeight: '600', marginBottom: 8 },
+  calcResultValue: { fontSize: 36, fontWeight: '800', color: '#34C759' },
+  calcResultGrid: { flexDirection: 'row', marginTop: 20, gap: 12 },
+  calcResultItem: { flex: 1, alignItems: 'center', backgroundColor: '#F9F9FB', padding: 16, borderRadius: 14 },
+  calcResultItemLabel: { fontSize: 12, color: '#8E8E93', marginTop: 8, fontWeight: '600' },
+  calcResultItemValue: { fontSize: 17, fontWeight: '700', color: '#000', marginTop: 4 },
+  calcInflationBox: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FF950015', padding: 16, borderRadius: 14, marginTop: 20 },
+  calcInflationLabel: { fontSize: 14, fontWeight: '600', color: '#000' },
+  calcInflationValue: { fontSize: 20, fontWeight: '800', color: '#FF9500', marginTop: 4 },
+  calcInflationNote: { fontSize: 12, color: '#8E8E93', marginTop: 4 },
+  calcBreakdownCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginTop: 16 },
+  calcBreakdownTitle: { fontSize: 18, fontWeight: '700', color: '#000', marginBottom: 16 },
+  calcBreakdownHeader: { flexDirection: 'row', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
+  calcBreakdownHeaderText: { fontSize: 12, fontWeight: '700', color: '#8E8E93' },
+  calcBreakdownRow: { flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  calcBreakdownCell: { fontSize: 14, fontWeight: '600', color: '#000' },
+  calcBreakdownMore: { fontSize: 13, color: '#8E8E93', textAlign: 'center', marginTop: 12, fontStyle: 'italic' },
+  calcTipsCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginTop: 16 },
+  calcTipsHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  calcTipsTitle: { fontSize: 17, fontWeight: '700', color: '#000' },
+  calcTip: { flexDirection: 'row', marginBottom: 12 },
+  calcTipBullet: { fontSize: 16, color: '#FF9500', marginRight: 10, fontWeight: '700' },
+  calcTipText: { flex: 1, fontSize: 14, color: '#333', lineHeight: 20, fontWeight: '500' },
 });
