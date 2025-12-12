@@ -50,6 +50,9 @@ const Footer: React.FC = () => {
               { label: "Community", href: "/community" },
               { label: "Resources", href: "/resources" },
               { label: "About Us", href: "/about-us" },
+              { label: "Terms & Conditions", href: "/terms" },
+              { label: "Privacy Policy", href: "/privacy" },
+              { label: "Delete Account", href: "/delete-account" },
             ].map(({ label, href }) => (
               <li key={label}>
                 <Link
@@ -134,8 +137,8 @@ const Footer: React.FC = () => {
       </div>
 
       {/* Copyright */}
-      <div className="relative z-10 mt-10 text-center text-gray-500 border-t border-yellow-500/10 pt-6">
-        <p>
+      <div className="relative z-10 mt-10 border-t border-yellow-500/10 pt-6 max-w-7xl mx-auto px-6">
+        <p className="text-gray-500 text-center">
           © {new Date().getFullYear()} {siteDetails.siteName}. All rights
           reserved.
         </p>

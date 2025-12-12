@@ -6,25 +6,28 @@ import { useSubscription } from '../context/SubscriptionContext';
 // Feature tier requirements
 // 1 = Gold, 2 = Platinum, 3 = Diamond
 export const FEATURE_TIERS = {
-  // Gold features (tier 1)
+  // Gold features (tier 1) - 5 stock picks
   AD_FREE: 1,
   BASIC_ANALYSIS: 1,
   WATCHLIST_20: 1,
   DAILY_SUMMARY: 1,
-  
-  // Platinum features (tier 2)
+  STOCK_PICKS_GOLD: 1,  // 5 stock picks
+
+  // Platinum features (tier 2) - 8 stock picks
   ADVANCED_ANALYSIS: 2,
   AI_INSIGHTS: 2,
   UNLIMITED_WATCHLISTS: 2,
   REALTIME_ALERTS: 2,
   PRIORITY_SUPPORT: 2,
-  
-  // Diamond features (tier 3)
+  STOCK_PICKS_PLATINUM: 2,  // 8 stock picks
+
+  // Diamond features (tier 3) - 15 stock picks
   RESEARCH_REPORTS: 3,
   PORTFOLIO_OPTIMIZATION: 3,
   CUSTOM_SCREENERS: 3,
   API_ACCESS: 3,
   ACCOUNT_MANAGER: 3,
+  STOCK_PICKS_DIAMOND: 3,  // 15 stock picks
 } as const;
 
 /**

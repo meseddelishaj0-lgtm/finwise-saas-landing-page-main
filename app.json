@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "37da6c55-6075-419e-9812-e1445d2c76ab"
+      }
+    },
+    "android": {
+      "package": "com.sedidelishaj.finwise"
+    },
+    "ios": {
+      "bundleIdentifier": "com.sedidelishaj.finwise",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}

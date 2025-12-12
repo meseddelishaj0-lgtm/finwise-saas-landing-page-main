@@ -358,14 +358,42 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   );
 }
 
+// Default context value for when provider isn't available yet
+const defaultContextValue: SubscriptionContextType = {
+  isInitialized: false,
+  isLoading: false,
+  isPremium: false,
+  activeSubscription: null,
+  currentTier: null,
+  expirationDate: null,
+  packages: [],
+  offerings: null,
+  customerInfo: null,
+  error: null,
+  initialize: async () => {},
+  identifyUser: async () => {},
+  logOut: async () => {},
+  refreshStatus: async () => {},
+  loadOfferings: async () => {},
+  purchase: async () => false,
+  restore: async () => false,
+  hasFeatureAccess: () => false,
+  getActiveSubscriptionTier: () => 0,
+  goldPackage: undefined,
+  platinumPackage: undefined,
+  diamondPackage: undefined,
+};
+
 // Custom hook to use subscription context
 export function useSubscription() {
   const context = useContext(SubscriptionContext);
-  
+
+  // Return default value instead of throwing - prevents crash during initial render
   if (context === undefined) {
-    throw new Error('useSubscription must be used within a SubscriptionProvider');
+    console.warn('useSubscription called outside SubscriptionProvider - returning defaults');
+    return defaultContextValue;
   }
-  
+
   return context;
 }
 

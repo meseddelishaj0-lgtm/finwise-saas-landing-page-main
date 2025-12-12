@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
   },
   // List
   listContent: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   row: {
     flexDirection: "row",

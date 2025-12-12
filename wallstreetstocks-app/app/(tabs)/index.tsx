@@ -19,6 +19,7 @@ import { LineChart as GiftedLineChart } from 'react-native-gifted-charts';
 import { Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSubscription } from '@/context/SubscriptionContext';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -27,9 +28,18 @@ const portfolioChartWidth = width - 80;
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
+// Stock picks preview data
+const STOCK_PICKS_PREVIEW = [
+  { symbol: 'NVDA', category: 'AI & Tech', reason: 'AI chip leader' },
+  { symbol: 'AAPL', category: 'Tech Giant', reason: 'Services growth' },
+  { symbol: 'MSFT', category: 'Cloud & AI', reason: 'Azure expansion' },
+];
+
 export default function Dashboard() {
   const router = useRouter();
+  const { isPremium, currentTier } = useSubscription();
   const [refreshing, setRefreshing] = useState(false);
+  const [stockPicksData, setStockPicksData] = useState<any[]>([]);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -274,6 +284,30 @@ export default function Dashboard() {
       console.error('Watchlist fetch error:', err);
     } finally {
       setWatchlistLoading(false);
+    }
+  };
+
+  // Fetch stock picks preview data
+  const fetchStockPicks = async () => {
+    try {
+      const symbols = STOCK_PICKS_PREVIEW.map(p => p.symbol).join(',');
+      const res = await fetch(`${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`);
+      const data = await res.json();
+
+      if (data && Array.isArray(data)) {
+        const enrichedPicks = STOCK_PICKS_PREVIEW.map(pick => {
+          const quote = data.find((q: any) => q.symbol === pick.symbol);
+          return {
+            ...pick,
+            price: quote?.price || 0,
+            change: quote?.change || 0,
+            changePercent: quote?.changesPercentage || 0,
+          };
+        });
+        setStockPicksData(enrichedPicks);
+      }
+    } catch (err) {
+      console.error('Stock picks fetch error:', err);
     }
   };
 
@@ -689,7 +723,8 @@ export default function Dashboard() {
       fetchMarketChips(),
       fetchTrending(),
       fetchPortfolio(),
-      fetchWatchlist()
+      fetchWatchlist(),
+      fetchStockPicks()
     ]);
     setRefreshing(false);
   };
@@ -700,12 +735,14 @@ export default function Dashboard() {
     fetchTrending();
     fetchPortfolio();
     fetchWatchlist();
+    fetchStockPicks();
 
     const interval = setInterval(() => {
       fetchMarketChips();
       fetchTrending();
       fetchPortfolio();
       fetchWatchlist();
+      fetchStockPicks();
     }, 30000);
 
     return () => clearInterval(interval);
@@ -1276,6 +1313,101 @@ export default function Dashboard() {
           )}
         </View>
 
+        {/* Stock Picks Section */}
+        <View style={styles.stockPicksSection}>
+          <TouchableOpacity
+            style={styles.stockPicksCard}
+            onPress={() => router.push('/premium/stock-picks')}
+            activeOpacity={0.9}
+          >
+            {/* Header */}
+            <View style={styles.stockPicksHeader}>
+              <View style={styles.stockPicksHeaderLeft}>
+                <View style={styles.stockPicksIconBg}>
+                  <Ionicons name="trophy" size={20} color="#FFD700" />
+                </View>
+                <View>
+                  <Text style={styles.stockPicksTitle}>Stock Picks</Text>
+                  <Text style={styles.stockPicksSubtitle}>
+                    {isPremium
+                      ? `${currentTier === 'gold' ? '5' : currentTier === 'platinum' ? '8' : '15'} expert picks`
+                      : 'Expert curated selections'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.stockPicksBadge}>
+                {isPremium ? (
+                  <View style={[styles.tierBadge, {
+                    backgroundColor: currentTier === 'diamond' ? '#B9F2FF' : currentTier === 'platinum' ? '#E5E4E2' : '#FFD700'
+                  }]}>
+                    <Ionicons name={currentTier === 'gold' ? 'star' : 'diamond'} size={12} color="#000" />
+                    <Text style={styles.tierBadgeText}>
+                      {currentTier?.charAt(0).toUpperCase()}{currentTier?.slice(1)}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.premiumBadge}>
+                    <Ionicons name="lock-closed" size={12} color="#FFD700" />
+                    <Text style={styles.premiumBadgeText}>Premium</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Preview Cards */}
+            <View style={styles.stockPicksPreview}>
+              {(stockPicksData.length > 0 ? stockPicksData : STOCK_PICKS_PREVIEW).map((pick, idx) => (
+                <View key={idx} style={styles.pickPreviewCard}>
+                  <View style={styles.pickPreviewLeft}>
+                    <View style={[styles.pickRankBadge, {
+                      backgroundColor: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : '#CD7F32'
+                    }]}>
+                      <Text style={styles.pickRankText}>#{idx + 1}</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.pickSymbol}>{pick.symbol}</Text>
+                      <Text style={styles.pickCategory}>{pick.category}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.pickPreviewRight}>
+                    {isPremium && stockPicksData.length > 0 ? (
+                      <>
+                        <Text style={styles.pickPrice}>${pick.price?.toFixed(2)}</Text>
+                        <View style={[styles.pickChangeContainer, {
+                          backgroundColor: (pick.changePercent || 0) >= 0 ? '#34C75915' : '#FF3B3015'
+                        }]}>
+                          <Ionicons
+                            name={(pick.changePercent || 0) >= 0 ? 'arrow-up' : 'arrow-down'}
+                            size={10}
+                            color={(pick.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30'}
+                          />
+                          <Text style={[styles.pickChange, {
+                            color: (pick.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30'
+                          }]}>
+                            {Math.abs(pick.changePercent || 0).toFixed(2)}%
+                          </Text>
+                        </View>
+                      </>
+                    ) : (
+                      <View style={styles.pickLockedOverlay}>
+                        <Ionicons name="lock-closed" size={14} color="#8E8E93" />
+                      </View>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* CTA */}
+            <View style={styles.stockPicksCTA}>
+              <Text style={styles.stockPicksCTAText}>
+                {isPremium ? 'View All Picks' : 'Unlock Stock Picks'}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color="#007AFF" />
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Trending Section */}
         <View style={styles.trendingSection}>
           <View style={styles.sectionHeader}>
@@ -1353,7 +1485,7 @@ export default function Dashboard() {
           )}
         </View>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
 
       {/* Add Stock Modal */}
@@ -1592,17 +1724,17 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 90,
+    bottom: Platform.OS === 'ios' ? 110 : 90,
     backgroundColor: '#007AFF',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
     shadowColor: '#007AFF',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 8,
   },
@@ -2478,5 +2610,162 @@ const styles = StyleSheet.create({
   },
   quickAddChipTextAdded: {
     color: '#34C759',
+  },
+
+  // Stock Picks Section
+  stockPicksSection: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  stockPicksCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#FFD70030',
+  },
+  stockPicksHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  stockPicksHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  stockPicksIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFF8E1',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stockPicksTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 2,
+  },
+  stockPicksSubtitle: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  stockPicksBadge: {},
+  tierBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    gap: 4,
+  },
+  tierBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#000',
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1C1C1E',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    gap: 4,
+  },
+  premiumBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFD700',
+  },
+  stockPicksPreview: {
+    gap: 10,
+    marginBottom: 16,
+  },
+  pickPreviewCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F9F9FB',
+    padding: 12,
+    borderRadius: 12,
+  },
+  pickPreviewLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pickRankBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  pickRankText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#000',
+  },
+  pickSymbol: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#000',
+  },
+  pickCategory: {
+    fontSize: 11,
+    color: '#8E8E93',
+    fontWeight: '500',
+    marginTop: 1,
+  },
+  pickPreviewRight: {
+    alignItems: 'flex-end',
+  },
+  pickPrice: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 2,
+  },
+  pickChangeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 2,
+  },
+  pickChange: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  pickLockedOverlay: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stockPicksCTA: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  stockPicksCTAText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#007AFF',
   },
 });

@@ -18,12 +18,14 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSAppleEventsUsageDescription": "This app uses Apple Sign-In for authentication.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
       },
       "entitlements": {
         "com.apple.developer.applesignin": [
           "Default"
-        ]
+        ],
+        "aps-environment": "production"
       }
     },
     "android": {
@@ -34,6 +36,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
+      
     },
     "web": {
       "output": "static",
@@ -51,6 +54,15 @@
           "dark": {
             "backgroundColor": "#1a1a1a"
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/wallstreetstocks.png",
+          "color": "#FFD700",
+          "defaultChannel": "default",
+          "sounds": []
         }
       ],
       "expo-secure-store",

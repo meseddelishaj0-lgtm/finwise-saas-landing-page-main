@@ -109,6 +109,8 @@ export async function PUT(request: NextRequest) {
       updateData.profileComplete = true;
     }
 
+    console.log('📝 Updating user profile:', { userId: numericUserId, updateData });
+
     const updatedUser = await prisma.user.update({
       where: { id: numericUserId },
       data: updateData,
@@ -130,9 +132,18 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(updatedUser);
+    console.log('✅ User profile updated:', { id: updatedUser.id, name: updatedUser.name, username: updatedUser.username });
+
+    // Return with no-cache headers to ensure fresh data
+    return NextResponse.json(updatedUser, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
   } catch (error) {
-    console.error('Error updating user profile:', error);
+    console.error('❌ Error updating user profile:', error);
     return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
 }

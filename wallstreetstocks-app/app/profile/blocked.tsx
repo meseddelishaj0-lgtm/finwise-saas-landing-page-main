@@ -1,11 +1,11 @@
 // app/profile/blocked.tsx
-import React, { useState, useEffect } from 'react';
-import { 
-  SafeAreaView, 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+import React, { useState, useCallback } from 'react';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   FlatList,
   Image,
   ActivityIndicator,
@@ -14,9 +14,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/lib/auth';
-
-const API_BASE_URL = 'https://www.wallstreetstocks.ai';
+import { getBlockedUserDetails, unblockUser } from '@/services/communityApi';
 
 const AVATAR_COLORS = [
   '#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a',
@@ -74,16 +74,8 @@ export default function Blocked() {
     }
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/user/blocked?userId=${userId}`
-      );
-
-      if (response.ok) {
-        const users = await response.json();
-        setBlockedUsers(users);
-      } else {
-        console.error('Failed to fetch blocked users');
-      }
+      const users = await getBlockedUserDetails(userId);
+      setBlockedUsers(users);
     } catch (error) {
       console.error('Error fetching blocked users:', error);
     } finally {
@@ -106,16 +98,8 @@ export default function Blocked() {
           onPress: async () => {
             setUnblocking(targetUser.id);
             try {
-              const response = await fetch(
-                `${API_BASE_URL}/api/community/social/${targetUser.id}/block`,
-                {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId }),
-                }
-              );
-
-              if (response.ok) {
+              const result = await unblockUser(userId, targetUser.id);
+              if (result.success) {
                 // Remove from local state
                 setBlockedUsers(prev => prev.filter(u => u.id !== targetUser.id));
                 Alert.alert('Unblocked', `${targetUser.name || targetUser.email?.split('@')[0]} has been unblocked`);
@@ -134,9 +118,12 @@ export default function Blocked() {
     );
   };
 
-  useEffect(() => {
-    fetchBlockedUsers();
-  }, [authUser]);
+  // Refresh blocked users whenever screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchBlockedUsers();
+    }, [authUser])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

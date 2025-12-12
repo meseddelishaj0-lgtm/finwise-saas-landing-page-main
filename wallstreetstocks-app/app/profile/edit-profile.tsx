@@ -50,6 +50,8 @@ export default function EditProfile() {
   React.useEffect(() => {
     const loadProfile = async () => {
       const userId = getUserId();
+      console.log('🔵 EditProfile: Loading profile for userId:', userId);
+
       if (!userId) {
         // Fall back to local storage if not logged in
         const saved = await AsyncStorage.getItem('personalInfo');
@@ -69,12 +71,22 @@ export default function EditProfile() {
       }
 
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/user/profile?userId=${userId}`
-        );
-        
+        // Add timestamp to bust cache and ensure fresh data
+        const timestamp = Date.now();
+        const url = `${API_BASE_URL}/api/user/profile?userId=${userId}&_t=${timestamp}`;
+        console.log('🔵 EditProfile: Fetching from:', url);
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        });
+
         if (response.ok) {
           const data = await response.json();
+          console.log('🔵 EditProfile: Profile loaded:', { name: data.name, username: data.username });
           setName(data.name || '');
           setUsername(data.username || '');
           setEmail(data.email || '');
@@ -83,9 +95,11 @@ export default function EditProfile() {
           setWebsite(data.website || '');
           setAvatar(data.profileImage || null);
           setBannerImage(data.bannerImage || null);
+        } else {
+          console.error('🔴 EditProfile: Failed to fetch profile:', response.status);
         }
       } catch (error) {
-        console.error('Error loading profile:', error);
+        console.error('🔴 EditProfile: Error loading profile:', error);
       } finally {
         setLoading(false);
       }
@@ -149,10 +163,16 @@ export default function EditProfile() {
   // Save Button
   const handleSave = async () => {
     const userId = getUserId();
-    
-    console.log('handleSave called, userId:', userId);
-    console.log('Saving data:', { name, username, bio, location, website });
-    
+
+    console.log('🔵 handleSave called, userId:', userId);
+    console.log('🔵 Saving data:', { name, username, bio, location, website });
+
+    // Validate name
+    if (!name || name.trim().length === 0) {
+      Alert.alert('Name Required', 'Please enter your display name');
+      return;
+    }
+
     // Validate username
     if (username && (username.length < 3 || username.length > 20)) {
       Alert.alert('Invalid Username', 'Username must be 3-20 characters');
@@ -164,25 +184,32 @@ export default function EditProfile() {
     try {
       if (userId) {
         // Save to API
-        console.log('Sending PUT request to:', `${API_BASE_URL}/api/user/profile`);
+        const payload = {
+          userId,
+          username: username || undefined,
+          name: name.trim(),
+          bio: bio || '',
+          location: location || '',
+          website: website || '',
+          profileImage: avatar,
+          bannerImage,
+        };
+
+        console.log('🔵 Sending PUT request to:', `${API_BASE_URL}/api/user/profile`);
+        console.log('🔵 Payload:', JSON.stringify(payload));
+
         const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            username: username || undefined,
-            name,
-            bio,
-            location,
-            website,
-            profileImage: avatar,
-            bannerImage,
-          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+          body: JSON.stringify(payload),
         });
 
-        console.log('Response status:', response.status);
+        console.log('🔵 Response status:', response.status);
         const responseData = await response.json();
-        console.log('Response data:', responseData);
+        console.log('🔵 Response data:', JSON.stringify(responseData));
 
         if (!response.ok) {
           if (responseData.error?.includes('Username')) {
@@ -193,23 +220,33 @@ export default function EditProfile() {
           }
           throw new Error(responseData.error || 'Failed to save');
         }
+
+        // Verify the update was successful
+        if (responseData.name !== name.trim()) {
+          console.warn('⚠️ Name mismatch after save:', { sent: name.trim(), received: responseData.name });
+        }
       } else {
-        console.log('No userId, saving only to local storage');
+        console.log('🔵 No userId, saving only to local storage');
       }
 
       // Also save to local storage as backup
-      const data = { name, username, email, bio, location, website, avatar, bannerImage };
+      const data = { name: name.trim(), username, email, bio, location, website, avatar, bannerImage };
       await AsyncStorage.setItem('personalInfo', JSON.stringify(data));
-      
-      // Refresh the profile context
+
+      // Small delay to ensure database write is complete
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Refresh the profile context to get updated data
+      console.log('🔵 Refreshing profile context...');
       await refreshProfile();
-      
+      console.log('🔵 Profile context refreshed');
+
       Alert.alert('Saved!', 'Your profile has been updated.', [
         { text: 'OK', onPress: () => router.back() }
       ]);
-    } catch (error) {
-      console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Failed to save profile. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Error saving profile:', error);
+      Alert.alert('Error', error.message || 'Failed to save profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -352,26 +389,13 @@ export default function EditProfile() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email Address</Text>
             <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter email"
-              placeholderTextColor="#999"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address</Text>
-            <TextInput
               style={[styles.input, styles.emailInput]}
               value={email}
               editable={false}
               placeholder="Email"
               placeholderTextColor="#999"
             />
-            <Text style={styles.helperText}>Email cannot be changed</Text>
+            <Text style={styles.helperText}>Email cannot be changed (used for sign-in)</Text>
           </View>
 
           <TouchableOpacity 

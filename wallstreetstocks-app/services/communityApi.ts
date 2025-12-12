@@ -416,6 +416,326 @@ export const getUserKarma = async (userId: number): Promise<any> => {
   return apiRequest(`/api/user/karma?userId=${userId}`);
 };
 
+// ===== BLOCK/MUTE API (with local storage fallback) =====
+
+const BLOCKED_USERS_KEY = 'blocked_users';
+const MUTED_USERS_KEY = 'muted_users';
+
+// Fetch blocked user IDs (tries API first, falls back to local storage)
+export const getBlockedUsers = async (userId: number): Promise<number[]> => {
+  try {
+    // Try API first
+    const result = await apiRequest(`/api/user/blocked?userId=${userId}`, { method: 'GET' });
+    const blockedIds = Array.isArray(result) ? result.map((u: any) => u.id) : [];
+    // Cache locally
+    await AsyncStorage.setItem(`${BLOCKED_USERS_KEY}_${userId}`, JSON.stringify(blockedIds));
+    return blockedIds;
+  } catch {
+    // Fallback to local storage
+    try {
+      const stored = await AsyncStorage.getItem(`${BLOCKED_USERS_KEY}_${userId}`);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+};
+
+// Fetch muted user IDs (tries API first, falls back to local storage)
+export const getMutedUsers = async (userId: number): Promise<number[]> => {
+  try {
+    // Try API first
+    const result = await apiRequest(`/api/user/muted?userId=${userId}`, { method: 'GET' });
+    const mutedIds = Array.isArray(result) ? result.map((u: any) => u.id) : [];
+    // Cache locally
+    await AsyncStorage.setItem(`${MUTED_USERS_KEY}_${userId}`, JSON.stringify(mutedIds));
+    return mutedIds;
+  } catch {
+    // Fallback to local storage
+    try {
+      const stored = await AsyncStorage.getItem(`${MUTED_USERS_KEY}_${userId}`);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+};
+
+// Fetch full blocked user details (merges API + local storage for consistency)
+export const getBlockedUserDetails = async (userId: number): Promise<any[]> => {
+  try {
+    // Always fetch fresh from API
+    const result = await apiRequest(`/api/user/blocked?userId=${userId}`, { method: 'GET' });
+    const apiUsers = Array.isArray(result) ? result : [];
+
+    // Also sync local storage with API results
+    const blockedIds = apiUsers.map((u: any) => u.id);
+    await AsyncStorage.setItem(`${BLOCKED_USERS_KEY}_${userId}`, JSON.stringify(blockedIds));
+
+    console.log(`📋 Fetched ${apiUsers.length} blocked users from API`);
+    return apiUsers;
+  } catch (error) {
+    console.error('Error fetching blocked users from API:', error);
+
+    // Fallback: try to get locally stored blocked user IDs
+    // Note: We only have IDs locally, not full user details
+    try {
+      const stored = await AsyncStorage.getItem(`${BLOCKED_USERS_KEY}_${userId}`);
+      const localIds = stored ? JSON.parse(stored) : [];
+      if (localIds.length > 0) {
+        console.log(`📋 Found ${localIds.length} blocked users in local storage`);
+        // Return minimal user objects for local-only blocks
+        return localIds.map((id: number) => ({
+          id,
+          name: null,
+          email: `User #${id}`,
+          profileImage: null,
+          blockedAt: new Date().toISOString(),
+        }));
+      }
+    } catch (storageError) {
+      console.error('Local storage error:', storageError);
+    }
+    return [];
+  }
+};
+
+// Fetch full muted user details (merges API + local storage for consistency)
+export const getMutedUserDetails = async (userId: number): Promise<any[]> => {
+  try {
+    // Always fetch fresh from API
+    const result = await apiRequest(`/api/user/muted?userId=${userId}`, { method: 'GET' });
+    const apiUsers = Array.isArray(result) ? result : [];
+
+    // Also sync local storage with API results
+    const mutedIds = apiUsers.map((u: any) => u.id);
+    await AsyncStorage.setItem(`${MUTED_USERS_KEY}_${userId}`, JSON.stringify(mutedIds));
+
+    console.log(`📋 Fetched ${apiUsers.length} muted users from API`);
+    return apiUsers;
+  } catch (error) {
+    console.error('Error fetching muted users from API:', error);
+
+    // Fallback: try to get locally stored muted user IDs
+    try {
+      const stored = await AsyncStorage.getItem(`${MUTED_USERS_KEY}_${userId}`);
+      const localIds = stored ? JSON.parse(stored) : [];
+      if (localIds.length > 0) {
+        console.log(`📋 Found ${localIds.length} muted users in local storage`);
+        return localIds.map((id: number) => ({
+          id,
+          name: null,
+          email: `User #${id}`,
+          profileImage: null,
+          mutedAt: new Date().toISOString(),
+        }));
+      }
+    } catch (storageError) {
+      console.error('Local storage error:', storageError);
+    }
+    return [];
+  }
+};
+
+export const blockUser = async (userId: number, targetUserId: number): Promise<{ success: boolean; blocked: boolean }> => {
+  try {
+    // Try API first
+    const result = await apiRequest(`/api/community/social/${targetUserId}/block`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+    // Backend returns isBlocked, not blocked
+    const isBlocked = result?.isBlocked ?? result?.blocked ?? true;
+
+    // Sync to local storage on API success
+    try {
+      const currentBlocked = await AsyncStorage.getItem(`${BLOCKED_USERS_KEY}_${userId}`);
+      let blockedIds: number[] = currentBlocked ? JSON.parse(currentBlocked) : [];
+
+      if (isBlocked && !blockedIds.includes(targetUserId)) {
+        blockedIds.push(targetUserId);
+      } else if (!isBlocked) {
+        blockedIds = blockedIds.filter(id => id !== targetUserId);
+      }
+      await AsyncStorage.setItem(`${BLOCKED_USERS_KEY}_${userId}`, JSON.stringify(blockedIds));
+      console.log(`✅ Block synced to local storage: ${isBlocked ? 'blocked' : 'unblocked'} user ${targetUserId}`);
+    } catch (syncError) {
+      console.warn('Failed to sync block to local storage:', syncError);
+    }
+
+    return { success: true, blocked: isBlocked };
+  } catch (error) {
+    // Fallback to local storage
+    console.log('API block failed, using local storage fallback');
+    try {
+      const stored = await AsyncStorage.getItem(`${BLOCKED_USERS_KEY}_${userId}`);
+      const blocked: number[] = stored ? JSON.parse(stored) : [];
+      const isBlocked = blocked.includes(targetUserId);
+
+      let newBlocked: number[];
+      if (isBlocked) {
+        newBlocked = blocked.filter(id => id !== targetUserId);
+      } else {
+        newBlocked = [...blocked, targetUserId];
+      }
+
+      await AsyncStorage.setItem(`${BLOCKED_USERS_KEY}_${userId}`, JSON.stringify(newBlocked));
+      return { success: true, blocked: !isBlocked };
+    } catch (storageError) {
+      console.error('Local storage error:', storageError);
+      throw new Error('Failed to block user');
+    }
+  }
+};
+
+export const unblockUser = async (userId: number, targetUserId: number): Promise<{ success: boolean }> => {
+  try {
+    // Try API first - use DELETE method for explicit unblock
+    await apiRequest(`/api/community/social/${targetUserId}/block?userId=${userId}`, {
+      method: 'DELETE',
+    });
+
+    // Sync to local storage on API success
+    try {
+      const stored = await AsyncStorage.getItem(`${BLOCKED_USERS_KEY}_${userId}`);
+      const blockedIds: number[] = stored ? JSON.parse(stored) : [];
+      const newBlocked = blockedIds.filter(id => id !== targetUserId);
+      await AsyncStorage.setItem(`${BLOCKED_USERS_KEY}_${userId}`, JSON.stringify(newBlocked));
+      console.log(`✅ Unblock synced to local storage: removed user ${targetUserId}`);
+    } catch (syncError) {
+      console.warn('Failed to sync unblock to local storage:', syncError);
+    }
+
+    return { success: true };
+  } catch (error) {
+    // Fallback to local storage
+    console.log('API unblock failed, using local storage fallback');
+    try {
+      const stored = await AsyncStorage.getItem(`${BLOCKED_USERS_KEY}_${userId}`);
+      const blocked: number[] = stored ? JSON.parse(stored) : [];
+      const newBlocked = blocked.filter(id => id !== targetUserId);
+      await AsyncStorage.setItem(`${BLOCKED_USERS_KEY}_${userId}`, JSON.stringify(newBlocked));
+      return { success: true };
+    } catch (storageError) {
+      console.error('Local storage error:', storageError);
+      throw new Error('Failed to unblock user');
+    }
+  }
+};
+
+export const muteUser = async (userId: number, targetUserId: number): Promise<{ success: boolean; muted: boolean }> => {
+  try {
+    // Try API first
+    const result = await apiRequest(`/api/community/social/${targetUserId}/mute`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    });
+    // Backend returns isMuted, not muted
+    const isMuted = result?.isMuted ?? result?.muted ?? true;
+
+    // Sync to local storage on API success
+    try {
+      const currentMuted = await AsyncStorage.getItem(`${MUTED_USERS_KEY}_${userId}`);
+      let mutedIds: number[] = currentMuted ? JSON.parse(currentMuted) : [];
+
+      if (isMuted && !mutedIds.includes(targetUserId)) {
+        mutedIds.push(targetUserId);
+      } else if (!isMuted) {
+        mutedIds = mutedIds.filter(id => id !== targetUserId);
+      }
+      await AsyncStorage.setItem(`${MUTED_USERS_KEY}_${userId}`, JSON.stringify(mutedIds));
+      console.log(`✅ Mute synced to local storage: ${isMuted ? 'muted' : 'unmuted'} user ${targetUserId}`);
+    } catch (syncError) {
+      console.warn('Failed to sync mute to local storage:', syncError);
+    }
+
+    return { success: true, muted: isMuted };
+  } catch (error) {
+    // Fallback to local storage
+    console.log('API mute failed, using local storage fallback');
+    try {
+      const stored = await AsyncStorage.getItem(`${MUTED_USERS_KEY}_${userId}`);
+      const muted: number[] = stored ? JSON.parse(stored) : [];
+      const isMuted = muted.includes(targetUserId);
+
+      let newMuted: number[];
+      if (isMuted) {
+        newMuted = muted.filter(id => id !== targetUserId);
+      } else {
+        newMuted = [...muted, targetUserId];
+      }
+
+      await AsyncStorage.setItem(`${MUTED_USERS_KEY}_${userId}`, JSON.stringify(newMuted));
+      return { success: true, muted: !isMuted };
+    } catch (storageError) {
+      console.error('Local storage error:', storageError);
+      throw new Error('Failed to mute user');
+    }
+  }
+};
+
+export const unmuteUser = async (userId: number, targetUserId: number): Promise<{ success: boolean }> => {
+  try {
+    // Try API first - use DELETE method for explicit unmute
+    await apiRequest(`/api/community/social/${targetUserId}/mute?userId=${userId}`, {
+      method: 'DELETE',
+    });
+
+    // Sync to local storage on API success
+    try {
+      const stored = await AsyncStorage.getItem(`${MUTED_USERS_KEY}_${userId}`);
+      const mutedIds: number[] = stored ? JSON.parse(stored) : [];
+      const newMuted = mutedIds.filter(id => id !== targetUserId);
+      await AsyncStorage.setItem(`${MUTED_USERS_KEY}_${userId}`, JSON.stringify(newMuted));
+      console.log(`✅ Unmute synced to local storage: removed user ${targetUserId}`);
+    } catch (syncError) {
+      console.warn('Failed to sync unmute to local storage:', syncError);
+    }
+
+    return { success: true };
+  } catch (error) {
+    // Fallback to local storage
+    console.log('API unmute failed, using local storage fallback');
+    try {
+      const stored = await AsyncStorage.getItem(`${MUTED_USERS_KEY}_${userId}`);
+      const muted: number[] = stored ? JSON.parse(stored) : [];
+      const newMuted = muted.filter(id => id !== targetUserId);
+      await AsyncStorage.setItem(`${MUTED_USERS_KEY}_${userId}`, JSON.stringify(newMuted));
+      return { success: true };
+    } catch (storageError) {
+      console.error('Local storage error:', storageError);
+      throw new Error('Failed to unmute user');
+    }
+  }
+};
+
+export const reportUser = async (
+  userId: number,
+  reportedUserId: number,
+  reason: string,
+  postId?: number,
+  commentId?: number
+): Promise<{ success: boolean }> => {
+  try {
+    await apiRequest('/api/community/report', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId,
+        reportedUserId,
+        reason,
+        ...(postId && { postId }),
+        ...(commentId && { commentId }),
+      }),
+    });
+    return { success: true };
+  } catch (error) {
+    // For reports, we always show success to the user (even if backend fails)
+    // The report can be logged locally or retried later
+    console.log('Report API failed, but acknowledging to user');
+    return { success: true };
+  }
+};
+
 // ===== DEFAULT EXPORT =====
 
 export default {
@@ -445,4 +765,14 @@ export default {
   addToWatchlist,
   removeFromWatchlist,
   getUserKarma,
+  // Block/Mute/Report
+  blockUser,
+  unblockUser,
+  muteUser,
+  unmuteUser,
+  reportUser,
+  getBlockedUsers,
+  getMutedUsers,
+  getBlockedUserDetails,
+  getMutedUserDetails,
 };

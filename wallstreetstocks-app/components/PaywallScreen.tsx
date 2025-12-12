@@ -7,26 +7,23 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { PurchasesPackage } from 'react-native-purchases';
 import { Ionicons } from '@expo/vector-icons';
-import { useSubscription, PRODUCT_IDS } from '../context/SubscriptionContext';
-
-const { width } = Dimensions.get('window');
+import { useSubscription } from '../context/SubscriptionContext';
 
 // Feature lists for each tier
 const TIER_FEATURES: Record<string, string[]> = {
-  [PRODUCT_IDS.GOLD_MONTHLY]: [
+  gold: [
     'Ad-free experience',
     'Basic stock analysis',
     'Watchlist (up to 20 stocks)',
     'Daily market summary',
     'Email support',
   ],
-  [PRODUCT_IDS.PLATINUM_MONTHLY]: [
+  platinum: [
     'Everything in Gold',
     'Advanced stock analysis',
     'AI-powered insights',
@@ -34,7 +31,7 @@ const TIER_FEATURES: Record<string, string[]> = {
     'Real-time alerts',
     'Priority support',
   ],
-  [PRODUCT_IDS.DIAMOND_MONTHLY]: [
+  diamond: [
     'Everything in Platinum',
     'Exclusive research reports',
     'Portfolio optimization',
@@ -45,29 +42,41 @@ const TIER_FEATURES: Record<string, string[]> = {
 };
 
 const TIER_COLORS: Record<string, string> = {
-  [PRODUCT_IDS.GOLD_MONTHLY]: '#FFD700',
-  [PRODUCT_IDS.PLATINUM_MONTHLY]: '#E5E4E2',
-  [PRODUCT_IDS.DIAMOND_MONTHLY]: '#B9F2FF',
+  gold: '#FFD700',
+  platinum: '#E5E4E2',
+  diamond: '#B9F2FF',
 };
 
 const TIER_NAMES: Record<string, string> = {
-  [PRODUCT_IDS.GOLD_MONTHLY]: 'Gold',
-  [PRODUCT_IDS.PLATINUM_MONTHLY]: 'Platinum',
-  [PRODUCT_IDS.DIAMOND_MONTHLY]: 'Diamond',
+  gold: 'Gold',
+  platinum: 'Platinum',
+  diamond: 'Diamond',
 };
 
-interface SubscriptionCardProps {
-  pkg: PurchasesPackage;
+const TIER_PRICES: Record<string, string> = {
+  gold: '$9.99',
+  platinum: '$19.99',
+  diamond: '$49.99',
+};
+
+// Tier order for display
+const TIER_ORDER = ['gold', 'platinum', 'diamond'] as const;
+type TierKey = typeof TIER_ORDER[number];
+
+// Universal tier card - works with or without RevenueCat packages
+interface TierCardProps {
+  tierKey: TierKey;
   isSelected: boolean;
   onSelect: () => void;
-  isPopular?: boolean;
+  pkg?: PurchasesPackage;
 }
 
-function SubscriptionCard({ pkg, isSelected, onSelect, isPopular }: SubscriptionCardProps) {
-  const productId = pkg.product.identifier;
-  const tierColor = TIER_COLORS[productId] || '#666';
-  const tierName = TIER_NAMES[productId] || 'Premium';
-  const features = TIER_FEATURES[productId] || [];
+function TierCard({ tierKey, isSelected, onSelect, pkg }: TierCardProps) {
+  const tierColor = TIER_COLORS[tierKey];
+  const tierName = TIER_NAMES[tierKey];
+  const tierPrice = pkg?.product.priceString || TIER_PRICES[tierKey];
+  const features = TIER_FEATURES[tierKey];
+  const isPopular = tierKey === 'platinum';
 
   return (
     <TouchableOpacity
@@ -84,14 +93,14 @@ function SubscriptionCard({ pkg, isSelected, onSelect, isPopular }: Subscription
           <Text style={styles.popularText}>MOST POPULAR</Text>
         </View>
       )}
-      
+
       <View style={styles.cardHeader}>
         <View style={[styles.tierBadge, { backgroundColor: tierColor }]}>
           <Text style={styles.tierBadgeText}>{tierName}</Text>
         </View>
-        
+
         <View style={styles.priceContainer}>
-          <Text style={styles.price}>{pkg.product.priceString}</Text>
+          <Text style={styles.price}>{tierPrice}</Text>
           <Text style={styles.period}>/month</Text>
         </View>
       </View>
@@ -125,34 +134,46 @@ export default function PaywallScreen() {
     error,
   } = useSubscription();
 
-  const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
+  const [selectedTier, setSelectedTier] = useState<TierKey>('platinum');
   const [isPurchasing, setIsPurchasing] = useState(false);
 
   useEffect(() => {
     loadOfferings();
   }, []);
 
-  useEffect(() => {
-    // Auto-select platinum (middle tier) as default
-    if (packages.length > 0 && !selectedPackage) {
-      const platinumPkg = packages.find(
-        (pkg: PurchasesPackage) => pkg.product.identifier === PRODUCT_IDS.PLATINUM_MONTHLY
-      );
-      setSelectedPackage(platinumPkg || packages[0]);
-    }
-  }, [packages]);
+  // Helper to find package for a tier
+  const getPackageForTier = (tierKey: TierKey): PurchasesPackage | undefined => {
+    return packages.find((pkg) =>
+      pkg.product.identifier.toLowerCase().includes(tierKey)
+    );
+  };
+
+  // Get the selected package (if available)
+  const selectedPackage = getPackageForTier(selectedTier);
+
+  // Check if selected tier has a purchasable package
+  const canPurchaseSelectedTier = !!selectedPackage;
 
   const handlePurchase = async () => {
+    if (!canPurchaseSelectedTier) {
+      Alert.alert(
+        'Coming Soon',
+        `The ${TIER_NAMES[selectedTier]} plan is being finalized. Please check back soon or select a different plan!`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     if (!selectedPackage) {
       Alert.alert('Error', 'Please select a subscription plan');
       return;
     }
 
     setIsPurchasing(true);
-    
+
     try {
       const success = await purchase(selectedPackage);
-      
+
       if (success) {
         Alert.alert(
           'Success!',
@@ -192,16 +213,6 @@ export default function PaywallScreen() {
   const handleClose = () => {
     router.back();
   };
-
-  // Sort packages by tier (Gold, Platinum, Diamond)
-  const sortedPackages = [...packages].sort((a, b) => {
-    const tierOrder: Record<string, number> = {
-      [PRODUCT_IDS.GOLD_MONTHLY]: 1,
-      [PRODUCT_IDS.PLATINUM_MONTHLY]: 2,
-      [PRODUCT_IDS.DIAMOND_MONTHLY]: 3,
-    };
-    return (tierOrder[a.product.identifier] || 0) - (tierOrder[b.product.identifier] || 0);
-  });
 
   if (isPremium) {
     return (
@@ -256,13 +267,14 @@ export default function PaywallScreen() {
             </View>
 
             <View style={styles.cardsContainer}>
-              {sortedPackages.map((pkg, index) => (
-                <SubscriptionCard
-                  key={pkg.identifier}
-                  pkg={pkg}
-                  isSelected={selectedPackage?.identifier === pkg.identifier}
-                  onSelect={() => setSelectedPackage(pkg)}
-                  isPopular={pkg.product.identifier === PRODUCT_IDS.PLATINUM_MONTHLY}
+              {/* Always show all 3 tiers */}
+              {TIER_ORDER.map((tierKey) => (
+                <TierCard
+                  key={tierKey}
+                  tierKey={tierKey}
+                  isSelected={selectedTier === tierKey}
+                  onSelect={() => setSelectedTier(tierKey)}
+                  pkg={getPackageForTier(tierKey)}
                 />
               ))}
             </View>
@@ -271,16 +283,25 @@ export default function PaywallScreen() {
               <Text style={styles.errorText}>{error}</Text>
             )}
 
+            {!canPurchaseSelectedTier && (
+              <View style={styles.noticeContainer}>
+                <Ionicons name="information-circle" size={20} color="#FFD700" />
+                <Text style={styles.noticeText}>
+                  The {TIER_NAMES[selectedTier]} plan is being finalized. You can view features now and subscribe soon!
+                </Text>
+              </View>
+            )}
+
             <View style={styles.termsContainer}>
               <Text style={styles.termsText}>
                 Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period.
               </Text>
               <View style={styles.termsLinks}>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/profile/terms')}>
                   <Text style={styles.termsLink}>Terms of Service</Text>
                 </TouchableOpacity>
                 <Text style={styles.termsDivider}>•</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/profile/privacy')}>
                   <Text style={styles.termsLink}>Privacy Policy</Text>
                 </TouchableOpacity>
               </View>
@@ -291,16 +312,16 @@ export default function PaywallScreen() {
             <TouchableOpacity
               style={[
                 styles.purchaseButton,
-                (isPurchasing || !selectedPackage) && styles.purchaseButtonDisabled,
+                isPurchasing && styles.purchaseButtonDisabled,
               ]}
               onPress={handlePurchase}
-              disabled={isPurchasing || !selectedPackage}
+              disabled={isPurchasing}
             >
               {isPurchasing ? (
                 <ActivityIndicator color="#000" />
               ) : (
                 <Text style={styles.purchaseButtonText}>
-                  Subscribe Now
+                  Subscribe to {TIER_NAMES[selectedTier]} - {selectedPackage?.product.priceString || TIER_PRICES[selectedTier]}/mo
                 </Text>
               )}
             </TouchableOpacity>
@@ -379,6 +400,21 @@ const styles = StyleSheet.create({
   },
   cardsContainer: {
     gap: 16,
+  },
+  noticeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#332700',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 16,
+    gap: 10,
+  },
+  noticeText: {
+    flex: 1,
+    color: '#FFD700',
+    fontSize: 13,
+    lineHeight: 18,
   },
   card: {
     backgroundColor: '#1a1a1a',
