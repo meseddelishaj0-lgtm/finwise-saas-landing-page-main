@@ -11,15 +11,18 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
-  RefreshControl
+  RefreshControl,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { LineChart } from 'react-native-chart-kit';
 import { LineChart as GiftedLineChart } from 'react-native-gifted-charts';
 import { Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { useWatchlist } from '@/context/WatchlistContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
@@ -101,6 +104,40 @@ const smoothData = (data: number[], windowSize: number = 3): number[] => {
   return smoothed;
 };
 
+// Interpolate sparkline data to create smooth continuous lines
+const interpolateSparkline = (data: number[], targetPoints: number = 20): number[] => {
+  const cleaned = cleanChartData(data);
+  if (cleaned.length < 2) return [50, 50];
+
+  // Linear interpolation to create more points
+  const result: number[] = [];
+  const step = (cleaned.length - 1) / (targetPoints - 1);
+
+  for (let i = 0; i < targetPoints; i++) {
+    const pos = i * step;
+    const lower = Math.floor(pos);
+    const upper = Math.min(lower + 1, cleaned.length - 1);
+    const fraction = pos - lower;
+
+    // Linear interpolation between points
+    const value = cleaned[lower] + (cleaned[upper] - cleaned[lower]) * fraction;
+    result.push(value);
+  }
+
+  // Normalize to a range that shows variation (0-100 scale)
+  const min = Math.min(...result);
+  const max = Math.max(...result);
+  const range = max - min;
+
+  if (range < 0.01) {
+    // If range is too small, create artificial variation to show flat line
+    return result.map(() => 50);
+  }
+
+  // Scale to 0-100 range to show proper variation
+  return result.map(val => ((val - min) / range) * 100);
+};
+
 // Interpolate data to create more points for smoother curves
 const interpolateData = (data: { value: number; label: string; dataPointText?: string }[], targetPoints: number = 60): { value: number; label: string; dataPointText?: string }[] => {
   if (data.length <= 2 || data.length >= targetPoints) return data;
@@ -156,6 +193,17 @@ export default function Dashboard() {
   const [newStockShares, setNewStockShares] = useState('');
   const [newStockAvgCost, setNewStockAvgCost] = useState('');
   const [addingStock, setAddingStock] = useState(false);
+
+  // Edit Holding Modal
+  const [editHoldingModal, setEditHoldingModal] = useState(false);
+  const [editingHolding, setEditingHolding] = useState<{symbol: string; shares: number; avgCost: number} | null>(null);
+  const [editShares, setEditShares] = useState('');
+  const [editAvgCost, setEditAvgCost] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Holding Options Modal (when tapping a holding)
+  const [holdingOptionsModal, setHoldingOptionsModal] = useState(false);
+  const [selectedHolding, setSelectedHolding] = useState<any>(null);
 
   // Watchlist Modal
   const [watchlistModal, setWatchlistModal] = useState(false);
@@ -248,41 +296,17 @@ export default function Dashboard() {
     }
   }, [userHoldings, holdingsInitialized]);
 
-  // Watchlist state - persisted with AsyncStorage
-  const [watchlist, setWatchlist] = useState<string[]>([]);
+  // Watchlist from context (single source of truth)
+  const { watchlist, watchlistLoading: contextWatchlistLoading, addToWatchlist, removeFromWatchlist, isInWatchlist, refreshWatchlist } = useWatchlist();
   const [watchlistData, setWatchlistData] = useState<any[]>([]);
-  const [watchlistLoading, setWatchlistLoading] = useState(true);
-  const [watchlistInitialized, setWatchlistInitialized] = useState(false);
+  const [watchlistDataLoading, setWatchlistDataLoading] = useState(true);
 
-  // Load watchlist from AsyncStorage on mount
-  useEffect(() => {
-    const loadWatchlist = async () => {
-      try {
-        const saved = await AsyncStorage.getItem('user_watchlist');
-        if (saved) {
-          setWatchlist(JSON.parse(saved));
-        } else {
-          // Default watchlist for new users
-          const defaultWatchlist = ['NVDA', 'GOOGL', 'AMZN', 'META'];
-          setWatchlist(defaultWatchlist);
-          await AsyncStorage.setItem('user_watchlist', JSON.stringify(defaultWatchlist));
-        }
-      } catch (err) {
-        console.error('Error loading watchlist:', err);
-        setWatchlist(['NVDA', 'GOOGL', 'AMZN', 'META']);
-      } finally {
-        setWatchlistInitialized(true);
-      }
-    };
-    loadWatchlist();
-  }, []);
-
-  // Save watchlist to AsyncStorage whenever it changes
-  useEffect(() => {
-    if (watchlistInitialized) {
-      AsyncStorage.setItem('user_watchlist', JSON.stringify(watchlist));
-    }
-  }, [watchlist, watchlistInitialized]);
+  // Reload watchlist when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshWatchlist();
+    }, [refreshWatchlist])
+  );
 
   // Fetch live market indices data
   const fetchMarketChips = async () => {
@@ -353,14 +377,16 @@ export default function Dashboard() {
         const trendingData = await Promise.all(
           data.slice(0, 6).map(async (stock: any, idx: number) => {
             try {
+              // Use 1-minute intervals for more real-time data
               const chartRes = await fetch(
-                `${BASE_URL}/historical-chart/5min/${stock.symbol}?apikey=${FMP_API_KEY}`
+                `${BASE_URL}/historical-chart/1min/${stock.symbol}?apikey=${FMP_API_KEY}`
               );
               const chartData = await chartRes.json();
 
+              // Get the most recent 40 data points for a smoother chart
               const chartValues = chartData && Array.isArray(chartData) && chartData.length > 0
-                ? cleanChartData(chartData.slice(0, 30).reverse().map((d: any) => d.close))
-                : [stock.price, stock.price * 0.99, stock.price * 1.01, stock.price];
+                ? cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close))
+                : [stock.price, stock.price * 0.995, stock.price * 1.005, stock.price];
 
               return {
                 symbol: stock.symbol,
@@ -400,11 +426,11 @@ export default function Dashboard() {
   const fetchWatchlist = async () => {
     if (watchlist.length === 0) {
       setWatchlistData([]);
-      setWatchlistLoading(false);
+      setWatchlistDataLoading(false);
       return;
     }
 
-    setWatchlistLoading(true);
+    setWatchlistDataLoading(true);
     try {
       const symbols = watchlist.join(',');
       const res = await fetch(
@@ -416,14 +442,16 @@ export default function Dashboard() {
         const watchlistWithCharts = await Promise.all(
           data.map(async (stock: any) => {
             try {
+              // Use 1-minute intervals for more real-time data
               const chartRes = await fetch(
-                `${BASE_URL}/historical-chart/5min/${stock.symbol}?apikey=${FMP_API_KEY}`
+                `${BASE_URL}/historical-chart/1min/${stock.symbol}?apikey=${FMP_API_KEY}`
               );
               const chartData = await chartRes.json();
 
+              // Get the most recent 40 data points for a smoother chart
               const chartValues = chartData && Array.isArray(chartData) && chartData.length > 0
-                ? cleanChartData(chartData.slice(0, 30).reverse().map((d: any) => d.close))
-                : [stock.price, stock.price * 0.99, stock.price * 1.01, stock.price];
+                ? cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close))
+                : [stock.price, stock.price * 0.995, stock.price * 1.005, stock.price];
 
               return {
                 symbol: stock.symbol,
@@ -453,7 +481,7 @@ export default function Dashboard() {
     } catch (err) {
       console.error('Watchlist fetch error:', err);
     } finally {
-      setWatchlistLoading(false);
+      setWatchlistDataLoading(false);
     }
   };
 
@@ -740,6 +768,8 @@ export default function Dashboard() {
           style: 'destructive',
           onPress: () => {
             setUserHoldings(prev => prev.filter(h => h.symbol !== symbol));
+            setHoldingOptionsModal(false);
+            setSelectedHolding(null);
             setTimeout(() => {
               fetchPortfolio();
             }, 500);
@@ -749,57 +779,105 @@ export default function Dashboard() {
     );
   };
 
-  // Add to watchlist
+  // Open holding options modal
+  const handleHoldingPress = (holding: any) => {
+    setSelectedHolding(holding);
+    setHoldingOptionsModal(true);
+  };
+
+  // Open edit modal for a holding
+  const handleOpenEditModal = () => {
+    if (!selectedHolding) return;
+
+    // Find the original holding data from userHoldings
+    const originalHolding = userHoldings.find(h => h.symbol === selectedHolding.symbol);
+    if (originalHolding) {
+      setEditingHolding(originalHolding);
+      setEditShares(originalHolding.shares.toString());
+      setEditAvgCost(originalHolding.avgCost.toString());
+      setHoldingOptionsModal(false);
+      setEditHoldingModal(true);
+    }
+  };
+
+  // Save edited holding
+  const handleSaveEdit = async () => {
+    if (!editingHolding || !editShares.trim() || !editAvgCost.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    const newShares = parseFloat(editShares);
+    const newAvgCost = parseFloat(editAvgCost);
+
+    if (isNaN(newShares) || newShares <= 0) {
+      Alert.alert('Error', 'Please enter a valid number of shares');
+      return;
+    }
+
+    if (isNaN(newAvgCost) || newAvgCost <= 0) {
+      Alert.alert('Error', 'Please enter a valid average cost');
+      return;
+    }
+
+    setSavingEdit(true);
+
+    try {
+      setUserHoldings(prev =>
+        prev.map(h =>
+          h.symbol === editingHolding.symbol
+            ? { ...h, shares: newShares, avgCost: newAvgCost }
+            : h
+        )
+      );
+
+      setEditHoldingModal(false);
+      setEditingHolding(null);
+      setEditShares('');
+      setEditAvgCost('');
+
+      setTimeout(() => {
+        fetchPortfolio();
+      }, 500);
+
+      Alert.alert('Success', `${editingHolding.symbol} updated successfully!`);
+    } catch (err) {
+      console.error('Edit holding error:', err);
+      Alert.alert('Error', 'Failed to update holding. Please try again.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Close edit modal
+  const handleCloseEditModal = () => {
+    setEditHoldingModal(false);
+    setEditingHolding(null);
+    setEditShares('');
+    setEditAvgCost('');
+  };
+
+  // Add to watchlist (uses context)
   const handleAddToWatchlist = async (symbol?: string) => {
     const symbolToAdd = symbol || watchlistSymbol.toUpperCase().trim();
-    
+
     if (!symbolToAdd) {
       Alert.alert('Error', 'Please enter a stock symbol');
       return;
     }
 
-    if (watchlist.includes(symbolToAdd)) {
-      Alert.alert('Already Added', `${symbolToAdd} is already in your watchlist`);
-      setWatchlistSymbol('');
-      setShowWatchlistSearchDropdown(false);
-      return;
-    }
-
     setAddingToWatchlist(true);
+    setWatchlistSymbol('');
+    setShowWatchlistSearchDropdown(false);
+    setWatchlistModal(false);
 
-    try {
-      // Verify the symbol exists
-      const quoteRes = await fetch(
-        `${BASE_URL}/quote/${symbolToAdd}?apikey=${FMP_API_KEY}`
-      );
-      const quoteData = await quoteRes.json();
+    // Use context's addToWatchlist (handles validation, storage, and alerts)
+    await addToWatchlist(symbolToAdd);
 
-      if (!quoteData || !Array.isArray(quoteData) || quoteData.length === 0) {
-        Alert.alert('Error', `Stock ${symbolToAdd} not found`);
-        setAddingToWatchlist(false);
-        return;
-      }
-
-      setWatchlist(prev => [...prev, symbolToAdd]);
-      setWatchlistSymbol('');
-      setShowWatchlistSearchDropdown(false);
-      setWatchlistModal(false);
-
-      // Refresh watchlist data
-      setTimeout(() => {
-        fetchWatchlist();
-      }, 500);
-
-      Alert.alert('Success', `${symbolToAdd} added to your watchlist!`);
-    } catch (err) {
-      console.error('Add to watchlist error:', err);
-      Alert.alert('Error', 'Failed to add stock. Please try again.');
-    } finally {
-      setAddingToWatchlist(false);
-    }
+    setAddingToWatchlist(false);
   };
 
-  // Remove from watchlist
+  // Remove from watchlist (uses context)
   const handleRemoveFromWatchlist = (symbol: string) => {
     Alert.alert(
       'Remove from Watchlist',
@@ -809,8 +887,8 @@ export default function Dashboard() {
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => {
-            setWatchlist(prev => prev.filter(s => s !== symbol));
+          onPress: async () => {
+            await removeFromWatchlist(symbol);
             setWatchlistData(prev => prev.filter(s => s.symbol !== symbol));
           }
         }
@@ -901,24 +979,25 @@ export default function Dashboard() {
 
   // Initial fetch - only start after data is loaded from AsyncStorage
   useEffect(() => {
-    if (!holdingsInitialized || !watchlistInitialized) return;
+    if (!holdingsInitialized || contextWatchlistLoading) return;
 
     fetchMarketChips();
     fetchTrending();
     fetchPortfolio();
     fetchStockPicks();
-    // Watchlist is fetched by its own useEffect
+    fetchWatchlist();
 
+    // Refresh every 15 seconds for more real-time data
     const interval = setInterval(() => {
       fetchMarketChips();
       fetchTrending();
       fetchPortfolio();
       fetchWatchlist();
       fetchStockPicks();
-    }, 30000);
+    }, 15000);
 
     return () => clearInterval(interval);
-  }, [holdingsInitialized, watchlistInitialized]);
+  }, [holdingsInitialized, contextWatchlistLoading]);
 
   // Refetch portfolio when time range changes
   useEffect(() => {
@@ -927,15 +1006,15 @@ export default function Dashboard() {
     }
   }, [portfolioTimeRange]);
 
-  // Refetch watchlist when watchlist changes (only after initialized)
+  // Refetch watchlist data when watchlist array changes
   useEffect(() => {
-    if (watchlistInitialized && watchlist.length > 0) {
+    if (!contextWatchlistLoading && watchlist.length > 0) {
       fetchWatchlist();
-    } else if (watchlistInitialized && watchlist.length === 0) {
+    } else if (!contextWatchlistLoading && watchlist.length === 0) {
       setWatchlistData([]);
-      setWatchlistLoading(false);
+      setWatchlistDataLoading(false);
     }
-  }, [watchlist, watchlistInitialized]);
+  }, [watchlist, contextWatchlistLoading]);
 
   // Compute filtered and sorted watchlist
   const getFilteredSortedWatchlist = () => {
@@ -1264,13 +1343,20 @@ export default function Dashboard() {
           {/* Holdings List */}
           {portfolio.holdings.length > 0 && (
             <View style={styles.holdingsList}>
-              <Text style={styles.holdingsTitle}>Holdings</Text>
+              <View style={styles.holdingsTitleRow}>
+                <Text style={styles.holdingsTitle}>Holdings</Text>
+                <TouchableOpacity
+                  style={styles.addHoldingButton}
+                  onPress={() => setAddStockModal(true)}
+                >
+                  <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
               {portfolio.holdings.map((holding, idx) => (
-                <TouchableOpacity 
-                  key={idx} 
+                <TouchableOpacity
+                  key={idx}
                   style={styles.holdingRow}
-                  onPress={() => router.push(`/symbol/${holding.symbol}/chart`)}
-                  onLongPress={() => handleRemoveStock(holding.symbol)}
+                  onPress={() => handleHoldingPress(holding)}
                 >
                   <View style={styles.holdingLeft}>
                     <View style={styles.holdingIconContainer}>
@@ -1404,7 +1490,7 @@ export default function Dashboard() {
             </View>
           </View>
 
-          {watchlistLoading ? (
+          {watchlistDataLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#007AFF" />
             </View>
@@ -1443,42 +1529,29 @@ export default function Dashboard() {
                   </View>
                   
                   <View style={styles.watchlistRowCenter}>
-                    <LineChart
-                      data={{
-                        labels: [],
-                        datasets: [{
-                          data: normalizeChartData(smoothData(stock.data.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.99, (stock.price || 100) * 1.01, stock.price || 100], 3)),
-                          strokeWidth: 2,
-                        }]
-                      }}
-                      width={90}
-                      height={44}
-                      chartConfig={{
-                        backgroundGradientFrom: 'transparent',
-                        backgroundGradientTo: 'transparent',
-                        backgroundGradientFromOpacity: 0,
-                        backgroundGradientToOpacity: 0,
-                        color: () => stock.color,
-                        strokeWidth: 2,
-                        fillShadowGradientFrom: stock.color,
-                        fillShadowGradientTo: stock.color,
-                        fillShadowGradientFromOpacity: 0.15,
-                        fillShadowGradientToOpacity: 0,
-                        propsForDots: {
-                          r: '0',
-                        },
-                        propsForBackgroundLines: {
-                          stroke: 'transparent',
-                        },
-                      }}
-                      withDots={false}
-                      withShadow={true}
-                      withHorizontalLabels={false}
-                      withVerticalLabels={false}
-                      withInnerLines={false}
-                      withOuterLines={false}
-                      bezier
-                      style={styles.watchlistSparkline}
+                    <GiftedLineChart
+                      data={interpolateSparkline(stock.data.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.98, (stock.price || 100) * 1.02, stock.price || 100], 18).map(value => ({ value }))}
+                      width={Platform.OS === 'android' ? 55 : 85}
+                      height={Platform.OS === 'android' ? 28 : 36}
+                      curved
+                      areaChart
+                      hideDataPoints
+                      hideRules
+                      hideYAxisText
+                      hideAxesAndRules
+                      disableScroll
+                      initialSpacing={0}
+                      endSpacing={0}
+                      spacing={(Platform.OS === 'android' ? 55 : 85) / 18}
+                      thickness={1.5}
+                      color={stock.color}
+                      startFillColor={stock.color}
+                      endFillColor={stock.color}
+                      startOpacity={0.2}
+                      endOpacity={0.02}
+                      yAxisOffset={0}
+                      maxValue={105}
+                      mostNegativeValue={-5}
                     />
                   </View>
                   
@@ -1633,39 +1706,29 @@ export default function Dashboard() {
                   
                   <Text style={styles.trendingPrice}>${stock.price.toFixed(2)}</Text>
                   
-                  <LineChart
-                    data={{
-                      labels: [],
-                      datasets: [{
-                        data: normalizeChartData(smoothData(stock.data.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.99, (stock.price || 100) * 1.01, stock.price || 100], 3)),
-                        strokeWidth: 2,
-                      }]
-                    }}
-                    width={chartWidth}
-                    height={50}
-                    chartConfig={{
-                      backgroundGradientFrom: '#fff',
-                      backgroundGradientTo: '#fff',
-                      backgroundGradientFromOpacity: 0,
-                      backgroundGradientToOpacity: 0,
-                      color: () => stock.color,
-                      strokeWidth: 2,
-                      fillShadowGradientFrom: stock.color,
-                      fillShadowGradientTo: stock.color,
-                      fillShadowGradientFromOpacity: 0.12,
-                      fillShadowGradientToOpacity: 0,
-                      propsForDots: {
-                        r: '0',
-                      },
-                    }}
-                    withDots={false}
-                    withShadow={true}
-                    withHorizontalLabels={false}
-                    withVerticalLabels={false}
-                    withInnerLines={false}
-                    withOuterLines={false}
-                    bezier
-                    style={styles.miniChart}
+                  <GiftedLineChart
+                    data={interpolateSparkline(stock.data.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.98, (stock.price || 100) * 1.02, stock.price || 100], 18).map(value => ({ value }))}
+                    width={chartWidth - 10}
+                    height={45}
+                    curved
+                    areaChart
+                    hideDataPoints
+                    hideRules
+                    hideYAxisText
+                    hideAxesAndRules
+                    disableScroll
+                    initialSpacing={0}
+                    endSpacing={0}
+                    spacing={(chartWidth - 10) / 18}
+                    thickness={1.5}
+                    color={stock.color}
+                    startFillColor={stock.color}
+                    endFillColor={stock.color}
+                    startOpacity={0.15}
+                    endOpacity={0.02}
+                    yAxisOffset={0}
+                    maxValue={105}
+                    mostNegativeValue={-5}
                   />
                   
                   <Text style={[styles.trendingChange, { color: stock.color }]}>
@@ -1687,7 +1750,10 @@ export default function Dashboard() {
         animationType="slide"
         onRequestClose={() => setAddStockModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <View>
@@ -1757,7 +1823,7 @@ export default function Dashboard() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Watchlist Modal */}
@@ -1771,7 +1837,10 @@ export default function Dashboard() {
           setShowWatchlistSearchDropdown(false);
         }}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <View>
@@ -1898,7 +1967,183 @@ export default function Dashboard() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Holding Options Modal */}
+      <Modal
+        visible={holdingOptionsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setHoldingOptionsModal(false);
+          setSelectedHolding(null);
+        }}
+      >
+        <TouchableOpacity
+          style={styles.holdingOptionsOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setHoldingOptionsModal(false);
+            setSelectedHolding(null);
+          }}
+        >
+          <View style={styles.holdingOptionsContent}>
+            {selectedHolding && (
+              <>
+                <View style={styles.holdingOptionsHeader}>
+                  <View style={styles.holdingOptionsIconContainer}>
+                    <Text style={styles.holdingOptionsIcon}>{selectedHolding.symbol.charAt(0)}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.holdingOptionsSymbol}>{selectedHolding.symbol}</Text>
+                    <Text style={styles.holdingOptionsShares}>
+                      {selectedHolding.shares} shares • ${selectedHolding.avgCost.toFixed(2)} avg
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.holdingOptionsStats}>
+                  <View style={styles.holdingOptionsStat}>
+                    <Text style={styles.holdingOptionsStatLabel}>Current Value</Text>
+                    <Text style={styles.holdingOptionsStatValue}>
+                      ${selectedHolding.currentValue?.toFixed(2) || '0.00'}
+                    </Text>
+                  </View>
+                  <View style={styles.holdingOptionsStat}>
+                    <Text style={styles.holdingOptionsStatLabel}>Total Gain/Loss</Text>
+                    <Text style={[
+                      styles.holdingOptionsStatValue,
+                      { color: (selectedHolding.gain || 0) >= 0 ? '#34C759' : '#FF3B30' }
+                    ]}>
+                      {(selectedHolding.gain || 0) >= 0 ? '+' : ''}${Math.abs(selectedHolding.gain || 0).toFixed(2)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.holdingOptionsButtons}>
+                  <TouchableOpacity
+                    style={styles.holdingOptionButton}
+                    onPress={() => {
+                      setHoldingOptionsModal(false);
+                      router.push(`/symbol/${selectedHolding.symbol}/chart`);
+                    }}
+                  >
+                    <Ionicons name="stats-chart" size={24} color="#007AFF" />
+                    <Text style={styles.holdingOptionButtonText}>View Chart</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.holdingOptionButton}
+                    onPress={handleOpenEditModal}
+                  >
+                    <Ionicons name="create-outline" size={24} color="#FF9500" />
+                    <Text style={styles.holdingOptionButtonText}>Edit</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.holdingOptionButton}
+                    onPress={() => handleRemoveStock(selectedHolding.symbol)}
+                  >
+                    <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+                    <Text style={[styles.holdingOptionButtonText, { color: '#FF3B30' }]}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.holdingOptionsCancelButton}
+                  onPress={() => {
+                    setHoldingOptionsModal(false);
+                    setSelectedHolding(null);
+                  }}
+                >
+                  <Text style={styles.holdingOptionsCancelText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Edit Holding Modal */}
+      <Modal
+        visible={editHoldingModal}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCloseEditModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Edit Holding</Text>
+                <Text style={styles.modalSubtitle}>
+                  {editingHolding ? `Update ${editingHolding.symbol} position` : ''}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={handleCloseEditModal}>
+                <Ionicons name="close-circle" size={32} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalForm}>
+              {editingHolding && (
+                <View style={styles.editHoldingSymbolRow}>
+                  <View style={styles.editHoldingIconContainer}>
+                    <Text style={styles.editHoldingIcon}>{editingHolding.symbol.charAt(0)}</Text>
+                  </View>
+                  <Text style={styles.editHoldingSymbol}>{editingHolding.symbol}</Text>
+                </View>
+              )}
+
+              <View style={styles.inputRow}>
+                <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                  <Text style={styles.inputLabel}>Shares</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="10"
+                    placeholderTextColor="#999"
+                    value={editShares}
+                    onChangeText={setEditShares}
+                    keyboardType="decimal-pad"
+                    editable={!savingEdit}
+                  />
+                </View>
+
+                <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                  <Text style={styles.inputLabel}>Avg Cost ($)</Text>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="150.00"
+                    placeholderTextColor="#999"
+                    value={editAvgCost}
+                    onChangeText={setEditAvgCost}
+                    keyboardType="decimal-pad"
+                    editable={!savingEdit}
+                  />
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.modalButton, savingEdit && styles.modalButtonDisabled]}
+                onPress={handleSaveEdit}
+                disabled={savingEdit}
+              >
+                {savingEdit ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                    <Text style={styles.modalButtonText}>Save Changes</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -1932,26 +2177,27 @@ const styles = StyleSheet.create({
   },
   
   // Header
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    paddingTop: Platform.OS === 'android' ? 40 : 50,
+    paddingBottom: Platform.OS === 'android' ? 12 : 20,
     alignItems: 'center',
     backgroundColor: '#F5F5F7'
   },
-  menuButton: { 
-    paddingHorizontal: 16, 
-    paddingVertical: 8, 
-    borderRadius: 20, 
-    borderWidth: 1.5, 
-    borderColor: '#E5E5EA' 
+  menuButton: {
+    paddingHorizontal: Platform.OS === 'android' ? 12 : 16,
+    paddingVertical: Platform.OS === 'android' ? 6 : 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#E5E5EA'
   },
-  menu: { 
-    fontSize: 15, 
+  menu: {
+    fontSize: Platform.OS === 'android' ? 12 : 15,
     fontWeight: '600',
-    color: '#000'
+    color: '#000',
+    includeFontPadding: false,
   },
   searchWrapper: {
     flex: 1,
@@ -1964,8 +2210,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
+    paddingHorizontal: Platform.OS === 'android' ? 10 : 12,
+    height: Platform.OS === 'android' ? 38 : 44,
     borderWidth: 1,
     borderColor: '#E5E5EA',
   },
@@ -1974,9 +2220,10 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: Platform.OS === 'android' ? 12 : 15,
     color: '#000',
     fontWeight: '500',
+    includeFontPadding: false,
   },
   searchDropdown: {
     position: 'absolute',
@@ -2034,24 +2281,26 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
   },
-  title: { 
-    fontSize: 20, 
+  title: {
+    fontSize: Platform.OS === 'android' ? 16 : 20,
     fontWeight: '700',
     color: '#000',
-    letterSpacing: 0.5
+    letterSpacing: 0.5,
+    includeFontPadding: false,
   },
-  
+
   // Sections
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Platform.OS === 'android' ? 10 : 16,
   },
-  sectionTitle: { 
-    fontSize: 22, 
+  sectionTitle: {
+    fontSize: Platform.OS === 'android' ? 16 : 22,
     fontWeight: '700',
-    color: '#000'
+    color: '#000',
+    includeFontPadding: false,
   },
   liveIndicatorContainer: {
     flexDirection: 'row',
@@ -2077,8 +2326,8 @@ const styles = StyleSheet.create({
   
   // Market Indices - Horizontal Scroll
   indicesSection: {
-    paddingLeft: 20,
-    marginBottom: 24,
+    paddingLeft: Platform.OS === 'android' ? 16 : 20,
+    marginBottom: Platform.OS === 'android' ? 16 : 24,
   },
   indicesLoadingContainer: {
     height: 130,
@@ -2090,10 +2339,10 @@ const styles = StyleSheet.create({
   },
   indexCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
-    marginRight: 12,
-    width: 130,
+    borderRadius: Platform.OS === 'android' ? 12 : 16,
+    padding: Platform.OS === 'android' ? 10 : 14,
+    marginRight: Platform.OS === 'android' ? 8 : 12,
+    width: Platform.OS === 'android' ? 105 : 130,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -2106,52 +2355,56 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   indexIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: Platform.OS === 'android' ? 22 : 28,
+    height: Platform.OS === 'android' ? 22 : 28,
+    borderRadius: Platform.OS === 'android' ? 11 : 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: Platform.OS === 'android' ? 6 : 8,
   },
   indexSymbol: {
-    fontSize: 14,
+    fontSize: Platform.OS === 'android' ? 11 : 14,
     fontWeight: '700',
     color: '#000',
     letterSpacing: 0.3,
+    includeFontPadding: false,
   },
   indexName: {
-    fontSize: 11,
+    fontSize: Platform.OS === 'android' ? 9 : 11,
     color: '#8E8E93',
     fontWeight: '500',
-    marginBottom: 6,
+    marginBottom: Platform.OS === 'android' ? 4 : 6,
+    includeFontPadding: false,
   },
   indexPrice: {
-    fontSize: 17,
+    fontSize: Platform.OS === 'android' ? 13 : 17,
     fontWeight: '700',
     color: '#000',
-    marginBottom: 8,
+    marginBottom: Platform.OS === 'android' ? 6 : 8,
+    includeFontPadding: false,
   },
   indexChangePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: Platform.OS === 'android' ? 6 : 8,
+    paddingVertical: Platform.OS === 'android' ? 3 : 4,
+    borderRadius: Platform.OS === 'android' ? 6 : 8,
     alignSelf: 'flex-start',
   },
   indexChange: {
-    fontSize: 12,
+    fontSize: Platform.OS === 'android' ? 9 : 12,
     fontWeight: '700',
     marginLeft: 4,
+    includeFontPadding: false,
   },
   
   // Portfolio Section
   portfolioSection: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginBottom: 24,
-    borderRadius: 20,
-    padding: 20,
+    marginHorizontal: Platform.OS === 'android' ? 16 : 20,
+    marginBottom: Platform.OS === 'android' ? 16 : 24,
+    borderRadius: Platform.OS === 'android' ? 16 : 20,
+    padding: Platform.OS === 'android' ? 14 : 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -2162,53 +2415,56 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: Platform.OS === 'android' ? 12 : 20,
   },
   portfolioDropdown: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F5F5F7',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: Platform.OS === 'android' ? 12 : 16,
+    paddingVertical: Platform.OS === 'android' ? 8 : 10,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#E5E5EA',
   },
   portfolioDropdownText: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'android' ? 12 : 16,
     fontWeight: '600',
     color: '#007AFF',
     marginRight: 6,
+    includeFontPadding: false,
   },
   eyeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: Platform.OS === 'android' ? 34 : 40,
+    height: Platform.OS === 'android' ? 34 : 40,
+    borderRadius: Platform.OS === 'android' ? 17 : 20,
     backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   addIconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: Platform.OS === 'android' ? 34 : 40,
+    height: Platform.OS === 'android' ? 34 : 40,
+    borderRadius: Platform.OS === 'android' ? 17 : 20,
     backgroundColor: '#007AFF15',
     justifyContent: 'center',
     alignItems: 'center',
   },
   portfolioValueSection: {
-    marginBottom: 24,
+    marginBottom: Platform.OS === 'android' ? 16 : 24,
   },
   portfolioValue: {
-    fontSize: 40,
+    fontSize: Platform.OS === 'android' ? 28 : 40,
     fontWeight: '800',
     color: '#000',
     letterSpacing: -1,
-    marginBottom: 8,
+    marginBottom: Platform.OS === 'android' ? 4 : 8,
+    includeFontPadding: false,
   },
   portfolioChange: {
-    fontSize: 20,
+    fontSize: Platform.OS === 'android' ? 14 : 20,
     fontWeight: '700',
+    includeFontPadding: false,
   },
   
   // Chart
@@ -2260,19 +2516,20 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   timeRangeButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 14,
-    marginRight: 8,
+    paddingVertical: Platform.OS === 'android' ? 7 : 10,
+    paddingHorizontal: Platform.OS === 'android' ? 12 : 18,
+    borderRadius: Platform.OS === 'android' ? 10 : 14,
+    marginRight: Platform.OS === 'android' ? 6 : 8,
     backgroundColor: '#FFFFFF',
   },
   timeRangeButtonActive: {
     backgroundColor: '#D6F0FF',
   },
   timeRangeText: {
-    fontSize: 15,
+    fontSize: Platform.OS === 'android' ? 11 : 15,
     color: '#000',
     fontWeight: '600',
+    includeFontPadding: false,
   },
   timeRangeTextActive: {
     color: '#000',
@@ -2292,19 +2549,28 @@ const styles = StyleSheet.create({
   holdingsList: {
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
-    paddingTop: 20,
+    paddingTop: Platform.OS === 'android' ? 14 : 20,
+  },
+  holdingsTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Platform.OS === 'android' ? 8 : 12,
   },
   holdingsTitle: {
-    fontSize: 15,
+    fontSize: Platform.OS === 'android' ? 12 : 15,
     fontWeight: '700',
     color: '#000',
-    marginBottom: 12,
+    includeFontPadding: false,
+  },
+  addHoldingButton: {
+    padding: 4,
   },
   holdingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: Platform.OS === 'android' ? 10 : 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5',
   },
@@ -2314,42 +2580,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   holdingIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: Platform.OS === 'android' ? 32 : 40,
+    height: Platform.OS === 'android' ? 32 : 40,
+    borderRadius: Platform.OS === 'android' ? 16 : 20,
     backgroundColor: '#007AFF15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: Platform.OS === 'android' ? 8 : 12,
   },
   holdingIcon: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'android' ? 12 : 16,
     fontWeight: '700',
     color: '#007AFF',
+    includeFontPadding: false,
   },
   holdingSymbol: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'android' ? 12 : 16,
     fontWeight: '700',
     color: '#000',
     marginBottom: 2,
   },
   holdingShares: {
-    fontSize: 12,
+    fontSize: Platform.OS === 'android' ? 9 : 12,
     color: '#8E8E93',
     fontWeight: '500',
+    includeFontPadding: false,
   },
   holdingRight: {
     alignItems: 'flex-end',
   },
   holdingValue: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'android' ? 12 : 16,
     fontWeight: '700',
     color: '#000',
     marginBottom: 2,
+    includeFontPadding: false,
   },
   holdingGain: {
-    fontSize: 13,
+    fontSize: Platform.OS === 'android' ? 10 : 13,
     fontWeight: '600',
+    includeFontPadding: false,
   },
   emptyPortfolio: {
     alignItems: 'center',
@@ -2379,10 +2649,10 @@ const styles = StyleSheet.create({
   // Watchlist Section
   watchlistSection: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginBottom: 24,
-    borderRadius: 20,
-    padding: 20,
+    marginHorizontal: Platform.OS === 'android' ? 16 : 20,
+    marginBottom: Platform.OS === 'android' ? 16 : 24,
+    borderRadius: Platform.OS === 'android' ? 16 : 20,
+    padding: Platform.OS === 'android' ? 14 : 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -2393,19 +2663,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Platform.OS === 'android' ? 10 : 16,
   },
   watchlistHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   addWatchlistButtonHeader: {
-    marginLeft: 8,
+    marginLeft: Platform.OS === 'android' ? 6 : 8,
   },
   watchlistHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Platform.OS === 'android' ? 8 : 12,
   },
   dropdownContainer: {
     position: 'relative',
@@ -2414,16 +2684,17 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    gap: Platform.OS === 'android' ? 2 : 4,
+    paddingVertical: Platform.OS === 'android' ? 4 : 6,
+    paddingHorizontal: Platform.OS === 'android' ? 8 : 10,
     backgroundColor: '#F5F5F7',
-    borderRadius: 8,
+    borderRadius: Platform.OS === 'android' ? 6 : 8,
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: Platform.OS === 'android' ? 10 : 14,
     color: '#000',
     fontWeight: '500',
+    includeFontPadding: false,
   },
   dropdownMenu: {
     position: 'absolute',
@@ -2449,8 +2720,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === 'android' ? 10 : 12,
+    paddingHorizontal: Platform.OS === 'android' ? 12 : 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
@@ -2458,9 +2729,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF10',
   },
   dropdownItemText: {
-    fontSize: 14,
+    fontSize: Platform.OS === 'android' ? 11 : 14,
     color: '#000',
     fontWeight: '500',
+    includeFontPadding: false,
   },
   dropdownItemTextActive: {
     color: '#007AFF',
@@ -2476,43 +2748,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: Platform.OS === 'android' ? 12 : 16,
+    paddingHorizontal: Platform.OS === 'android' ? 2 : 0,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
   watchlistRowLeft: {
-    flex: 1,
-    minWidth: 100,
+    flex: Platform.OS === 'android' ? 0 : 1,
+    width: Platform.OS === 'android' ? 85 : undefined,
+    minWidth: Platform.OS === 'android' ? undefined : 100,
   },
   watchlistRowSymbol: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'android' ? 12 : 16,
     fontWeight: '700',
     color: '#000',
-    marginBottom: 4,
+    marginBottom: 2,
+    includeFontPadding: false,
   },
   watchlistRowName: {
-    fontSize: 13,
+    fontSize: Platform.OS === 'android' ? 9 : 13,
     color: '#8E8E93',
     fontWeight: '500',
+    maxWidth: Platform.OS === 'android' ? 75 : undefined,
+    includeFontPadding: false,
   },
   watchlistRowCenter: {
-    flex: 1,
+    width: Platform.OS === 'android' ? 60 : 90,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+    marginHorizontal: Platform.OS === 'android' ? 4 : 0,
   },
   watchlistSparkline: {
     paddingRight: 0,
     marginRight: -10,
   },
   watchlistRowRight: {
+    flex: Platform.OS === 'android' ? 1 : 0,
     alignItems: 'flex-end',
-    minWidth: 110,
+    minWidth: Platform.OS === 'android' ? 120 : 110,
+    flexShrink: 0,
   },
   watchlistRowPrice: {
-    fontSize: 16,
+    fontSize: Platform.OS === 'android' ? 12 : 16,
     fontWeight: '700',
     color: '#000',
-    marginBottom: 4,
+    marginBottom: 2,
+    includeFontPadding: false,
   },
   watchlistRowChangeContainer: {
     flexDirection: 'row',
@@ -2520,8 +2802,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   watchlistRowChange: {
-    fontSize: 13,
+    fontSize: Platform.OS === 'android' ? 9 : 13,
     fontWeight: '600',
+    includeFontPadding: false,
   },
   emptyWatchlist: {
     alignItems: 'center',
@@ -2565,23 +2848,23 @@ const styles = StyleSheet.create({
   
   // Trending
   trendingSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    marginBottom: Platform.OS === 'android' ? 16 : 24,
   },
   loadingContainer: {
-    height: 200,
+    height: Platform.OS === 'android' ? 160 : 200,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  trendingScroll: { 
-    paddingRight: 20,
+  trendingScroll: {
+    paddingRight: Platform.OS === 'android' ? 16 : 20,
   },
-  trendingCard: { 
-    backgroundColor: '#FFFFFF', 
-    borderRadius: 16, 
-    padding: 12, 
-    marginRight: 12, 
-    width: chartWidth + 24,
+  trendingCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: Platform.OS === 'android' ? 12 : 16,
+    padding: Platform.OS === 'android' ? 10 : 12,
+    marginRight: Platform.OS === 'android' ? 8 : 12,
+    width: Platform.OS === 'android' ? 100 : chartWidth + 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -2592,27 +2875,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: Platform.OS === 'android' ? 4 : 6,
   },
-  trendingSymbol: { 
-    fontWeight: '700', 
-    fontSize: 15,
+  trendingSymbol: {
+    fontWeight: '700',
+    fontSize: Platform.OS === 'android' ? 11 : 15,
     color: '#000',
+    includeFontPadding: false,
   },
-  trendingPrice: { 
-    fontSize: 18, 
+  trendingPrice: {
+    fontSize: Platform.OS === 'android' ? 13 : 18,
     fontWeight: '700',
     color: '#000',
-    marginBottom: 8,
+    marginBottom: Platform.OS === 'android' ? 4 : 8,
+    includeFontPadding: false,
   },
   miniChart: {
-    marginVertical: 4,
-    marginHorizontal: -12,
+    marginVertical: Platform.OS === 'android' ? 2 : 4,
+    marginHorizontal: Platform.OS === 'android' ? -10 : -12,
   },
-  trendingChange: { 
-    fontSize: 13, 
+  trendingChange: {
+    fontSize: Platform.OS === 'android' ? 10 : 13,
     fontWeight: '700',
-    marginTop: 4,
+    marginTop: Platform.OS === 'android' ? 2 : 4,
+    includeFontPadding: false,
   },
   
   // Modal
@@ -2812,13 +3098,13 @@ const styles = StyleSheet.create({
 
   // Stock Picks Section
   stockPicksSection: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    marginBottom: Platform.OS === 'android' ? 16 : 24,
   },
   stockPicksCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: Platform.OS === 'android' ? 16 : 20,
+    padding: Platform.OS === 'android' ? 14 : 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -2831,122 +3117,131 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: Platform.OS === 'android' ? 10 : 16,
   },
   stockPicksHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: Platform.OS === 'android' ? 8 : 12,
   },
   stockPicksIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: Platform.OS === 'android' ? 36 : 44,
+    height: Platform.OS === 'android' ? 36 : 44,
+    borderRadius: Platform.OS === 'android' ? 18 : 22,
     backgroundColor: '#FFF8E1',
     justifyContent: 'center',
     alignItems: 'center',
   },
   stockPicksTitle: {
-    fontSize: 18,
+    fontSize: Platform.OS === 'android' ? 14 : 18,
     fontWeight: '700',
     color: '#000',
     marginBottom: 2,
+    includeFontPadding: false,
   },
   stockPicksSubtitle: {
-    fontSize: 13,
+    fontSize: Platform.OS === 'android' ? 10 : 13,
     color: '#8E8E93',
     fontWeight: '500',
+    includeFontPadding: false,
   },
   stockPicksBadge: {},
   tierBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: Platform.OS === 'android' ? 8 : 10,
+    paddingVertical: Platform.OS === 'android' ? 4 : 5,
+    borderRadius: Platform.OS === 'android' ? 10 : 12,
     gap: 4,
   },
   tierBadgeText: {
-    fontSize: 12,
+    fontSize: Platform.OS === 'android' ? 10 : 12,
     fontWeight: '700',
     color: '#000',
+    includeFontPadding: false,
   },
   premiumBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#1C1C1E',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: Platform.OS === 'android' ? 8 : 10,
+    paddingVertical: Platform.OS === 'android' ? 4 : 5,
+    borderRadius: Platform.OS === 'android' ? 10 : 12,
     gap: 4,
   },
   premiumBadgeText: {
-    fontSize: 12,
+    fontSize: Platform.OS === 'android' ? 10 : 12,
     fontWeight: '700',
     color: '#FFD700',
+    includeFontPadding: false,
   },
   stockPicksPreview: {
-    gap: 10,
-    marginBottom: 16,
+    gap: Platform.OS === 'android' ? 8 : 10,
+    marginBottom: Platform.OS === 'android' ? 10 : 16,
   },
   pickPreviewCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#F9F9FB',
-    padding: 12,
-    borderRadius: 12,
+    padding: Platform.OS === 'android' ? 10 : 12,
+    borderRadius: Platform.OS === 'android' ? 10 : 12,
   },
   pickPreviewLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Platform.OS === 'android' ? 8 : 10,
   },
   pickRankBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: Platform.OS === 'android' ? 6 : 8,
+    paddingVertical: Platform.OS === 'android' ? 3 : 4,
+    borderRadius: Platform.OS === 'android' ? 6 : 8,
   },
   pickRankText: {
-    fontSize: 11,
+    fontSize: Platform.OS === 'android' ? 9 : 11,
     fontWeight: '700',
     color: '#000',
+    includeFontPadding: false,
   },
   pickSymbol: {
-    fontSize: 15,
+    fontSize: Platform.OS === 'android' ? 12 : 15,
     fontWeight: '700',
     color: '#000',
+    includeFontPadding: false,
   },
   pickCategory: {
-    fontSize: 11,
+    fontSize: Platform.OS === 'android' ? 9 : 11,
     color: '#8E8E93',
     fontWeight: '500',
     marginTop: 1,
+    includeFontPadding: false,
   },
   pickPreviewRight: {
     alignItems: 'flex-end',
   },
   pickPrice: {
-    fontSize: 15,
+    fontSize: Platform.OS === 'android' ? 12 : 15,
     fontWeight: '700',
     color: '#000',
     marginBottom: 2,
+    includeFontPadding: false,
   },
   pickChangeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: Platform.OS === 'android' ? 5 : 6,
     paddingVertical: 2,
     borderRadius: 6,
     gap: 2,
   },
   pickChange: {
-    fontSize: 11,
+    fontSize: Platform.OS === 'android' ? 9 : 11,
     fontWeight: '600',
+    includeFontPadding: false,
   },
   pickLockedOverlay: {
-    width: 32,
-    height: 32,
+    width: Platform.OS === 'android' ? 28 : 32,
+    height: Platform.OS === 'android' ? 28 : 32,
     borderRadius: 8,
     backgroundColor: '#F0F0F0',
     justifyContent: 'center',
@@ -2957,13 +3252,140 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 4,
-    paddingTop: 12,
+    paddingTop: Platform.OS === 'android' ? 10 : 12,
     borderTopWidth: 1,
     borderTopColor: '#F0F0F0',
   },
   stockPicksCTAText: {
-    fontSize: 15,
+    fontSize: Platform.OS === 'android' ? 12 : 15,
     fontWeight: '600',
     color: '#007AFF',
+    includeFontPadding: false,
+  },
+
+  // Holding Options Modal
+  holdingOptionsOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  holdingOptionsContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+  },
+  holdingOptionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  holdingOptionsIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#007AFF15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  holdingOptionsIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  holdingOptionsSymbol: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 2,
+  },
+  holdingOptionsShares: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  holdingOptionsStats: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    gap: 20,
+  },
+  holdingOptionsStat: {
+    flex: 1,
+    backgroundColor: '#F5F5F7',
+    borderRadius: 12,
+    padding: 14,
+  },
+  holdingOptionsStatLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  holdingOptionsStatValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+  },
+  holdingOptionsButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 16,
+  },
+  holdingOptionButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  holdingOptionButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#000',
+    marginTop: 6,
+  },
+  holdingOptionsCancelButton: {
+    backgroundColor: '#F5F5F7',
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  holdingOptionsCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+
+  // Edit Holding Modal
+  editHoldingSymbolRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  editHoldingIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#007AFF15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  editHoldingIcon: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  editHoldingSymbol: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#000',
   },
 });

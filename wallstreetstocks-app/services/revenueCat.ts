@@ -1,5 +1,5 @@
 import Purchases, { LOG_LEVEL, PurchasesPackage, CustomerInfo } from 'react-native-purchases';
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
 
 // RevenueCat API Keys - Replace with your actual keys from RevenueCat dashboard
 const API_KEYS = {
@@ -212,9 +212,27 @@ export async function restorePurchases(): Promise<{
 
 /**
  * Get subscription tier level for a product
+ * Returns: 0 = free, 1 = gold, 2 = platinum, 3 = diamond
  */
 export function getSubscriptionTier(productId: string): number {
-  return SUBSCRIPTION_TIERS[productId as keyof typeof SUBSCRIPTION_TIERS] || 0;
+  // First check exact match
+  const exactMatch = SUBSCRIPTION_TIERS[productId as keyof typeof SUBSCRIPTION_TIERS];
+  if (exactMatch) return exactMatch;
+
+  // Fall back to pattern matching for various product ID formats
+  const lowerProductId = productId.toLowerCase();
+
+  if (lowerProductId.includes('diamond') || lowerProductId === '$rc_annual') {
+    return 3;
+  }
+  if (lowerProductId.includes('platinum') || lowerProductId === '$rc_six_month') {
+    return 2;
+  }
+  if (lowerProductId.includes('gold') || lowerProductId === '$rc_monthly') {
+    return 1;
+  }
+
+  return 0;
 }
 
 /**
@@ -222,11 +240,124 @@ export function getSubscriptionTier(productId: string): number {
  */
 export async function hasMinimumTier(minimumTier: number): Promise<boolean> {
   const { isPremium, activeSubscription } = await checkPremiumStatus();
-  
+
   if (!isPremium || !activeSubscription) {
     return false;
   }
-  
+
   const userTier = getSubscriptionTier(activeSubscription);
   return userTier >= minimumTier;
+}
+
+/**
+ * Open the device's subscription management page
+ * iOS: Opens App Store subscription settings
+ * Android: Opens Google Play subscription settings
+ */
+export async function openSubscriptionManagement(): Promise<boolean> {
+  try {
+    if (Platform.OS === 'ios') {
+      // Opens App Store subscription management
+      const url = 'https://apps.apple.com/account/subscriptions';
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        return true;
+      }
+    } else if (Platform.OS === 'android') {
+      // Opens Google Play subscription management for this app
+      const url = 'https://play.google.com/store/account/subscriptions';
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to open subscription management:', error);
+    return false;
+  }
+}
+
+/**
+ * Get detailed subscription information
+ */
+export async function getSubscriptionDetails(): Promise<{
+  isActive: boolean;
+  productId: string | null;
+  tierName: string | null;
+  expirationDate: string | null;
+  willRenew: boolean;
+  isCanceled: boolean;
+  managementUrl: string | null;
+}> {
+  try {
+    const customerInfo = await Purchases.getCustomerInfo();
+    const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
+
+    if (entitlement) {
+      const productId = entitlement.productIdentifier;
+      let tierName = 'Premium';
+
+      if (productId.toLowerCase().includes('gold')) tierName = 'Gold';
+      else if (productId.toLowerCase().includes('platinum')) tierName = 'Platinum';
+      else if (productId.toLowerCase().includes('diamond')) tierName = 'Diamond';
+
+      // Check if subscription will renew
+      const willRenew = !entitlement.willRenew ? false : entitlement.willRenew;
+
+      // Get management URL from RevenueCat
+      const managementUrl = customerInfo.managementURL || null;
+
+      return {
+        isActive: true,
+        productId,
+        tierName,
+        expirationDate: entitlement.expirationDate,
+        willRenew,
+        isCanceled: !willRenew,
+        managementUrl,
+      };
+    }
+
+    return {
+      isActive: false,
+      productId: null,
+      tierName: null,
+      expirationDate: null,
+      willRenew: false,
+      isCanceled: false,
+      managementUrl: null,
+    };
+  } catch (error) {
+    console.error('Failed to get subscription details:', error);
+    return {
+      isActive: false,
+      productId: null,
+      tierName: null,
+      expirationDate: null,
+      willRenew: false,
+      isCanceled: false,
+      managementUrl: null,
+    };
+  }
+}
+
+/**
+ * Format expiration date to readable string
+ */
+export function formatExpirationDate(dateString: string | null): string {
+  if (!dateString) return 'N/A';
+
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  } catch {
+    return 'N/A';
+  }
 }

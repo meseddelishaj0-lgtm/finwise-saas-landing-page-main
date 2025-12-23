@@ -11,15 +11,13 @@ import {
   Modal,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 
 // FMP API Key - move to env in production
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
@@ -67,7 +65,8 @@ interface FilterOption {
   label: string;
   icon: string;
   options: string[];
-  category: 'basic' | 'valuation' | 'profitability' | 'financial' | 'growth';
+  category: 'basic' | 'valuation' | 'profitability' | 'financial' | 'growth' | 'premium';
+  isPremium?: boolean;
 }
 
 interface Preset {
@@ -76,6 +75,7 @@ interface Preset {
   icon: string;
   gradient: string[];
   description: string;
+  isPremium?: boolean;
 }
 
 interface ScreenerParams {
@@ -137,6 +137,12 @@ const presets: Preset[] = [
   { id: 'quality', name: 'Quality', icon: 'shield-checkmark', gradient: ['#5C6BC0', '#7986CB'], description: 'High ROE & margins' },
   { id: 'growth', name: 'Growth', icon: 'rocket', gradient: ['#FF9800', '#FFB74D'], description: 'Fast growing' },
   { id: 'cashcow', name: 'Cash Cows', icon: 'wallet', gradient: ['#26A69A', '#80CBC4'], description: 'Strong FCF' },
+  // Premium Presets
+  { id: 'insider', name: 'Insider Buying', icon: 'people', gradient: ['#FFD700', '#FFA000'], description: 'Insider activity', isPremium: true },
+  { id: 'momentum', name: 'Momentum', icon: 'flash', gradient: ['#E91E63', '#F06292'], description: 'Strong momentum', isPremium: true },
+  { id: 'aipicks', name: 'AI Picks', icon: 'sparkles', gradient: ['#00BFA5', '#1DE9B6'], description: 'AI recommended', isPremium: true },
+  { id: 'shortSqueeze', name: 'Short Squeeze', icon: 'arrow-up', gradient: ['#FF6F00', '#FFAB00'], description: 'High short %', isPremium: true },
+  { id: 'breakout', name: 'Breakout', icon: 'pulse', gradient: ['#D500F9', '#E040FB'], description: '52W high', isPremium: true },
 ];
 
 // Filter Categories
@@ -164,6 +170,15 @@ const filterCategories: FilterOption[] = [
   { id: 'revenueGrowth', label: 'Revenue Growth', icon: 'arrow-up-circle', category: 'growth', options: ['Any', 'Over 50%', '25% - 50%', '15% - 25%', '5% - 15%', '0% - 5%', 'Negative'] },
   { id: 'epsGrowth', label: 'EPS Growth', icon: 'trending-up', category: 'growth', options: ['Any', 'Over 50%', '25% - 50%', '15% - 25%', '5% - 15%', '0% - 5%', 'Negative'] },
   { id: 'beta', label: 'Beta', icon: 'pulse', category: 'growth', options: ['Any', 'Low (<0.8)', 'Medium (0.8-1.2)', 'High (1.2-1.5)', 'Very High (>1.5)'] },
+  // Premium Filters
+  { id: 'fiftyTwoWeek', label: '52-Week Range', icon: 'analytics', category: 'premium', options: ['Any', 'Near 52W High (>90%)', 'Upper Half (50-90%)', 'Lower Half (10-50%)', 'Near 52W Low (<10%)'], isPremium: true },
+  { id: 'shortInterest', label: 'Short Interest', icon: 'warning', category: 'premium', options: ['Any', 'Over 30%', '20% - 30%', '10% - 20%', '5% - 10%', 'Under 5%'], isPremium: true },
+  { id: 'institutionalOwnership', label: 'Institutional %', icon: 'business', category: 'premium', options: ['Any', 'Over 90%', '70% - 90%', '50% - 70%', '30% - 50%', 'Under 30%'], isPremium: true },
+  { id: 'analystRating', label: 'Analyst Rating', icon: 'star', category: 'premium', options: ['Any', 'Strong Buy', 'Buy', 'Hold', 'Sell', 'Strong Sell'], isPremium: true },
+  { id: 'rsi', label: 'RSI (14)', icon: 'speedometer', category: 'premium', options: ['Any', 'Oversold (<30)', 'Neutral (30-70)', 'Overbought (>70)'], isPremium: true },
+  { id: 'movingAvg', label: 'Moving Average', icon: 'git-compare', category: 'premium', options: ['Any', 'Above 50 & 200 MA', 'Above 50 MA', 'Below 50 MA', 'Below 50 & 200 MA'], isPremium: true },
+  { id: 'earningsDate', label: 'Earnings Date', icon: 'calendar', category: 'premium', options: ['Any', 'Next 7 days', 'Next 30 days', 'Last 7 days', 'Last 30 days'], isPremium: true },
+  { id: 'insiderActivity', label: 'Insider Activity', icon: 'people', category: 'premium', options: ['Any', 'Heavy Buying', 'Net Buying', 'No Activity', 'Net Selling', 'Heavy Selling'], isPremium: true },
 ];
 
 const categoryLabels: Record<string, string> = {
@@ -172,6 +187,7 @@ const categoryLabels: Record<string, string> = {
   profitability: '📈 Profitability',
   financial: '🏦 Financial Health',
   growth: '🚀 Growth',
+  premium: '👑 Premium',
 };
 
 // Helper Functions
@@ -366,6 +382,8 @@ const HeatMapTile = ({
 
 export default function Screener() {
   const router = useRouter();
+  const { canAccess } = usePremiumFeature();
+  const hasPlatinumAccess = canAccess(FEATURE_TIERS.SCREENER_FILTERS);
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [activeFilterModal, setActiveFilterModal] = useState<FilterOption | null>(null);
@@ -692,34 +710,61 @@ export default function Screener() {
 
   const maxMarketCap = Math.max(...heatMapStocks.map(s => s.marketCap), 1);
 
-  const renderPreset = ({ item }: { item: Preset }) => (
-    <TouchableOpacity
-      style={[styles.presetCard, activePreset === item.id && styles.presetCardActive]}
-      onPress={() => handlePresetPress(item)}
-      activeOpacity={0.8}
-    >
-      <LinearGradient colors={item.gradient as [string, string]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.presetGradient}>
-        <View style={styles.presetIconContainer}>
-          <Ionicons name={item.icon as any} size={22} color="#fff" />
-        </View>
-        <Text style={styles.presetName}>{item.name}</Text>
-        <Text style={styles.presetDescription}>{item.description}</Text>
-      </LinearGradient>
-      {activePreset === item.id && (
-        <View style={styles.presetCheckmark}><Ionicons name="checkmark-circle" size={20} color="#fff" /></View>
-      )}
-    </TouchableOpacity>
-  );
+  const handlePremiumPress = () => {
+    router.push('/(modals)/paywall' as any);
+  };
+
+  // Check if a filter or preset is accessible
+  const isPremiumFilterAccessible = (isPremium?: boolean) => {
+    if (!isPremium) return true;
+    return hasPlatinumAccess;
+  };
+
+  const renderPreset = ({ item }: { item: Preset }) => {
+    const isLocked = item.isPremium && !hasPlatinumAccess;
+    return (
+      <TouchableOpacity
+        style={[styles.presetCard, activePreset === item.id && styles.presetCardActive]}
+        onPress={() => isLocked ? handlePremiumPress() : handlePresetPress(item)}
+        activeOpacity={0.8}
+      >
+        <LinearGradient colors={item.gradient as [string, string]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.presetGradient}>
+          <View style={styles.presetIconContainer}>
+            <Ionicons name={item.icon as any} size={22} color="#fff" />
+          </View>
+          <Text style={styles.presetName}>{item.name}</Text>
+          <Text style={styles.presetDescription}>{item.description}</Text>
+        </LinearGradient>
+        {item.isPremium && (
+          <View style={[styles.premiumBadge, !isLocked && styles.premiumBadgeUnlocked]}>
+            <Ionicons name={isLocked ? "lock-closed" : "diamond"} size={12} color={isLocked ? "#FFD700" : "#E5E4E2"} />
+          </View>
+        )}
+        {activePreset === item.id && !isLocked && (
+          <View style={styles.presetCheckmark}><Ionicons name="checkmark-circle" size={20} color="#fff" /></View>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   const renderFilterChip = (filter: FilterOption) => {
     const isActive = filters[filter.id] && filters[filter.id] !== 'Any';
+    const isLocked = filter.isPremium && !hasPlatinumAccess;
     return (
-      <TouchableOpacity key={filter.id} style={[styles.filterChip, isActive && styles.filterChipActive]} onPress={() => setActiveFilterModal(filter)}>
-        <Ionicons name={filter.icon as any} size={16} color={isActive ? '#fff' : '#666'} />
-        <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]} numberOfLines={1}>
+      <TouchableOpacity
+        key={filter.id}
+        style={[styles.filterChip, isActive && styles.filterChipActive, isLocked && styles.filterChipPremium]}
+        onPress={() => isLocked ? handlePremiumPress() : setActiveFilterModal(filter)}
+      >
+        <Ionicons name={filter.icon as any} size={16} color={isActive ? '#fff' : isLocked ? '#E5E4E2' : '#666'} />
+        <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive, isLocked && styles.filterChipTextPremium]} numberOfLines={1}>
           {isActive ? filters[filter.id] : filter.label}
         </Text>
-        <Ionicons name="chevron-down" size={14} color={isActive ? '#fff' : '#999'} />
+        {isLocked ? (
+          <Ionicons name="lock-closed" size={12} color="#E5E4E2" />
+        ) : (
+          <Ionicons name="chevron-down" size={14} color={isActive ? '#fff' : '#999'} />
+        )}
       </TouchableOpacity>
     );
   };
@@ -770,6 +815,7 @@ export default function Screener() {
     { key: 'profitability', label: '📈 Profit' },
     { key: 'financial', label: '🏦 Financial' },
     { key: 'growth', label: '🚀 Growth' },
+    { key: 'premium', label: '👑 Premium' },
   ];
 
   return (
@@ -894,9 +940,20 @@ export default function Screener() {
                   {filterCategories.filter(f => f.category === category).map(filter => {
                     const isActive = filters[filter.id] && filters[filter.id] !== 'Any';
                     return (
-                      <TouchableOpacity key={filter.id} style={[styles.filterGridItem, isActive && styles.filterGridItemActive]} onPress={() => setActiveFilterModal(filter)}>
-                        <Ionicons name={filter.icon as any} size={18} color={isActive ? '#007AFF' : '#666'} />
-                        <Text style={[styles.filterGridLabel, isActive && styles.filterGridLabelActive]} numberOfLines={1}>{filter.label}</Text>
+                      <TouchableOpacity
+                        key={filter.id}
+                        style={[
+                          styles.filterGridItem,
+                          isActive && styles.filterGridItemActive,
+                          filter.isPremium && styles.filterGridItemPremium
+                        ]}
+                        onPress={() => filter.isPremium ? handlePremiumPress() : setActiveFilterModal(filter)}
+                      >
+                        <View style={styles.filterGridHeader}>
+                          <Ionicons name={filter.icon as any} size={18} color={isActive ? '#007AFF' : filter.isPremium ? '#FFD700' : '#666'} />
+                          {filter.isPremium && <Ionicons name="lock-closed" size={12} color="#FFD700" style={{ marginLeft: 4 }} />}
+                        </View>
+                        <Text style={[styles.filterGridLabel, isActive && styles.filterGridLabelActive, filter.isPremium && styles.filterGridLabelPremium]} numberOfLines={1}>{filter.label}</Text>
                         {isActive && <Text style={styles.filterGridValue} numberOfLines={1}>{filters[filter.id]}</Text>}
                       </TouchableOpacity>
                     );
@@ -981,8 +1038,8 @@ export default function Screener() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-  headerTitle: { fontSize: 28, fontWeight: '700', color: '#000' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Platform.OS === 'android' ? 16 : 20, paddingVertical: Platform.OS === 'android' ? 12 : 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  headerTitle: { fontSize: Platform.OS === 'android' ? 22 : 28, fontWeight: '700', color: '#000' },
   headerActions: { flexDirection: 'row', gap: 8 },
   headerButton: { padding: 8, position: 'relative' },
   headerBadge: { position: 'absolute', top: 4, right: 4, backgroundColor: '#007AFF', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center' },
@@ -1005,6 +1062,8 @@ const styles = StyleSheet.create({
   presetName: { fontSize: 14, fontWeight: '700', color: '#fff', marginTop: 6 },
   presetDescription: { fontSize: 10, color: 'rgba(255,255,255,0.85)', marginTop: 2 },
   presetCheckmark: { position: 'absolute', top: 8, right: 8 },
+  premiumBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 10, padding: 4 },
+  premiumBadgeUnlocked: { backgroundColor: 'rgba(229, 228, 226, 0.3)' },
   categoryTabs: { marginBottom: 12 },
   categoryTabsContent: { paddingHorizontal: 20 },
   categoryTab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#fff', marginRight: 8, borderWidth: 1, borderColor: '#E5E5E5' },
@@ -1014,8 +1073,10 @@ const styles = StyleSheet.create({
   filterChipsContainer: { paddingHorizontal: 20, paddingBottom: 4 },
   filterChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: '#E5E5E5', gap: 6, maxWidth: 160 },
   filterChipActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+  filterChipPremium: { borderColor: '#E5E4E2', backgroundColor: '#F8F8F8' },
   filterChipText: { fontSize: 13, color: '#333', fontWeight: '500', flexShrink: 1 },
   filterChipTextActive: { color: '#fff' },
+  filterChipTextPremium: { color: '#A0A0A0' },
   resultCount: { fontSize: 14, color: '#666' },
   sortContainer: { marginBottom: 12 },
   sortContent: { paddingHorizontal: 20 },
@@ -1070,8 +1131,11 @@ const styles = StyleSheet.create({
   filterGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   filterGridItem: { width: '48%', backgroundColor: '#F8F9FA', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E5E5E5' },
   filterGridItemActive: { borderColor: '#007AFF', backgroundColor: '#F0F7FF' },
+  filterGridItemPremium: { borderColor: '#FFD700', backgroundColor: '#FFFEF5' },
+  filterGridHeader: { flexDirection: 'row', alignItems: 'center' },
   filterGridLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginTop: 8 },
   filterGridLabelActive: { color: '#007AFF' },
+  filterGridLabelPremium: { color: '#B8860B' },
   filterGridValue: { fontSize: 12, color: '#007AFF', marginTop: 4 },
   fullModalFooter: { padding: 20, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
   applyButton: { backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },

@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  ScrollView,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
@@ -44,9 +46,12 @@ export default function Login() {
   const { login, socialLogin, isNewUser } = useAuth();
   const router = useRouter();
 
+  // Use webClientId for Android (more reliable, uses browser-based OAuth)
+  // iosClientId for iOS native OAuth
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
     webClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com',
+    // Android uses webClientId via browser redirect (no SHA-1 fingerprint needed)
   });
 
   useEffect(() => {
@@ -156,8 +161,16 @@ export default function Login() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Log In</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>Log In</Text>
 
       <TextInput
         style={styles.input}
@@ -237,7 +250,8 @@ export default function Login() {
       <TouchableOpacity onPress={() => router.push('/signup')} disabled={loading}>
         <Text style={styles.link}>Don't have an account? Sign Up</Text>
       </TouchableOpacity>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -245,8 +259,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 32,
     paddingTop: 80,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 32,
@@ -314,10 +332,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'center',
+    gap: 10,
   },
   socialIcon: {
-    position: 'absolute',
-    left: 20,
+    // Icon is inline with text
   },
   socialText: {
     fontSize: 16,

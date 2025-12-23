@@ -1,5 +1,5 @@
 // app/profile/referrals.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -9,39 +9,48 @@ import {
   ScrollView,
   Share,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
+  Modal,
+  TextInput,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import { useReferral, REWARD_TIERS } from '@/context/ReferralContext';
+import { useAuth } from '@/lib/auth';
 
 export default function Referrals() {
   const router = useRouter();
-  const [referralCode] = useState('JOHN2025');
+  const { user } = useAuth();
+  const {
+    referralCode,
+    referrals,
+    stats,
+    loading,
+    initialized,
+    isPremiumFromReferrals,
+    premiumEndDate,
+    unlockedTiers,
+    lockedTiers,
+    initializeReferral,
+    refreshReferrals,
+    generateShareMessage,
+  } = useReferral();
+
   const [copied, setCopied] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [applyCodeModal, setApplyCodeModal] = useState(false);
+  const [codeToApply, setCodeToApply] = useState('');
+  const [applyingCode, setApplyingCode] = useState(false);
 
-  const referralStats = {
-    totalReferrals: 12,
-    pendingReferrals: 3,
-    earnedRewards: 24,
-    nextReward: 3,
-  };
-
-  const referralHistory = [
-    { name: 'Alex M.', date: 'Nov 20, 2025', status: 'completed', reward: '1 month free' },
-    { name: 'Sarah K.', date: 'Nov 15, 2025', status: 'completed', reward: '1 month free' },
-    { name: 'Mike R.', date: 'Nov 10, 2025', status: 'pending', reward: 'Pending' },
-    { name: 'Emma L.', date: 'Nov 5, 2025', status: 'completed', reward: '1 month free' },
-    { name: 'James W.', date: 'Oct 28, 2025', status: 'pending', reward: 'Pending' },
-  ];
-
-  const rewards = [
-    { referrals: 1, reward: '1 Week Premium', icon: 'star', unlocked: true },
-    { referrals: 3, reward: '1 Month Premium', icon: 'diamond', unlocked: true },
-    { referrals: 5, reward: '3 Months Premium', icon: 'trophy', unlocked: true },
-    { referrals: 10, reward: '6 Months Premium', icon: 'medal', unlocked: true },
-    { referrals: 25, reward: '1 Year Premium', icon: 'ribbon', unlocked: false },
-    { referrals: 50, reward: 'Lifetime Premium', icon: 'crown', unlocked: false },
-  ];
+  // Initialize referral when user is available
+  useEffect(() => {
+    if (user?.id && user?.name && !initialized) {
+      initializeReferral(user.id, user.name);
+    }
+  }, [user?.id, user?.name, initialized]);
 
   const shareOptions = [
     { icon: 'mail', label: 'Email', color: '#007AFF' },
@@ -56,16 +65,71 @@ export default function Referrals() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleCopyLink = async () => {
+    await Clipboard.setStringAsync(`https://wallstreetstocks.app/invite/${referralCode}`);
+    Alert.alert('Copied!', 'Referral link copied to clipboard');
+  };
+
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Join me on WallStreetStocks - the best app for stock research and market insights! Use my referral code ${referralCode} to get 1 week of Premium free. Download now: https://wallstreetstocks.app/invite/${referralCode}`,
+        message: generateShareMessage(),
         title: 'Join WallStreetStocks',
       });
     } catch (error) {
       Alert.alert('Error', 'Unable to share at this time.');
     }
   };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshReferrals();
+    setRefreshing(false);
+  };
+
+  const handleApplyCode = async () => {
+    if (!codeToApply.trim()) {
+      Alert.alert('Error', 'Please enter a referral code');
+      return;
+    }
+
+    setApplyingCode(true);
+    // Note: applyReferralCode is available from useReferral but we need to import it
+    // For now, show a placeholder message
+    Alert.alert('Coming Soon', 'This feature will be available soon!');
+    setApplyingCode(false);
+    setApplyCodeModal(false);
+    setCodeToApply('');
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return '#34C759';
+      case 'pending': return '#FF9500';
+      case 'expired': return '#FF3B30';
+      default: return '#8E8E93';
+    }
+  };
+
+  if (loading && !initialized) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading referral program...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -74,11 +138,19 @@ export default function Referrals() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}>Referrals</Text>
-        <View style={{ width: 24 }} />
+        <Text style={styles.title}>Referral Program</Text>
+        <TouchableOpacity onPress={handleRefresh}>
+          <Ionicons name="refresh" size={24} color="#007AFF" />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <View style={styles.heroIcon}>
@@ -86,24 +158,38 @@ export default function Referrals() {
           </View>
           <Text style={styles.heroTitle}>Give Premium, Get Premium</Text>
           <Text style={styles.heroSubtitle}>
-            Share WallStreetStocks with friends and both of you get rewarded with free Premium access!
+            Share WallStreetStocks with friends and earn free Premium access!
           </Text>
+
+          {/* Premium Status Badge */}
+          {isPremiumFromReferrals && premiumEndDate && (
+            <View style={styles.premiumBadge}>
+              <Ionicons name="diamond" size={16} color="#FFD700" />
+              <Text style={styles.premiumBadgeText}>
+                Premium active until {formatDate(premiumEndDate)}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Referral Code Card */}
         <View style={styles.codeCard}>
           <Text style={styles.codeLabel}>Your Referral Code</Text>
           <View style={styles.codeContainer}>
-            <Text style={styles.codeText}>{referralCode}</Text>
+            <Text style={styles.codeText}>{referralCode || 'Loading...'}</Text>
             <TouchableOpacity style={styles.copyButton} onPress={handleCopyCode}>
               <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color="#007AFF" />
               <Text style={styles.copyButtonText}>{copied ? 'Copied!' : 'Copy'}</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.shareLinkContainer}>
             <Text style={styles.shareLinkLabel}>Or share your link:</Text>
-            <Text style={styles.shareLink}>wallstreetstocks.app/invite/{referralCode}</Text>
+            <TouchableOpacity onPress={handleCopyLink}>
+              <Text style={styles.shareLink}>
+                wallstreetstocks.app/invite/{referralCode}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
@@ -126,69 +212,108 @@ export default function Referrals() {
 
         {/* Stats Section */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Your Stats</Text>
+          <Text style={styles.sectionTitle}>Your Progress</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{referralStats.totalReferrals}</Text>
+              <Text style={styles.statNumber}>{stats.totalReferrals}</Text>
               <Text style={styles.statLabel}>Total Referrals</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{referralStats.pendingReferrals}</Text>
+              <Text style={[styles.statNumber, { color: '#34C759' }]}>{stats.completedReferrals}</Text>
+              <Text style={styles.statLabel}>Completed</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Text style={[styles.statNumber, { color: '#FF9500' }]}>{stats.pendingReferrals}</Text>
               <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={[styles.statNumber, { color: '#34C759' }]}>{referralStats.earnedRewards}</Text>
-              <Text style={styles.statLabel}>Weeks Earned</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Text style={[styles.statNumber, { color: '#007AFF' }]}>{referralStats.nextReward}</Text>
+              <Text style={[styles.statNumber, { color: '#007AFF' }]}>{stats.nextTierReferrals}</Text>
               <Text style={styles.statLabel}>Until Next Tier</Text>
             </View>
           </View>
+
+          {/* Progress Bar to Next Tier */}
+          {stats.nextTierReferrals > 0 && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressLabel}>Progress to Next Reward</Text>
+                <Text style={styles.progressText}>
+                  {stats.completedReferrals} / {stats.completedReferrals + stats.nextTierReferrals} referrals
+                </Text>
+              </View>
+              <View style={styles.progressBar}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${(stats.completedReferrals / (stats.completedReferrals + stats.nextTierReferrals)) * 100}%`
+                    }
+                  ]}
+                />
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Rewards Tiers */}
         <View style={styles.rewardsSection}>
           <Text style={styles.sectionTitle}>Reward Tiers</Text>
+          <Text style={styles.sectionSubtitle}>
+            Earn premium access as you refer more friends
+          </Text>
           <View style={styles.rewardsList}>
-            {rewards.map((tier, index) => (
-              <View 
-                key={index} 
-                style={[
-                  styles.rewardItem, 
-                  tier.unlocked && styles.rewardUnlocked,
-                  !tier.unlocked && styles.rewardLocked
-                ]}
-              >
-                <View style={[
-                  styles.rewardIcon, 
-                  { backgroundColor: tier.unlocked ? '#007AFF15' : '#f0f0f0' }
-                ]}>
-                  <Ionicons 
-                    name={tier.icon as any} 
-                    size={24} 
-                    color={tier.unlocked ? '#007AFF' : '#ccc'} 
-                  />
-                </View>
-                <View style={styles.rewardContent}>
-                  <Text style={[styles.rewardTitle, !tier.unlocked && styles.rewardTitleLocked]}>
-                    {tier.reward}
-                  </Text>
-                  <Text style={styles.rewardRequirement}>
-                    {tier.referrals} referral{tier.referrals > 1 ? 's' : ''}
-                  </Text>
-                </View>
-                {tier.unlocked ? (
-                  <View style={styles.unlockedBadge}>
-                    <Ionicons name="checkmark-circle" size={24} color="#34C759" />
+            {REWARD_TIERS.map((tier, index) => {
+              const isUnlocked = stats.completedReferrals >= tier.referrals;
+              const isNext = !isUnlocked &&
+                (index === 0 || stats.completedReferrals >= REWARD_TIERS[index - 1].referrals);
+
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.rewardItem,
+                    isUnlocked && styles.rewardUnlocked,
+                    isNext && styles.rewardNext,
+                    !isUnlocked && !isNext && styles.rewardLocked
+                  ]}
+                >
+                  <View style={[
+                    styles.rewardIcon,
+                    { backgroundColor: isUnlocked ? '#007AFF15' : isNext ? '#FF950015' : '#f0f0f0' }
+                  ]}>
+                    <Ionicons
+                      name={tier.icon as any}
+                      size={24}
+                      color={isUnlocked ? '#007AFF' : isNext ? '#FF9500' : '#ccc'}
+                    />
                   </View>
-                ) : (
-                  <View style={styles.lockedBadge}>
-                    <Ionicons name="lock-closed" size={18} color="#ccc" />
+                  <View style={styles.rewardContent}>
+                    <Text style={[
+                      styles.rewardTitle,
+                      !isUnlocked && !isNext && styles.rewardTitleLocked
+                    ]}>
+                      {tier.reward}
+                    </Text>
+                    <Text style={styles.rewardRequirement}>
+                      {tier.referrals} referral{tier.referrals > 1 ? 's' : ''} • {tier.days} days
+                    </Text>
                   </View>
-                )}
-              </View>
-            ))}
+                  {isUnlocked ? (
+                    <View style={styles.unlockedBadge}>
+                      <Ionicons name="checkmark-circle" size={24} color="#34C759" />
+                    </View>
+                  ) : isNext ? (
+                    <View style={styles.nextBadge}>
+                      <Text style={styles.nextBadgeText}>NEXT</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.lockedBadge}>
+                      <Ionicons name="lock-closed" size={18} color="#ccc" />
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </View>
         </View>
 
@@ -208,7 +333,7 @@ export default function Referrals() {
               </View>
             </View>
             <View style={styles.stepConnector} />
-            
+
             <View style={styles.stepItem}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>2</Text>
@@ -221,7 +346,7 @@ export default function Referrals() {
               </View>
             </View>
             <View style={styles.stepConnector} />
-            
+
             <View style={styles.stepItem}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>3</Text>
@@ -229,7 +354,7 @@ export default function Referrals() {
               <View style={styles.stepContent}>
                 <Text style={styles.stepTitle}>Both Get Rewarded</Text>
                 <Text style={styles.stepDescription}>
-                  You both receive 1 week of Premium free!
+                  You earn premium days, they get 1 week free!
                 </Text>
               </View>
             </View>
@@ -238,38 +363,76 @@ export default function Referrals() {
 
         {/* Referral History */}
         <View style={styles.historySection}>
-          <Text style={styles.sectionTitle}>Recent Referrals</Text>
-          {referralHistory.map((referral, index) => (
-            <View key={index} style={styles.historyItem}>
-              <View style={styles.historyAvatar}>
-                <Text style={styles.historyAvatarText}>
-                  {referral.name.split(' ').map(n => n[0]).join('')}
-                </Text>
-              </View>
-              <View style={styles.historyContent}>
-                <Text style={styles.historyName}>{referral.name}</Text>
-                <Text style={styles.historyDate}>{referral.date}</Text>
-              </View>
-              <View style={styles.historyStatus}>
-                <View style={[
-                  styles.statusBadge,
-                  referral.status === 'completed' ? styles.statusCompleted : styles.statusPending
-                ]}>
-                  <Text style={[
-                    styles.statusText,
-                    referral.status === 'completed' ? styles.statusTextCompleted : styles.statusTextPending
-                  ]}>
-                    {referral.status === 'completed' ? 'Completed' : 'Pending'}
-                  </Text>
-                </View>
-                <Text style={styles.historyReward}>{referral.reward}</Text>
-              </View>
+          <View style={styles.historyHeader}>
+            <Text style={styles.sectionTitle}>Recent Referrals</Text>
+            {referrals.length > 0 && (
+              <Text style={styles.historyCount}>{referrals.length} total</Text>
+            )}
+          </View>
+
+          {referrals.length === 0 ? (
+            <View style={styles.emptyHistory}>
+              <Ionicons name="people-outline" size={48} color="#E0E0E0" />
+              <Text style={styles.emptyHistoryTitle}>No referrals yet</Text>
+              <Text style={styles.emptyHistoryText}>
+                Share your code with friends to start earning rewards!
+              </Text>
+              <TouchableOpacity style={styles.emptyHistoryButton} onPress={handleShare}>
+                <Ionicons name="share-outline" size={18} color="#007AFF" />
+                <Text style={styles.emptyHistoryButtonText}>Share Now</Text>
+              </TouchableOpacity>
             </View>
-          ))}
-          
-          <TouchableOpacity style={styles.viewAllButton}>
-            <Text style={styles.viewAllText}>View All Referrals</Text>
-            <Ionicons name="chevron-forward" size={16} color="#007AFF" />
+          ) : (
+            <>
+              {referrals.slice(0, 5).map((referral, index) => (
+                <View key={referral.id || index} style={styles.historyItem}>
+                  <View style={styles.historyAvatar}>
+                    <Text style={styles.historyAvatarText}>
+                      {referral.referredName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.historyContent}>
+                    <Text style={styles.historyName}>{referral.referredName}</Text>
+                    <Text style={styles.historyDate}>{formatDate(referral.date)}</Text>
+                  </View>
+                  <View style={styles.historyStatus}>
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: `${getStatusColor(referral.status)}20` }
+                    ]}>
+                      <Text style={[
+                        styles.statusText,
+                        { color: getStatusColor(referral.status) }
+                      ]}>
+                        {referral.status.charAt(0).toUpperCase() + referral.status.slice(1)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+
+              {referrals.length > 5 && (
+                <TouchableOpacity style={styles.viewAllButton}>
+                  <Text style={styles.viewAllText}>View All {referrals.length} Referrals</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#007AFF" />
+                </TouchableOpacity>
+              )}
+            </>
+          )}
+        </View>
+
+        {/* Have a Code Section */}
+        <View style={styles.haveCodeSection}>
+          <Text style={styles.haveCodeTitle}>Have a referral code?</Text>
+          <Text style={styles.haveCodeSubtitle}>
+            Enter a friend's code to get 1 week of Premium free
+          </Text>
+          <TouchableOpacity
+            style={styles.enterCodeButton}
+            onPress={() => setApplyCodeModal(true)}
+          >
+            <Ionicons name="ticket-outline" size={20} color="#007AFF" />
+            <Text style={styles.enterCodeButtonText}>Enter Referral Code</Text>
           </TouchableOpacity>
         </View>
 
@@ -278,7 +441,7 @@ export default function Referrals() {
           <Text style={styles.termsTitle}>Referral Program Terms</Text>
           <Text style={styles.termsText}>
             • Rewards are credited after referred user completes sign-up{'\n'}
-            • Premium rewards are applied to your next billing cycle{'\n'}
+            • Premium rewards stack with each tier you unlock{'\n'}
             • Referred users must be new to WallStreetStocks{'\n'}
             • Self-referrals and fake accounts are prohibited{'\n'}
             • We reserve the right to modify or end this program at any time
@@ -290,12 +453,71 @@ export default function Referrals() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Apply Code Modal */}
+      <Modal
+        visible={applyCodeModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setApplyCodeModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Enter Referral Code</Text>
+              <TouchableOpacity onPress={() => setApplyCodeModal(false)}>
+                <Ionicons name="close-circle" size={28} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Enter a friend's referral code to get 1 week of Premium free!
+            </Text>
+
+            <TextInput
+              style={styles.codeInput}
+              placeholder="e.g., JOHN1234"
+              placeholderTextColor="#999"
+              value={codeToApply}
+              onChangeText={(text) => setCodeToApply(text.toUpperCase())}
+              autoCapitalize="characters"
+              maxLength={12}
+              editable={!applyingCode}
+            />
+
+            <TouchableOpacity
+              style={[styles.applyButton, (!codeToApply.trim() || applyingCode) && styles.applyButtonDisabled]}
+              onPress={handleApplyCode}
+              disabled={!codeToApply.trim() || applyingCode}
+            >
+              {applyingCode ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                  <Text style={styles.applyButtonText}>Apply Code</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -342,6 +564,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 20,
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFD70020',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 16,
+    gap: 8,
+  },
+  premiumBadgeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#B8860B',
   },
   codeCard: {
     margin: 16,
@@ -401,7 +638,8 @@ const styles = StyleSheet.create({
   },
   shareLink: {
     fontSize: 14,
-    color: '#666',
+    color: '#007AFF',
+    textDecorationLine: 'underline',
   },
   shareButton: {
     flexDirection: 'row',
@@ -443,8 +681,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 16,
+    marginBottom: 6,
     color: '#000',
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -468,6 +711,38 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4,
   },
+  progressContainer: {
+    marginTop: 20,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    padding: 16,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  progressLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+  progressText: {
+    fontSize: 13,
+    color: '#666',
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 4,
+  },
   rewardsSection: {
     padding: 20,
   },
@@ -483,6 +758,13 @@ const styles = StyleSheet.create({
   },
   rewardUnlocked: {
     backgroundColor: '#f0f8ff',
+    borderWidth: 1,
+    borderColor: '#007AFF30',
+  },
+  rewardNext: {
+    backgroundColor: '#FFF8E1',
+    borderWidth: 1,
+    borderColor: '#FF950030',
   },
   rewardLocked: {
     backgroundColor: '#f9f9f9',
@@ -511,6 +793,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   unlockedBadge: {},
+  nextBadge: {
+    backgroundColor: '#FF9500',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  nextBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+  },
   lockedBadge: {
     width: 28,
     height: 28,
@@ -525,6 +818,7 @@ const styles = StyleSheet.create({
   },
   stepsContainer: {
     paddingLeft: 8,
+    marginTop: 10,
   },
   stepItem: {
     flexDirection: 'row',
@@ -569,6 +863,50 @@ const styles = StyleSheet.create({
   historySection: {
     padding: 20,
   },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  historyCount: {
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyHistory: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 16,
+  },
+  emptyHistoryTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000',
+    marginTop: 12,
+  },
+  emptyHistoryText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 40,
+  },
+  emptyHistoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#007AFF15',
+    borderRadius: 20,
+  },
+  emptyHistoryButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
   historyItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -610,27 +948,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
-    marginBottom: 4,
-  },
-  statusCompleted: {
-    backgroundColor: '#34C75920',
-  },
-  statusPending: {
-    backgroundColor: '#FF950020',
   },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
-  },
-  statusTextCompleted: {
-    color: '#34C759',
-  },
-  statusTextPending: {
-    color: '#FF9500',
-  },
-  historyReward: {
-    fontSize: 13,
-    color: '#666',
   },
   viewAllButton: {
     flexDirection: 'row',
@@ -643,6 +964,41 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#007AFF',
     fontWeight: '600',
+  },
+  haveCodeSection: {
+    margin: 20,
+    padding: 20,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  haveCodeTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000',
+  },
+  haveCodeSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 16,
+  },
+  enterCodeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  enterCodeButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   termsSection: {
     margin: 20,
@@ -666,5 +1022,63 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '500',
     marginTop: 12,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  codeInput: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 2,
+    color: '#000',
+    marginBottom: 16,
+  },
+  applyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  applyButtonDisabled: {
+    opacity: 0.6,
+  },
+  applyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

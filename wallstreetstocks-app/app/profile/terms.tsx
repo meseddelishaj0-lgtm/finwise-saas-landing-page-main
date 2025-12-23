@@ -231,7 +231,7 @@ Arbitration shall take place in Delaware, or remotely if permitted.`,
 
 • Force Majeure: We are not liable for failures due to circumstances beyond our control.
 
-• Contact: For questions about these Terms, contact legal@wallstreetstocks.com`,
+• Contact: For questions about these Terms, contact wallstreetstocks@outlook.com`,
     },
   ];
 
@@ -305,7 +305,7 @@ Arbitration shall take place in Delaware, or remotely if permitted.`,
           <Text style={styles.contactText}>
             If you have questions about these Terms, please contact us:
           </Text>
-          <Text style={styles.contactEmail}>legal@wallstreetstocks.com</Text>
+          <Text style={styles.contactEmail}>wallstreetstocks@outlook.com</Text>
           <TouchableOpacity 
             style={styles.contactButton}
             onPress={() => router.push('/profile/contact-us' as any)}

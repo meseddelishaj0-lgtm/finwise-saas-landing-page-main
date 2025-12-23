@@ -11,13 +11,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';   // ← THIS IS THE FIX
 
 const settingsItems = [
-  { title: 'Personal Info', icon: 'person-outline', route: '/profile/personal-info' },
-  { title: 'Display',       icon: 'color-palette-outline', route: '/profile/display' },
-  { title: 'Experience',    icon: 'sparkles-outline',       route: '/profile/experience' },
-  { title: 'Notifications', icon: 'notifications-outline',  route: '/profile/notifications' },
-  { title: 'Password',      icon: 'lock-closed-outline',    route: '/profile/password' },
-  { title: 'Muted',         icon: 'volume-mute-outline',    route: '/profile/muted' },
-  { title: 'Blocked',       icon: 'ban-outline',            route: '/profile/blocked' },
+  { title: 'Personal Info', icon: 'person', route: '/profile/personal-info', color: '#007AFF', bgColor: '#007AFF15' },
+  { title: 'Display', icon: 'color-palette', route: '/profile/display', color: '#AF52DE', bgColor: '#AF52DE15' },
+  { title: 'Experience', icon: 'sparkles', route: '/profile/experience', color: '#FF9500', bgColor: '#FF950015' },
+  { title: 'Notifications', icon: 'notifications', route: '/profile/notifications', color: '#FF3B30', bgColor: '#FF3B3015' },
+  { title: 'Password', icon: 'lock-closed', route: '/profile/password', color: '#34C759', bgColor: '#34C75915' },
+  { title: 'Muted', icon: 'volume-mute', route: '/profile/muted', color: '#8E8E93', bgColor: '#8E8E9315' },
+  { title: 'Blocked', icon: 'ban', route: '/profile/blocked', color: '#FF2D55', bgColor: '#FF2D5515' },
+];
+
+const dangerItems = [
+  { title: 'Delete Account', icon: 'trash', route: '/profile/delete-account', color: '#FF3B30', bgColor: '#FF3B3015' },
 ];
 
 export default function SettingsScreen() {
@@ -44,15 +48,39 @@ export default function SettingsScreen() {
           <TouchableOpacity
             key={index}
             style={styles.row}
-            onPress={() => router.push(item.route as any)}   // ← THIS FIXES NAVIGATION
+            onPress={() => router.push(item.route as any)}
+            activeOpacity={0.7}
           >
             <View style={styles.rowLeft}>
-              <Ionicons name={item.icon as any} size={22} color="#333" />
+              <View style={[styles.iconContainer, { backgroundColor: item.bgColor }]}>
+                <Ionicons name={item.icon as any} size={20} color={item.color} />
+              </View>
               <Text style={styles.rowText}>{item.title}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={22} color="#999" />
+            <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
           </TouchableOpacity>
         ))}
+
+        {/* Danger Zone */}
+        <View style={styles.dangerSection}>
+          <Text style={styles.dangerSectionTitle}>Danger Zone</Text>
+          {dangerItems.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.row}
+              onPress={() => router.push(item.route as any)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconContainer, { backgroundColor: item.bgColor }]}>
+                  <Ionicons name={item.icon as any} size={20} color={item.color} />
+                </View>
+                <Text style={[styles.rowText, { color: '#FF3B30' }]}>{item.title}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       {/* Bottom Navigation */}
@@ -105,8 +133,30 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#e5e5e5',
   },
-  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  rowText: { fontSize: 16, color: '#000' },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  rowText: { fontSize: 16, fontWeight: '500', color: '#000' },
+  dangerSection: {
+    marginTop: 32,
+    borderTopWidth: 1,
+    borderTopColor: '#FF3B3020',
+    paddingTop: 8,
+  },
+  dangerSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FF3B30',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   bottomNav: {
     flexDirection: 'row',
     justifyContent: 'space-around',

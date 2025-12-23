@@ -60,7 +60,7 @@ export const SUBSCRIPTION_TIERS: TierInfo[] = [
     description: 'Ultimate toolkit for professional traders',
     color: '#B9F2FF',
     gradientColors: ['#B9F2FF', '#00CED1'],
-    monthlyPrice: '$39.99',
+    monthlyPrice: '$29.99',
     features: [
       { name: 'Everything in Platinum', included: true },
       { name: 'AI price predictions', included: true },

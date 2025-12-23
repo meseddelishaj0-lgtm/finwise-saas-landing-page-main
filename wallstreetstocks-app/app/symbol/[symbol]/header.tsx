@@ -3,12 +3,14 @@ import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useWatchlist } from "../../../context/WatchlistContext";
 import { useStocks } from "../../../context/StockContext";
 
 export default function SymbolHeader() {
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
   const router = useRouter();
-  const { addToWatchlist, addToPortfolio, isInWatchlist, isInPortfolio } = useStocks();
+  const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
+  const { addToPortfolio, isInPortfolio } = useStocks();
 
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
@@ -29,6 +31,13 @@ export default function SymbolHeader() {
     setShowAddMenu(false);
     setLoading(true);
     await addToWatchlist(currentSymbol);
+    setLoading(false);
+  };
+
+  const handleRemoveFromWatchlist = async () => {
+    setShowAddMenu(false);
+    setLoading(true);
+    await removeFromWatchlist(currentSymbol);
     setLoading(false);
   };
 
@@ -155,21 +164,18 @@ export default function SymbolHeader() {
       </View>
 
       <View style={styles.rightActions}>
-        <TouchableOpacity style={styles.notificationButton} onPress={handleNotificationPress}>
-          <Ionicons 
-            name={hasActiveAlert ? "notifications" : "notifications-outline"} 
-            size={22} 
-            color={hasActiveAlert ? "#22c55e" : "#fff"} 
+        <TouchableOpacity
+          style={[
+            styles.addButton,
+            (isInWatchlist(currentSymbol) || isInPortfolio(currentSymbol)) && styles.addButtonActive
+          ]}
+          onPress={() => setShowAddMenu(true)}
+        >
+          <Ionicons
+            name={(isInWatchlist(currentSymbol) || isInPortfolio(currentSymbol)) ? "checkmark" : "add"}
+            size={24}
+            color="#fff"
           />
-          {hasActiveAlert && (
-            <View style={styles.alertBadge}>
-              <Ionicons name="checkmark" size={10} color="#fff" />
-            </View>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.addButton} onPress={() => setShowAddMenu(true)}>
-          <Ionicons name="add" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -184,18 +190,17 @@ export default function SymbolHeader() {
           <View style={styles.menuContainer}>
             <Text style={styles.menuTitle}>Add {currentSymbol}</Text>
 
-            <TouchableOpacity 
-              style={[styles.menuItem, isInWatchlist(currentSymbol) && styles.menuItemDisabled]} 
-              onPress={handleAddToWatchlist}
-              disabled={isInWatchlist(currentSymbol)}
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={isInWatchlist(currentSymbol) ? handleRemoveFromWatchlist : handleAddToWatchlist}
             >
-              <Ionicons 
-                name={isInWatchlist(currentSymbol) ? "checkmark-circle" : "eye-outline"} 
-                size={22} 
-                color={isInWatchlist(currentSymbol) ? "#34C759" : "#0dd977"} 
+              <Ionicons
+                name={isInWatchlist(currentSymbol) ? "eye-off-outline" : "eye-outline"}
+                size={22}
+                color={isInWatchlist(currentSymbol) ? "#FF3B30" : "#0dd977"}
               />
-              <Text style={[styles.menuItemText, isInWatchlist(currentSymbol) && styles.menuItemTextDisabled]}>
-                {isInWatchlist(currentSymbol) ? "Already in Watchlist" : "Add to Watchlist"}
+              <Text style={[styles.menuItemText, isInWatchlist(currentSymbol) && { color: "#FF3B30" }]}>
+                {isInWatchlist(currentSymbol) ? "Remove from Watchlist" : "Add to Watchlist"}
               </Text>
             </TouchableOpacity>
 
@@ -441,22 +446,8 @@ const styles = StyleSheet.create({
     padding: 6,
     marginLeft: 8,
   },
-  notificationButton: {
-    padding: 8,
-    position: "relative",
-  },
-  alertBadge: {
-    position: "absolute",
-    top: 4,
-    right: 4,
+  addButtonActive: {
     backgroundColor: "#22c55e",
-    borderRadius: 8,
-    width: 16,
-    height: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#000",
   },
   modalOverlay: {
     flex: 1,

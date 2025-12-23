@@ -82,9 +82,9 @@ export default function About() {
           <View style={styles.linksContainer}>
             <TouchableOpacity
               style={styles.linkButton}
-              onPress={() => Linking.openURL('https://twitter.com/wallstreet66666')}
+              onPress={() => Linking.openURL('https://x.com/wallstreet66666')}
             >
-              <Ionicons name="logo-twitter" size={20} color="#1D9BF0" />
+              <Text style={styles.xLogo}>𝕏</Text>
               <Text style={styles.linkText}>Follow us on X</Text>
             </TouchableOpacity>
 
@@ -193,6 +193,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   linkText: { marginLeft: 12, fontSize: 16, color: '#000' },
+  xLogo: { fontSize: 20, fontWeight: '900', color: '#000' },
   footer: { marginTop: 50, alignItems: 'center' },
   copyright: { fontSize: 14, color: '#aaa', marginBottom: 8 },
   finalLine: { fontSize: 16, color: '#666', fontStyle: 'italic' },

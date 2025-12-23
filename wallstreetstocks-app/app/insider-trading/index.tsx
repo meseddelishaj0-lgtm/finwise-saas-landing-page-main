@@ -1,5 +1,5 @@
 // app/insider-trading/index.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,13 @@ import {
   RefreshControl,
   TextInput,
   Platform,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-const FMP_API_KEY = 'jmAb5Qb7thHIdRjm07wvRsWIDMpLYZW7';
+const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const BASE_URL = 'https://financialmodelingprep.com/api/v4';
 
 interface InsiderTrade {
@@ -51,65 +52,127 @@ export default function InsiderTradingScreen() {
   const [trades, setTrades] = useState<InsiderTrade[]>([]);
   const [filteredTrades, setFilteredTrades] = useState<InsiderTrade[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchedSymbol, setSearchedSymbol] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'buys' | 'sells'>('all');
   const [stats, setStats] = useState({ totalBuys: 0, totalSells: 0, netActivity: 0 });
+  const searchTimeoutRef = useRef<number | null>(null);
 
-  const fetchInsiderTrades = async () => {
+  const calculateStats = (tradeData: InsiderTrade[]) => {
+    let buys = 0;
+    let sells = 0;
+    tradeData.forEach((trade: InsiderTrade) => {
+      const value = (trade.securitiesTransacted || 0) * (trade.price || 0);
+      if (trade.acquistionOrDisposition === 'A') {
+        buys += value;
+      } else if (trade.acquistionOrDisposition === 'D') {
+        sells += value;
+      }
+    });
+    setStats({
+      totalBuys: buys,
+      totalSells: sells,
+      netActivity: buys - sells,
+    });
+  };
+
+  const fetchInsiderTrades = async (symbol?: string) => {
     try {
-      const response = await fetch(
-        `${BASE_URL}/insider-trading?page=0&apikey=${FMP_API_KEY}`
-      );
+      let url = `${BASE_URL}/insider-trading?page=0&apikey=${FMP_API_KEY}`;
+
+      // If symbol is provided, search for that specific symbol
+      if (symbol) {
+        url = `${BASE_URL}/insider-trading?symbol=${symbol.toUpperCase()}&page=0&apikey=${FMP_API_KEY}`;
+      }
+
+      const response = await fetch(url);
       const data = await response.json();
 
       if (Array.isArray(data)) {
-        setTrades(data.slice(0, 100));
-        setFilteredTrades(data.slice(0, 100));
-
-        // Calculate stats
-        let buys = 0;
-        let sells = 0;
-        data.slice(0, 100).forEach((trade: InsiderTrade) => {
-          const value = (trade.securitiesTransacted || 0) * (trade.price || 0);
-          if (trade.acquistionOrDisposition === 'A') {
-            buys += value;
-          } else if (trade.acquistionOrDisposition === 'D') {
-            sells += value;
-          }
-        });
-        setStats({
-          totalBuys: buys,
-          totalSells: sells,
-          netActivity: buys - sells,
-        });
+        const tradeData = data.slice(0, 100);
+        setTrades(tradeData);
+        setFilteredTrades(tradeData);
+        calculateStats(tradeData);
+        setSearchedSymbol(symbol || null);
+      } else {
+        // No results found
+        setTrades([]);
+        setFilteredTrades([]);
+        setStats({ totalBuys: 0, totalSells: 0, netActivity: 0 });
       }
     } catch (error) {
       console.error('Error fetching insider trades:', error);
+      setTrades([]);
+      setFilteredTrades([]);
     } finally {
       setLoading(false);
+      setSearching(false);
       setRefreshing(false);
+    }
+  };
+
+  // Search function with debounce
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // If query is empty, fetch all trades
+    if (!query.trim()) {
+      setSearching(true);
+      fetchInsiderTrades();
+      return;
+    }
+
+    // Check if it looks like a stock symbol (1-5 uppercase letters)
+    const isSymbol = /^[A-Za-z]{1,5}$/.test(query.trim());
+
+    if (isSymbol && query.length >= 1) {
+      // Debounce the API call
+      searchTimeoutRef.current = setTimeout(() => {
+        setSearching(true);
+        Keyboard.dismiss();
+        fetchInsiderTrades(query.trim());
+      }, 500);
+    } else {
+      // For longer queries or non-symbol text, filter locally
+      const upperQuery = query.toUpperCase();
+      const filtered = trades.filter(
+        (trade) =>
+          trade.symbol?.toUpperCase().includes(upperQuery) ||
+          trade.reportingName?.toUpperCase().includes(upperQuery)
+      );
+      setFilteredTrades(filtered);
+    }
+  }, [trades]);
+
+  // Submit search on enter
+  const handleSearchSubmit = () => {
+    if (searchQuery.trim()) {
+      Keyboard.dismiss();
+      setSearching(true);
+      fetchInsiderTrades(searchQuery.trim());
     }
   };
 
   useEffect(() => {
     fetchInsiderTrades();
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
+    // Apply transaction type filter
     let filtered = trades;
 
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toUpperCase();
-      filtered = filtered.filter(
-        (trade) =>
-          trade.symbol?.toUpperCase().includes(query) ||
-          trade.reportingName?.toUpperCase().includes(query)
-      );
-    }
-
-    // Apply transaction type filter
     if (activeFilter === 'buys') {
       filtered = filtered.filter((trade) => trade.acquistionOrDisposition === 'A');
     } else if (activeFilter === 'sells') {
@@ -117,7 +180,7 @@ export default function InsiderTradingScreen() {
     }
 
     setFilteredTrades(filtered);
-  }, [searchQuery, activeFilter, trades]);
+  }, [activeFilter, trades]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -294,18 +357,82 @@ export default function InsiderTradingScreen() {
             <Ionicons name="search" size={20} color="#8E8E93" />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search by symbol or insider name..."
+              placeholder="Search by symbol (e.g., AAPL, TSLA)..."
               placeholderTextColor="#8E8E93"
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={handleSearch}
+              onSubmitEditing={handleSearchSubmit}
+              returnKeyType="search"
+              autoCapitalize="characters"
+              autoCorrect={false}
             />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+            {searching && (
+              <ActivityIndicator size="small" color="#007AFF" style={{ marginRight: 8 }} />
+            )}
+            {searchQuery.length > 0 && !searching && (
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery('');
+                  setSearchedSymbol(null);
+                  setSearching(true);
+                  fetchInsiderTrades();
+                }}
+              >
                 <Ionicons name="close-circle" size={20} color="#8E8E93" />
               </TouchableOpacity>
             )}
           </View>
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={handleSearchSubmit}
+            >
+              <Text style={styles.searchButtonText}>Search</Text>
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Popular Symbols */}
+        {!searchedSymbol && (
+          <View style={styles.popularSection}>
+            <Text style={styles.popularTitle}>Popular Stocks</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.popularScroll}>
+              {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'AMD', 'NFLX', 'JPM'].map((symbol) => (
+                <TouchableOpacity
+                  key={symbol}
+                  style={styles.popularChip}
+                  onPress={() => {
+                    setSearchQuery(symbol);
+                    setSearching(true);
+                    fetchInsiderTrades(symbol);
+                  }}
+                >
+                  <Text style={styles.popularChipText}>{symbol}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Searched Symbol Indicator */}
+        {searchedSymbol && (
+          <View style={styles.searchedIndicator}>
+            <Text style={styles.searchedText}>
+              Showing insider trades for: <Text style={styles.searchedSymbol}>{searchedSymbol.toUpperCase()}</Text>
+            </Text>
+            <TouchableOpacity
+              onPress={() => {
+                setSearchQuery('');
+                setSearchedSymbol(null);
+                setSearching(true);
+                fetchInsiderTrades();
+              }}
+              style={styles.clearSearchButton}
+            >
+              <Text style={styles.clearSearchText}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Filter Tabs */}
         <View style={styles.filterContainer}>
@@ -480,6 +607,76 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
     marginLeft: 10,
+  },
+  searchButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+  searchButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  searchedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E8F4FD',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  searchedText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  searchedSymbol: {
+    fontWeight: '700',
+    color: '#007AFF',
+  },
+  clearSearchButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  clearSearchText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  popularSection: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  popularTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginBottom: 8,
+  },
+  popularScroll: {
+    flexDirection: 'row',
+  },
+  popularChip: {
+    backgroundColor: '#FFF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  popularChipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   filterContainer: {
     flexDirection: 'row',

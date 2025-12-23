@@ -17,27 +17,27 @@ import { useSubscription } from '../context/SubscriptionContext';
 // Feature lists for each tier
 const TIER_FEATURES: Record<string, string[]> = {
   gold: [
+    '5 Expert Stock Picks',
     'Ad-free experience',
-    'Basic stock analysis',
-    'Watchlist (up to 20 stocks)',
+    'Basic watchlists',
+    'Community access',
     'Daily market summary',
-    'Email support',
   ],
   platinum: [
     'Everything in Gold',
-    'Advanced stock analysis',
-    'AI-powered insights',
+    '8 Expert Stock Picks',
+    'Screener Filters & Premium Presets',
+    'Real-time price alerts',
     'Unlimited watchlists',
-    'Real-time alerts',
     'Priority support',
   ],
   diamond: [
     'Everything in Platinum',
-    'Exclusive research reports',
-    'Portfolio optimization',
-    'Custom screeners',
-    'API access',
-    'Dedicated account manager',
+    '15 Expert Stock Picks',
+    'AI Tools (Analyzer, Compare, Forecast)',
+    'AI Financial Assistant',
+    'Insider Trading Data',
+    'Research Reports & Portfolio Tools',
   ],
 };
 
@@ -56,7 +56,7 @@ const TIER_NAMES: Record<string, string> = {
 const TIER_PRICES: Record<string, string> = {
   gold: '$9.99',
   platinum: '$19.99',
-  diamond: '$49.99',
+  diamond: '$29.99',
 };
 
 // Tier order for display

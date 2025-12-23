@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Custom tab bar icon with indicator
 const TabIcon = ({
@@ -25,6 +26,15 @@ const TabIcon = ({
 );
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
+  // Calculate proper bottom padding for Android navigation bar
+  // Android needs extra padding to clear the system navigation bar
+  // Use larger minimum for Android to handle gesture nav and 3-button nav
+  const androidBottomPadding = Math.max(insets.bottom, 48);
+  const tabBarHeight = Platform.OS === 'ios' ? 85 : 60 + androidBottomPadding;
+  const bottomPadding = Platform.OS === 'ios' ? 28 : androidBottomPadding;
+
   return (
     <Tabs
       screenOptions={{
@@ -36,11 +46,12 @@ export default function TabLayout() {
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: Platform.OS === 'ios' ? 'rgba(255,255,255,0.85)' : '#fff',
-          borderTopWidth: 0,
-          elevation: 0,
-          height: Platform.OS === 'ios' ? 85 : 65,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          backgroundColor: Platform.OS === 'ios' ? 'rgba(255,255,255,0.85)' : '#FFFFFF',
+          borderTopWidth: Platform.OS === 'android' ? 1 : 0,
+          borderTopColor: '#E5E5EA',
+          elevation: Platform.OS === 'android' ? 8 : 0,
+          height: tabBarHeight,
+          paddingBottom: bottomPadding,
           paddingTop: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },

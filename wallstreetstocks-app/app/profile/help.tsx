@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -72,9 +73,9 @@ export default function Help() {
   ];
 
   const quickActions = [
-    { icon: 'chatbubble-ellipses', label: 'Live Chat', color: '#34C759' },
-    { icon: 'call', label: 'Call Us', color: '#007AFF' },
-    { icon: 'logo-twitter', label: 'Twitter', color: '#1DA1F2' },
+    { icon: 'chatbubble-ellipses', label: 'Live Chat', color: '#34C759', isX: false },
+    { icon: 'call', label: 'Call Us', color: '#007AFF', isX: false },
+    { icon: 'logo-twitter', label: 'X', color: '#000000', isX: true },
   ];
 
   return (
@@ -94,13 +95,25 @@ export default function Help() {
           <Text style={styles.quickActionsTitle}>Need immediate help?</Text>
           <View style={styles.quickActionsRow}>
             {quickActions.map((action, index) => (
-              <TouchableOpacity 
-                key={index} 
+              <TouchableOpacity
+                key={index}
                 style={styles.quickActionButton}
-                onPress={() => router.push('/profile/contact-us' as any)}
+                onPress={() => {
+                  if (action.isX) {
+                    Linking.openURL('https://x.com/wallstreet66666');
+                  } else if (action.label === 'Live Chat') {
+                    router.push('/profile/live-chat' as any);
+                  } else {
+                    router.push('/profile/contact' as any);
+                  }
+                }}
               >
                 <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
-                  <Ionicons name={action.icon as any} size={22} color={action.color} />
+                  {action.isX ? (
+                    <Text style={styles.xLogo}>𝕏</Text>
+                  ) : (
+                    <Ionicons name={action.icon as any} size={22} color={action.color} />
+                  )}
                 </View>
                 <Text style={styles.quickActionLabel}>{action.label}</Text>
               </TouchableOpacity>
@@ -139,17 +152,17 @@ export default function Help() {
           <Text style={styles.copyright}>© 2025 WallStreetStocks. All rights reserved.</Text>
           
           <View style={styles.socialLinks}>
-            <TouchableOpacity style={styles.socialButton}>
-              <Ionicons name="logo-twitter" size={20} color="#666" />
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => Linking.openURL('https://x.com/wallstreet66666')}
+            >
+              <Text style={styles.xLogoSmall}>𝕏</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={() => Linking.openURL('https://instagram.com/wallstreetstocks')}
+            >
               <Ionicons name="logo-instagram" size={20} color="#666" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Ionicons name="logo-linkedin" size={20} color="#666" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
-              <Ionicons name="logo-facebook" size={20} color="#666" />
             </TouchableOpacity>
           </View>
         </View>
@@ -290,5 +303,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  xLogo: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#000',
+  },
+  xLogoSmall: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#666',
   },
 });

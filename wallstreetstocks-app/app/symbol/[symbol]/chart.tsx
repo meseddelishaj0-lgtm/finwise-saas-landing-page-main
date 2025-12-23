@@ -12,6 +12,7 @@ import {
   Modal,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from 'expo-router';
 import { LineChart } from 'react-native-gifted-charts';
@@ -128,21 +129,26 @@ export default function ChartTab() {
       let formatted: ChartDataPoint[] = [];
 
       if (timeframe === '1D') {
-        // Use 5-minute intervals for 1D
+        // Use 1-minute intervals for live 1D data including premarket (from 4 AM ET)
         const res = await fetch(
-          `https://financialmodelingprep.com/api/v3/historical-chart/5min/${symbolForApi}?apikey=${FMP_API_KEY}`
+          `https://financialmodelingprep.com/api/v3/historical-chart/1min/${symbolForApi}?extended=true&apikey=${FMP_API_KEY}`
         );
         const data = await res.json();
 
         if (Array.isArray(data) && data.length > 0) {
-          // Get today's data only
+          // Get today's data including premarket (4 AM - 8 PM ET = ~960 minutes)
           const today = new Date().toISOString().split('T')[0];
           const todayData = data.filter((d: any) => d.date.startsWith(today));
 
-          // If no today data, use most recent day
-          const dataToUse = todayData.length > 10 ? todayData : data.slice(0, 78); // ~6.5 hours of 5min data
+          // If no today data, use most recent trading day's data
+          const dataToUse = todayData.length > 10 ? todayData : data.slice(0, 960);
+
+          // Sample to keep performance smooth while showing detailed chart
+          // For premarket + regular hours, we may have 600+ data points
+          const sampleRate = dataToUse.length > 300 ? 3 : dataToUse.length > 150 ? 2 : 1;
 
           formatted = dataToUse
+            .filter((_: any, i: number) => i % sampleRate === 0)
             .reverse()
             .map((d: any) => ({
               value: d.close,
@@ -322,9 +328,9 @@ export default function ChartTab() {
     fetchQuote();
     fetchChartData();
 
-    // Set up polling
+    // Set up polling - 15 seconds for 1D live data, 60 seconds for other timeframes
     if (intervalRef.current) clearInterval(intervalRef.current);
-    const pollInterval = timeframe === '1D' ? 30000 : 60000;
+    const pollInterval = timeframe === '1D' ? 15000 : 60000;
     intervalRef.current = setInterval(() => {
       fetchQuote();
       if (timeframe === '1D') fetchChartData();
@@ -510,7 +516,7 @@ export default function ChartTab() {
                 </View>
               )}
               <LineChart
-              data={chartData.map(d => ({ value: d.value, label: '' }))}
+              data={chartData.map((d, idx) => ({ value: d.value, label: '', dataPointIndex: idx }))}
               height={CHART_HEIGHT}
               width={SCREEN_WIDTH - 10}
               areaChart
@@ -538,32 +544,39 @@ export default function ChartTab() {
                 pointerStripWidth: 1.5,
                 pointerColor: priceColor,
                 radius: 7,
-                pointerLabelWidth: 100,
-                pointerLabelHeight: 60,
+                pointerLabelWidth: 140,
+                pointerLabelHeight: 80,
                 activatePointersOnLongPress: false,
                 autoAdjustPointerLabelPosition: true,
-                shiftPointerLabelX: -50,
-                shiftPointerLabelY: -70,
-                pointerLabelComponent: (items: any) => {
+                shiftPointerLabelX: -70,
+                shiftPointerLabelY: -85,
+                pointerLabelComponent: (items: any, secondaryDataItem: any) => {
                   if (!items || items.length === 0) return null;
 
-                  // Get the current value from the pointer
-                  const currentValue = items[0]?.value;
+                  // Get the index from the pointer - try multiple ways to get it
+                  const item = items[0];
+                  const pointerIndex = item?.index ?? item?.dataPointIndex ?? item?.pointerIndex;
+                  const currentValue = item?.value;
+
                   if (currentValue === undefined || currentValue === null) return null;
 
-                  // Find the matching data point by value (or closest)
-                  let matchedPoint = chartData.find(d => Math.abs(d.value - currentValue) < 0.01);
+                  // Use the index to get the exact data point with correct time
+                  let matchedPoint: ChartDataPoint | null = null;
 
-                  // If no exact match, find closest
-                  if (!matchedPoint) {
+                  if (pointerIndex !== undefined && pointerIndex >= 0 && pointerIndex < chartData.length) {
+                    matchedPoint = chartData[pointerIndex];
+                  } else {
+                    // Fallback: find closest match by value if index not available
                     let closestDiff = Infinity;
-                    for (const point of chartData) {
-                      const diff = Math.abs(point.value - currentValue);
+                    let closestIdx = 0;
+                    for (let i = 0; i < chartData.length; i++) {
+                      const diff = Math.abs(chartData[i].value - currentValue);
                       if (diff < closestDiff) {
                         closestDiff = diff;
-                        matchedPoint = point;
+                        closestIdx = i;
                       }
                     }
+                    matchedPoint = chartData[closestIdx];
                   }
 
                   const displayValue = currentValue;
@@ -573,24 +586,53 @@ export default function ChartTab() {
                   const isUp = changeFromStart >= 0;
                   const changeColor = isUp ? '#00C853' : '#FF3B30';
 
+                  // Format date based on timeframe
+                  const formatPointerDate = (date: Date) => {
+                    if (timeframe === '1D') {
+                      return date.toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                      });
+                    } else if (timeframe === '5D') {
+                      return date.toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      });
+                    } else if (timeframe === '1M' || timeframe === '3M') {
+                      return date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      });
+                    } else {
+                      return date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      });
+                    }
+                  };
+
                   // Update header with current pointer position
                   setTimeout(() => {
                     setPointerData({
                       price: displayValue,
-                      date: matchedPoint?.date
-                        ? matchedPoint.date.toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: timeframe === '1D' ? 'numeric' : undefined,
-                            minute: timeframe === '1D' ? '2-digit' : undefined,
-                          })
-                        : '',
+                      date: matchedPoint?.date ? formatPointerDate(matchedPoint.date) : '',
                       change: changeFromStart,
                     });
                   }, 0);
 
                   return (
                     <View style={styles.tooltip}>
+                      {matchedPoint?.date && (
+                        <Text style={styles.tooltipDate}>
+                          {formatPointerDate(matchedPoint.date)}
+                        </Text>
+                      )}
                       <Text style={styles.tooltipPriceValue}>
                         ${displayValue.toFixed(2)}
                       </Text>
@@ -670,7 +712,10 @@ export default function ChartTab() {
         transparent={true}
         onRequestClose={() => setShowAlertModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Set Price Alert</Text>
@@ -754,7 +799,7 @@ export default function ChartTab() {
               )}
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -901,18 +946,26 @@ const styles = StyleSheet.create({
   },
   tooltip: {
     backgroundColor: '#1C1C1EF5',
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#3C3C3E',
     alignItems: 'center',
-    minWidth: 120,
+    minWidth: 130,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  tooltipDate: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#A0A0A5',
+    textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: 0.3,
   },
   tooltipPriceValue: {
     fontSize: 16,

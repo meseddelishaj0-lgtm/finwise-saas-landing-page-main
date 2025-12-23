@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -27,10 +28,22 @@ import {
   FileText,
   Cpu,
   Headphones,
+  Settings,
+  Calendar,
+  RefreshCw,
+  XCircle,
+  ArrowUpCircle,
+  ExternalLink,
 } from "lucide-react-native";
 import Purchases, { PurchasesPackage, CustomerInfo } from "react-native-purchases";
+import {
+  openSubscriptionManagement,
+  getSubscriptionDetails,
+  formatExpirationDate,
+} from "@/services/revenueCat";
 
-const { width } = Dimensions.get("window");
+// Screen dimensions for responsive layout
+const _screenWidth = Dimensions.get("window").width;
 
 // Product IDs matching your RevenueCat setup
 const PRODUCT_IDS = {
@@ -52,11 +65,11 @@ const TIERS = {
     bgColor: "#FFFBEB",
     borderColor: "#FFD700",
     features: [
+      { icon: TrendingUp, text: "5 Expert Stock Picks" },
       { icon: Shield, text: "Ad-free experience" },
-      { icon: BarChart3, text: "Basic stock analysis" },
-      { icon: TrendingUp, text: "Watchlist (up to 20 stocks)" },
+      { icon: BarChart3, text: "Basic watchlists" },
+      { icon: Users, text: "Community access" },
       { icon: FileText, text: "Daily market summary" },
-      { icon: Headphones, text: "Email support" },
     ],
   },
   platinum: {
@@ -69,10 +82,10 @@ const TIERS = {
     popular: true,
     features: [
       { icon: Check, text: "Everything in Gold" },
-      { icon: BarChart3, text: "Advanced stock analysis" },
-      { icon: Cpu, text: "AI-powered insights" },
-      { icon: TrendingUp, text: "Unlimited watchlists" },
+      { icon: TrendingUp, text: "8 Expert Stock Picks" },
+      { icon: BarChart3, text: "Screener Filters & Premium Presets" },
       { icon: Bell, text: "Real-time price alerts" },
+      { icon: TrendingUp, text: "Unlimited watchlists" },
       { icon: Headphones, text: "Priority support" },
     ],
   },
@@ -85,16 +98,26 @@ const TIERS = {
     borderColor: "#06B6D4",
     features: [
       { icon: Check, text: "Everything in Platinum" },
-      { icon: FileText, text: "Exclusive research reports" },
-      { icon: BarChart3, text: "Portfolio optimization" },
-      { icon: TrendingUp, text: "Custom stock screeners" },
-      { icon: Cpu, text: "API access" },
-      { icon: Users, text: "Dedicated account manager" },
+      { icon: TrendingUp, text: "15 Expert Stock Picks" },
+      { icon: Cpu, text: "AI Tools (Analyzer, Compare, Forecast)" },
+      { icon: Cpu, text: "AI Financial Assistant" },
+      { icon: FileText, text: "Insider Trading Data" },
+      { icon: BarChart3, text: "Research Reports & Portfolio Tools" },
     ],
   },
 };
 
 type TierKey = keyof typeof TIERS;
+
+interface SubscriptionDetails {
+  isActive: boolean;
+  productId: string | null;
+  tierName: string | null;
+  expirationDate: string | null;
+  willRenew: boolean;
+  isCanceled: boolean;
+  managementUrl: string | null;
+}
 
 export default function SubscriptionPage() {
   const router = useRouter();
@@ -102,50 +125,34 @@ export default function SubscriptionPage() {
   const [purchasing, setPurchasing] = useState(false);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedTier, setSelectedTier] = useState<TierKey>("platinum");
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
+  const [_customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [activeSubscription, setActiveSubscription] = useState<string | null>(null);
+  const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
+  const [showManageSection, setShowManageSection] = useState(false);
 
   useEffect(() => {
-    loadOfferings();
-    checkSubscriptionStatus();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    await Promise.all([
+      loadOfferings(),
+      checkSubscriptionStatus(),
+      loadSubscriptionDetails(),
+    ]);
+    setLoading(false);
+  };
 
   const loadOfferings = async () => {
     try {
       const offerings = await Purchases.getOfferings();
-      
-      // DEBUG LOGGING - Remove after troubleshooting
-      console.log("📦 ========== OFFERINGS DEBUG ==========");
-      console.log("📦 Current offering ID:", offerings.current?.identifier);
-      console.log("📦 Packages count:", offerings.current?.availablePackages?.length || 0);
-      console.log("📦 All offering keys:", Object.keys(offerings.all));
-      
+
       if (offerings.current?.availablePackages) {
-        offerings.current.availablePackages.forEach((pkg, i) => {
-          console.log(`📦 Package ${i}:`, {
-            pkgIdentifier: pkg.identifier,
-            productId: pkg.product.identifier,
-            price: pkg.product.priceString
-          });
-        });
         setPackages(offerings.current.availablePackages);
-      } else {
-        console.log("📦 NO PACKAGES FOUND!");
-        
-        // Try to get all offerings
-        Object.entries(offerings.all).forEach(([key, offering]) => {
-          console.log(`📦 Offering "${key}":`, offering.availablePackages?.length, "packages");
-          offering.availablePackages?.forEach((pkg, i) => {
-            console.log(`  - Package ${i}: ${pkg.identifier} (${pkg.product.identifier})`);
-          });
-        });
       }
-      console.log("📦 =====================================");
-      
     } catch (error) {
-      console.error("❌ Error loading offerings:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error loading offerings:", error);
     }
   };
 
@@ -154,32 +161,27 @@ export default function SubscriptionPage() {
       const info = await Purchases.getCustomerInfo();
       setCustomerInfo(info);
 
-      // Check if user has the entitlement
       const entitlement = info.entitlements.active[ENTITLEMENT_ID];
       if (entitlement) {
         setActiveSubscription(entitlement.productIdentifier);
-        console.log("✅ Active subscription:", entitlement.productIdentifier);
+        setShowManageSection(true);
       }
     } catch (error) {
       console.error("Error checking subscription:", error);
     }
   };
 
-  // Match packages by product identifier (gold_monthly, platinum_monthly, diamond_monthly)
+  const loadSubscriptionDetails = async () => {
+    const details = await getSubscriptionDetails();
+    setSubscriptionDetails(details);
+  };
+
   const getPackageForTier = (tierId: string): PurchasesPackage | undefined => {
     const tierName = tierId.replace("_monthly", "").toLowerCase();
-    
-    console.log(`🔍 Looking for tier: ${tierName}, packages available: ${packages.length}`);
-    
-    const pkg = packages.find((pkg) => {
+    return packages.find((pkg) => {
       const productId = pkg.product.identifier.toLowerCase();
-      const matches = productId.includes(tierName);
-      console.log(`  - Checking ${productId} for "${tierName}": ${matches}`);
-      return matches;
+      return productId.includes(tierName);
     });
-    
-    console.log(`🔍 Result for ${tierName}:`, pkg?.product.identifier || "NOT FOUND");
-    return pkg;
   };
 
   const getPrice = (tierId: string): string => {
@@ -187,14 +189,13 @@ export default function SubscriptionPage() {
     if (pkg) {
       return pkg.product.priceString;
     }
-    // Fallback prices
     switch (tierId) {
       case PRODUCT_IDS.GOLD:
         return "$9.99";
       case PRODUCT_IDS.PLATINUM:
         return "$19.99";
       case PRODUCT_IDS.DIAMOND:
-        return "$49.99";
+        return "$29.99";
       default:
         return "";
     }
@@ -204,15 +205,10 @@ export default function SubscriptionPage() {
     const tier = TIERS[selectedTier];
     const pkg = getPackageForTier(tier.id);
 
-    console.log("🛒 Attempting purchase for tier:", tier.name);
-    console.log("🛒 Package found:", pkg?.product.identifier);
-    console.log("🛒 Total packages available:", packages.length);
-
     if (!pkg) {
       Alert.alert(
-        "Error", 
-        "Unable to find subscription package. Your subscriptions may still be under review by Apple.",
-        [{ text: "OK" }]
+        "Error",
+        "Unable to find subscription package. Your subscriptions may still be under review."
       );
       return;
     }
@@ -225,20 +221,120 @@ export default function SubscriptionPage() {
       if (customerInfo.entitlements.active[ENTITLEMENT_ID]) {
         const productId = customerInfo.entitlements.active[ENTITLEMENT_ID].productIdentifier;
         setActiveSubscription(productId);
+        setShowManageSection(true);
+        await loadSubscriptionDetails();
+
         Alert.alert(
           "Success!",
           `Welcome to ${tier.name}! Your subscription is now active.`,
-          [{ text: "OK", onPress: () => router.back() }]
+          [{ text: "OK" }]
         );
       }
     } catch (error: any) {
       if (!error.userCancelled) {
         console.error("Purchase error:", error);
-        Alert.alert("Purchase Failed", error.message || "Unable to complete purchase. Please try again.");
+        Alert.alert("Purchase Failed", error.message || "Unable to complete purchase.");
       }
     } finally {
       setPurchasing(false);
     }
+  };
+
+  const handleUpgrade = async () => {
+    const tier = TIERS[selectedTier];
+    const pkg = getPackageForTier(tier.id);
+
+    if (!pkg) {
+      Alert.alert("Error", "Unable to find subscription package.");
+      return;
+    }
+
+    const currentLevel = getCurrentTierLevel();
+    const targetLevel = getTierLevel(tier.id);
+
+    if (targetLevel <= currentLevel) {
+      // Downgrade - need to go to subscription management
+      Alert.alert(
+        "Downgrade Plan",
+        `To downgrade to ${tier.name}, you need to manage your subscription through the ${Platform.OS === 'ios' ? 'App Store' : 'Play Store'}. Your current plan will continue until the end of the billing period.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Manage Subscription",
+            onPress: handleManageSubscription,
+          },
+        ]
+      );
+      return;
+    }
+
+    // Upgrade
+    Alert.alert(
+      "Upgrade Plan",
+      `Upgrade to ${tier.name} for ${getPrice(tier.id)}/month? You'll be charged the prorated difference for the remaining billing period.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Upgrade",
+          onPress: async () => {
+            setPurchasing(true);
+            try {
+              const { customerInfo } = await Purchases.purchasePackage(pkg);
+              setCustomerInfo(customerInfo);
+
+              if (customerInfo.entitlements.active[ENTITLEMENT_ID]) {
+                const productId = customerInfo.entitlements.active[ENTITLEMENT_ID].productIdentifier;
+                setActiveSubscription(productId);
+                await loadSubscriptionDetails();
+
+                Alert.alert(
+                  "Upgraded!",
+                  `You're now on the ${tier.name} plan. Enjoy your new features!`
+                );
+              }
+            } catch (error: any) {
+              if (!error.userCancelled) {
+                Alert.alert("Upgrade Failed", error.message || "Unable to upgrade.");
+              }
+            } finally {
+              setPurchasing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleManageSubscription = async () => {
+    const opened = await openSubscriptionManagement();
+    if (!opened) {
+      // Fallback: try to open management URL from RevenueCat
+      if (subscriptionDetails?.managementUrl) {
+        await Linking.openURL(subscriptionDetails.managementUrl);
+      } else {
+        Alert.alert(
+          "Manage Subscription",
+          Platform.OS === 'ios'
+            ? "Go to Settings > Apple ID > Subscriptions to manage your subscription."
+            : "Go to Google Play Store > Menu > Subscriptions to manage your subscription."
+        );
+      }
+    }
+  };
+
+  const handleCancelSubscription = () => {
+    Alert.alert(
+      "Cancel Subscription",
+      "To cancel your subscription, you'll be redirected to your device's subscription settings. Your subscription will remain active until the end of your current billing period.",
+      [
+        { text: "Keep Subscription", style: "cancel" },
+        {
+          text: "Manage Subscription",
+          style: "destructive",
+          onPress: handleManageSubscription,
+        },
+      ]
+    );
   };
 
   const handleRestore = async () => {
@@ -250,13 +346,14 @@ export default function SubscriptionPage() {
       const entitlement = info.entitlements.active[ENTITLEMENT_ID];
       if (entitlement) {
         setActiveSubscription(entitlement.productIdentifier);
+        setShowManageSection(true);
+        await loadSubscriptionDetails();
         Alert.alert("Success", "Your subscription has been restored!");
       } else {
-        Alert.alert("No Subscriptions Found", "We couldn't find any active subscriptions to restore.");
+        Alert.alert("No Subscriptions Found", "We couldn't find any active subscriptions.");
       }
     } catch (error: any) {
-      console.error("Restore error:", error);
-      Alert.alert("Restore Failed", error.message || "Unable to restore purchases. Please try again.");
+      Alert.alert("Restore Failed", error.message || "Unable to restore purchases.");
     } finally {
       setLoading(false);
     }
@@ -284,6 +381,87 @@ export default function SubscriptionPage() {
     return 0;
   };
 
+  const getCurrentTierKey = (): TierKey | null => {
+    if (!activeSubscription) return null;
+    const sub = activeSubscription.toLowerCase();
+    if (sub.includes("diamond")) return "diamond";
+    if (sub.includes("platinum")) return "platinum";
+    if (sub.includes("gold")) return "gold";
+    return null;
+  };
+
+  const renderCurrentSubscriptionCard = () => {
+    if (!subscriptionDetails?.isActive) return null;
+
+    const currentTierKey = getCurrentTierKey();
+    if (!currentTierKey) return null;
+
+    const tier = TIERS[currentTierKey];
+    const Icon = tier.icon;
+
+    return (
+      <View style={[styles.currentSubCard, { borderColor: tier.color }]}>
+        <View style={styles.currentSubHeader}>
+          <View style={[styles.currentSubIcon, { backgroundColor: tier.bgColor }]}>
+            <Icon size={24} color={tier.color} />
+          </View>
+          <View style={styles.currentSubInfo}>
+            <Text style={styles.currentSubLabel}>Current Plan</Text>
+            <Text style={[styles.currentSubName, { color: tier.color }]}>{tier.name}</Text>
+          </View>
+          {subscriptionDetails.isCanceled && (
+            <View style={styles.canceledBadge}>
+              <Text style={styles.canceledBadgeText}>CANCELED</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.currentSubDetails}>
+          <View style={styles.detailRow}>
+            <Calendar size={16} color="#666" />
+            <Text style={styles.detailLabel}>
+              {subscriptionDetails.isCanceled ? "Expires" : "Renews"} on:
+            </Text>
+            <Text style={styles.detailValue}>
+              {formatExpirationDate(subscriptionDetails.expirationDate)}
+            </Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <RefreshCw size={16} color="#666" />
+            <Text style={styles.detailLabel}>Auto-renew:</Text>
+            <Text style={[styles.detailValue, { color: subscriptionDetails.willRenew ? '#34C759' : '#FF3B30' }]}>
+              {subscriptionDetails.willRenew ? "On" : "Off"}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.currentSubActions}>
+          <TouchableOpacity
+            style={[styles.manageButton, { borderColor: tier.color }]}
+            onPress={handleManageSubscription}
+          >
+            <Settings size={18} color={tier.color} />
+            <Text style={[styles.manageButtonText, { color: tier.color }]}>
+              Manage Subscription
+            </Text>
+            <ExternalLink size={16} color={tier.color} />
+          </TouchableOpacity>
+
+          {!subscriptionDetails.isCanceled && (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancelSubscription}
+            >
+              <XCircle size={18} color="#FF3B30" />
+              <Text style={styles.cancelButtonText}>Cancel Subscription</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   const renderTierCard = (tierKey: TierKey) => {
     const tier = TIERS[tierKey];
     const Icon = tier.icon;
@@ -291,6 +469,7 @@ export default function SubscriptionPage() {
     const isCurrentPlan = isSubscribed(tier.id);
     const currentLevel = getCurrentTierLevel();
     const tierLevel = getTierLevel(tier.id);
+    const isUpgrade = activeSubscription && tierLevel > currentLevel;
     const isDowngrade = activeSubscription && tierLevel < currentLevel;
 
     return (
@@ -305,21 +484,25 @@ export default function SubscriptionPage() {
         activeOpacity={isCurrentPlan ? 1 : 0.7}
         disabled={isCurrentPlan}
       >
-        {/* Popular Badge */}
         {"popular" in tier && tier.popular && !isCurrentPlan && (
           <View style={[styles.popularBadge, { backgroundColor: tier.color }]}>
             <Text style={styles.popularText}>MOST POPULAR</Text>
           </View>
         )}
 
-        {/* Current Plan Badge */}
         {isCurrentPlan && (
           <View style={styles.currentBadge}>
             <Text style={styles.currentBadgeText}>CURRENT PLAN</Text>
           </View>
         )}
 
-        {/* Header */}
+        {isUpgrade && isSelected && (
+          <View style={[styles.upgradeBadge, { backgroundColor: '#34C759' }]}>
+            <ArrowUpCircle size={12} color="#FFF" />
+            <Text style={styles.upgradeBadgeText}>UPGRADE</Text>
+          </View>
+        )}
+
         <View style={styles.tierHeader}>
           <View style={[styles.tierIconContainer, { backgroundColor: tier.bgColor }]}>
             <Icon size={28} color={tier.color} />
@@ -338,7 +521,6 @@ export default function SubscriptionPage() {
           )}
         </View>
 
-        {/* Features */}
         <View style={styles.featuresContainer}>
           {tier.features.map((feature, index) => {
             const FeatureIcon = feature.icon;
@@ -351,7 +533,6 @@ export default function SubscriptionPage() {
           })}
         </View>
 
-        {/* Downgrade Warning */}
         {isDowngrade && isSelected && (
           <View style={styles.downgradeWarning}>
             <Text style={styles.downgradeText}>
@@ -370,12 +551,12 @@ export default function SubscriptionPage() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ChevronLeft size={28} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Upgrade</Text>
+          <Text style={styles.headerTitle}>Subscription</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading plans...</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </View>
     );
@@ -383,12 +564,11 @@ export default function SubscriptionPage() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upgrade</Text>
+        <Text style={styles.headerTitle}>Subscription</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -397,37 +577,40 @@ export default function SubscriptionPage() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroIconContainer}>
-            <Zap size={40} color="#007AFF" />
-          </View>
-          <Text style={styles.heroTitle}>Unlock Premium Features</Text>
-          <Text style={styles.heroSubtitle}>
-            Get access to advanced analysis tools, AI insights, and exclusive research to supercharge your investing.
-          </Text>
-        </View>
+        {/* Current Subscription Section */}
+        {showManageSection && renderCurrentSubscriptionCard()}
 
-        {/* Debug Info - Remove after testing */}
-        {packages.length === 0 && (
-          <View style={styles.debugContainer}>
-            <Text style={styles.debugText}>
-              ⚠️ No subscription packages loaded.{"\n"}
-              Your products may still be under review by Apple.
+        {/* Hero Section - Only show for non-subscribers */}
+        {!activeSubscription && (
+          <View style={styles.heroSection}>
+            <View style={styles.heroIconContainer}>
+              <Zap size={40} color="#007AFF" />
+            </View>
+            <Text style={styles.heroTitle}>Unlock Premium Features</Text>
+            <Text style={styles.heroSubtitle}>
+              Get access to advanced analysis tools, AI insights, and exclusive research.
             </Text>
           </View>
         )}
 
-        {/* Subscription Status */}
+        {/* Change/Upgrade Plan Section */}
         {activeSubscription && (
-          <View style={styles.statusContainer}>
-            <Text style={styles.statusText}>
-              You're currently subscribed to{" "}
-              <Text style={styles.statusPlan}>
-                {activeSubscription.toLowerCase().includes("gold") && "Gold"}
-                {activeSubscription.toLowerCase().includes("platinum") && "Platinum"}
-                {activeSubscription.toLowerCase().includes("diamond") && "Diamond"}
-              </Text>
+          <View style={styles.changePlanSection}>
+            <Text style={styles.changePlanTitle}>
+              {getCurrentTierLevel() < 3 ? "Upgrade Your Plan" : "Change Plan"}
+            </Text>
+            <Text style={styles.changePlanSubtitle}>
+              Select a different plan to upgrade or change your subscription
+            </Text>
+          </View>
+        )}
+
+        {/* Debug Info */}
+        {packages.length === 0 && (
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugText}>
+              ⚠️ No subscription packages loaded.{"\n"}
+              Your products may still be under review.
             </Text>
           </View>
         )}
@@ -439,7 +622,7 @@ export default function SubscriptionPage() {
           {renderTierCard("diamond")}
         </View>
 
-        {/* Subscribe Button */}
+        {/* Action Button */}
         {!isSubscribed(TIERS[selectedTier].id) && (
           <TouchableOpacity
             style={[
@@ -447,7 +630,7 @@ export default function SubscriptionPage() {
               { backgroundColor: TIERS[selectedTier].color },
               purchasing && styles.buttonDisabled,
             ]}
-            onPress={handlePurchase}
+            onPress={activeSubscription ? handleUpgrade : handlePurchase}
             activeOpacity={0.8}
             disabled={purchasing}
           >
@@ -456,7 +639,11 @@ export default function SubscriptionPage() {
             ) : (
               <>
                 <Text style={styles.subscribeButtonText}>
-                  {activeSubscription ? "Change Plan" : "Subscribe"} to {TIERS[selectedTier].name}
+                  {activeSubscription
+                    ? getTierLevel(TIERS[selectedTier].id) > getCurrentTierLevel()
+                      ? `Upgrade to ${TIERS[selectedTier].name}`
+                      : `Change to ${TIERS[selectedTier].name}`
+                    : `Subscribe to ${TIERS[selectedTier].name}`}
                 </Text>
                 <Text style={styles.subscribePrice}>
                   {getPrice(TIERS[selectedTier].id)}/month
@@ -467,17 +654,13 @@ export default function SubscriptionPage() {
         )}
 
         {/* Restore Purchases */}
-        <TouchableOpacity
-          style={styles.restoreButton}
-          onPress={handleRestore}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.restoreButton} onPress={handleRestore}>
           <Text style={styles.restoreText}>Restore Purchases</Text>
         </TouchableOpacity>
 
         {/* Terms */}
         <Text style={styles.termsText}>
-          Subscriptions will automatically renew unless canceled within 24 hours before the end of the current period. You can manage your subscription in your App Store settings.
+          Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period. Manage subscriptions in your {Platform.OS === 'ios' ? 'App Store' : 'Play Store'} settings.
         </Text>
 
         {/* Links */}
@@ -538,6 +721,106 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
+  // Current Subscription Card
+  currentSubCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  currentSubHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  currentSubIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  currentSubInfo: {
+    flex: 1,
+  },
+  currentSubLabel: {
+    fontSize: 12,
+    color: "#8E8E93",
+    marginBottom: 2,
+  },
+  currentSubName: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  canceledBadge: {
+    backgroundColor: "#FF3B30",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  canceledBadgeText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  currentSubDetails: {
+    backgroundColor: "#F8F9FA",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    gap: 10,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: "#666",
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000",
+  },
+  currentSubActions: {
+    gap: 10,
+  },
+  manageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    gap: 8,
+  },
+  manageButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  cancelButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    gap: 8,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    color: "#FF3B30",
+    fontWeight: "500",
+  },
+  // Hero Section
   heroSection: {
     alignItems: "center",
     marginBottom: 24,
@@ -565,6 +848,21 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 20,
   },
+  // Change Plan Section
+  changePlanSection: {
+    marginBottom: 20,
+  },
+  changePlanTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#000",
+    marginBottom: 4,
+  },
+  changePlanSubtitle: {
+    fontSize: 14,
+    color: "#666",
+  },
+  // Debug
   debugContainer: {
     backgroundColor: "#FFF3CD",
     borderRadius: 12,
@@ -579,21 +877,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
   },
-  statusContainer: {
-    backgroundColor: "#F0F8FF",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-  },
-  statusText: {
-    fontSize: 15,
-    color: "#333333",
-    textAlign: "center",
-  },
-  statusPlan: {
-    fontWeight: "700",
-    color: "#007AFF",
-  },
+  // Tiers
   tiersContainer: {
     gap: 16,
     marginBottom: 24,
@@ -636,6 +920,23 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 12,
   },
   currentBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
+  },
+  upgradeBadge: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderBottomRightRadius: 12,
+    gap: 4,
+  },
+  upgradeBadgeText: {
     fontSize: 10,
     fontWeight: "700",
     color: "#FFFFFF",
@@ -708,6 +1009,7 @@ const styles = StyleSheet.create({
     color: "#856404",
     textAlign: "center",
   },
+  // Subscribe Button
   subscribeButton: {
     borderRadius: 14,
     paddingVertical: 18,
@@ -727,6 +1029,7 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.9)",
     marginTop: 2,
   },
+  // Restore
   restoreButton: {
     alignItems: "center",
     paddingVertical: 12,
@@ -737,6 +1040,7 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     fontWeight: "500",
   },
+  // Terms
   termsText: {
     fontSize: 12,
     color: "#8E8E93",
@@ -744,6 +1048,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 16,
   },
+  // Links
   linksContainer: {
     flexDirection: "row",
     justifyContent: "center",

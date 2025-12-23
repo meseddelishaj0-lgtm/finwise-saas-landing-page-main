@@ -10,12 +10,22 @@ import {
   ActivityIndicator,
   Platform,
   Dimensions,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
+
+// FMP API Configuration
+const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
+
+// OpenAI API - calls should go through backend API
+const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -148,9 +158,26 @@ const RESOURCE_CATEGORIES: ResourceCategory[] = [
 
 const QUICK_PICKS = ['AAPL', 'NVDA', 'TSLA', 'MSFT', 'GOOGL', 'AMZN'];
 
+// Diamond-only AI tabs
+const DIAMOND_TABS = ['analyzer', 'compare', 'forecast', 'assistant', 'insider'];
+
 export default function AITools() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'analyzer' | 'compare' | 'forecast' | 'assistant' | 'resources' | 'calculator'>('analyzer');
+  const { canAccess, isPremium, currentTier } = usePremiumFeature();
+  const [activeTab, setActiveTab] = useState<'analyzer' | 'compare' | 'forecast' | 'assistant' | 'resources' | 'calculator' | 'insider'>('analyzer');
+
+  // Check if user has Diamond access for AI tools
+  const hasDiamondAccess = canAccess(FEATURE_TIERS.AI_TOOLS);
+
+  // Handle tab press with premium check
+  const handleTabPress = (tabKey: string) => {
+    if (DIAMOND_TABS.includes(tabKey) && !hasDiamondAccess) {
+      // Allow switching to show locked state
+      setActiveTab(tabKey as any);
+    } else {
+      setActiveTab(tabKey as any);
+    }
+  };
 
   // Calculator state
   const [calcType, setCalcType] = useState<'investment' | 'mortgage' | 'loan' | 'bond' | 'retirement'>('investment');
@@ -220,7 +247,7 @@ export default function AITools() {
   const [userInput, setUserInput] = useState('');
   const [assistantLoading, setAssistantLoading] = useState(false);
 
-  // Enhanced Stock Analyzer Function with AI
+  // Enhanced Stock Analyzer Function with AI - Using FMP + OpenAI
   const handleAnalyze = async (ticker?: string) => {
     const symbol = (ticker || analyzerTicker).toUpperCase().trim();
     if (!symbol) return;
@@ -231,20 +258,128 @@ export default function AITools() {
     setAnalyzerTicker(symbol);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol }),
-      });
+      // Fetch comprehensive stock data from FMP
+      const [quoteRes, dcfRes, ratiosRes, growthRes] = await Promise.all([
+        fetch(`${FMP_BASE_URL}/quote/${symbol}?apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/discounted-cash-flow/${symbol}?apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/ratios/${symbol}?limit=1&apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/financial-growth/${symbol}?limit=1&apikey=${FMP_API_KEY}`),
+      ]);
 
-      const data = await response.json();
+      const [quoteData, dcfData, ratiosData, growthData] = await Promise.all([
+        quoteRes.json(),
+        dcfRes.json(),
+        ratiosRes.json(),
+        growthRes.json(),
+      ]);
 
-      if (!response.ok) {
-        setAnalyzerError(data.error || `No data found for ${symbol}`);
+      if (!quoteData || quoteData.length === 0) {
+        setAnalyzerError(`No data found for ${symbol}`);
         return;
       }
 
-      setAnalysisResult(data);
+      const quote = quoteData[0];
+      const dcf = dcfData[0] || {};
+      const ratios = ratiosData[0] || {};
+      const growth = growthData[0] || {};
+
+      // Calculate DCF valuation
+      const dcfValue = dcf.dcf || null;
+      const dcfDiff = dcfValue ? dcfValue - quote.price : null;
+      const dcfDiffPercent = dcfValue ? ((dcfValue - quote.price) / quote.price) * 100 : null;
+      const isUndervalued = dcfDiffPercent ? dcfDiffPercent > 10 : false;
+
+      // Use OpenAI for AI analysis
+      const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a stock analyst. Provide a JSON response only, no markdown or explanation.'
+            },
+            {
+              role: 'user',
+              content: `Analyze ${symbol} (${quote.name}) stock. Data:
+- Price: $${quote.price}, Change: ${quote.changesPercentage}%
+- Market Cap: $${quote.marketCap}, P/E: ${quote.pe || 'N/A'}, EPS: ${quote.eps || 'N/A'}
+- 52W High: $${quote.yearHigh}, 52W Low: $${quote.yearLow}
+- DCF Value: $${dcfValue || 'N/A'}, ${isUndervalued ? 'Undervalued' : 'At/Above fair value'}
+- ROE: ${ratios.returnOnEquity ? (ratios.returnOnEquity * 100).toFixed(1) + '%' : 'N/A'}
+- Debt/Equity: ${ratios.debtEquityRatio?.toFixed(2) || 'N/A'}
+- Revenue Growth: ${growth.revenueGrowth ? (growth.revenueGrowth * 100).toFixed(1) + '%' : 'N/A'}
+
+Return ONLY a JSON object:
+{
+  "aiSummary": "2-3 sentence analysis summary",
+  "strengths": ["3 key strengths"],
+  "risks": ["3 key risks"],
+  "sentiment": "bullish" or "bearish" or "neutral",
+  "confidence": number 1-100,
+  "recommendation": "Strong Buy" or "Buy" or "Hold" or "Sell",
+  "priceTarget": {"low": number, "mid": number, "high": number}
+}`
+            }
+          ],
+          max_tokens: 600,
+          temperature: 0.3,
+        }),
+      });
+
+      const aiData = await aiResponse.json();
+      let aiAnalysis;
+
+      try {
+        const content = aiData.choices[0]?.message?.content || '{}';
+        aiAnalysis = JSON.parse(content.replace(/```json\n?|\n?```/g, ''));
+      } catch {
+        aiAnalysis = {
+          aiSummary: `${quote.name} is currently trading at $${quote.price}. ${isUndervalued ? 'The stock appears undervalued based on DCF analysis.' : 'Conduct further research before investing.'}`,
+          strengths: ['Market presence', 'Trading volume', 'Industry position'],
+          risks: ['Market volatility', 'Economic conditions', 'Competition'],
+          sentiment: 'neutral',
+          confidence: 60,
+          recommendation: 'Hold',
+          priceTarget: { low: quote.price * 0.9, mid: quote.price * 1.1, high: quote.price * 1.25 }
+        };
+      }
+
+      setAnalysisResult({
+        symbol,
+        name: quote.name,
+        price: quote.price,
+        change: quote.change,
+        changePercent: quote.changesPercentage,
+        marketCap: quote.marketCap,
+        pe: quote.pe,
+        eps: quote.eps,
+        yearHigh: quote.yearHigh,
+        yearLow: quote.yearLow,
+        volume: quote.volume,
+        avgVolume: quote.avgVolume,
+        dcfValue,
+        dcfDiff,
+        dcfDiffPercent,
+        isUndervalued,
+        roe: ratios.returnOnEquity ? ratios.returnOnEquity * 100 : null,
+        roa: ratios.returnOnAssets ? ratios.returnOnAssets * 100 : null,
+        debtToEquity: ratios.debtEquityRatio,
+        currentRatio: ratios.currentRatio,
+        revenueGrowth: growth.revenueGrowth ? growth.revenueGrowth * 100 : null,
+        netIncomeGrowth: growth.netIncomeGrowth ? growth.netIncomeGrowth * 100 : null,
+        aiSummary: aiAnalysis.aiSummary,
+        strengths: aiAnalysis.strengths,
+        risks: aiAnalysis.risks,
+        sentiment: aiAnalysis.sentiment,
+        confidence: aiAnalysis.confidence,
+        recommendation: aiAnalysis.recommendation,
+        priceTarget: aiAnalysis.priceTarget,
+      });
     } catch (err) {
       console.error('Analyzer error:', err);
       setAnalyzerError('Analysis failed. Please try again.');
@@ -277,14 +412,14 @@ export default function AITools() {
         ratios1Res, ratios2Res,
         growth1Res, growth2Res
       ] = await Promise.all([
-        fetch(`${BASE_URL}/quote/${ticker1}?apikey=${FMP_API_KEY}`),
-        fetch(`${BASE_URL}/quote/${ticker2}?apikey=${FMP_API_KEY}`),
-        fetch(`${BASE_URL}/discounted-cash-flow/${ticker1}?apikey=${FMP_API_KEY}`),
-        fetch(`${BASE_URL}/discounted-cash-flow/${ticker2}?apikey=${FMP_API_KEY}`),
-        fetch(`${BASE_URL}/ratios/${ticker1}?limit=1&apikey=${FMP_API_KEY}`),
-        fetch(`${BASE_URL}/ratios/${ticker2}?limit=1&apikey=${FMP_API_KEY}`),
-        fetch(`${BASE_URL}/financial-growth/${ticker1}?limit=1&apikey=${FMP_API_KEY}`),
-        fetch(`${BASE_URL}/financial-growth/${ticker2}?limit=1&apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/quote/${ticker1}?apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/quote/${ticker2}?apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/discounted-cash-flow/${ticker1}?apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/discounted-cash-flow/${ticker2}?apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/ratios/${ticker1}?limit=1&apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/ratios/${ticker2}?limit=1&apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/financial-growth/${ticker1}?limit=1&apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/financial-growth/${ticker2}?limit=1&apikey=${FMP_API_KEY}`),
       ]);
 
       const [
@@ -418,20 +553,115 @@ Return JSON only:
     setForecastTicker(symbol);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/ai/forecast`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol, timeframe: '3 months' }),
-      });
+      // Fetch stock data from FMP
+      const [quoteRes, historyRes, ratiosRes] = await Promise.all([
+        fetch(`${FMP_BASE_URL}/quote/${symbol}?apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/historical-price-full/${symbol}?timeseries=90&apikey=${FMP_API_KEY}`),
+        fetch(`${FMP_BASE_URL}/ratios/${symbol}?limit=1&apikey=${FMP_API_KEY}`),
+      ]);
 
-      const data = await response.json();
+      const [quoteData, historyData, ratiosData] = await Promise.all([
+        quoteRes.json(),
+        historyRes.json(),
+        ratiosRes.json(),
+      ]);
 
-      if (!response.ok) {
-        setForecastError(data.error || `No data found for ${symbol}`);
+      if (!quoteData || quoteData.length === 0) {
+        setForecastError(`No data found for ${symbol}`);
         return;
       }
 
-      setForecastResult(data);
+      const quote = quoteData[0];
+      const history = historyData.historical || [];
+      const ratios = ratiosData[0] || {};
+
+      // Calculate technical indicators
+      const prices = history.slice(0, 30).map((h: any) => h.close).reverse();
+      const avgPrice = prices.reduce((a: number, b: number) => a + b, 0) / prices.length;
+      const volatility = Math.sqrt(prices.reduce((sum: number, p: number) => sum + Math.pow(p - avgPrice, 2), 0) / prices.length) / avgPrice * 100;
+      const momentum = ((quote.price - prices[0]) / prices[0]) * 100;
+      const high52w = quote.yearHigh || Math.max(...prices);
+      const low52w = quote.yearLow || Math.min(...prices);
+
+      // Use OpenAI for forecast analysis
+      const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a stock analyst. Provide a JSON response only, no markdown or explanation.'
+            },
+            {
+              role: 'user',
+              content: `Analyze ${symbol} stock for a 3-month forecast. Current price: $${quote.price}, Change: ${quote.changesPercentage}%, 52W High: $${high52w}, 52W Low: $${low52w}, P/E: ${quote.pe || 'N/A'}, Volatility: ${volatility.toFixed(1)}%, Momentum: ${momentum.toFixed(1)}%.
+
+Return ONLY a JSON object with this exact structure:
+{
+  "sentiment": "bullish" or "bearish" or "neutral",
+  "confidence": number 1-100,
+  "recommendation": "Strong Buy" or "Buy" or "Hold" or "Sell",
+  "priceTargets": {"conservative": number, "base": number, "bullish": number},
+  "probabilities": {"upside": number 0-100, "downside": number 0-100},
+  "catalysts": ["string array of 3 potential catalysts"],
+  "risks": ["string array of 3 key risks"],
+  "technicalSignals": {"trend": "uptrend" or "downtrend" or "sideways", "support": number, "resistance": number},
+  "summary": "2-3 sentence forecast summary"
+}`
+            }
+          ],
+          max_tokens: 800,
+          temperature: 0.3,
+        }),
+      });
+
+      const aiData = await aiResponse.json();
+      let aiAnalysis;
+
+      try {
+        const content = aiData.choices[0]?.message?.content || '{}';
+        aiAnalysis = JSON.parse(content.replace(/```json\n?|\n?```/g, ''));
+      } catch {
+        aiAnalysis = {
+          sentiment: momentum > 0 ? 'bullish' : momentum < -5 ? 'bearish' : 'neutral',
+          confidence: 65,
+          recommendation: 'Hold',
+          priceTargets: { conservative: quote.price * 0.95, base: quote.price * 1.05, bullish: quote.price * 1.15 },
+          probabilities: { upside: 55, downside: 45 },
+          catalysts: ['Earnings report', 'Market conditions', 'Sector trends'],
+          risks: ['Market volatility', 'Economic factors', 'Competition'],
+          technicalSignals: { trend: 'sideways', support: low52w, resistance: high52w },
+          summary: `${symbol} shows mixed signals. Monitor closely for breakout opportunities.`
+        };
+      }
+
+      setForecastResult({
+        symbol,
+        name: quote.name || symbol,
+        currentPrice: quote.price || 0,
+        change: quote.change || 0,
+        changePercent: quote.changesPercentage || 0,
+        yearHigh: high52w,
+        yearLow: low52w,
+        momentum: momentum || 0,
+        volatility: volatility || 0,
+        avgVolume: quote.avgVolume || 0,
+        priceTargets: aiAnalysis.priceTargets || { conservative: quote.price * 0.9, base: quote.price, bullish: quote.price * 1.1 },
+        probabilities: aiAnalysis.probabilities || { upside: 50, downside: 50 },
+        timeframe: '3 months',
+        sentiment: aiAnalysis.sentiment || 'neutral',
+        confidence: aiAnalysis.confidence || 50,
+        recommendation: aiAnalysis.recommendation || 'Hold',
+        catalysts: aiAnalysis.catalysts || [],
+        risks: aiAnalysis.risks || [],
+        technicalSignals: aiAnalysis.technicalSignals || { trend: 'sideways', support: low52w, resistance: high52w },
+        summary: aiAnalysis.summary || `Analysis for ${symbol}`,
+      });
     } catch (err) {
       console.error('Forecast error:', err);
       setForecastError('Forecast failed. Please try again.');
@@ -440,7 +670,7 @@ Return JSON only:
     }
   };
 
-  // AI Assistant Handler
+  // AI Assistant Handler - Using OpenAI API
   const handleAssistantMessage = async () => {
     const input = userInput.trim();
     if (!input || assistantLoading) return;
@@ -452,22 +682,51 @@ Return JSON only:
     setAssistantLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/ai/chat`, {
+      // Build conversation history for OpenAI
+      const conversationHistory = [
+        {
+          role: 'system',
+          content: `You are an expert AI Trading Assistant for WallStreetStocks app. You help users with:
+- Stock market analysis and research
+- Trading strategies and techniques
+- Portfolio management and diversification
+- Understanding financial metrics (P/E, EPS, market cap, etc.)
+- Market trends and news interpretation
+- Risk management and investment education
+
+Be concise, helpful, and accurate. When discussing specific stocks, mention that users should do their own research.
+Format responses clearly with bullet points or numbered lists when appropriate.
+Always remind users that this is educational information, not financial advice.`
+        },
+        ...messages.slice(-10).map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        { role: 'user', content: input }
+      ];
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
         body: JSON.stringify({
-          message: input,
-          history: messages.slice(-10), // Send recent history for context
+          model: 'gpt-4o-mini',
+          messages: conversationHistory,
+          max_tokens: 1000,
+          temperature: 0.7,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to get response');
+        throw new Error(data.error?.message || 'Failed to get response');
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      const assistantReply = data.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+      setMessages(prev => [...prev, { role: 'assistant', content: assistantReply }]);
     } catch (err) {
       console.error('Assistant error:', err);
       setMessages(prev => [...prev, {
@@ -529,28 +788,78 @@ Return JSON only:
         <View style={styles.tabContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {[
-              { key: 'analyzer', icon: 'analytics', label: 'Analyzer' },
-              { key: 'compare', icon: 'git-compare', label: 'Compare' },
-              { key: 'forecast', icon: 'trending-up', label: 'Forecast' },
-              { key: 'calculator', icon: 'calculator', label: 'Calculator' },
-              { key: 'assistant', icon: 'chatbubbles', label: 'Assistant' },
-              { key: 'resources', icon: 'library', label: 'Resources' },
-            ].map((tab) => (
-              <TouchableOpacity
-                key={tab.key}
-                style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-                onPress={() => setActiveTab(tab.key as any)}
-              >
-                <Ionicons name={tab.icon as any} size={16} color={activeTab === tab.key ? '#007AFF' : '#8E8E93'} />
-                <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>{tab.label}</Text>
-              </TouchableOpacity>
-            ))}
+              { key: 'analyzer', icon: 'analytics', label: 'Analyzer', isDiamond: true },
+              { key: 'compare', icon: 'git-compare', label: 'Compare', isDiamond: true },
+              { key: 'forecast', icon: 'trending-up', label: 'Forecast', isDiamond: true },
+              { key: 'insider', icon: 'briefcase', label: 'Insider', isDiamond: true },
+              { key: 'calculator', icon: 'calculator', label: 'Calculator', isDiamond: false },
+              { key: 'assistant', icon: 'chatbubbles', label: 'Assistant', isDiamond: true },
+              { key: 'resources', icon: 'library', label: 'Resources', isDiamond: false },
+            ].map((tab) => {
+              const isLocked = tab.isDiamond && !hasDiamondAccess;
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+                  onPress={() => handleTabPress(tab.key)}
+                >
+                  <View style={styles.tabContent}>
+                    <Ionicons name={tab.icon as any} size={16} color={activeTab === tab.key ? '#007AFF' : '#8E8E93'} />
+                    <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>{tab.label}</Text>
+                    {tab.isDiamond && (
+                      <View style={[styles.diamondBadge, isLocked && styles.diamondBadgeLocked]}>
+                        <Ionicons name={isLocked ? "lock-closed" : "diamond"} size={8} color={isLocked ? "#B9F2FF" : "#B9F2FF"} />
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 
-        {/* Stock Analyzer Tab - NEW DESIGN */}
+        {/* Stock Analyzer Tab - NEW DESIGN (Diamond Only) */}
         {activeTab === 'analyzer' && (
           <View style={styles.analyzerContainer}>
+            {!hasDiamondAccess ? (
+              // Locked State for non-Diamond users
+              <View style={styles.premiumLockedContainer}>
+                <LinearGradient
+                  colors={['#1a1a2e', '#16213e']}
+                  style={styles.premiumLockedGradient}
+                >
+                  <View style={styles.premiumLockedIcon}>
+                    <Ionicons name="diamond" size={48} color="#B9F2FF" />
+                  </View>
+                  <Text style={styles.premiumLockedTitle}>AI Stock Analyzer</Text>
+                  <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
+                  <Text style={styles.premiumLockedDescription}>
+                    Get DCF valuations, AI-powered analysis, strengths & risks assessment,
+                    and professional recommendations for any stock.
+                  </Text>
+
+                  <View style={styles.premiumFeaturesList}>
+                    {['DCF Valuation Analysis', 'AI-Powered Insights', 'Buy/Sell Recommendations', 'Risk Assessment'].map((feature, idx) => (
+                      <View key={idx} style={styles.premiumFeatureItem}>
+                        <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
+                        <Text style={styles.premiumFeatureText}>{feature}</Text>
+                      </View>
+                    ))}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.premiumUpgradeButton}
+                    onPress={() => router.push('/(modals)/paywall' as any)}
+                  >
+                    <Ionicons name="diamond" size={20} color="#000" />
+                    <Text style={styles.premiumUpgradeText}>Upgrade to Diamond</Text>
+                  </TouchableOpacity>
+
+                  <Text style={styles.premiumPriceHint}>Unlock all AI tools</Text>
+                </LinearGradient>
+              </View>
+            ) : (
+            <>
             {/* Search Card */}
             <View style={styles.searchCard}>
               <Text style={styles.searchTitle}>Stock Analyzer</Text>
@@ -845,12 +1154,43 @@ Return JSON only:
                 </View>
               </>
             )}
+            </>
+            )}
           </View>
         )}
 
-        {/* Stock Comparison Tab */}
+        {/* Stock Comparison Tab (Diamond Only) */}
         {activeTab === 'compare' && (
           <View style={styles.compareContainer}>
+            {!hasDiamondAccess ? (
+              <View style={styles.premiumLockedContainer}>
+                <LinearGradient colors={['#1a1a2e', '#16213e']} style={styles.premiumLockedGradient}>
+                  <View style={styles.premiumLockedIcon}>
+                    <Ionicons name="git-compare" size={48} color="#B9F2FF" />
+                  </View>
+                  <Text style={styles.premiumLockedTitle}>Stock Comparison</Text>
+                  <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
+                  <Text style={styles.premiumLockedDescription}>
+                    Compare two stocks side-by-side with DCF valuations,
+                    financial metrics, and AI-powered winner analysis.
+                  </Text>
+                  <View style={styles.premiumFeaturesList}>
+                    {['Side-by-side Analysis', 'DCF Value Comparison', 'AI Winner Selection', 'Key Metrics Grid'].map((feature, idx) => (
+                      <View key={idx} style={styles.premiumFeatureItem}>
+                        <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
+                        <Text style={styles.premiumFeatureText}>{feature}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
+                    <Ionicons name="diamond" size={20} color="#000" />
+                    <Text style={styles.premiumUpgradeText}>Upgrade to Diamond</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.premiumPriceHint}>Unlock all AI tools</Text>
+                </LinearGradient>
+              </View>
+            ) : (
+            <>
             {/* Search Card */}
             <View style={styles.searchCard}>
               <Text style={styles.searchTitle}>Stock Comparison</Text>
@@ -1132,12 +1472,43 @@ Return JSON only:
                 </View>
               </>
             )}
+            </>
+            )}
           </View>
         )}
 
-        {/* AI Forecast Tab */}
+        {/* AI Forecast Tab (Diamond Only) */}
         {activeTab === 'forecast' && (
           <View style={styles.forecastContainer}>
+            {!hasDiamondAccess ? (
+              <View style={styles.premiumLockedContainer}>
+                <LinearGradient colors={['#1a1a2e', '#16213e']} style={styles.premiumLockedGradient}>
+                  <View style={styles.premiumLockedIcon}>
+                    <Ionicons name="trending-up" size={48} color="#B9F2FF" />
+                  </View>
+                  <Text style={styles.premiumLockedTitle}>AI Price Forecast</Text>
+                  <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
+                  <Text style={styles.premiumLockedDescription}>
+                    Get AI-powered 3-6 month price targets, probability analysis,
+                    technical signals, and actionable catalysts.
+                  </Text>
+                  <View style={styles.premiumFeaturesList}>
+                    {['Price Target Forecasts', 'Probability Analysis', 'Technical Signals', 'Risk & Catalyst Alerts'].map((feature, idx) => (
+                      <View key={idx} style={styles.premiumFeatureItem}>
+                        <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
+                        <Text style={styles.premiumFeatureText}>{feature}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
+                    <Ionicons name="diamond" size={20} color="#000" />
+                    <Text style={styles.premiumUpgradeText}>Upgrade to Diamond</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.premiumPriceHint}>Unlock all AI tools</Text>
+                </LinearGradient>
+              </View>
+            ) : (
+            <>
             {/* Search Card */}
             <View style={styles.searchCard}>
               <Text style={styles.searchTitle}>AI Price Forecast</Text>
@@ -1449,102 +1820,143 @@ Return JSON only:
                 </View>
               </>
             )}
+            </>
+            )}
           </View>
         )}
 
-        {/* AI Assistant Tab */}
+        {/* AI Assistant Tab (Diamond Only) */}
         {activeTab === 'assistant' && (
-          <View style={styles.chatPageContainer}>
-            {/* Chat Header Card */}
-            <View style={styles.chatHeaderCard}>
-              <View style={styles.chatHeaderTop}>
-                <View style={styles.chatHeaderIconBg}>
-                  <Ionicons name="sparkles" size={28} color="#34C759" />
+          !hasDiamondAccess ? (
+            <View style={styles.premiumLockedContainer}>
+              <LinearGradient colors={['#1a1a2e', '#16213e']} style={styles.premiumLockedGradient}>
+                <View style={styles.premiumLockedIcon}>
+                  <Ionicons name="chatbubbles" size={48} color="#B9F2FF" />
                 </View>
-                <View style={styles.chatHeaderTextContainer}>
-                  <Text style={styles.chatHeaderTitle}>AI Trading Assistant</Text>
-                  <Text style={styles.chatHeaderSubtitle}>Ask anything about stocks, trading & investing</Text>
-                </View>
-              </View>
-              <View style={styles.chatCapabilities}>
-                <View style={styles.capabilityChip}>
-                  <Ionicons name="analytics" size={14} color="#007AFF" />
-                  <Text style={styles.capabilityText}>Market Analysis</Text>
-                </View>
-                <View style={styles.capabilityChip}>
-                  <Ionicons name="school" size={14} color="#5856D6" />
-                  <Text style={styles.capabilityText}>Education</Text>
-                </View>
-                <View style={styles.capabilityChip}>
-                  <Ionicons name="pie-chart" size={14} color="#FF9500" />
-                  <Text style={styles.capabilityText}>Portfolio Tips</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Suggested Questions - Only show when few messages */}
-            {messages.length <= 2 && (
-              <View style={styles.suggestedContainer}>
-                <Text style={styles.suggestedTitle}>Suggested Questions</Text>
-                <View style={styles.suggestedGrid}>
-                  {SUGGESTED_QUESTIONS.map((q, idx) => (
-                    <TouchableOpacity
-                      key={idx}
-                      style={styles.suggestedCard}
-                      onPress={() => {
-                        setUserInput(q.text);
-                      }}
-                    >
-                      <View style={[styles.suggestedIconBg, { backgroundColor: `${q.color}15` }]}>
-                        <Ionicons name={q.icon as any} size={20} color={q.color} />
-                      </View>
-                      <Text style={styles.suggestedText} numberOfLines={2}>{q.text}</Text>
-                    </TouchableOpacity>
+                <Text style={styles.premiumLockedTitle}>AI Financial Assistant</Text>
+                <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
+                <Text style={styles.premiumLockedDescription}>
+                  Chat with our AI assistant for personalized investment insights,
+                  portfolio advice, and market analysis.
+                </Text>
+                <View style={styles.premiumFeaturesList}>
+                  {['24/7 AI Chat Support', 'Investment Q&A', 'Market Insights', 'Portfolio Advice'].map((feature, idx) => (
+                    <View key={idx} style={styles.premiumFeatureItem}>
+                      <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
+                      <Text style={styles.premiumFeatureText}>{feature}</Text>
+                    </View>
                   ))}
                 </View>
+                <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
+                  <Ionicons name="diamond" size={20} color="#000" />
+                  <Text style={styles.premiumUpgradeText}>Upgrade to Diamond</Text>
+                </TouchableOpacity>
+                <Text style={styles.premiumPriceHint}>Unlock all AI tools</Text>
+              </LinearGradient>
+            </View>
+          ) : (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.chatPageContainer}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 0}
+          >
+            <ScrollView
+              style={styles.chatScrollView}
+              contentContainerStyle={styles.chatScrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Chat Header Card */}
+              <View style={styles.chatHeaderCard}>
+                <View style={styles.chatHeaderTop}>
+                  <View style={styles.chatHeaderIconBg}>
+                    <Ionicons name="sparkles" size={28} color="#34C759" />
+                  </View>
+                  <View style={styles.chatHeaderTextContainer}>
+                    <Text style={styles.chatHeaderTitle}>AI Trading Assistant</Text>
+                    <Text style={styles.chatHeaderSubtitle}>Ask anything about stocks, trading & investing</Text>
+                  </View>
+                </View>
+                <View style={styles.chatCapabilities}>
+                  <View style={styles.capabilityChip}>
+                    <Ionicons name="analytics" size={14} color="#007AFF" />
+                    <Text style={styles.capabilityText}>Market Analysis</Text>
+                  </View>
+                  <View style={styles.capabilityChip}>
+                    <Ionicons name="school" size={14} color="#5856D6" />
+                    <Text style={styles.capabilityText}>Education</Text>
+                  </View>
+                  <View style={styles.capabilityChip}>
+                    <Ionicons name="pie-chart" size={14} color="#FF9500" />
+                    <Text style={styles.capabilityText}>Portfolio Tips</Text>
+                  </View>
+                </View>
               </View>
-            )}
 
-            {/* Chat Messages */}
-            <View style={styles.messagesContainer}>
-              {messages.map((message, index) => (
-                <View key={index} style={[styles.messageBubble, message.role === 'user' ? styles.userBubble : styles.aiBubble]}>
-                  {message.role === 'assistant' && (
+              {/* Suggested Questions - Only show when few messages */}
+              {messages.length <= 2 && (
+                <View style={styles.suggestedContainer}>
+                  <Text style={styles.suggestedTitle}>Suggested Questions</Text>
+                  <View style={styles.suggestedGrid}>
+                    {SUGGESTED_QUESTIONS.map((q, idx) => (
+                      <TouchableOpacity
+                        key={idx}
+                        style={styles.suggestedCard}
+                        onPress={() => {
+                          setUserInput(q.text);
+                        }}
+                      >
+                        <View style={[styles.suggestedIconBg, { backgroundColor: `${q.color}15` }]}>
+                          <Ionicons name={q.icon as any} size={20} color={q.color} />
+                        </View>
+                        <Text style={styles.suggestedText} numberOfLines={2}>{q.text}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Chat Messages */}
+              <View style={styles.messagesContainer}>
+                {messages.map((message, index) => (
+                  <View key={index} style={[styles.messageBubble, message.role === 'user' ? styles.userBubble : styles.aiBubble]}>
+                    {message.role === 'assistant' && (
+                      <View style={styles.aiAvatarContainer}>
+                        <View style={styles.aiAvatar}>
+                          <Ionicons name="sparkles" size={16} color="#FFF" />
+                        </View>
+                      </View>
+                    )}
+                    <View style={[styles.messageBubbleContent, message.role === 'user' ? styles.userBubbleContent : styles.aiBubbleContent]}>
+                      <Text style={[styles.messageBubbleText, message.role === 'user' && styles.userBubbleText]}>{message.content}</Text>
+                    </View>
+                    {message.role === 'user' && (
+                      <View style={styles.userAvatarContainer}>
+                        <View style={styles.userAvatar}>
+                          <Ionicons name="person" size={16} color="#FFF" />
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                ))}
+                {assistantLoading && (
+                  <View style={[styles.messageBubble, styles.aiBubble]}>
                     <View style={styles.aiAvatarContainer}>
                       <View style={styles.aiAvatar}>
                         <Ionicons name="sparkles" size={16} color="#FFF" />
                       </View>
                     </View>
-                  )}
-                  <View style={[styles.messageBubbleContent, message.role === 'user' ? styles.userBubbleContent : styles.aiBubbleContent]}>
-                    <Text style={[styles.messageBubbleText, message.role === 'user' && styles.userBubbleText]}>{message.content}</Text>
-                  </View>
-                  {message.role === 'user' && (
-                    <View style={styles.userAvatarContainer}>
-                      <View style={styles.userAvatar}>
-                        <Ionicons name="person" size={16} color="#FFF" />
+                    <View style={[styles.messageBubbleContent, styles.aiBubbleContent]}>
+                      <View style={styles.typingIndicator}>
+                        <View style={[styles.typingDot, styles.typingDot1]} />
+                        <View style={[styles.typingDot, styles.typingDot2]} />
+                        <View style={[styles.typingDot, styles.typingDot3]} />
                       </View>
                     </View>
-                  )}
-                </View>
-              ))}
-              {assistantLoading && (
-                <View style={[styles.messageBubble, styles.aiBubble]}>
-                  <View style={styles.aiAvatarContainer}>
-                    <View style={styles.aiAvatar}>
-                      <Ionicons name="sparkles" size={16} color="#FFF" />
-                    </View>
                   </View>
-                  <View style={[styles.messageBubbleContent, styles.aiBubbleContent]}>
-                    <View style={styles.typingIndicator}>
-                      <View style={[styles.typingDot, styles.typingDot1]} />
-                      <View style={[styles.typingDot, styles.typingDot2]} />
-                      <View style={[styles.typingDot, styles.typingDot3]} />
-                    </View>
-                  </View>
-                </View>
-              )}
-            </View>
+                )}
+              </View>
+            </ScrollView>
 
             {/* Input Area */}
             <View style={styles.chatInputArea}>
@@ -1572,7 +1984,8 @@ Return JSON only:
               </View>
               <Text style={styles.chatDisclaimer}>AI responses are for educational purposes only. Not financial advice.</Text>
             </View>
-          </View>
+          </KeyboardAvoidingView>
+          )
         )}
 
         {/* Resources Tab */}
@@ -1597,6 +2010,125 @@ Return JSON only:
                 </TouchableOpacity>
               ))}
             </View>
+          </View>
+        )}
+
+        {/* Insider Trading Tab (Diamond Only) */}
+        {activeTab === 'insider' && (
+          <View style={styles.insiderContainer}>
+            {!hasDiamondAccess ? (
+              <View style={styles.premiumLockedContainer}>
+                <LinearGradient colors={['#1a1a2e', '#16213e']} style={styles.premiumLockedGradient}>
+                  <View style={styles.premiumLockedIcon}>
+                    <Ionicons name="briefcase" size={48} color="#B9F2FF" />
+                  </View>
+                  <Text style={styles.premiumLockedTitle}>Insider Trading Data</Text>
+                  <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
+                  <Text style={styles.premiumLockedDescription}>
+                    Track SEC Form 4 filings and see what executives,
+                    directors, and insiders are buying and selling.
+                  </Text>
+                  <View style={styles.premiumFeaturesList}>
+                    {['Real-Time SEC Filings', 'Buy/Sell Activity Tracking', 'Executive Trade Details', 'Symbol Search'].map((feature, idx) => (
+                      <View key={idx} style={styles.premiumFeatureItem}>
+                        <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
+                        <Text style={styles.premiumFeatureText}>{feature}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
+                    <Ionicons name="diamond" size={20} color="#000" />
+                    <Text style={styles.premiumUpgradeText}>Upgrade to Diamond</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.premiumPriceHint}>Unlock all AI tools</Text>
+                </LinearGradient>
+              </View>
+            ) : (
+            <>
+            {/* Header */}
+            <View style={styles.insiderHeader}>
+              <View style={styles.insiderHeaderIcon}>
+                <Ionicons name="briefcase" size={28} color="#5856D6" />
+              </View>
+              <View style={styles.insiderHeaderText}>
+                <Text style={styles.insiderHeaderTitle}>Insider Trading</Text>
+                <Text style={styles.insiderHeaderSubtitle}>Track what executives are buying & selling</Text>
+              </View>
+            </View>
+
+            {/* Info Card */}
+            <View style={styles.insiderInfoCard}>
+              <View style={styles.insiderInfoRow}>
+                <View style={styles.insiderInfoItem}>
+                  <Ionicons name="eye" size={20} color="#007AFF" />
+                  <Text style={styles.insiderInfoLabel}>Real-Time Data</Text>
+                </View>
+                <View style={styles.insiderInfoItem}>
+                  <Ionicons name="document-text" size={20} color="#34C759" />
+                  <Text style={styles.insiderInfoLabel}>SEC Filings</Text>
+                </View>
+                <View style={styles.insiderInfoItem}>
+                  <Ionicons name="search" size={20} color="#FF9500" />
+                  <Text style={styles.insiderInfoLabel}>Symbol Search</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Feature List */}
+            <View style={styles.insiderFeatures}>
+              <Text style={styles.insiderFeaturesTitle}>What you can do:</Text>
+              {[
+                { icon: 'search', text: 'Search insider trades by stock symbol', color: '#007AFF' },
+                { icon: 'trending-up', text: 'Filter by buys or sells', color: '#34C759' },
+                { icon: 'person', text: 'See who is trading (executives, directors)', color: '#FF9500' },
+                { icon: 'cash', text: 'View trade values and share counts', color: '#5856D6' },
+                { icon: 'time', text: 'Track recent SEC Form 4 filings', color: '#FF3B30' },
+              ].map((feature, idx) => (
+                <View key={idx} style={styles.insiderFeatureItem}>
+                  <View style={[styles.insiderFeatureIcon, { backgroundColor: `${feature.color}15` }]}>
+                    <Ionicons name={feature.icon as any} size={16} color={feature.color} />
+                  </View>
+                  <Text style={styles.insiderFeatureText}>{feature.text}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* CTA Button */}
+            <TouchableOpacity
+              style={styles.insiderCTAButton}
+              onPress={() => router.push('/insider-trading')}
+            >
+              <Text style={styles.insiderCTAText}>Open Insider Trading</Text>
+              <Ionicons name="arrow-forward" size={20} color="#FFF" />
+            </TouchableOpacity>
+
+            {/* Quick Access Popular Stocks */}
+            <View style={styles.insiderQuickAccess}>
+              <Text style={styles.insiderQuickTitle}>Quick Access</Text>
+              <Text style={styles.insiderQuickSubtitle}>Check insider activity for popular stocks</Text>
+              <View style={styles.insiderQuickGrid}>
+                {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN'].map((symbol) => (
+                  <TouchableOpacity
+                    key={symbol}
+                    style={styles.insiderQuickChip}
+                    onPress={() => router.push('/insider-trading')}
+                  >
+                    <Text style={styles.insiderQuickChipText}>{symbol}</Text>
+                    <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Disclaimer */}
+            <View style={styles.insiderDisclaimer}>
+              <Ionicons name="information-circle" size={16} color="#8E8E93" />
+              <Text style={styles.insiderDisclaimerText}>
+                Insider trading data is sourced from SEC Form 4 filings. This is for informational purposes only.
+              </Text>
+            </View>
+            </>
+            )}
           </View>
         )}
 
@@ -2151,8 +2683,73 @@ const styles = StyleSheet.create({
   tabContainer: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
   tab: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, marginRight: 8 },
   tabActive: { backgroundColor: '#007AFF15' },
+  tabContent: { flexDirection: 'row', alignItems: 'center', position: 'relative' },
   tabText: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginLeft: 6 },
   tabTextActive: { color: '#007AFF' },
+  diamondBadge: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#B9F2FF30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4
+  },
+  diamondBadgeLocked: { backgroundColor: '#B9F2FF20' },
+
+  // Premium Locked State
+  premiumLockedContainer: { margin: 16, borderRadius: 24, overflow: 'hidden' },
+  premiumLockedGradient: { padding: 32, alignItems: 'center' },
+  premiumLockedIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(185, 242, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20
+  },
+  premiumLockedTitle: { fontSize: 26, fontWeight: '800', color: '#FFF', marginBottom: 8, textAlign: 'center' },
+  premiumLockedSubtitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#B9F2FF',
+    backgroundColor: 'rgba(185, 242, 255, 0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 16
+  },
+  premiumLockedDescription: {
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+    paddingHorizontal: 10
+  },
+  premiumFeaturesList: { width: '100%', marginBottom: 28 },
+  premiumFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 8,
+    gap: 12
+  },
+  premiumFeatureText: { fontSize: 15, fontWeight: '600', color: '#FFF' },
+  premiumUpgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#B9F2FF',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 10
+  },
+  premiumUpgradeText: { fontSize: 17, fontWeight: '800', color: '#000' },
+  premiumPriceHint: { fontSize: 13, color: 'rgba(255, 255, 255, 0.6)', marginTop: 12, fontWeight: '500' },
 
   // Analyzer
   analyzerContainer: { paddingHorizontal: 16, paddingTop: 16 },
@@ -2383,7 +2980,9 @@ const styles = StyleSheet.create({
   recommendationPillText: { fontSize: 13, fontWeight: '700', color: '#FFF' },
 
   // AI Assistant Styles
-  chatPageContainer: { paddingHorizontal: 16, paddingTop: 16 },
+  chatPageContainer: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
+  chatScrollView: { flex: 1 },
+  chatScrollContent: { paddingBottom: 16 },
   chatHeaderCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 3 },
   chatHeaderTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   chatHeaderIconBg: { width: 56, height: 56, borderRadius: 16, backgroundColor: '#34C75915', justifyContent: 'center', alignItems: 'center' },
@@ -2427,6 +3026,34 @@ const styles = StyleSheet.create({
   chatSendButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#34C759', justifyContent: 'center', alignItems: 'center' },
   chatSendButtonDisabled: { backgroundColor: '#C7C7CC' },
   chatDisclaimer: { fontSize: 11, color: '#8E8E93', textAlign: 'center', marginTop: 12 },
+
+  // Calculator Styles
+  // Insider Trading Styles
+  insiderContainer: { paddingHorizontal: 16, paddingTop: 16 },
+  insiderHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 16, gap: 12 },
+  insiderHeaderIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: '#5856D615', justifyContent: 'center', alignItems: 'center' },
+  insiderHeaderText: { flex: 1 },
+  insiderHeaderTitle: { fontSize: 22, fontWeight: '800', color: '#000' },
+  insiderHeaderSubtitle: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
+  insiderInfoCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 16, marginBottom: 16 },
+  insiderInfoRow: { flexDirection: 'row', justifyContent: 'space-around' },
+  insiderInfoItem: { alignItems: 'center', gap: 6 },
+  insiderInfoLabel: { fontSize: 12, fontWeight: '600', color: '#333' },
+  insiderFeatures: { backgroundColor: '#FFF', borderRadius: 16, padding: 16, marginBottom: 16 },
+  insiderFeaturesTitle: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 12 },
+  insiderFeatureItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 12 },
+  insiderFeatureIcon: { width: 32, height: 32, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  insiderFeatureText: { fontSize: 14, color: '#333', flex: 1 },
+  insiderCTAButton: { backgroundColor: '#5856D6', borderRadius: 14, paddingVertical: 16, paddingHorizontal: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 },
+  insiderCTAText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
+  insiderQuickAccess: { backgroundColor: '#FFF', borderRadius: 16, padding: 16, marginBottom: 16 },
+  insiderQuickTitle: { fontSize: 16, fontWeight: '700', color: '#000' },
+  insiderQuickSubtitle: { fontSize: 13, color: '#8E8E93', marginBottom: 12 },
+  insiderQuickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  insiderQuickChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, gap: 6 },
+  insiderQuickChipText: { fontSize: 14, fontWeight: '700', color: '#007AFF' },
+  insiderDisclaimer: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 4, gap: 8, marginBottom: 20 },
+  insiderDisclaimerText: { flex: 1, fontSize: 12, color: '#8E8E93', lineHeight: 18 },
 
   // Calculator Styles
   calculatorContainer: { paddingHorizontal: 16, paddingTop: 16 },

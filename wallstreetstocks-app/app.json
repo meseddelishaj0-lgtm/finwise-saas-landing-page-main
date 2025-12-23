@@ -31,12 +31,13 @@
     "android": {
       "package": "ai.wallstreetstocks.app",
       "adaptiveIcon": {
-        "backgroundColor": "#EFEFEF",
-        "foregroundImage": "./assets/images/wallstreetstocks.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/wallstreetstocks-android.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
-      
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "pan",
+      "allowBackup": true
     },
     "web": {
       "output": "static",

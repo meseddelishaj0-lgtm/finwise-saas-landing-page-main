@@ -14,9 +14,9 @@ import { useRouter } from "expo-router";
 import { ChevronLeft, Star, ExternalLink, Heart, ThumbsUp } from "lucide-react-native";
 import * as StoreReview from "expo-store-review";
 
-// Replace these with your actual App Store and Play Store IDs
-const APP_STORE_ID = "123456789"; // Your Apple App Store ID
-const PLAY_STORE_ID = "com.wallstreetstocks.app"; // Your Google Play Store package name
+// App Store and Play Store IDs
+const APP_STORE_ID = "6743493377"; // Apple App Store ID
+const PLAY_STORE_ID = "ai.wallstreetstocks.app"; // Google Play Store package name (must match android.package in app.json)
 
 export default function RateUsPage() {
   const router = useRouter();

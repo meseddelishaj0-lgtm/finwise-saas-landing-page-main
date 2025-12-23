@@ -11,6 +11,7 @@ import {
   StatusBar,
   Dimensions,
   Animated,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -184,13 +185,107 @@ export default function Trending() {
   const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
   const BASE = "https://financialmodelingprep.com/api/v3";
 
+  // Extended Indices - Global Markets (50+)
+  const INDICES_SYMBOLS = [
+    // US Indices
+    "%5EGSPC",    // S&P 500
+    "%5EDJI",     // Dow Jones
+    "%5EIXIC",    // Nasdaq Composite
+    "%5ERUT",     // Russell 2000
+    "%5EVIX",     // VIX
+    "%5ENDX",     // Nasdaq 100
+    "%5ESP400",   // S&P 400 Mid Cap
+    "%5ESP600",   // S&P 600 Small Cap
+    // Europe Indices
+    "%5EGDAXI",   // DAX (Germany)
+    "%5EFTSE",    // FTSE 100 (UK)
+    "%5EFCHI",    // CAC 40 (France)
+    "%5ESTOXX50E",// Euro Stoxx 50
+    "%5EIBEX",    // IBEX 35 (Spain)
+    "%5EFTSEMIB", // FTSE MIB (Italy)
+    "%5EAEX",     // AEX (Netherlands)
+    "%5ESSMI",    // SMI (Switzerland)
+    // Asia-Pacific Indices
+    "%5EN225",    // Nikkei 225 (Japan)
+    "%5EHSI",     // Hang Seng (Hong Kong)
+    "%5E000001.SS",// Shanghai Composite
+    "%5EAXJO",    // ASX 200 (Australia)
+    "%5EKS11",    // KOSPI (South Korea)
+    "%5ETWII",    // Taiwan Weighted
+    "%5EBSESN",   // BSE Sensex (India)
+    "%5ESTI",     // Straits Times (Singapore)
+    // Americas (Non-US)
+    "%5EGSPTSE",  // TSX (Canada)
+    "%5EBVSP",    // Bovespa (Brazil)
+    "%5EMXX",     // IPC Mexico
+  ];
+
+  // Extended Forex Pairs (50+)
+  const FOREX_PAIRS = [
+    // Major Pairs
+    "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD",
+    // Cross Pairs - EUR
+    "EURGBP", "EURJPY", "EURCHF", "EURAUD", "EURCAD", "EURNZD",
+    // Cross Pairs - GBP
+    "GBPJPY", "GBPCHF", "GBPAUD", "GBPCAD", "GBPNZD",
+    // Cross Pairs - JPY
+    "AUDJPY", "CADJPY", "NZDJPY", "CHFJPY",
+    // Cross Pairs - Other
+    "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF",
+    // Exotic Pairs
+    "USDMXN", "USDZAR", "USDTRY", "USDSEK", "USDNOK", "USDDKK",
+    "USDSGD", "USDHKD", "USDCNY", "USDINR", "USDKRW", "USDTHB",
+    "EURPLN", "EURHUF", "EURCZK", "EURTRY", "EURMXN", "EURSEK",
+    "GBPMXN", "GBPZAR", "GBPSGD",
+  ];
+
+  // Extended Commodities (40+)
+  const COMMODITIES_SYMBOLS = [
+    // Precious Metals
+    "GCUSD",   // Gold
+    "SIUSD",   // Silver
+    "PLUSD",   // Platinum
+    "PAUSD",   // Palladium
+    // Energy
+    "CLUSD",   // Crude Oil WTI
+    "BZUSD",   // Brent Crude
+    "NGUSD",   // Natural Gas
+    "HGUSD",   // Copper (also industrial)
+    "RBUSD",   // Gasoline RBOB
+    "HOUSD",   // Heating Oil
+    // Agriculture - Grains
+    "ZCUSD",   // Corn
+    "ZWUSD",   // Wheat
+    "ZSUSD",   // Soybeans
+    "ZMUSD",   // Soybean Meal
+    "ZLUSD",   // Soybean Oil
+    "ZOUSD",   // Oats
+    "ZRUSD",   // Rice
+    // Agriculture - Softs
+    "KCUSD",   // Coffee
+    "SBUSD",   // Sugar
+    "CCUSD",   // Cocoa
+    "CTUSD",   // Cotton
+    "OJUSD",   // Orange Juice
+    "LBUSD",   // Lumber
+    // Livestock
+    "LCUSD",   // Live Cattle
+    "LHUSD",   // Lean Hogs
+    "FCUSD",   // Feeder Cattle
+    // Industrial Metals
+    "ALUSD",   // Aluminum
+    "ZNUSD",   // Zinc
+    "NIUSD",   // Nickel
+    "PBUSD",   // Lead
+  ];
+
   const endpoints: Record<TabType, string> = {
     trending: `${BASE}/stock_market/actives?limit=50&apikey=${FMP_API_KEY}`,
     gainers: `${BASE}/stock_market/gainers?limit=50&apikey=${FMP_API_KEY}`,
     losers: `${BASE}/stock_market/losers?limit=50&apikey=${FMP_API_KEY}`,
-    indices: `${BASE}/quote/%5EGSPC,%5EDJI,%5EIXIC,%5ERUT,%5EVIX?apikey=${FMP_API_KEY}`,
-    forex: `${BASE}/fx?apikey=${FMP_API_KEY}`,
-    commodities: `${BASE}/quote/GCUSD,SIUSD,CLUSD,NGUSD,HGUSD?apikey=${FMP_API_KEY}`,
+    indices: `${BASE}/quote/${INDICES_SYMBOLS.join(",")}?apikey=${FMP_API_KEY}`,
+    forex: `${BASE}/quotes/forex?apikey=${FMP_API_KEY}`,
+    commodities: `${BASE}/quotes/commodity?apikey=${FMP_API_KEY}`,
   };
 
   const HEADER_SYMBOLS = ["SPY", "QQQ", "DIA", "IWM", "AAPL", "MSFT", "GOOGL", "AMZN"];
@@ -377,28 +472,36 @@ export default function Trending() {
             change: item.change,
           }));
         } else if (activeTab === "forex") {
+          // Process forex data - show all pairs
           cleaned = json
-            .slice(0, 30)
+            .filter(item => item?.symbol || item?.ticker)
             .map(item => {
               const rawSymbol = item.ticker || item.symbol || "N/A";
               const normalizedSymbol = rawSymbol.replace(/\//g, '');
-              
+              const name = rawSymbol.includes('/') ? rawSymbol : `${rawSymbol.slice(0,3)}/${rawSymbol.slice(3)}`;
+
               return {
                 symbol: normalizedSymbol,
-                companyName: rawSymbol,
-                changesPercentage: item.changes || item.changesPercentage || 0,
-                price: item.bid,
+                companyName: name,
+                changesPercentage: item.changesPercentage || item.changes || 0,
+                price: item.price || item.bid || item.ask,
               };
-            });
+            })
+            .slice(0, 50); // Show up to 50 forex pairs
         } else if (activeTab === "commodities") {
-          cleaned = json.map(item => ({
-            symbol: item.symbol || "N/A",
-            companyName: item.name || item.symbol || "Unknown",
-            changesPercentage: item.changesPercentage || 0,
-            price: item.price,
-            change: item.change,
-          }));
+          // Process commodities data - show all available
+          cleaned = json
+            .filter(item => item?.symbol)
+            .map(item => ({
+              symbol: item.symbol || "N/A",
+              companyName: item.name || item.symbol || "Unknown",
+              changesPercentage: item.changesPercentage || 0,
+              price: item.price,
+              change: item.change,
+            }))
+            .slice(0, 50); // Show up to 50 commodities
         } else {
+          // Trending, gainers, losers - show up to 50 items
           cleaned = json
             .filter(item => item?.symbol && item.changesPercentage !== undefined)
             .map(item => ({
@@ -407,7 +510,7 @@ export default function Trending() {
               changesPercentage: item.changesPercentage,
               price: item.price,
             }))
-            .slice(0, 30);
+            .slice(0, 50);
         }
       }
 
@@ -607,8 +710,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: "#fff",
-    paddingTop: 60,
-    paddingBottom: 16,
+    paddingTop: Platform.OS === 'android' ? 40 : 60,
+    paddingBottom: Platform.OS === 'android' ? 12 : 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
@@ -616,12 +719,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
     marginBottom: 4,
   },
-  title: { 
-    fontSize: 32, 
-    fontWeight: "800", 
+  title: {
+    fontSize: Platform.OS === 'android' ? 22 : 32,
+    fontWeight: "800",
     color: "#000",
     letterSpacing: -0.5,
   },

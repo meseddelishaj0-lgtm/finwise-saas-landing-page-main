@@ -25,22 +25,22 @@ export default function ContactUs() {
     {
       icon: 'mail',
       title: 'Email Us',
-      subtitle: 'support@wallstreetstocks.com',
-      action: () => Linking.openURL('mailto:support@wallstreetstocks.com'),
+      subtitle: 'wallstreetstocks@outlook.com',
+      action: () => Linking.openURL('mailto:wallstreetstocks@outlook.com'),
       color: '#007AFF',
     },
     {
       icon: 'chatbubbles',
       title: 'Live Chat',
       subtitle: 'Available 9am - 6pm EST',
-      action: () => Alert.alert('Live Chat', 'Live chat feature coming soon!'),
+      action: () => router.push('/profile/live-chat' as any),
       color: '#34C759',
     },
     {
       icon: 'call',
       title: 'Call Us',
-      subtitle: '+1 (800) 555-0123',
-      action: () => Linking.openURL('tel:+18005550123'),
+      subtitle: '+216 548 3378',
+      action: () => Linking.openURL('tel:+2165483378'),
       color: '#FF9500',
     },
     {

@@ -12,6 +12,7 @@ import {
   Keyboard,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -20,7 +21,8 @@ import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
 
-type Tab = "stocks" | "crypto" | "etf" | "bonds" | "ipo" | "ma" | "dividends";
+type Tab = "stocks" | "crypto" | "etf" | "bonds" | "treasury" | "ipo" | "ma" | "dividends";
+type StockRegion = "us" | "europe" | "asia";
 
 interface MarketItem {
   symbol: string;
@@ -53,6 +55,29 @@ interface ChipData {
   change: string;
   isPositive: boolean;
   sparklineData: number[];
+}
+
+interface TreasuryRate {
+  date: string;
+  month1: number;
+  month2: number;
+  month3: number;
+  month6: number;
+  year1: number;
+  year2: number;
+  year3?: number;
+  year5: number;
+  year7: number;
+  year10: number;
+  year20: number;
+  year30: number;
+}
+
+interface TreasuryHistorical {
+  current: TreasuryRate;
+  previous: TreasuryRate | null;
+  weekAgo: TreasuryRate | null;
+  monthAgo: TreasuryRate | null;
 }
 
 // Mini Sparkline Component
@@ -118,6 +143,152 @@ const MiniSparkline = ({
   );
 };
 
+// Yield Curve Chart Component
+const YieldCurveChart = ({
+  data,
+  width = SCREEN_WIDTH - 40,
+  height = 180,
+}: {
+  data: { label: string; value: number; months: number }[];
+  width?: number;
+  height?: number;
+}) => {
+  if (!data || data.length < 2) return null;
+
+  const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  const values = data.map(d => d.value);
+  const minVal = Math.min(...values) - 0.2;
+  const maxVal = Math.max(...values) + 0.2;
+  const range = maxVal - minVal;
+
+  // Create points with logarithmic x-scale for better distribution
+  const points = data.map((d, i) => {
+    const x = padding.left + (i / (data.length - 1)) * chartWidth;
+    const y = padding.top + chartHeight - ((d.value - minVal) / range) * chartHeight;
+    return { x, y, label: d.label, value: d.value };
+  });
+
+  // Create smooth curve path
+  let pathD = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const midX = (prev.x + curr.x) / 2;
+    pathD += ` Q ${prev.x + (midX - prev.x) * 0.5} ${prev.y}, ${midX} ${(prev.y + curr.y) / 2}`;
+    pathD += ` Q ${midX + (curr.x - midX) * 0.5} ${curr.y}, ${curr.x} ${curr.y}`;
+  }
+
+  // Area fill path
+  const areaPath = `${pathD} L ${points[points.length - 1].x} ${padding.top + chartHeight} L ${padding.left} ${padding.top + chartHeight} Z`;
+
+  // Check if curve is inverted (short rates > long rates)
+  const isInverted = data[0].value > data[data.length - 1].value;
+  const curveColor = isInverted ? "#FF6B6B" : "#00C853";
+
+  return (
+    <Svg width={width} height={height}>
+      <Defs>
+        <LinearGradient id="yieldCurveGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <Stop offset="0%" stopColor={curveColor} stopOpacity={0.3} />
+          <Stop offset="100%" stopColor={curveColor} stopOpacity={0.05} />
+        </LinearGradient>
+      </Defs>
+
+      {/* Grid lines */}
+      {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => (
+        <Path
+          key={`grid-${i}`}
+          d={`M ${padding.left} ${padding.top + chartHeight * pct} L ${width - padding.right} ${padding.top + chartHeight * pct}`}
+          stroke="#e5e7eb"
+          strokeWidth={1}
+          strokeDasharray="4,4"
+        />
+      ))}
+
+      {/* Area fill */}
+      <Path d={areaPath} fill="url(#yieldCurveGradient)" />
+
+      {/* Curve line */}
+      <Path
+        d={pathD}
+        stroke={curveColor}
+        strokeWidth={3}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+
+      {/* Data points */}
+      {points.map((point, i) => (
+        <React.Fragment key={`point-${i}`}>
+          <Path
+            d={`M ${point.x - 4} ${point.y} A 4 4 0 1 1 ${point.x + 4} ${point.y} A 4 4 0 1 1 ${point.x - 4} ${point.y}`}
+            fill="#fff"
+            stroke={curveColor}
+            strokeWidth={2}
+          />
+        </React.Fragment>
+      ))}
+    </Svg>
+  );
+};
+
+// Treasury Rate Card Component
+const TreasuryRateCard = ({
+  tenor,
+  label,
+  rate,
+  change,
+  isSelected,
+  onPress,
+}: {
+  tenor: string;
+  label: string;
+  rate: number;
+  change: { change: number; isPositive: boolean } | null;
+  isSelected: boolean;
+  onPress: () => void;
+}) => {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.treasuryRateCard,
+        isSelected && styles.treasuryRateCardSelected,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text style={[styles.treasuryRateCardTenor, isSelected && styles.treasuryRateCardTenorSelected]}>
+        {label}
+      </Text>
+      <Text style={[styles.treasuryRateCardValue, isSelected && styles.treasuryRateCardValueSelected]}>
+        {rate?.toFixed(2)}%
+      </Text>
+      {change && (
+        <View style={[
+          styles.treasuryRateCardChange,
+          change.isPositive ? styles.treasuryRateCardChangeUp : styles.treasuryRateCardChangeDown
+        ]}>
+          <Ionicons
+            name={change.isPositive ? "caret-up" : "caret-down"}
+            size={10}
+            color={change.isPositive ? "#00C853" : "#FF1744"}
+          />
+          <Text style={[
+            styles.treasuryRateCardChangeText,
+            change.isPositive ? styles.positive : styles.negative
+          ]}>
+            {Math.abs(change.change).toFixed(2)}
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+};
+
 // Large Header Card Component
 const HeaderCard = ({ 
   item, 
@@ -177,6 +348,7 @@ const HeaderCard = ({
 
 export default function Explore() {
   const [activeTab, setActiveTab] = useState<Tab>("stocks");
+  const [stockRegion, setStockRegion] = useState<StockRegion>("us");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [data, setData] = useState<MarketItem[]>([]);
@@ -185,6 +357,10 @@ export default function Explore() {
   const [headerCards, setHeaderCards] = useState<ChipData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [treasuryRates, setTreasuryRates] = useState<TreasuryRate | null>(null);
+  const [treasuryHistory, setTreasuryHistory] = useState<TreasuryRate[]>([]);
+  const [treasuryLoading, setTreasuryLoading] = useState(true);
+  const [selectedTenor, setSelectedTenor] = useState<string>("year10");
   const router = useRouter();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -192,38 +368,195 @@ export default function Explore() {
   const FMP_API_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
   const BASE_URL = "https://financialmodelingprep.com/api/v3";
 
-  // Define header cards for each tab
+  // Extended crypto list (50+ cryptocurrencies)
+  const CRYPTO_SYMBOLS = [
+    "BTCUSD", "ETHUSD", "BNBUSD", "XRPUSD", "ADAUSD", "SOLUSD", "DOGEUSD", "DOTUSD",
+    "MATICUSD", "LTCUSD", "SHIBUSD", "TRXUSD", "AVAXUSD", "LINKUSD", "ATOMUSD",
+    "UNIUSD", "XLMUSD", "XMRUSD", "ETCUSD", "BCHUSD", "ALGOUSD", "VETUSD",
+    "FILUSD", "ICPUSD", "HBARUSD", "MANAUSD", "SANDUSD", "AXSUSD", "THETAUSD",
+    "EGLDUSD", "XTZUSD", "AABORUSD", "EOSUSD", "MKRUSD", "NEOUSD", "KSMUSD",
+    "QNTUSD", "FLOWUSD", "CHZUSD", "ENJUSD", "ZECUSD", "BATUSD", "DASHUSD",
+    "COMPUSD", "YFIUSD", "SNXUSD", "SUSHIUSD", "CRVUSD", "1INCHUSD", "GRTUSD"
+  ];
+
+  // Extended bond ETFs list (30+ bonds)
+  const BOND_SYMBOLS = [
+    "TLT", "AGG", "BND", "VCIT", "LQD", "HYG", "JNK", "MUB", "SHY", "IEF",
+    "GOVT", "TIP", "BNDX", "EMB", "VCSH", "VGSH", "VGIT", "VGLT", "BSV", "BIV",
+    "BLV", "SCHZ", "SPAB", "IAGG", "IGIB", "USIG", "SPTL", "SPLB", "SPSB", "FLOT",
+    "MINT", "NEAR", "JPST", "ICSH", "PULS", "VMBS", "MBB", "GNMA", "SCHO", "SCHR"
+  ];
+
+  // European stocks - Major European companies (ADRs and European stocks)
+  const EUROPE_STOCKS = [
+    // UK
+    "BP", "SHEL", "HSBC", "RIO", "GSK", "AZN", "UL", "BTI", "NGG", "VOD",
+    // Germany
+    "SAP", "DB", "BASFY", "SIEGY", "DTEGY", "VWAGY", "BMWYY", "ADDYY",
+    // France
+    "TTE", "SNY", "LVMUY", "OR", "ORAN",
+    // Netherlands
+    "ASML", "NXP", "ING", "PHG",
+    // Switzerland
+    "NVS", "UBS", "CS",
+    // Spain/Italy
+    "TEF", "ENEL", "ENI",
+    // Nordic
+    "NVO", "ERIC", "SPOT", "NXPI"
+  ];
+
+  // Asian stocks - Major Asian companies (ADRs and Asian stocks)
+  const ASIA_STOCKS = [
+    // China (SSE/SZSE)
+    "BABA", "JD", "PDD", "BIDU", "NIO", "XPEV", "LI", "BILI", "TME", "NTES",
+    "ZTO", "VNET", "FUTU", "TIGR", "TAL", "EDU", "YUMC", "YUM", "QFIN", "FINV",
+    // Japan (Nikkei 225)
+    "TM", "SONY", "HMC", "MUFG", "SMFG", "NMR", "MFG", "IX", "CAJ", "SNE",
+    // Hong Kong (HSI)
+    "TCEHY", "BEKE", "HTHT", "MPNGY", "CIHKY", "HKXCY",
+    // South Korea
+    "005930.KS", "SSNLF",
+    // Taiwan
+    "TSM", "UMC", "ASX",
+    // India
+    "INFY", "WIT", "IBN", "HDB", "SIFY", "RDY", "TTM",
+    // Australia (ASX 200)
+    "BHP", "RIO", "WBK", "ANZBY", "NABZY", "CBAPY", "TLSYY",
+    // Singapore
+    "SE", "GRAB"
+  ];
+
+  // Asian Market ETFs for indices
+  const ASIA_ETFS = [
+    "FXI",   // China Large-Cap (SSE proxy)
+    "MCHI",  // MSCI China
+    "EWJ",   // Japan (Nikkei 225 proxy)
+    "EWH",   // Hong Kong (HSI proxy)
+    "EWA",   // Australia (ASX 200 proxy)
+    "EWT",   // Taiwan
+    "EWY",   // South Korea
+    "INDA",  // India
+    "EWS",   // Singapore
+    "VWO",   // Emerging Markets
+  ];
+
+  // Define header cards for each tab (dynamic for stocks based on region)
+  const getStockHeaderSymbols = (): string[] => {
+    if (stockRegion === "europe") {
+      return ["EZU", "VGK", "FEZ", "HEDJ"]; // Europe ETFs
+    } else if (stockRegion === "asia") {
+      return ["FXI", "EWJ", "EWH", "EWA"]; // Asia ETFs (China, Japan, HK, Australia)
+    }
+    return ["SPY", "QQQ", "DIA", "IWM"]; // US indices
+  };
+
   const TAB_HEADER_SYMBOLS: Record<Tab, string[]> = {
-    stocks: ["SPY", "QQQ", "DIA", "IWM"],
+    stocks: getStockHeaderSymbols(),
     crypto: ["BTCUSD", "ETHUSD", "SOLUSD", "XRPUSD"],
     etf: ["VOO", "VTI", "ARKK", "XLF"],
     bonds: ["TLT", "AGG", "BND", "LQD"],
+    treasury: [],
     ipo: [],
     ma: [],
     dividends: ["VYM", "SCHD", "HDV", "DVY"],
   };
 
   const TAB_HEADER_NAMES: Record<string, string> = {
+    // US Indices
     "SPY": "S&P 500",
     "QQQ": "Nasdaq 100",
     "DIA": "Dow Jones",
     "IWM": "Russell 2000",
+    // Europe ETFs
+    "EZU": "Eurozone",
+    "VGK": "FTSE Europe",
+    "FEZ": "Euro STOXX 50",
+    "HEDJ": "Europe Hedged",
+    // Asia ETFs
+    "FXI": "China (SSE)",
+    "EWJ": "Japan (N225)",
+    "EWH": "Hong Kong (HSI)",
+    "EWA": "Australia (ASX)",
+    "MCHI": "MSCI China",
+    "EWT": "Taiwan",
+    "EWY": "South Korea",
+    "INDA": "India",
+    // Crypto
     "BTCUSD": "Bitcoin",
     "ETHUSD": "Ethereum",
     "SOLUSD": "Solana",
     "XRPUSD": "XRP",
+    // ETFs
     "VOO": "Vanguard S&P",
     "VTI": "Total Market",
     "ARKK": "ARK Innovation",
     "XLF": "Financials",
+    // Bonds
     "TLT": "20+ Year Treasury",
     "AGG": "US Aggregate",
     "BND": "Total Bond",
     "LQD": "Investment Grade",
+    // Dividends
     "VYM": "High Dividend",
     "SCHD": "Schwab Dividend",
     "HDV": "High Dividend",
     "DVY": "Dividend Select",
+  };
+
+  // Fetch Treasury Rates
+  const fetchTreasuryRates = async () => {
+    setTreasuryLoading(true);
+    try {
+      const response = await fetch(
+        `https://financialmodelingprep.com/stable/treasury-rates?apikey=${FMP_API_KEY}`
+      );
+      const data = await response.json();
+
+      if (Array.isArray(data) && data.length > 0) {
+        setTreasuryRates(data[0]);
+        // Store last 30 days for historical comparison
+        setTreasuryHistory(data.slice(0, 30));
+      }
+    } catch (err) {
+      console.error("Treasury rates fetch failed:", err);
+    } finally {
+      setTreasuryLoading(false);
+    }
+  };
+
+  // Get rate change from previous day
+  const getRateChange = (tenor: keyof TreasuryRate): { change: number; isPositive: boolean } | null => {
+    if (!treasuryRates || treasuryHistory.length < 2) return null;
+    const current = treasuryRates[tenor] as number;
+    const previous = treasuryHistory[1]?.[tenor] as number;
+    if (typeof current !== 'number' || typeof previous !== 'number') return null;
+    const change = current - previous;
+    return { change, isPositive: change >= 0 };
+  };
+
+  // Calculate yield curve data points for visualization
+  const getYieldCurveData = () => {
+    if (!treasuryRates) return [];
+    return [
+      { label: "1M", value: treasuryRates.month1, months: 1 },
+      { label: "2M", value: treasuryRates.month2, months: 2 },
+      { label: "3M", value: treasuryRates.month3, months: 3 },
+      { label: "6M", value: treasuryRates.month6, months: 6 },
+      { label: "1Y", value: treasuryRates.year1, months: 12 },
+      { label: "2Y", value: treasuryRates.year2, months: 24 },
+      { label: "5Y", value: treasuryRates.year5, months: 60 },
+      { label: "7Y", value: treasuryRates.year7, months: 84 },
+      { label: "10Y", value: treasuryRates.year10, months: 120 },
+      { label: "20Y", value: treasuryRates.year20, months: 240 },
+      { label: "30Y", value: treasuryRates.year30, months: 360 },
+    ];
+  };
+
+  // Get spread between 2Y and 10Y (important recession indicator)
+  const getYieldSpread = () => {
+    if (!treasuryRates) return null;
+    const spread = treasuryRates.year10 - treasuryRates.year2;
+    return { spread, isInverted: spread < 0 };
   };
 
   // Fetch historical data for sparklines
@@ -246,7 +579,8 @@ export default function Explore() {
 
   // Fetch header cards data based on active tab
   const fetchHeaderCards = async () => {
-    const symbols = TAB_HEADER_SYMBOLS[activeTab];
+    // Use dynamic symbols for stocks tab based on region
+    const symbols = activeTab === "stocks" ? getStockHeaderSymbols() : TAB_HEADER_SYMBOLS[activeTab];
     if (symbols.length === 0) {
       setHeaderCards([]);
       return;
@@ -355,22 +689,34 @@ export default function Explore() {
   const fetchLiveData = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       let url = "";
-      
+
       switch (activeTab) {
         case "stocks":
-          url = `${BASE_URL}/stock_market/actives?apikey=${FMP_API_KEY}`;
+          // Fetch based on region
+          if (stockRegion === "us") {
+            url = `${BASE_URL}/stock_market/actives?apikey=${FMP_API_KEY}`;
+          } else if (stockRegion === "europe") {
+            // Fetch European stocks directly
+            url = `${BASE_URL}/quote/${EUROPE_STOCKS.join(",")}?apikey=${FMP_API_KEY}`;
+          } else if (stockRegion === "asia") {
+            // Fetch Asian stocks (ADRs and ETFs) directly
+            const asiaSymbols = [...ASIA_STOCKS.filter(s => !s.includes(".")), ...ASIA_ETFS];
+            url = `${BASE_URL}/quote/${asiaSymbols.join(",")}?apikey=${FMP_API_KEY}`;
+          }
           break;
         case "crypto":
-          url = `${BASE_URL}/quote/BTCUSD,ETHUSD,SOLUSD,ADAUSD,XRPUSD,DOGEUSD,MATICUSD,DOTUSD,LINKUSD,UNIUSD,AVAXUSD,LTCUSD?apikey=${FMP_API_KEY}`;
+          // Fetch extended crypto list
+          url = `${BASE_URL}/quote/${CRYPTO_SYMBOLS.join(",")}?apikey=${FMP_API_KEY}`;
           break;
         case "etf":
           url = `${BASE_URL}/etf/list?apikey=${FMP_API_KEY}`;
           break;
         case "bonds":
-          url = `${BASE_URL}/quote/TLT,AGG,BND,VCIT,LQD,HYG,JNK,MUB,SHY,IEF,GOVT,TIP?apikey=${FMP_API_KEY}`;
+          // Fetch extended bond list
+          url = `${BASE_URL}/quote/${BOND_SYMBOLS.join(",")}?apikey=${FMP_API_KEY}`;
           break;
         case "ipo":
           url = `https://financialmodelingprep.com/stable/ipos-calendar?apikey=${FMP_API_KEY}`;
@@ -452,7 +798,7 @@ export default function Explore() {
               changePercent: 0,
               type: "stock" as any,
             }))
-            .slice(0, 20);
+            .slice(0, 100); // Increased from 20 to 100
         } else if (activeTab === "ma") {
           cleaned = json
             .map((item: any) => ({
@@ -468,7 +814,25 @@ export default function Explore() {
               changePercent: 0,
               type: "stock" as any,
             }))
-            .slice(0, 20);
+            .slice(0, 100); // Increased from 20 to 100
+        } else if (activeTab === "etf") {
+          // For ETF, get quotes for more data
+          const etfSymbols = json.slice(0, 100).map((item: any) => item.symbol).filter(Boolean);
+          if (etfSymbols.length > 0) {
+            const quoteRes = await fetch(`${BASE_URL}/quote/${etfSymbols.join(",")}?apikey=${FMP_API_KEY}`);
+            const quoteData = await quoteRes.json();
+            if (Array.isArray(quoteData)) {
+              cleaned = quoteData.map((item: any) => ({
+                symbol: item.symbol || "N/A",
+                name: item.name || item.symbol || "Unknown",
+                price: item.price || 0,
+                change: item.change || 0,
+                changePercent: item.changesPercentage || 0,
+                type: "etf" as any,
+                exchange: item.exchange || "N/A",
+              }));
+            }
+          }
         } else {
           cleaned = json.map((item: any) => ({
             symbol: item.symbol || item.ticker || "N/A",
@@ -477,7 +841,8 @@ export default function Explore() {
             change: item.changes || item.change || 0,
             changePercent: item.changesPercentage || 0,
             type: activeTab as any,
-          })).slice(0, 20);
+            exchange: item.exchange || item.exchangeShortName || "N/A",
+          })).slice(0, 100); // Increased from 20 to 100
         }
       }
 
@@ -489,6 +854,11 @@ export default function Explore() {
       setLoading(false);
     }
   };
+
+  // Fetch treasury rates on mount
+  useEffect(() => {
+    fetchTreasuryRates();
+  }, []);
 
   useEffect(() => {
     fetchLiveData();
@@ -511,7 +881,7 @@ export default function Explore() {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [activeTab]);
+  }, [activeTab, stockRegion]);
 
   const displayData = searchQuery ? searchResults : data;
 
@@ -807,7 +1177,7 @@ export default function Explore() {
       {/* Sticky Tabs */}
       <View style={styles.tabBar}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {(["stocks", "crypto", "etf", "bonds", "ipo", "ma", "dividends"] as Tab[]).map((tab) => (
+          {(["stocks", "crypto", "etf", "bonds", "treasury", "ipo", "ma", "dividends"] as Tab[]).map((tab) => (
             <TouchableOpacity
               key={tab}
               onPress={() => {
@@ -821,14 +1191,53 @@ export default function Explore() {
                 {tab === "stocks" ? "Stocks" :
                  tab === "crypto" ? "Crypto" :
                  tab === "etf" ? "ETFs" :
-                 tab === "bonds" ? "Bonds" : 
-                 tab === "ipo" ? "IPOs" : 
+                 tab === "bonds" ? "Bonds" :
+                 tab === "treasury" ? "Treasury" :
+                 tab === "ipo" ? "IPOs" :
                  tab === "ma" ? "M&A" : "Dividends"}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
+
+      {/* Region Selector for Stocks */}
+      {activeTab === "stocks" && (
+        <View style={styles.regionBar}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {([
+              { key: "us", label: "US", subLabel: "S&P 500", icon: "flag" },
+              { key: "europe", label: "Europe", subLabel: "STOXX", icon: "globe" },
+              { key: "asia", label: "Asia", subLabel: "SSE・N225・HSI・ASX", icon: "earth" },
+            ] as { key: StockRegion; label: string; subLabel: string; icon: string }[]).map((region) => (
+              <TouchableOpacity
+                key={region.key}
+                onPress={() => setStockRegion(region.key)}
+                style={[styles.regionChip, stockRegion === region.key && styles.regionChipActive]}
+              >
+                <Ionicons
+                  name={region.icon as any}
+                  size={14}
+                  color={stockRegion === region.key ? "#fff" : "#666"}
+                />
+                <View>
+                  <Text style={[styles.regionText, stockRegion === region.key && styles.regionTextActive]}>
+                    {region.label}
+                  </Text>
+                  {stockRegion === region.key && (
+                    <Text style={styles.regionSubText}>{region.subLabel}</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <View style={styles.regionInfo}>
+            <Text style={styles.regionInfoText}>
+              {data.length} stocks
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Error Banner */}
       {error && (
@@ -841,59 +1250,304 @@ export default function Explore() {
       )}
 
       {/* Live Results */}
-      <FlatList
-        data={displayData}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => `${item.symbol}-${index}`}
-        contentContainerStyle={styles.listContainer}
-        keyboardShouldPersistTaps="handled"
-        onScrollBeginDrag={() => Keyboard.dismiss()}
-        ListEmptyComponent={
-          searchQuery ? (
-            searchLoading ? (
-              <View style={styles.emptyState}>
-                <ActivityIndicator size="large" color="#00C853" />
-                <Text style={styles.emptyText}>Searching...</Text>
+      {activeTab === "treasury" ? (
+        <ScrollView
+          style={styles.treasuryScrollView}
+          contentContainerStyle={styles.treasuryContentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {treasuryLoading ? (
+            <View style={styles.treasuryLoadingState}>
+              <ActivityIndicator size="large" color="#00C853" />
+              <Text style={styles.emptyText}>Loading treasury rates...</Text>
+            </View>
+          ) : treasuryRates ? (
+            <>
+              {/* Header Section */}
+              <View style={styles.treasuryHeader}>
+                <View>
+                  <Text style={styles.treasuryMainTitle}>US Treasury Yields</Text>
+                  <Text style={styles.treasuryDateText}>
+                    {new Date(treasuryRates.date).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={fetchTreasuryRates} style={styles.treasuryRefreshBtn}>
+                  <Ionicons name="refresh" size={20} color="#007AFF" />
+                </TouchableOpacity>
               </View>
-            ) : (
-              <View style={styles.emptyState}>
-                <Ionicons name="search" size={64} color="#e5e7eb" />
-                <Text style={styles.emptyText}>No results for "{searchQuery}"</Text>
-                <Text style={styles.emptySubtext}>Try another symbol or company name</Text>
+
+              {/* Key Rates Hero Cards */}
+              <View style={styles.treasuryHeroSection}>
+                <View style={[styles.treasuryHeroCard, styles.treasuryHeroCardPrimary]}>
+                  <View style={styles.treasuryHeroTop}>
+                    <Text style={styles.treasuryHeroLabel}>10-Year Treasury</Text>
+                    <View style={styles.treasuryHeroBadge}>
+                      <Text style={styles.treasuryHeroBadgeText}>Benchmark</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.treasuryHeroRate}>{treasuryRates.year10?.toFixed(2)}%</Text>
+                  {getRateChange("year10") && (
+                    <View style={styles.treasuryHeroChange}>
+                      <Ionicons
+                        name={getRateChange("year10")!.isPositive ? "arrow-up" : "arrow-down"}
+                        size={14}
+                        color={getRateChange("year10")!.isPositive ? "#4ade80" : "#f87171"}
+                      />
+                      <Text style={[
+                        styles.treasuryHeroChangeText,
+                        getRateChange("year10")!.isPositive ? styles.treasuryHeroChangeUp : styles.treasuryHeroChangeDown
+                      ]}>
+                        {Math.abs(getRateChange("year10")!.change).toFixed(2)} bps
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.treasuryHeroSmallCards}>
+                  <View style={styles.treasuryHeroCardSmall}>
+                    <Text style={styles.treasuryHeroSmallLabel}>2-Year</Text>
+                    <Text style={styles.treasuryHeroSmallRate}>{treasuryRates.year2?.toFixed(2)}%</Text>
+                    {getRateChange("year2") && (
+                      <View style={[
+                        styles.treasuryHeroSmallChange,
+                        getRateChange("year2")!.isPositive ? styles.changeUp : styles.changeDown
+                      ]}>
+                        <Ionicons
+                          name={getRateChange("year2")!.isPositive ? "caret-up" : "caret-down"}
+                          size={10}
+                          color={getRateChange("year2")!.isPositive ? "#00C853" : "#FF1744"}
+                        />
+                        <Text style={getRateChange("year2")!.isPositive ? styles.positive : styles.negative}>
+                          {Math.abs(getRateChange("year2")!.change).toFixed(2)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.treasuryHeroCardSmall}>
+                    <Text style={styles.treasuryHeroSmallLabel}>30-Year</Text>
+                    <Text style={styles.treasuryHeroSmallRate}>{treasuryRates.year30?.toFixed(2)}%</Text>
+                    {getRateChange("year30") && (
+                      <View style={[
+                        styles.treasuryHeroSmallChange,
+                        getRateChange("year30")!.isPositive ? styles.changeUp : styles.changeDown
+                      ]}>
+                        <Ionicons
+                          name={getRateChange("year30")!.isPositive ? "caret-up" : "caret-down"}
+                          size={10}
+                          color={getRateChange("year30")!.isPositive ? "#00C853" : "#FF1744"}
+                        />
+                        <Text style={getRateChange("year30")!.isPositive ? styles.positive : styles.negative}>
+                          {Math.abs(getRateChange("year30")!.change).toFixed(2)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
               </View>
-            )
+
+              {/* Yield Spread Indicator */}
+              {getYieldSpread() && (
+                <View style={[
+                  styles.yieldSpreadCard,
+                  getYieldSpread()!.isInverted ? styles.yieldSpreadInverted : styles.yieldSpreadNormal
+                ]}>
+                  <View style={styles.yieldSpreadLeft}>
+                    <Ionicons
+                      name={getYieldSpread()!.isInverted ? "warning" : "checkmark-circle"}
+                      size={24}
+                      color={getYieldSpread()!.isInverted ? "#FF6B6B" : "#00C853"}
+                    />
+                    <View>
+                      <Text style={styles.yieldSpreadLabel}>2Y-10Y Spread</Text>
+                      <Text style={styles.yieldSpreadSubLabel}>
+                        {getYieldSpread()!.isInverted ? "Inverted Curve" : "Normal Curve"}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[
+                    styles.yieldSpreadValue,
+                    getYieldSpread()!.isInverted ? styles.yieldSpreadValueInverted : styles.yieldSpreadValueNormal
+                  ]}>
+                    {getYieldSpread()!.spread >= 0 ? "+" : ""}{(getYieldSpread()!.spread * 100).toFixed(0)} bps
+                  </Text>
+                </View>
+              )}
+
+              {/* Yield Curve Chart */}
+              <View style={styles.yieldCurveSection}>
+                <View style={styles.yieldCurveTitleRow}>
+                  <Text style={styles.yieldCurveTitle}>Yield Curve</Text>
+                  <View style={styles.yieldCurveLegend}>
+                    <View style={[styles.yieldCurveLegendDot, { backgroundColor: "#00C853" }]} />
+                    <Text style={styles.yieldCurveLegendText}>Normal</Text>
+                    <View style={[styles.yieldCurveLegendDot, { backgroundColor: "#FF6B6B", marginLeft: 12 }]} />
+                    <Text style={styles.yieldCurveLegendText}>Inverted</Text>
+                  </View>
+                </View>
+                <View style={styles.yieldCurveChartContainer}>
+                  <YieldCurveChart data={getYieldCurveData()} />
+                  {/* X-axis labels */}
+                  <View style={styles.yieldCurveLabels}>
+                    {["1M", "3M", "6M", "1Y", "2Y", "5Y", "10Y", "30Y"].map((label, i) => (
+                      <Text key={label} style={styles.yieldCurveLabel}>{label}</Text>
+                    ))}
+                  </View>
+                </View>
+              </View>
+
+              {/* All Rates Grid */}
+              <Text style={styles.treasurySectionTitle}>All Maturities</Text>
+
+              {/* Short-Term */}
+              <View style={styles.treasuryRateSection}>
+                <View style={styles.treasuryRateSectionHeader}>
+                  <View style={[styles.treasuryRateSectionIcon, { backgroundColor: "#dbeafe" }]}>
+                    <Ionicons name="time-outline" size={16} color="#3b82f6" />
+                  </View>
+                  <Text style={styles.treasuryRateSectionTitle}>Short-Term</Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.treasuryRateCardsRow}>
+                    <TreasuryRateCard tenor="month1" label="1M" rate={treasuryRates.month1} change={getRateChange("month1")} isSelected={selectedTenor === "month1"} onPress={() => setSelectedTenor("month1")} />
+                    <TreasuryRateCard tenor="month2" label="2M" rate={treasuryRates.month2} change={getRateChange("month2")} isSelected={selectedTenor === "month2"} onPress={() => setSelectedTenor("month2")} />
+                    <TreasuryRateCard tenor="month3" label="3M" rate={treasuryRates.month3} change={getRateChange("month3")} isSelected={selectedTenor === "month3"} onPress={() => setSelectedTenor("month3")} />
+                    <TreasuryRateCard tenor="month6" label="6M" rate={treasuryRates.month6} change={getRateChange("month6")} isSelected={selectedTenor === "month6"} onPress={() => setSelectedTenor("month6")} />
+                  </View>
+                </ScrollView>
+              </View>
+
+              {/* Medium-Term */}
+              <View style={styles.treasuryRateSection}>
+                <View style={styles.treasuryRateSectionHeader}>
+                  <View style={[styles.treasuryRateSectionIcon, { backgroundColor: "#dcfce7" }]}>
+                    <Ionicons name="calendar-outline" size={16} color="#00C853" />
+                  </View>
+                  <Text style={styles.treasuryRateSectionTitle}>Medium-Term</Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.treasuryRateCardsRow}>
+                    <TreasuryRateCard tenor="year1" label="1Y" rate={treasuryRates.year1} change={getRateChange("year1")} isSelected={selectedTenor === "year1"} onPress={() => setSelectedTenor("year1")} />
+                    <TreasuryRateCard tenor="year2" label="2Y" rate={treasuryRates.year2} change={getRateChange("year2")} isSelected={selectedTenor === "year2"} onPress={() => setSelectedTenor("year2")} />
+                    <TreasuryRateCard tenor="year5" label="5Y" rate={treasuryRates.year5} change={getRateChange("year5")} isSelected={selectedTenor === "year5"} onPress={() => setSelectedTenor("year5")} />
+                    <TreasuryRateCard tenor="year7" label="7Y" rate={treasuryRates.year7} change={getRateChange("year7")} isSelected={selectedTenor === "year7"} onPress={() => setSelectedTenor("year7")} />
+                  </View>
+                </ScrollView>
+              </View>
+
+              {/* Long-Term */}
+              <View style={styles.treasuryRateSection}>
+                <View style={styles.treasuryRateSectionHeader}>
+                  <View style={[styles.treasuryRateSectionIcon, { backgroundColor: "#fef3c7" }]}>
+                    <Ionicons name="trending-up" size={16} color="#f59e0b" />
+                  </View>
+                  <Text style={styles.treasuryRateSectionTitle}>Long-Term</Text>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.treasuryRateCardsRow}>
+                    <TreasuryRateCard tenor="year10" label="10Y" rate={treasuryRates.year10} change={getRateChange("year10")} isSelected={selectedTenor === "year10"} onPress={() => setSelectedTenor("year10")} />
+                    <TreasuryRateCard tenor="year20" label="20Y" rate={treasuryRates.year20} change={getRateChange("year20")} isSelected={selectedTenor === "year20"} onPress={() => setSelectedTenor("year20")} />
+                    <TreasuryRateCard tenor="year30" label="30Y" rate={treasuryRates.year30} change={getRateChange("year30")} isSelected={selectedTenor === "year30"} onPress={() => setSelectedTenor("year30")} />
+                  </View>
+                </ScrollView>
+              </View>
+
+              {/* Info Cards */}
+              <View style={styles.treasuryInfoSection}>
+                <View style={styles.treasuryInfoCardNew}>
+                  <View style={styles.treasuryInfoIconBox}>
+                    <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
+                  </View>
+                  <View style={styles.treasuryInfoContent}>
+                    <Text style={styles.treasuryInfoTitle}>What is the Yield Curve?</Text>
+                    <Text style={styles.treasuryInfoText}>
+                      The yield curve shows interest rates across different maturities. A normal curve slopes upward (longer terms = higher rates). An inverted curve can signal recession concerns.
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.treasuryInfoCardNew}>
+                  <View style={styles.treasuryInfoIconBox}>
+                    <Ionicons name="stats-chart-outline" size={20} color="#3b82f6" />
+                  </View>
+                  <View style={styles.treasuryInfoContent}>
+                    <Text style={styles.treasuryInfoTitle}>Key Benchmarks</Text>
+                    <Text style={styles.treasuryInfoText}>
+                      The 10-year yield influences mortgage rates and is a key economic indicator. The 2Y-10Y spread is watched closely for recession signals.
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </>
           ) : (
             <View style={styles.emptyState}>
-              <ActivityIndicator size="large" color="#00C853" />
-              <Text style={styles.emptyText}>No data available</Text>
+              <Ionicons name="alert-circle" size={64} color="#e5e7eb" />
+              <Text style={styles.emptyText}>Unable to load treasury rates</Text>
+              <TouchableOpacity onPress={fetchTreasuryRates} style={styles.treasuryRetryBtn}>
+                <Text style={styles.treasuryRetryText}>Retry</Text>
+              </TouchableOpacity>
             </View>
-          )
-        }
-        ListHeaderComponent={
-          <>
-            {/* Header Cards */}
-            {renderHeaderCards()}
-            
-            {/* Section Title */}
-            {!searchQuery && data.length > 0 ? (
-              <Text style={styles.sectionTitle}>
-                {activeTab === "stocks" ? "Most Active" :
-                 activeTab === "crypto" ? "Top Cryptos" :
-                 activeTab === "etf" ? "Popular ETFs" :
-                 activeTab === "bonds" ? "Bond ETFs" : 
-                 activeTab === "ipo" ? "IPO Calendar" : 
-                 activeTab === "ma" ? "Latest M&A Deals" : "Top Dividend Stocks"}
-              </Text>
-            ) : searchQuery ? (
-              <Text style={styles.sectionTitle}>
-                Search Results
-              </Text>
-            ) : null}
-          </>
-        }
-        refreshing={loading && data.length > 0}
-        onRefresh={fetchLiveData}
-      />
+          )}
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={displayData}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => `${item.symbol}-${index}`}
+          contentContainerStyle={styles.listContainer}
+          keyboardShouldPersistTaps="handled"
+          onScrollBeginDrag={() => Keyboard.dismiss()}
+          ListEmptyComponent={
+            searchQuery ? (
+              searchLoading ? (
+                <View style={styles.emptyState}>
+                  <ActivityIndicator size="large" color="#00C853" />
+                  <Text style={styles.emptyText}>Searching...</Text>
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Ionicons name="search" size={64} color="#e5e7eb" />
+                  <Text style={styles.emptyText}>No results for "{searchQuery}"</Text>
+                  <Text style={styles.emptySubtext}>Try another symbol or company name</Text>
+                </View>
+              )
+            ) : (
+              <View style={styles.emptyState}>
+                <ActivityIndicator size="large" color="#00C853" />
+                <Text style={styles.emptyText}>No data available</Text>
+              </View>
+            )
+          }
+          ListHeaderComponent={
+            <>
+              {/* Header Cards */}
+              {renderHeaderCards()}
+
+              {/* Section Title */}
+              {!searchQuery && data.length > 0 ? (
+                <Text style={styles.sectionTitle}>
+                  {activeTab === "stocks" ? "Most Active" :
+                   activeTab === "crypto" ? "Top Cryptos" :
+                   activeTab === "etf" ? "Popular ETFs" :
+                   activeTab === "bonds" ? "Bond ETFs" :
+                   activeTab === "ipo" ? "IPO Calendar" :
+                   activeTab === "ma" ? "Latest M&A Deals" : "Top Dividend Stocks"}
+                </Text>
+              ) : searchQuery ? (
+                <Text style={styles.sectionTitle}>
+                  Search Results
+                </Text>
+              ) : null}
+            </>
+          }
+          refreshing={loading && data.length > 0}
+          onRefresh={fetchLiveData}
+        />
+      )}
     </View>
   );
 }
@@ -906,14 +1560,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    paddingTop: Platform.OS === 'android' ? 40 : 60,
+    paddingBottom: Platform.OS === 'android' ? 12 : 20,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
-  headerTitle: { fontSize: 34, fontWeight: "800", color: "#000", letterSpacing: -0.5 },
+  headerTitle: { fontSize: Platform.OS === 'android' ? 22 : 34, fontWeight: "800", color: "#000", letterSpacing: -0.5 },
   headerRight: { flexDirection: "row", alignItems: "center" },
   searchButton: {
     width: 40,
@@ -1029,6 +1683,50 @@ const styles = StyleSheet.create({
   },
   tabText: { fontSize: 14, color: "#6b7280", fontWeight: "600" },
   tabTextActive: { color: "#fff", fontWeight: "700" },
+  regionBar: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  regionChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: "#f3f4f6",
+    marginRight: 8,
+    gap: 4,
+  },
+  regionChipActive: {
+    backgroundColor: "#007AFF",
+  },
+  regionText: {
+    fontSize: 13,
+    color: "#666",
+    fontWeight: "600",
+  },
+  regionTextActive: {
+    color: "#fff",
+  },
+  regionSubText: {
+    fontSize: 9,
+    color: "rgba(255,255,255,0.7)",
+    marginTop: 1,
+  },
+  regionInfo: {
+    marginLeft: 8,
+  },
+  regionInfoText: {
+    fontSize: 12,
+    color: "#8E8E93",
+    fontWeight: "500",
+  },
   errorBanner: {
     backgroundColor: "#FF1744",
     padding: 12,
@@ -1358,5 +2056,528 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#111827",
     fontWeight: "700",
+  },
+  // Treasury Section Styles
+  treasurySection: {
+    backgroundColor: "#f8fafc",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+  },
+  treasurySectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  treasuryTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  treasurySectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1e293b",
+  },
+  treasuryDate: {
+    fontSize: 12,
+    color: "#64748b",
+    fontWeight: "500",
+  },
+  treasuryRatesContainer: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  treasuryRateItem: {
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    minWidth: 60,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  treasuryRateItemHighlight: {
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
+  },
+  treasuryRateLabel: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  treasuryRateLabelHighlight: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  treasuryRateValue: {
+    fontSize: 14,
+    color: "#1e293b",
+    fontWeight: "700",
+  },
+  treasuryRateValueHighlight: {
+    fontSize: 14,
+    color: "#fff",
+    fontWeight: "700",
+  },
+  treasuryError: {
+    color: "#64748b",
+    fontSize: 13,
+    textAlign: "center",
+    padding: 20,
+  },
+  // New Treasury Tab Styles
+  treasuryScrollView: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+  },
+  treasuryContentContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 100,
+  },
+  treasuryLoadingState: {
+    padding: 60,
+    alignItems: "center",
+  },
+  treasuryHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 20,
+  },
+  treasuryMainTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  treasuryDateText: {
+    fontSize: 14,
+    color: "#64748b",
+    fontWeight: "500",
+  },
+  treasuryRefreshBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  // Hero Section
+  treasuryHeroSection: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 16,
+  },
+  treasuryHeroCard: {
+    flex: 1,
+    borderRadius: 20,
+    padding: 20,
+  },
+  treasuryHeroCardPrimary: {
+    backgroundColor: "#1e293b",
+    flex: 1.5,
+  },
+  treasuryHeroTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  treasuryHeroLabel: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.7)",
+    fontWeight: "600",
+  },
+  treasuryHeroBadge: {
+    backgroundColor: "rgba(255,255,255,0.15)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  treasuryHeroBadgeText: {
+    fontSize: 10,
+    color: "#fbbf24",
+    fontWeight: "700",
+    textTransform: "uppercase",
+  },
+  treasuryHeroRate: {
+    fontSize: 42,
+    fontWeight: "800",
+    color: "#fff",
+    marginBottom: 8,
+  },
+  treasuryHeroChange: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  treasuryHeroChangeText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  treasuryHeroChangeUp: {
+    color: "#4ade80",
+  },
+  treasuryHeroChangeDown: {
+    color: "#f87171",
+  },
+  treasuryHeroSmallCards: {
+    gap: 12,
+    flex: 1,
+  },
+  treasuryHeroCardSmall: {
+    flex: 1,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  treasuryHeroSmallLabel: {
+    fontSize: 12,
+    color: "#64748b",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  treasuryHeroSmallRate: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  treasuryHeroSmallChange: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+  },
+  changeUp: {
+    backgroundColor: "rgba(0,200,83,0.1)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  changeDown: {
+    backgroundColor: "rgba(255,23,68,0.1)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  // Yield Spread Card
+  yieldSpreadCard: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  yieldSpreadNormal: {
+    backgroundColor: "rgba(0,200,83,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(0,200,83,0.2)",
+  },
+  yieldSpreadInverted: {
+    backgroundColor: "rgba(255,107,107,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,107,107,0.2)",
+  },
+  yieldSpreadLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  yieldSpreadLabel: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  yieldSpreadSubLabel: {
+    fontSize: 12,
+    color: "#64748b",
+    marginTop: 2,
+  },
+  yieldSpreadValue: {
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  yieldSpreadValueNormal: {
+    color: "#00C853",
+  },
+  yieldSpreadValueInverted: {
+    color: "#FF6B6B",
+  },
+  // Yield Curve Section
+  yieldCurveSection: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  yieldCurveTitleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  yieldCurveTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  yieldCurveLegend: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  yieldCurveLegendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4,
+  },
+  yieldCurveLegendText: {
+    fontSize: 11,
+    color: "#64748b",
+    fontWeight: "500",
+  },
+  yieldCurveChartContainer: {
+    marginTop: 8,
+  },
+  yieldCurveLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 35,
+    marginTop: 8,
+  },
+  yieldCurveLabel: {
+    fontSize: 10,
+    color: "#94a3b8",
+    fontWeight: "600",
+  },
+  // Rate Section
+  treasuryRateSection: {
+    marginBottom: 20,
+  },
+  treasuryRateSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 12,
+  },
+  treasuryRateSectionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  treasuryRateSectionTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  treasuryRateCardsRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingRight: 20,
+  },
+  // Rate Card Styles
+  treasuryRateCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    minWidth: 85,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  treasuryRateCardSelected: {
+    borderColor: "#007AFF",
+    backgroundColor: "#f0f9ff",
+  },
+  treasuryRateCardTenor: {
+    fontSize: 13,
+    color: "#64748b",
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  treasuryRateCardTenorSelected: {
+    color: "#007AFF",
+  },
+  treasuryRateCardValue: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 6,
+  },
+  treasuryRateCardValueSelected: {
+    color: "#007AFF",
+  },
+  treasuryRateCardChange: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  treasuryRateCardChangeUp: {
+    backgroundColor: "rgba(0,200,83,0.1)",
+  },
+  treasuryRateCardChangeDown: {
+    backgroundColor: "rgba(255,23,68,0.1)",
+  },
+  treasuryRateCardChangeText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  // Info Section
+  treasuryInfoSection: {
+    gap: 12,
+    marginTop: 8,
+  },
+  treasuryInfoCardNew: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: "row",
+    gap: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  treasuryInfoIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#f8fafc",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  treasuryInfoContent: {
+    flex: 1,
+  },
+  treasuryInfoTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  treasuryInfoText: {
+    fontSize: 13,
+    color: "#64748b",
+    lineHeight: 19,
+  },
+  treasuryRetryBtn: {
+    marginTop: 16,
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+  },
+  treasuryRetryText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  // Legacy styles kept for compatibility
+  treasuryCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  treasuryCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 8,
+  },
+  treasuryCardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1e293b",
+  },
+  treasuryRatesGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  treasuryRateBox: {
+    backgroundColor: "#f8fafc",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    minWidth: 75,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  treasuryRateBoxHighlight: {
+    backgroundColor: "#007AFF",
+    borderColor: "#007AFF",
+  },
+  treasuryRateTenor: {
+    fontSize: 12,
+    color: "#64748b",
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  treasuryRateTenorHighlight: {
+    color: "rgba(255,255,255,0.8)",
+  },
+  treasuryRatePercent: {
+    fontSize: 18,
+    color: "#1e293b",
+    fontWeight: "800",
+  },
+  treasuryRatePercentHighlight: {
+    color: "#fff",
+  },
+  treasuryInfoCard: {
+    backgroundColor: "#f8fafc",
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
 });
