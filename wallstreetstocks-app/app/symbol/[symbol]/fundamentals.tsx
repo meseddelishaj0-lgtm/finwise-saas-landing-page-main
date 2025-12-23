@@ -164,7 +164,7 @@ export default function FundamentalsTab() {
           >
             <Ionicons
               name={tab.icon as any}
-              size={12}
+              size={16}
               color={activeTab === tab.key ? "#FFF" : "#8E8E93"}
             />
             <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
@@ -1822,29 +1822,28 @@ const styles = StyleSheet.create({
   tabBar: {
     borderBottomWidth: 1,
     borderBottomColor: "#1C1C1E",
-    maxHeight: 44,
   },
   tabBarContent: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
   },
   tab: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: "#1C1C1E",
-    marginRight: 4,
-    gap: 4,
+    marginRight: 8,
+    gap: 6,
   },
   tabActive: {
     backgroundColor: "#007AFF",
   },
   tabText: {
     color: "#8E8E93",
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "600",
   },
   tabTextActive: {

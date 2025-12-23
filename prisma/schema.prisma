@@ -54,11 +54,6 @@ model User {
   mentionedIn           Mention[]      @relation("MentionedUser")
   watchlist             WatchlistItem[]
   deviceTokens          DeviceToken[]
-  priceAlerts           PriceAlert[]
-  portfolios            Portfolio[]
-  conversations1        Conversation[] @relation("ConversationUser1")
-  conversations2        Conversation[] @relation("ConversationUser2")
-  sentMessages          Message[]      @relation("MessageSender")
 }
 
 model Forum {
@@ -311,91 +306,4 @@ model DeviceToken {
 
   @@index([userId])
   @@index([pushToken])
-}
-
-// Price alerts for stock price notifications
-model PriceAlert {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  symbol      String   // Stock ticker symbol (e.g., "AAPL")
-  targetPrice Float    // Target price to trigger alert
-  direction   String   // "above" or "below"
-  isActive    Boolean  @default(true)
-  isTriggered Boolean  @default(false)
-  triggeredAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([symbol])
-  @@index([isActive, isTriggered])
-}
-
-// Portfolio tracking
-model Portfolio {
-  id          Int                @id @default(autoincrement())
-  userId      Int
-  name        String             @default("My Portfolio")
-  isDefault   Boolean            @default(false)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  holdings    PortfolioHolding[]
-
-  @@index([userId])
-}
-
-// Portfolio holdings (individual stock positions)
-model PortfolioHolding {
-  id           Int       @id @default(autoincrement())
-  portfolioId  Int
-  symbol       String    // Stock ticker symbol
-  shares       Float     // Number of shares
-  avgCost      Float     // Average cost per share
-  notes        String?   // Optional notes
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  portfolio    Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
-
-  @@unique([portfolioId, symbol])
-  @@index([portfolioId])
-  @@index([symbol])
-}
-
-// Direct messages
-model Conversation {
-  id           Int       @id @default(autoincrement())
-  participant1 Int
-  participant2 Int
-  lastMessage  String?
-  lastMessageAt DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  user1        User      @relation("ConversationUser1", fields: [participant1], references: [id], onDelete: Cascade)
-  user2        User      @relation("ConversationUser2", fields: [participant2], references: [id], onDelete: Cascade)
-  messages     Message[]
-
-  @@unique([participant1, participant2])
-  @@index([participant1])
-  @@index([participant2])
-}
-
-model Message {
-  id             Int          @id @default(autoincrement())
-  conversationId Int
-  senderId       Int
-  content        String
-  isRead         Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-
-  @@index([conversationId])
-  @@index([senderId])
 }
