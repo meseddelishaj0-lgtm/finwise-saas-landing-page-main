@@ -2503,10 +2503,10 @@ export default function CommunityPage() {
               style={[
                 styles.boostToggle,
                 boostPost && styles.boostToggleActive,
-                !canAccess(FEATURE_TIERS.AI_INSIGHTS) && styles.boostToggleLocked,
+                !canAccess(FEATURE_TIERS.BOOST_POST) && styles.boostToggleLocked,
               ]}
               onPress={() => {
-                if (canAccess(FEATURE_TIERS.AI_INSIGHTS)) {
+                if (canAccess(FEATURE_TIERS.BOOST_POST)) {
                   setBoostPost(!boostPost);
                 } else {
                   router.push('/(modals)/paywall' as any);
@@ -2516,7 +2516,7 @@ export default function CommunityPage() {
               <Ionicons
                 name={boostPost ? "rocket" : "rocket-outline"}
                 size={24}
-                color={boostPost ? "#FFF" : canAccess(FEATURE_TIERS.AI_INSIGHTS) ? "#E5E4E2" : "#8E8E93"}
+                color={boostPost ? "#FFF" : canAccess(FEATURE_TIERS.BOOST_POST) ? "#E5E4E2" : "#8E8E93"}
               />
               <View style={styles.boostToggleContent}>
                 <Text style={[
@@ -2529,19 +2529,19 @@ export default function CommunityPage() {
                   styles.boostToggleSubtitle,
                   boostPost && styles.boostToggleSubtitleActive,
                 ]}>
-                  {canAccess(FEATURE_TIERS.AI_INSIGHTS)
+                  {canAccess(FEATURE_TIERS.BOOST_POST)
                     ? (boostPost ? "Your post will appear at the top" : "Get more visibility for your post")
                     : "Platinum feature - Tap to upgrade"
                   }
                 </Text>
               </View>
-              {!canAccess(FEATURE_TIERS.AI_INSIGHTS) && (
+              {!canAccess(FEATURE_TIERS.BOOST_POST) && (
                 <View style={styles.boostLockBadge}>
                   <Ionicons name="lock-closed" size={12} color="#000" />
                   <Text style={styles.boostLockText}>Platinum</Text>
                 </View>
               )}
-              {canAccess(FEATURE_TIERS.AI_INSIGHTS) && (
+              {canAccess(FEATURE_TIERS.BOOST_POST) && (
                 <View style={[styles.boostCheckbox, boostPost && styles.boostCheckboxActive]}>
                   {boostPost && <Ionicons name="checkmark" size={16} color="#FFF" />}
                 </View>

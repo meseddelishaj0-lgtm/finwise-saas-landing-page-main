@@ -15,6 +15,7 @@ export const FEATURE_TIERS = {
   BASIC_WATCHLISTS: 1,
   DAILY_SUMMARY: 1,
   COMMUNITY_ACCESS: 1,
+  BASIC_ANALYSIS: 1,
 
   // =============================================
   // PLATINUM FEATURES (tier 2)
@@ -28,6 +29,7 @@ export const FEATURE_TIERS = {
   UNLIMITED_WATCHLISTS: 2,
   REALTIME_ALERTS: 2,
   PRIORITY_SUPPORT: 2,
+  AI_INSIGHTS: 2,
 
   // =============================================
   // DIAMOND FEATURES (tier 3)
