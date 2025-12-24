@@ -1,5 +1,6 @@
 // app/profile/subscription.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -47,13 +48,25 @@ const _screenWidth = Dimensions.get("window").width;
 
 // Product IDs matching your RevenueCat setup
 const PRODUCT_IDS = {
-  GOLD: "gold_monthly",
-  PLATINUM: "platinum_monthly",
-  DIAMOND: "diamond_monthly",
+  GOLD: "wallstreetstocks.gold.monthly",
+  PLATINUM: "wallstreetstocks.platinum.monthly",
+  DIAMOND: "wallstreetstocks.diamond.monthly",
 };
 
-// Entitlement ID - must match RevenueCat
-const ENTITLEMENT_ID = "WallStreetStocks Pro";
+// Entitlement IDs - must match RevenueCat
+const ENTITLEMENT_IDS = {
+  GOLD: 'gold_access',
+  PLATINUM: 'platinum_access',
+  DIAMOND: 'diamond_access',
+} as const;
+
+// Helper to get any active entitlement
+const getActiveEntitlement = (activeEntitlements: Record<string, any>): string | null => {
+  if (activeEntitlements[ENTITLEMENT_IDS.DIAMOND]) return ENTITLEMENT_IDS.DIAMOND;
+  if (activeEntitlements[ENTITLEMENT_IDS.PLATINUM]) return ENTITLEMENT_IDS.PLATINUM;
+  if (activeEntitlements[ENTITLEMENT_IDS.GOLD]) return ENTITLEMENT_IDS.GOLD;
+  return null;
+};
 
 // Tier configuration
 const TIERS = {
@@ -130,12 +143,21 @@ export default function SubscriptionPage() {
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
   const [showManageSection, setShowManageSection] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  // Refresh data every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
     setLoading(true);
+    try {
+      // Force sync with RevenueCat to get latest subscription data
+      await Purchases.syncPurchases();
+    } catch (e) {
+      console.log('Sync purchases error (non-blocking):', e);
+    }
     await Promise.all([
       loadOfferings(),
       checkSubscriptionStatus(),
@@ -161,7 +183,8 @@ export default function SubscriptionPage() {
       const info = await Purchases.getCustomerInfo();
       setCustomerInfo(info);
 
-      const entitlement = info.entitlements.active[ENTITLEMENT_ID];
+      const activeEntitlementId = getActiveEntitlement(info.entitlements.active);
+      const entitlement = activeEntitlementId ? info.entitlements.active[activeEntitlementId] : null;
       if (entitlement) {
         setActiveSubscription(entitlement.productIdentifier);
         setShowManageSection(true);
@@ -218,8 +241,9 @@ export default function SubscriptionPage() {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       setCustomerInfo(customerInfo);
 
-      if (customerInfo.entitlements.active[ENTITLEMENT_ID]) {
-        const productId = customerInfo.entitlements.active[ENTITLEMENT_ID].productIdentifier;
+      const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
+      if (activeEntitlementId) {
+        const productId = customerInfo.entitlements.active[activeEntitlementId].productIdentifier;
         setActiveSubscription(productId);
         setShowManageSection(true);
         await loadSubscriptionDetails();
@@ -282,8 +306,9 @@ export default function SubscriptionPage() {
               const { customerInfo } = await Purchases.purchasePackage(pkg);
               setCustomerInfo(customerInfo);
 
-              if (customerInfo.entitlements.active[ENTITLEMENT_ID]) {
-                const productId = customerInfo.entitlements.active[ENTITLEMENT_ID].productIdentifier;
+              const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
+              if (activeEntitlementId) {
+                const productId = customerInfo.entitlements.active[activeEntitlementId].productIdentifier;
                 setActiveSubscription(productId);
                 await loadSubscriptionDetails();
 
@@ -343,7 +368,8 @@ export default function SubscriptionPage() {
       const info = await Purchases.restorePurchases();
       setCustomerInfo(info);
 
-      const entitlement = info.entitlements.active[ENTITLEMENT_ID];
+      const activeEntitlementId = getActiveEntitlement(info.entitlements.active);
+      const entitlement = activeEntitlementId ? info.entitlements.active[activeEntitlementId] : null;
       if (entitlement) {
         setActiveSubscription(entitlement.productIdentifier);
         setShowManageSection(true);

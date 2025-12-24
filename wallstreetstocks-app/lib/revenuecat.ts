@@ -3,17 +3,29 @@ import Purchases, { LOG_LEVEL, PurchasesPackage, CustomerInfo } from 'react-nati
 import { Platform } from 'react-native';
 
 // RevenueCat API Keys - Get from RevenueCat Dashboard → API Keys
-const REVENUECAT_API_KEY_IOS = 'appl_PKEwxzRJaSiGjbbpWZNorpXGiWZ';
+const REVENUECAT_API_KEY_IOS = 'appl_MvQMNxVSRjqfwMomGYDrIxbwXZi';
 const REVENUECAT_API_KEY_ANDROID = 'goog_YOUR_ANDROID_KEY';
 
-// Entitlement ID - Must match RevenueCat Dashboard
-export const ENTITLEMENT_ID = 'WallStreetStocks Pro';
+// Entitlement IDs - Must match RevenueCat Dashboard
+export const ENTITLEMENT_IDS = {
+  GOLD: 'gold_access',
+  PLATINUM: 'platinum_access',
+  DIAMOND: 'diamond_access',
+} as const;
+
+// Helper to get any active entitlement
+export const getActiveEntitlement = (activeEntitlements: Record<string, any>): string | null => {
+  if (activeEntitlements[ENTITLEMENT_IDS.DIAMOND]) return ENTITLEMENT_IDS.DIAMOND;
+  if (activeEntitlements[ENTITLEMENT_IDS.PLATINUM]) return ENTITLEMENT_IDS.PLATINUM;
+  if (activeEntitlements[ENTITLEMENT_IDS.GOLD]) return ENTITLEMENT_IDS.GOLD;
+  return null;
+};
 
 // Product IDs - Must match RevenueCat Dashboard
 export const PRODUCT_IDS = {
-  GOLD_MONTHLY: 'gold_monthly',
-  PLATINUM_MONTHLY: 'platinum_monthly',
-  DIAMOND_MONTHLY: 'diamond_monthly',
+  GOLD_MONTHLY: 'wallstreetstocks.gold.monthly',
+  PLATINUM_MONTHLY: 'wallstreetstocks.platinum.monthly',
+  DIAMOND_MONTHLY: 'wallstreetstocks.diamond.monthly',
 } as const;
 
 // Subscription tier levels
@@ -95,8 +107,9 @@ interface PremiumStatus {
 export const checkPremiumStatus = async (): Promise<PremiumStatus> => {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
-    const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
-    
+    const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
+    const entitlement = activeEntitlementId ? customerInfo.entitlements.active[activeEntitlementId] : null;
+
     return {
       isPremium: !!entitlement,
       activeSubscription: entitlement?.productIdentifier || null,
@@ -208,8 +221,8 @@ export const purchasePackage = async (pkg: PurchasesPackage): Promise<PurchaseRe
 export const restorePurchases = async (): Promise<PurchaseResult> => {
   try {
     const customerInfo = await Purchases.restorePurchases();
-    const hasEntitlement = !!customerInfo.entitlements.active[ENTITLEMENT_ID];
-    
+    const hasEntitlement = !!getActiveEntitlement(customerInfo.entitlements.active);
+
     console.log('✅ Restore completed, has entitlement:', hasEntitlement);
     return {
       success: hasEntitlement,

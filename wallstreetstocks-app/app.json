@@ -15,12 +15,13 @@
     ],
     "ios": {
       "bundleIdentifier": "ai.wallstreetstocks.ios",
-  
       "supportsTablet": true,
       "infoPlist": {
         "NSAppleEventsUsageDescription": "This app uses Apple Sign-In for authentication.",
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       },
       "entitlements": {
         "com.apple.developer.applesignin": [
@@ -81,7 +82,7 @@
       "eas": {
         "projectId": "abc189cc-a5e1-470c-9536-2bf078c4fb73"
       }
-    }
+    },
+    "owner": "sedidelishaj"
   }
 }
-s

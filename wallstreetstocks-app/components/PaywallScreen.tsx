@@ -128,9 +128,11 @@ export default function PaywallScreen() {
     packages,
     isLoading,
     isPremium,
+    activeSubscription,
     loadOfferings,
     purchase,
     restore,
+    refreshStatus,
     error,
   } = useSubscription();
 
@@ -175,9 +177,11 @@ export default function PaywallScreen() {
       const success = await purchase(selectedPackage);
 
       if (success) {
+        // Refresh to get the latest subscription status
+        await refreshStatus();
         Alert.alert(
           'Success!',
-          'Welcome to WallStreetStocks Premium! Your subscription is now active.',
+          `Welcome to WallStreetStocks ${TIER_NAMES[selectedTier]}! Your subscription is now active.`,
           [{ text: 'OK', onPress: () => router.back() }]
         );
       }
@@ -190,11 +194,13 @@ export default function PaywallScreen() {
 
   const handleRestore = async () => {
     setIsPurchasing(true);
-    
+
     try {
       const success = await restore();
-      
+
       if (success) {
+        // Refresh to get the latest subscription status
+        await refreshStatus();
         Alert.alert(
           'Restored!',
           'Your subscription has been restored.',
@@ -215,20 +221,60 @@ export default function PaywallScreen() {
   };
 
   if (isPremium) {
+    // Determine current tier from activeSubscription
+    const getCurrentTier = (): TierKey => {
+      const sub = activeSubscription?.toLowerCase() || '';
+      if (sub.includes('diamond')) return 'diamond';
+      if (sub.includes('platinum')) return 'platinum';
+      return 'gold';
+    };
+
+    const currentTier = getCurrentTier();
+    const currentTierColor = TIER_COLORS[currentTier];
+    const currentTierName = TIER_NAMES[currentTier];
+
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <Ionicons name="close" size={28} color="#fff" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Your Subscription</Text>
+          <View style={styles.placeholder} />
         </View>
-        
+
         <View style={styles.alreadyPremiumContainer}>
-          <Ionicons name="checkmark-circle" size={80} color="#4CAF50" />
-          <Text style={styles.alreadyPremiumTitle}>You're Premium!</Text>
+          <View style={[styles.currentTierBadge, { backgroundColor: currentTierColor }]}>
+            <Text style={styles.currentTierBadgeText}>{currentTierName}</Text>
+          </View>
+          <Ionicons name="checkmark-circle" size={80} color="#4CAF50" style={{ marginTop: 20 }} />
+          <Text style={styles.alreadyPremiumTitle}>You're {currentTierName}!</Text>
           <Text style={styles.alreadyPremiumText}>
-            You already have an active subscription. Enjoy all premium features!
+            You have an active {currentTierName} subscription. Enjoy all your premium features!
           </Text>
+
+          <TouchableOpacity
+            style={[styles.manageButton, { borderColor: currentTierColor }]}
+            onPress={() => router.push('/profile/subscription')}
+          >
+            <Ionicons name="settings-outline" size={20} color={currentTierColor} />
+            <Text style={[styles.manageButtonText, { color: currentTierColor }]}>
+              Manage Subscription
+            </Text>
+          </TouchableOpacity>
+
+          {currentTier !== 'diamond' && (
+            <TouchableOpacity
+              style={styles.upgradeButton}
+              onPress={() => router.push('/profile/subscription')}
+            >
+              <Ionicons name="arrow-up-circle" size={20} color="#FFD700" />
+              <Text style={styles.upgradeButtonText}>
+                Upgrade to {currentTier === 'gold' ? 'Platinum or Diamond' : 'Diamond'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity style={styles.backButton} onPress={handleClose}>
             <Text style={styles.backButtonText}>Go Back</Text>
           </TouchableOpacity>
@@ -574,7 +620,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   backButton: {
-    marginTop: 30,
+    marginTop: 20,
     backgroundColor: '#333',
     paddingHorizontal: 40,
     paddingVertical: 14,
@@ -584,5 +630,42 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  currentTierBadge: {
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 25,
+  },
+  currentTierBadgeText: {
+    color: '#000',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  manageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 30,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 2,
+  },
+  manageButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  upgradeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+  },
+  upgradeButtonText: {
+    color: '#FFD700',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

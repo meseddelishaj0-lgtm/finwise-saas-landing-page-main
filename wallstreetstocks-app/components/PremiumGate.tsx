@@ -30,14 +30,14 @@ export function PremiumGate({
   // Check if user has access based on tier
   const hasAccess = (() => {
     if (!isPremium || !activeSubscription) return false;
-    
-    const tierMap: Record<string, number> = {
-      gold_monthly: 1,
-      platinum_monthly: 2,
-      diamond_monthly: 3,
-    };
-    
-    const userTier = tierMap[activeSubscription] || 0;
+
+    // Match product IDs by checking if they contain the tier name
+    const sub = activeSubscription.toLowerCase();
+    let userTier = 0;
+    if (sub.includes('diamond')) userTier = 3;
+    else if (sub.includes('platinum')) userTier = 2;
+    else if (sub.includes('gold')) userTier = 1;
+
     return userTier >= requiredTier;
   })();
 
@@ -152,21 +152,21 @@ function getTierName(tier: number): string {
 }
 
 function getTierNameFromProduct(productId: string | null): string {
-  switch (productId) {
-    case 'gold_monthly': return 'Gold';
-    case 'platinum_monthly': return 'Platinum';
-    case 'diamond_monthly': return 'Diamond';
-    default: return 'Premium';
-  }
+  if (!productId) return 'Premium';
+  const id = productId.toLowerCase();
+  if (id.includes('gold')) return 'Gold';
+  if (id.includes('platinum')) return 'Platinum';
+  if (id.includes('diamond')) return 'Diamond';
+  return 'Premium';
 }
 
 function getTierColor(productId: string | null): string {
-  switch (productId) {
-    case 'gold_monthly': return '#FFD700';
-    case 'platinum_monthly': return '#E5E4E2';
-    case 'diamond_monthly': return '#B9F2FF';
-    default: return '#666';
-  }
+  if (!productId) return '#666';
+  const id = productId.toLowerCase();
+  if (id.includes('gold')) return '#FFD700';
+  if (id.includes('platinum')) return '#E5E4E2';
+  if (id.includes('diamond')) return '#B9F2FF';
+  return '#666';
 }
 
 const SUBSCRIPTION_TIERS = {

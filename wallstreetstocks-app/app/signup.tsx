@@ -63,6 +63,13 @@ export default function Signup() {
     // Android uses webClientId via browser redirect (no SHA-1 fingerprint needed)
   });
 
+  // Debug: Log the redirect URI being used
+  useEffect(() => {
+    if (request) {
+      console.log('🔑 Google Auth Redirect URI (Signup):', request.redirectUri);
+    }
+  }, [request]);
+
   useEffect(() => {
     if (response?.type === 'success') {
       const { authentication } = response;

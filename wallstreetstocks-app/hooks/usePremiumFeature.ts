@@ -189,10 +189,10 @@ export function useUpgradePrompt() {
 }
 
 export const PRODUCT_IDS = {
-  GOLD_MONTHLY: 'gold_monthly',
-  GOLD_YEARLY: 'gold_yearly',
-  PLATINUM_MONTHLY: 'platinum_monthly',
-  PLATINUM_YEARLY: 'platinum_yearly',
-  DIAMOND_MONTHLY: 'diamond_monthly',
-  DIAMOND_YEARLY: 'diamond_yearly',
+  GOLD_MONTHLY: 'wallstreetstocks.gold.monthly',
+  GOLD_YEARLY: 'wallstreetstocks.gold.yearly',
+  PLATINUM_MONTHLY: 'wallstreetstocks.platinum.monthly',
+  PLATINUM_YEARLY: 'wallstreetstocks.platinum.yearly',
+  DIAMOND_MONTHLY: 'wallstreetstocks.diamond.monthly',
+  DIAMOND_YEARLY: 'wallstreetstocks.diamond.yearly',
 } as const;

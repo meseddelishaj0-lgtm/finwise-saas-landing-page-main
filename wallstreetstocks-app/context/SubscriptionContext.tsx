@@ -8,7 +8,8 @@ import {
   getOfferings,
   purchasePackage,
   restorePurchases,
-  ENTITLEMENT_ID,
+  ENTITLEMENT_IDS,
+  getActiveEntitlement,
   PRODUCT_IDS,
   getSubscriptionTier,
 } from '../services/revenueCat';
@@ -119,9 +120,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const handleIdentifyUser = useCallback(async (userId: string) => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
-      
+
       const customerInfo = await identifyUser(userId);
-      const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
+      const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
+      const entitlement = activeEntitlementId ? customerInfo.entitlements.active[activeEntitlementId] : null;
       const activeSubscription = entitlement?.productIdentifier || null;
       const currentTier = getTierFromProductId(activeSubscription);
       
@@ -174,10 +176,18 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const refreshStatus = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
-      
+
+      // Force sync with RevenueCat to get latest data
+      try {
+        const Purchases = require('react-native-purchases').default;
+        await Purchases.syncPurchases();
+      } catch (e) {
+        console.log('Sync error (non-blocking):', e);
+      }
+
       const status = await checkPremiumStatus();
       const currentTier = getTierFromProductId(status.activeSubscription);
-      
+
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -226,10 +236,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const result = await purchasePackage(pkg);
       
       if (result.success && result.customerInfo) {
-        const entitlement = result.customerInfo.entitlements.active[ENTITLEMENT_ID];
+        const activeEntitlementId = getActiveEntitlement(result.customerInfo.entitlements.active);
+        const entitlement = activeEntitlementId ? result.customerInfo.entitlements.active[activeEntitlementId] : null;
         const activeSubscription = entitlement?.productIdentifier || null;
         const currentTier = getTierFromProductId(activeSubscription);
-        
+
         setState(prev => ({
           ...prev,
           isLoading: false,
@@ -239,7 +250,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           currentTier,
           expirationDate: entitlement?.expirationDate || null,
         }));
-        
+
         return true;
       } else {
         setState(prev => ({
@@ -270,10 +281,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const result = await restorePurchases();
       
       if (result.success && result.customerInfo) {
-        const entitlement = result.customerInfo.entitlements.active[ENTITLEMENT_ID];
+        const activeEntitlementId = getActiveEntitlement(result.customerInfo.entitlements.active);
+        const entitlement = activeEntitlementId ? result.customerInfo.entitlements.active[activeEntitlementId] : null;
         const activeSubscription = entitlement?.productIdentifier || null;
         const currentTier = getTierFromProductId(activeSubscription);
-        
+
         setState(prev => ({
           ...prev,
           isLoading: false,
@@ -283,7 +295,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           currentTier,
           expirationDate: entitlement?.expirationDate || null,
         }));
-        
+
         return true;
       } else {
         setState(prev => ({
@@ -325,14 +337,14 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   }, [state.activeSubscription]);
 
   // Helper getters for specific packages
-  const goldPackage = state.packages.find(p => 
-    p.identifier === '$rc_monthly' || p.identifier === 'gold_monthly'
+  const goldPackage = state.packages.find(p =>
+    p.identifier === '$rc_monthly' || p.product.identifier.includes('gold')
   );
-  const platinumPackage = state.packages.find(p => 
-    p.identifier === '$rc_six_month' || p.identifier === 'platinum_monthly'
+  const platinumPackage = state.packages.find(p =>
+    p.identifier === '$rc_six_month' || p.product.identifier.includes('platinum')
   );
-  const diamondPackage = state.packages.find(p => 
-    p.identifier === '$rc_annual' || p.identifier === 'diamond_monthly'
+  const diamondPackage = state.packages.find(p =>
+    p.identifier === '$rc_annual' || p.product.identifier.includes('diamond')
   );
 
   const value: SubscriptionContextType = {
@@ -397,5 +409,5 @@ export function useSubscription() {
   return context;
 }
 
-// Export product IDs for convenience
-export { PRODUCT_IDS, ENTITLEMENT_ID };
+// Export product IDs and entitlement IDs for convenience
+export { PRODUCT_IDS, ENTITLEMENT_IDS };

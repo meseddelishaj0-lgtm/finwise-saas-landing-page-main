@@ -247,7 +247,6 @@ export default function CommunityPage() {
   const [newPostTicker, setNewPostTicker] = useState('');
   const [newPostImage, setNewPostImage] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
-  const [boostPost, setBoostPost] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
   // Comment State
@@ -799,7 +798,6 @@ export default function CommunityPage() {
         userId: userId,
         ...(newPostTicker.trim() && { ticker: newPostTicker.trim().toUpperCase() }),
         ...(mediaUrl && { mediaUrl: mediaUrl }),
-        ...(boostPost && { boosted: true }),
       };
 
       console.log('📤 Creating post:', JSON.stringify(postData));
@@ -815,7 +813,6 @@ export default function CommunityPage() {
       setNewPostContent('');
       setNewPostTicker('');
       setNewPostImage(null);
-      setBoostPost(false);
 
       // Update posts list
       if (newPost && newPost.id) {
@@ -1856,33 +1853,6 @@ export default function CommunityPage() {
               <Text style={styles.premiumCardDesc}>Get AI-powered stock insights</Text>
             </TouchableOpacity>
 
-            {/* Platinum Feature - Boost Post */}
-            <TouchableOpacity
-              style={[
-                styles.premiumCard,
-                canAccess(FEATURE_TIERS.AI_INSIGHTS) && styles.premiumCardUnlocked,
-              ]}
-              onPress={() => {
-                withPremiumAccess(
-                  FEATURE_TIERS.AI_INSIGHTS,
-                  () => Alert.alert('Boost Post', 'When creating a post, tap the rocket icon to boost it and get more visibility!'),
-                  { alertTitle: 'Platinum Feature', alertMessage: 'Boost Post requires a Platinum subscription.' }
-                );
-              }}
-            >
-              <View style={[styles.premiumIconContainer, { backgroundColor: '#E5E4E2' }]}>
-                <Ionicons name="rocket" size={24} color="#000" />
-              </View>
-              {!canAccess(FEATURE_TIERS.AI_INSIGHTS) && (
-                <View style={[styles.premiumBadge, { backgroundColor: '#E5E4E2' }]}>
-                  <Ionicons name="lock-closed" size={10} color="#000" />
-                  <Text style={styles.premiumBadgeText}>Platinum</Text>
-                </View>
-              )}
-              <Text style={styles.premiumCardTitle}>Boost Post</Text>
-              <Text style={styles.premiumCardDesc}>Get more visibility</Text>
-            </TouchableOpacity>
-
             {/* Platinum Feature - Real-time Alerts */}
             <TouchableOpacity
               style={[
@@ -2496,56 +2466,6 @@ export default function CommunityPage() {
             <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
               <Ionicons name="image-outline" size={24} color="#007AFF" />
               <Text style={styles.addImageText}>Add Image</Text>
-            </TouchableOpacity>
-
-            {/* Boost Post Toggle - Platinum Feature */}
-            <TouchableOpacity
-              style={[
-                styles.boostToggle,
-                boostPost && styles.boostToggleActive,
-                !canAccess(FEATURE_TIERS.BOOST_POST) && styles.boostToggleLocked,
-              ]}
-              onPress={() => {
-                if (canAccess(FEATURE_TIERS.BOOST_POST)) {
-                  setBoostPost(!boostPost);
-                } else {
-                  router.push('/(modals)/paywall' as any);
-                }
-              }}
-            >
-              <Ionicons
-                name={boostPost ? "rocket" : "rocket-outline"}
-                size={24}
-                color={boostPost ? "#FFF" : canAccess(FEATURE_TIERS.BOOST_POST) ? "#E5E4E2" : "#8E8E93"}
-              />
-              <View style={styles.boostToggleContent}>
-                <Text style={[
-                  styles.boostToggleTitle,
-                  boostPost && styles.boostToggleTitleActive,
-                ]}>
-                  {boostPost ? "Boosted" : "Boost Post"}
-                </Text>
-                <Text style={[
-                  styles.boostToggleSubtitle,
-                  boostPost && styles.boostToggleSubtitleActive,
-                ]}>
-                  {canAccess(FEATURE_TIERS.BOOST_POST)
-                    ? (boostPost ? "Your post will appear at the top" : "Get more visibility for your post")
-                    : "Platinum feature - Tap to upgrade"
-                  }
-                </Text>
-              </View>
-              {!canAccess(FEATURE_TIERS.BOOST_POST) && (
-                <View style={styles.boostLockBadge}>
-                  <Ionicons name="lock-closed" size={12} color="#000" />
-                  <Text style={styles.boostLockText}>Platinum</Text>
-                </View>
-              )}
-              {canAccess(FEATURE_TIERS.BOOST_POST) && (
-                <View style={[styles.boostCheckbox, boostPost && styles.boostCheckboxActive]}>
-                  {boostPost && <Ionicons name="checkmark" size={16} color="#FFF" />}
-                </View>
-              )}
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -3852,85 +3772,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
-  },
-  // Boost Toggle
-  boostToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 12,
-    backgroundColor: '#F2F2F7',
-    gap: 12,
-  },
-  boostToggleActive: {
-    backgroundColor: '#E5E4E2',
-  },
-  boostToggleLocked: {
-    opacity: 0.7,
-  },
-  boostToggleContent: {
-    flex: 1,
-  },
-  boostToggleTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  boostToggleTitleActive: {
-    color: '#000',
-  },
-  boostToggleSubtitle: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
-  },
-  boostToggleSubtitleActive: {
-    color: '#333',
-  },
-  boostLockBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E5E4E2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  boostLockText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#000',
-  },
-  boostCheckbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#C7C7CC',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  boostCheckboxActive: {
-    backgroundColor: '#34C759',
-    borderColor: '#34C759',
-  },
-  // Boosted badge for posts
-  boostedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E5E4E215',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    gap: 4,
-    marginLeft: 8,
-  },
-  boostedBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#8E8E93',
   },
 
   // Search

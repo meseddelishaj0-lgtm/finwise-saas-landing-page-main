@@ -3,18 +3,47 @@ import { Platform, Linking } from 'react-native';
 
 // RevenueCat API Keys - Replace with your actual keys from RevenueCat dashboard
 const API_KEYS = {
-  ios: 'appl_PKEwxzRJaSiGjbbpWZNorpXGiWZ', // Your iOS API key from RevenueCat
+  ios: 'appl_MvQMNxVSRjqfwMomGYDrIxbwXZi', // Your iOS API key from RevenueCat
   android: 'goog_lWSKWOLpSxxBMiVzPcprDWcWpnf', // Your Android API key (if needed later)
 };
 
-// Entitlement ID - This should match what you set up in RevenueCat
-export const ENTITLEMENT_ID = 'WallStreetStocks Pro';
+// Entitlement IDs - Must match RevenueCat Dashboard
+export const ENTITLEMENT_IDS = {
+  GOLD: 'gold_access',
+  PLATINUM: 'platinum_access',
+  DIAMOND: 'diamond_access',
+} as const;
+
+// Helper to get any active entitlement (checks highest tier first)
+export const getActiveEntitlement = (activeEntitlements: Record<string, any>): string | null => {
+  // Log all active entitlements for debugging
+  console.log('🔍 Active entitlements:', Object.keys(activeEntitlements));
+
+  // Check Diamond first (highest tier)
+  if (activeEntitlements[ENTITLEMENT_IDS.DIAMOND]) {
+    console.log('✅ Found Diamond entitlement');
+    return ENTITLEMENT_IDS.DIAMOND;
+  }
+  // Then Platinum
+  if (activeEntitlements[ENTITLEMENT_IDS.PLATINUM]) {
+    console.log('✅ Found Platinum entitlement');
+    return ENTITLEMENT_IDS.PLATINUM;
+  }
+  // Then Gold
+  if (activeEntitlements[ENTITLEMENT_IDS.GOLD]) {
+    console.log('✅ Found Gold entitlement');
+    return ENTITLEMENT_IDS.GOLD;
+  }
+
+  console.log('❌ No matching entitlement found');
+  return null;
+};
 
 // Product IDs - Match your App Store Connect products
 export const PRODUCT_IDS = {
-  GOLD_MONTHLY: 'gold_monthly',
-  PLATINUM_MONTHLY: 'platinum_monthly',
-  DIAMOND_MONTHLY: 'diamond_monthly',
+  GOLD_MONTHLY: 'wallstreetstocks.gold.monthly',
+  PLATINUM_MONTHLY: 'wallstreetstocks.platinum.monthly',
+  DIAMOND_MONTHLY: 'wallstreetstocks.diamond.monthly',
 } as const;
 
 // Subscription tier levels (for comparison)
@@ -102,16 +131,20 @@ export async function checkPremiumStatus(): Promise<{
 }> {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
-    const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
-    
+    const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
+    const entitlement = activeEntitlementId ? customerInfo.entitlements.active[activeEntitlementId] : null;
+
     if (entitlement) {
+      console.log('📱 Active entitlement ID:', activeEntitlementId);
+      console.log('📱 Product identifier:', entitlement.productIdentifier);
+      console.log('📱 Tier level:', getSubscriptionTier(entitlement.productIdentifier));
       return {
         isPremium: true,
         activeSubscription: entitlement.productIdentifier,
         expirationDate: entitlement.expirationDate,
       };
     }
-    
+
     return {
       isPremium: false,
       activeSubscription: null,
@@ -157,9 +190,9 @@ export async function purchasePackage(pkg: PurchasesPackage): Promise<{
 }> {
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
-    
-    // Check if the entitlement is now active
-    const isPremium = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
+
+    // Check if any entitlement is now active
+    const isPremium = !!getActiveEntitlement(customerInfo.entitlements.active);
     
     return {
       success: isPremium,
@@ -194,8 +227,8 @@ export async function restorePurchases(): Promise<{
 }> {
   try {
     const customerInfo = await Purchases.restorePurchases();
-    const isPremium = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
-    
+    const isPremium = !!getActiveEntitlement(customerInfo.entitlements.active);
+
     return {
       success: isPremium,
       customerInfo,
@@ -294,7 +327,8 @@ export async function getSubscriptionDetails(): Promise<{
 }> {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
-    const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
+    const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
+    const entitlement = activeEntitlementId ? customerInfo.entitlements.active[activeEntitlementId] : null;
 
     if (entitlement) {
       const productId = entitlement.productIdentifier;
