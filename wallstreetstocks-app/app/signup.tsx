@@ -15,12 +15,20 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import * as Google from 'expo-auth-session/providers/google';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import GoogleLogo from '../components/GoogleLogo';
 
-WebBrowser.maybeCompleteAuthSession();
+// Only import AppleAuthentication on iOS to prevent Android crashes
+let AppleAuthentication: typeof import('expo-apple-authentication') | null = null;
+if (Platform.OS === 'ios') {
+  AppleAuthentication = require('expo-apple-authentication');
+}
+
+// Only call maybeCompleteAuthSession on iOS to prevent Android crashes
+if (Platform.OS === 'ios') {
+  WebBrowser.maybeCompleteAuthSession();
+}
 
 const API_URL = 'https://www.wallstreetstocks.ai';
 
@@ -214,7 +222,7 @@ export default function Signup() {
   };
 
   const handleAppleSignIn = async () => {
-    if (Platform.OS !== 'ios') {
+    if (Platform.OS !== 'ios' || !AppleAuthentication) {
       Alert.alert('Error', 'Apple Sign In is only available on iOS');
       return;
     }
@@ -382,7 +390,7 @@ export default function Signup() {
         <Text style={styles.socialText}>Continue with Google</Text>
       </TouchableOpacity>
 
-      {Platform.OS === 'ios' && (
+      {Platform.OS === 'ios' && AppleAuthentication && (
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
           buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
