@@ -62,18 +62,24 @@ interface SubscriptionProviderProps {
   children: ReactNode;
 }
 
-// Helper function to determine tier from product ID
-const getTierFromProductId = (productId: string | null): string | null => {
-  if (!productId) return null;
-  
-  if (productId.includes('gold') || productId === '$rc_monthly') {
-    return 'gold';
-  } else if (productId.includes('platinum') || productId === '$rc_six_month') {
-    return 'platinum';
-  } else if (productId.includes('diamond') || productId === '$rc_annual') {
-    return 'diamond';
+// Helper function to determine tier from entitlement ID (primary) or product ID (fallback)
+const getTierFromEntitlementOrProduct = (entitlementId: string | null, productId: string | null): string | null => {
+  // First check entitlement ID (most reliable)
+  if (entitlementId) {
+    const entitlementLower = entitlementId.toLowerCase();
+    if (entitlementLower.includes('diamond')) return 'diamond';
+    if (entitlementLower.includes('platinum')) return 'platinum';
+    if (entitlementLower.includes('gold')) return 'gold';
   }
-  
+
+  // Fallback to product ID
+  if (productId) {
+    const productLower = productId.toLowerCase();
+    if (productLower.includes('diamond') || productId === '$rc_annual') return 'diamond';
+    if (productLower.includes('platinum') || productId === '$rc_six_month') return 'platinum';
+    if (productLower.includes('gold') || productId === '$rc_monthly') return 'gold';
+  }
+
   return null;
 };
 
@@ -92,8 +98,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         checkPremiumStatus(),
         getOfferings(),
       ]);
-      
-      const currentTier = getTierFromProductId(status.activeSubscription);
+
+      // status now includes activeEntitlementId for better tier detection
+      const currentTier = getTierFromEntitlementOrProduct(status.activeEntitlementId || null, status.activeSubscription);
       
       setState(prev => ({
         ...prev,
@@ -125,7 +132,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
       const entitlement = activeEntitlementId ? customerInfo.entitlements.active[activeEntitlementId] : null;
       const activeSubscription = entitlement?.productIdentifier || null;
-      const currentTier = getTierFromProductId(activeSubscription);
+      const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
       
       setState(prev => ({
         ...prev,
@@ -186,7 +193,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       }
 
       const status = await checkPremiumStatus();
-      const currentTier = getTierFromProductId(status.activeSubscription);
+      const currentTier = getTierFromEntitlementOrProduct(status.activeEntitlementId || null, status.activeSubscription);
 
       setState(prev => ({
         ...prev,
@@ -239,7 +246,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         const activeEntitlementId = getActiveEntitlement(result.customerInfo.entitlements.active);
         const entitlement = activeEntitlementId ? result.customerInfo.entitlements.active[activeEntitlementId] : null;
         const activeSubscription = entitlement?.productIdentifier || null;
-        const currentTier = getTierFromProductId(activeSubscription);
+        const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
+
+        console.log('🛒 Purchase successful:', { activeEntitlementId, activeSubscription, currentTier });
 
         setState(prev => ({
           ...prev,
@@ -258,7 +267,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           isLoading: false,
           error: result.error || 'Purchase failed',
         }));
-        
+
         return false;
       }
     } catch (error: any) {
@@ -284,7 +293,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         const activeEntitlementId = getActiveEntitlement(result.customerInfo.entitlements.active);
         const entitlement = activeEntitlementId ? result.customerInfo.entitlements.active[activeEntitlementId] : null;
         const activeSubscription = entitlement?.productIdentifier || null;
-        const currentTier = getTierFromProductId(activeSubscription);
+        const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
+
+        console.log('🔄 Restore successful:', { activeEntitlementId, activeSubscription, currentTier });
 
         setState(prev => ({
           ...prev,
@@ -303,7 +314,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           isLoading: false,
           error: result.error || 'No purchases to restore',
         }));
-        
+
         return false;
       }
     } catch (error: any) {

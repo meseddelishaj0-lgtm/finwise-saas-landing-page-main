@@ -17,25 +17,55 @@ export const ENTITLEMENT_IDS = {
 // Helper to get any active entitlement (checks highest tier first)
 export const getActiveEntitlement = (activeEntitlements: Record<string, any>): string | null => {
   // Log all active entitlements for debugging
-  console.log('🔍 Active entitlements:', Object.keys(activeEntitlements));
+  const entitlementKeys = Object.keys(activeEntitlements);
+  console.log('🔍 Active entitlements:', entitlementKeys);
 
-  // Check Diamond first (highest tier)
+  // Check exact matches first
   if (activeEntitlements[ENTITLEMENT_IDS.DIAMOND]) {
-    console.log('✅ Found Diamond entitlement');
+    console.log('✅ Found Diamond entitlement (exact match)');
     return ENTITLEMENT_IDS.DIAMOND;
   }
-  // Then Platinum
   if (activeEntitlements[ENTITLEMENT_IDS.PLATINUM]) {
-    console.log('✅ Found Platinum entitlement');
+    console.log('✅ Found Platinum entitlement (exact match)');
     return ENTITLEMENT_IDS.PLATINUM;
   }
-  // Then Gold
   if (activeEntitlements[ENTITLEMENT_IDS.GOLD]) {
-    console.log('✅ Found Gold entitlement');
+    console.log('✅ Found Gold entitlement (exact match)');
     return ENTITLEMENT_IDS.GOLD;
   }
 
-  console.log('❌ No matching entitlement found');
+  // Fallback: Check for partial matches (in case entitlement IDs are different)
+  // Check highest tier first
+  for (const key of entitlementKeys) {
+    const keyLower = key.toLowerCase();
+    if (keyLower.includes('diamond')) {
+      console.log('✅ Found Diamond entitlement (pattern match):', key);
+      return key;
+    }
+  }
+  for (const key of entitlementKeys) {
+    const keyLower = key.toLowerCase();
+    if (keyLower.includes('platinum')) {
+      console.log('✅ Found Platinum entitlement (pattern match):', key);
+      return key;
+    }
+  }
+  for (const key of entitlementKeys) {
+    const keyLower = key.toLowerCase();
+    if (keyLower.includes('gold')) {
+      console.log('✅ Found Gold entitlement (pattern match):', key);
+      return key;
+    }
+  }
+
+  // If we still have entitlements but couldn't match them, return the first one
+  // This handles cases where RevenueCat uses completely different naming
+  if (entitlementKeys.length > 0) {
+    console.log('⚠️ Using first available entitlement:', entitlementKeys[0]);
+    return entitlementKeys[0];
+  }
+
+  console.log('❌ No entitlements found');
   return null;
 };
 
@@ -127,6 +157,7 @@ export async function getCustomerInfo(): Promise<CustomerInfo> {
 export async function checkPremiumStatus(): Promise<{
   isPremium: boolean;
   activeSubscription: string | null;
+  activeEntitlementId: string | null;
   expirationDate: string | null;
 }> {
   try {
@@ -141,6 +172,7 @@ export async function checkPremiumStatus(): Promise<{
       return {
         isPremium: true,
         activeSubscription: entitlement.productIdentifier,
+        activeEntitlementId,
         expirationDate: entitlement.expirationDate,
       };
     }
@@ -148,6 +180,7 @@ export async function checkPremiumStatus(): Promise<{
     return {
       isPremium: false,
       activeSubscription: null,
+      activeEntitlementId: null,
       expirationDate: null,
     };
   } catch (error) {
@@ -155,6 +188,7 @@ export async function checkPremiumStatus(): Promise<{
     return {
       isPremium: false,
       activeSubscription: null,
+      activeEntitlementId: null,
       expirationDate: null,
     };
   }
@@ -244,24 +278,27 @@ export async function restorePurchases(): Promise<{
 }
 
 /**
- * Get subscription tier level for a product
+ * Get subscription tier level for a product or entitlement ID
  * Returns: 0 = free, 1 = gold, 2 = platinum, 3 = diamond
  */
-export function getSubscriptionTier(productId: string): number {
-  // First check exact match
-  const exactMatch = SUBSCRIPTION_TIERS[productId as keyof typeof SUBSCRIPTION_TIERS];
+export function getSubscriptionTier(productIdOrEntitlementId: string): number {
+  // First check exact match for product IDs
+  const exactMatch = SUBSCRIPTION_TIERS[productIdOrEntitlementId as keyof typeof SUBSCRIPTION_TIERS];
   if (exactMatch) return exactMatch;
 
-  // Fall back to pattern matching for various product ID formats
-  const lowerProductId = productId.toLowerCase();
+  // Fall back to pattern matching for various product ID and entitlement ID formats
+  const lowerId = productIdOrEntitlementId.toLowerCase();
 
-  if (lowerProductId.includes('diamond') || lowerProductId === '$rc_annual') {
+  // Check for diamond (tier 3)
+  if (lowerId.includes('diamond') || lowerId === '$rc_annual' || lowerId === 'diamond_access') {
     return 3;
   }
-  if (lowerProductId.includes('platinum') || lowerProductId === '$rc_six_month') {
+  // Check for platinum (tier 2)
+  if (lowerId.includes('platinum') || lowerId === '$rc_six_month' || lowerId === 'platinum_access') {
     return 2;
   }
-  if (lowerProductId.includes('gold') || lowerProductId === '$rc_monthly') {
+  // Check for gold (tier 1)
+  if (lowerId.includes('gold') || lowerId === '$rc_monthly' || lowerId === 'gold_access') {
     return 1;
   }
 
@@ -314,6 +351,29 @@ export async function openSubscriptionManagement(): Promise<boolean> {
 }
 
 /**
+ * Get tier name from entitlement ID (primary) or product ID (fallback)
+ */
+function getTierNameFromEntitlementOrProduct(entitlementId: string | null, productId: string | null): string {
+  // First check entitlement ID (most reliable)
+  if (entitlementId) {
+    const entitlementLower = entitlementId.toLowerCase();
+    if (entitlementLower.includes('diamond')) return 'Diamond';
+    if (entitlementLower.includes('platinum')) return 'Platinum';
+    if (entitlementLower.includes('gold')) return 'Gold';
+  }
+
+  // Fallback to product ID
+  if (productId) {
+    const productLower = productId.toLowerCase();
+    if (productLower.includes('diamond') || productId === '$rc_annual') return 'Diamond';
+    if (productLower.includes('platinum') || productId === '$rc_six_month') return 'Platinum';
+    if (productLower.includes('gold') || productId === '$rc_monthly') return 'Gold';
+  }
+
+  return 'Premium';
+}
+
+/**
  * Get detailed subscription information
  */
 export async function getSubscriptionDetails(): Promise<{
@@ -332,11 +392,10 @@ export async function getSubscriptionDetails(): Promise<{
 
     if (entitlement) {
       const productId = entitlement.productIdentifier;
-      let tierName = 'Premium';
+      // Use entitlement ID as primary source for tier detection
+      const tierName = getTierNameFromEntitlementOrProduct(activeEntitlementId, productId);
 
-      if (productId.toLowerCase().includes('gold')) tierName = 'Gold';
-      else if (productId.toLowerCase().includes('platinum')) tierName = 'Platinum';
-      else if (productId.toLowerCase().includes('diamond')) tierName = 'Diamond';
+      console.log('📋 Subscription details:', { activeEntitlementId, productId, tierName });
 
       // Check if subscription will renew
       const willRenew = !entitlement.willRenew ? false : entitlement.willRenew;

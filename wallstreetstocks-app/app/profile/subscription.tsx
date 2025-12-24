@@ -185,6 +185,13 @@ export default function SubscriptionPage() {
 
       const activeEntitlementId = getActiveEntitlement(info.entitlements.active);
       const entitlement = activeEntitlementId ? info.entitlements.active[activeEntitlementId] : null;
+
+      console.log('📱 Subscription check:', {
+        activeEntitlementId,
+        productIdentifier: entitlement?.productIdentifier,
+        allEntitlements: Object.keys(info.entitlements.active),
+      });
+
       if (entitlement) {
         setActiveSubscription(entitlement.productIdentifier);
         setShowManageSection(true);
@@ -386,12 +393,28 @@ export default function SubscriptionPage() {
   };
 
   const isSubscribed = (tierId: string): boolean => {
+    // Get the tier name we're checking for
+    const checkTierName = tierId.replace("wallstreetstocks.", "").replace(".monthly", "").toLowerCase();
+
+    // First check subscriptionDetails.tierName (from entitlement - most reliable)
+    if (subscriptionDetails?.tierName) {
+      return subscriptionDetails.tierName.toLowerCase() === checkTierName;
+    }
+
+    // Fallback to activeSubscription (product ID)
     if (!activeSubscription) return false;
-    const tierName = tierId.replace("_monthly", "").toLowerCase();
-    return activeSubscription.toLowerCase().includes(tierName);
+    return activeSubscription.toLowerCase().includes(checkTierName);
   };
 
   const getCurrentTierLevel = (): number => {
+    // First check subscriptionDetails.tierName (from entitlement - most reliable)
+    if (subscriptionDetails?.tierName) {
+      const tierName = subscriptionDetails.tierName.toLowerCase();
+      if (tierName === "diamond") return 3;
+      if (tierName === "platinum") return 2;
+      if (tierName === "gold") return 1;
+    }
+    // Fallback to activeSubscription (product ID)
     if (!activeSubscription) return 0;
     const sub = activeSubscription.toLowerCase();
     if (sub.includes("diamond")) return 3;
@@ -408,6 +431,14 @@ export default function SubscriptionPage() {
   };
 
   const getCurrentTierKey = (): TierKey | null => {
+    // First check subscriptionDetails.tierName (from entitlement - most reliable)
+    if (subscriptionDetails?.tierName) {
+      const tierName = subscriptionDetails.tierName.toLowerCase();
+      if (tierName === "diamond") return "diamond";
+      if (tierName === "platinum") return "platinum";
+      if (tierName === "gold") return "gold";
+    }
+    // Fallback to activeSubscription (product ID)
     if (!activeSubscription) return null;
     const sub = activeSubscription.toLowerCase();
     if (sub.includes("diamond")) return "diamond";
