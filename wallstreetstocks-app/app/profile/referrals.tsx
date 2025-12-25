@@ -35,6 +35,7 @@ export default function Referrals() {
     unlockedTiers,
     lockedTiers,
     initializeReferral,
+    applyReferralCode,
     refreshReferrals,
     generateShareMessage,
   } = useReferral();
@@ -94,12 +95,19 @@ export default function Referrals() {
     }
 
     setApplyingCode(true);
-    // Note: applyReferralCode is available from useReferral but we need to import it
-    // For now, show a placeholder message
-    Alert.alert('Coming Soon', 'This feature will be available soon!');
-    setApplyingCode(false);
-    setApplyCodeModal(false);
-    setCodeToApply('');
+    try {
+      const success = await applyReferralCode(codeToApply.trim());
+      if (success) {
+        setApplyCodeModal(false);
+        setCodeToApply('');
+        // Refresh to get updated data
+        await refreshReferrals();
+      }
+    } catch (error) {
+      console.error('Error applying code:', error);
+    } finally {
+      setApplyingCode(false);
+    }
   };
 
   const formatDate = (dateString: string) => {

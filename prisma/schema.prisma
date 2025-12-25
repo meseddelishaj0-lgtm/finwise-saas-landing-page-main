@@ -33,6 +33,11 @@ model User {
   isVerified            Boolean        @default(false)
   verifiedBadge         String?
   profileComplete       Boolean        @default(false)
+  // Referral fields
+  referralCode          String?        @unique
+  referredBy            Int?           // ID of the user who referred this user
+  referralPremiumDays   Int            @default(0) // Total premium days earned from referrals
+  referralPremiumExpiry DateTime?      // When referral premium expires
   posts                 Post[]
   comments              Comment[]
   commentLikes          CommentLike[]  @relation("UserCommentLikes")
@@ -59,6 +64,8 @@ model User {
   messagesSent          Message[]        @relation("MessagesSent")
   portfolios            Portfolio[]
   priceAlerts           PriceAlert[]
+  referralsMade         Referral[]       @relation("ReferrerUser")
+  referralsReceived     Referral[]       @relation("ReferredUser")
 }
 
 model Forum {
@@ -399,4 +406,26 @@ model PriceAlert {
   @@index([isActive, isTriggered])
   @@index([symbol])
   @@index([userId])
+}
+
+// Referral tracking
+model Referral {
+  id              Int       @id @default(autoincrement())
+  referrerId      Int       // User who made the referral (owner of the code)
+  referredUserId  Int       // User who was referred (used the code)
+  referralCode    String    // The code that was used
+  status          String    @default("pending") // pending, completed, rewarded
+  rewardDays      Int       @default(0) // Days awarded for this referral
+  completedAt     DateTime? // When the referral was completed
+  rewardedAt      DateTime? // When the reward was applied
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  referrer        User      @relation("ReferrerUser", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUser    User      @relation("ReferredUser", fields: [referredUserId], references: [id], onDelete: Cascade)
+
+  @@unique([referrerId, referredUserId])
+  @@index([referrerId])
+  @@index([referredUserId])
+  @@index([referralCode])
 }

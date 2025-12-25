@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { CustomerInfo, PurchasesPackage, PurchasesOfferings } from 'react-native-purchases';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   initializeRevenueCat,
   identifyUser,
@@ -24,7 +25,12 @@ interface SubscriptionState {
   offerings: PurchasesOfferings | null;
   customerInfo: CustomerInfo | null;
   error: string | null;
+  // Referral premium support
+  hasReferralPremium: boolean;
+  referralPremiumExpiry: string | null;
 }
+
+const API_URL = 'https://www.wallstreetstocks.ai';
 
 export interface SubscriptionContextType extends SubscriptionState {
   initialize: (userId?: string) => Promise<void>;
@@ -53,6 +59,8 @@ const initialState: SubscriptionState = {
   offerings: null,
   customerInfo: null,
   error: null,
+  hasReferralPremium: false,
+  referralPremiumExpiry: null,
 };
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -178,6 +186,28 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
   }, []);
 
+  // Check backend subscription status (includes referral premium)
+  const checkBackendSubscription = useCallback(async (userId: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/subscription/status`, {
+        headers: { 'x-user-id': userId },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          hasReferralPremium: data.referralPremium?.active || false,
+          referralPremiumExpiry: data.referralPremium?.expiresAt || null,
+          backendTier: data.tier,
+          backendExpiry: data.expiresAt,
+        };
+      }
+    } catch (error) {
+      console.log('Backend subscription check failed (offline mode):', error);
+    }
+    return null;
+  }, []);
+
   // Refresh subscription status
   const refreshStatus = useCallback(async () => {
     try {
@@ -192,15 +222,40 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       }
 
       const status = await checkPremiumStatus();
-      const currentTier = getTierFromEntitlementOrProduct(status.activeEntitlementId || null, status.activeSubscription);
+      let currentTier = getTierFromEntitlementOrProduct(status.activeEntitlementId || null, status.activeSubscription);
+      let isPremium = status.isPremium;
+      let hasReferralPremium = false;
+      let referralPremiumExpiry: string | null = null;
+
+      // Get userId from AsyncStorage for backend check
+      const userDataStr = await AsyncStorage.getItem('userData');
+      const userData = userDataStr ? JSON.parse(userDataStr) : null;
+      const userId = userData?.id?.toString();
+
+      // Also check backend for referral premium
+      if (userId) {
+        const backendStatus = await checkBackendSubscription(userId);
+        if (backendStatus) {
+          hasReferralPremium = backendStatus.hasReferralPremium;
+          referralPremiumExpiry = backendStatus.referralPremiumExpiry;
+
+          // If user has referral premium but no RevenueCat subscription, grant gold access
+          if (!isPremium && hasReferralPremium) {
+            isPremium = true;
+            currentTier = 'gold';
+          }
+        }
+      }
 
       setState(prev => ({
         ...prev,
         isLoading: false,
-        isPremium: status.isPremium,
+        isPremium,
         activeSubscription: status.activeSubscription,
         currentTier,
         expirationDate: status.expirationDate,
+        hasReferralPremium,
+        referralPremiumExpiry,
       }));
     } catch (error: any) {
       console.error('Failed to refresh status:', error);
@@ -210,7 +265,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         error: error.message || 'Failed to refresh status',
       }));
     }
-  }, []);
+  }, [checkBackendSubscription]);
 
   // Load available offerings/packages
   const loadOfferings = useCallback(async () => {
@@ -402,6 +457,8 @@ const defaultContextValue: SubscriptionContextType = {
   offerings: null,
   customerInfo: null,
   error: null,
+  hasReferralPremium: false,
+  referralPremiumExpiry: null,
   initialize: async () => {},
   identifyUser: async () => {},
   logOut: async () => {},
