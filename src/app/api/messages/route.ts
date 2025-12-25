@@ -221,3 +221,66 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// DELETE /api/messages?conversationId=X - Delete a conversation
+export async function DELETE(request: NextRequest) {
+  try {
+    const userId = request.headers.get("x-user-id");
+    const url = new URL(request.url);
+    const conversationId = url.searchParams.get("conversationId");
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID required" },
+        { status: 401 }
+      );
+    }
+
+    if (!conversationId) {
+      return NextResponse.json(
+        { error: "Conversation ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const userIdNum = parseInt(userId);
+    const conversationIdNum = parseInt(conversationId);
+
+    // Find the conversation and verify user is a participant
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationIdNum },
+    });
+
+    if (!conversation) {
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 }
+      );
+    }
+
+    if (conversation.participant1 !== userIdNum && conversation.participant2 !== userIdNum) {
+      return NextResponse.json(
+        { error: "Access denied" },
+        { status: 403 }
+      );
+    }
+
+    // Delete all messages in the conversation first
+    await prisma.message.deleteMany({
+      where: { conversationId: conversationIdNum },
+    });
+
+    // Delete the conversation
+    await prisma.conversation.delete({
+      where: { id: conversationIdNum },
+    });
+
+    return NextResponse.json({ success: true, deletedConversationId: conversationIdNum });
+  } catch (error) {
+    console.error("Error deleting conversation:", error);
+    return NextResponse.json(
+      { error: "Failed to delete conversation" },
+      { status: 500 }
+    );
+  }
+}

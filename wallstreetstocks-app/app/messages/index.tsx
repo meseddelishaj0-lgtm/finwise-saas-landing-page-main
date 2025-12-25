@@ -1,6 +1,6 @@
 // app/messages/index.tsx
 // Direct Messages - Conversations List
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,15 @@ import {
   Modal,
   TextInput,
   Alert,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Swipeable } from 'react-native-gesture-handler';
+
+const DELETE_BUTTON_WIDTH = 80;
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
@@ -206,6 +210,51 @@ export default function MessagesScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const deleteConversation = async (conversationId: number) => {
+    if (!userId) return;
+
+    Alert.alert(
+      'Delete Conversation',
+      'Are you sure you want to delete this conversation? All messages will be permanently deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            // Optimistic update
+            const deletedConversation = conversations.find(c => c.id === conversationId);
+            setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+
+            try {
+              const response = await fetch(
+                `${API_BASE_URL}/messages?conversationId=${conversationId}`,
+                {
+                  method: 'DELETE',
+                  headers: { 'x-user-id': userId },
+                }
+              );
+
+              if (!response.ok) {
+                // Restore conversation on error
+                if (deletedConversation) {
+                  setConversations((prev) => [deletedConversation, ...prev]);
+                }
+                Alert.alert('Error', 'Failed to delete conversation');
+              }
+            } catch (error) {
+              console.error('Error deleting conversation:', error);
+              if (deletedConversation) {
+                setConversations((prev) => [deletedConversation, ...prev]);
+              }
+              Alert.alert('Error', 'Failed to delete conversation');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const getDisplayName = (user: SearchUser): string => {
     if (user.name && !user.name.includes('@')) return user.name;
     if (user.username) return user.username;
@@ -237,54 +286,89 @@ export default function MessagesScreen() {
     }
   };
 
-  const renderConversation = ({ item }: { item: Conversation }) => (
-    <TouchableOpacity
-      style={styles.conversationItem}
-      onPress={() => router.push(`/messages/${item.id}`)}
-    >
-      <View style={styles.avatarContainer}>
-        {item.otherUser.profileImage ? (
-          <Image source={{ uri: item.otherUser.profileImage }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>
-              {(item.otherUser.name || item.otherUser.username || 'U')[0].toUpperCase()}
-            </Text>
-          </View>
-        )}
-        {item.unreadCount > 0 && <View style={styles.unreadBadge} />}
-      </View>
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    dragX: Animated.AnimatedInterpolation<number>,
+    conversationId: number
+  ) => {
+    const scale = dragX.interpolate({
+      inputRange: [-DELETE_BUTTON_WIDTH, 0],
+      outputRange: [1, 0.5],
+      extrapolate: 'clamp',
+    });
 
-      <View style={styles.conversationContent}>
-        <View style={styles.conversationHeader}>
-          <View style={styles.nameRow}>
-            <Text style={styles.userName} numberOfLines={1}>
-              {item.otherUser.name || item.otherUser.username}
-            </Text>
-            {item.otherUser.isVerified && (
-              <Ionicons name="checkmark-circle" size={14} color="#007AFF" style={{ marginLeft: 4 }} />
+    return (
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => deleteConversation(conversationId)}
+      >
+        <Animated.View style={{ transform: [{ scale }], alignItems: 'center' }}>
+          <Ionicons name="trash-outline" size={24} color="#FFF" />
+          <Text style={styles.deleteButtonText}>Delete</Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderConversation = ({ item }: { item: Conversation }) => {
+    return (
+      <Swipeable
+        renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item.id)}
+        rightThreshold={40}
+        overshootRight={false}
+      >
+        <TouchableOpacity
+          style={styles.conversationItem}
+          onPress={() => router.push(`/messages/${item.id}`)}
+          onLongPress={() => deleteConversation(item.id)}
+          delayLongPress={500}
+          activeOpacity={0.7}
+        >
+          <View style={styles.avatarContainer}>
+            {item.otherUser.profileImage ? (
+              <Image source={{ uri: item.otherUser.profileImage }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>
+                  {(item.otherUser.name || item.otherUser.username || 'U')[0].toUpperCase()}
+                </Text>
+              </View>
+            )}
+            {item.unreadCount > 0 && <View style={styles.unreadBadge} />}
+          </View>
+
+          <View style={styles.conversationContent}>
+            <View style={styles.conversationHeader}>
+              <View style={styles.nameRow}>
+                <Text style={styles.userName} numberOfLines={1}>
+                  {item.otherUser.name || item.otherUser.username}
+                </Text>
+                {item.otherUser.isVerified && (
+                  <Ionicons name="checkmark-circle" size={14} color="#007AFF" style={{ marginLeft: 4 }} />
+                )}
+              </View>
+              {item.lastMessage && (
+                <Text style={styles.time}>{formatTime(item.lastMessage.createdAt)}</Text>
+              )}
+            </View>
+            {item.lastMessage ? (
+              <Text
+                style={[styles.lastMessage, item.unreadCount > 0 && styles.unreadMessage]}
+                numberOfLines={1}
+              >
+                {item.lastMessage.isFromMe && 'You: '}
+                {item.lastMessage.content || '[Image]'}
+              </Text>
+            ) : (
+              <Text style={styles.noMessage}>Start a conversation</Text>
             )}
           </View>
-          {item.lastMessage && (
-            <Text style={styles.time}>{formatTime(item.lastMessage.createdAt)}</Text>
-          )}
-        </View>
-        {item.lastMessage ? (
-          <Text
-            style={[styles.lastMessage, item.unreadCount > 0 && styles.unreadMessage]}
-            numberOfLines={1}
-          >
-            {item.lastMessage.isFromMe && 'You: '}
-            {item.lastMessage.content}
-          </Text>
-        ) : (
-          <Text style={styles.noMessage}>Start a conversation</Text>
-        )}
-      </View>
 
-      <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-    </TouchableOpacity>
-  );
+          <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+        </TouchableOpacity>
+      </Swipeable>
+    );
+  };
 
   if (!userId) {
     return (
@@ -477,10 +561,23 @@ const styles = StyleSheet.create({
   listContent: {
     paddingVertical: 8,
   },
+  deleteButton: {
+    backgroundColor: '#FF3B30',
+    width: DELETE_BUTTON_WIDTH,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+  },
   conversationItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
+    backgroundColor: '#fff',
   },
   avatarContainer: {
     position: 'relative',
