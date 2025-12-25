@@ -18,6 +18,7 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import GoogleLogo from '../components/GoogleLogo';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 // Only import AppleAuthentication on iOS to prevent Android crashes
 let AppleAuthentication: typeof import('expo-apple-authentication') | null = null;
@@ -25,8 +26,17 @@ if (Platform.OS === 'ios') {
   AppleAuthentication = require('expo-apple-authentication');
 }
 
-// Complete auth session for OAuth redirects
-WebBrowser.maybeCompleteAuthSession();
+// Complete auth session for OAuth redirects (iOS only)
+if (Platform.OS === 'ios') {
+  WebBrowser.maybeCompleteAuthSession();
+}
+
+// Configure Google Sign-In for Android
+if (Platform.OS === 'android') {
+  GoogleSignin.configure({
+    webClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com',
+  });
+}
 
 function decodeJWT(token: string): { email?: string; sub?: string } | null {
   try {
@@ -52,28 +62,73 @@ export default function Login() {
   const { login, socialLogin, isNewUser } = useAuth();
   const router = useRouter();
 
-  // Google OAuth configuration
-  // For production: androidClientId with proper SHA-1 fingerprint
-  // For Expo Go testing: uses webClientId as fallback
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
-    androidClientId: '596401606956-pkeydhp63hdp0qp073m1fu0df9q46.apps.googleusercontent.com',
-    webClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com',
-  });
+  // Google OAuth configuration (iOS only - Android uses native SDK)
+  const [request, response, promptAsync] = Platform.OS === 'ios'
+    ? Google.useAuthRequest({
+        iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
+      })
+    : [null, null, async () => {}];
 
-  // Debug: Log the redirect URI being used
+  // Debug: Log the redirect URI being used (iOS)
   useEffect(() => {
-    if (request) {
+    if (request && Platform.OS === 'ios') {
       console.log('🔑 Google Auth Redirect URI:', request.redirectUri);
     }
   }, [request]);
 
+  // Handle iOS Google Sign-In response
   useEffect(() => {
-    if (response?.type === 'success') {
+    if (response?.type === 'success' && Platform.OS === 'ios') {
       const { authentication } = response;
       handleGoogleSignIn(authentication?.accessToken);
     }
   }, [response]);
+
+  // Handle Android Google Sign-In using native SDK
+  const handleAndroidGoogleSignIn = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+
+      console.log('🔑 Android Google Sign-In success:', userInfo.data?.user.email);
+
+      // Get user details and call socialLogin
+      const user = userInfo.data?.user;
+      if (user) {
+        setLoading(true);
+        await socialLogin(user.email, user.name || '', user.photo || '', 'google');
+
+        const { isNewUser: newUser, user: authUser } = useAuth.getState();
+        if (newUser || !authUser?.profileComplete) {
+          router.replace('/profile-setup');
+        } else {
+          router.replace('/(tabs)');
+        }
+      }
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log('User cancelled sign in');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        console.log('Sign in is in progress');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert('Error', 'Google Play Services is not available');
+      } else {
+        console.error('Google Sign-In error:', error);
+        Alert.alert('Error', error.message || 'Google sign-in failed');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Unified Google Sign-In handler
+  const onGoogleSignInPress = () => {
+    if (Platform.OS === 'android') {
+      handleAndroidGoogleSignIn();
+    } else {
+      promptAsync();
+    }
+  };
 
   const handleLogin = async () => {
     if (!email) {
@@ -242,8 +297,8 @@ export default function Login() {
 
       <TouchableOpacity
         style={styles.socialButton}
-        onPress={() => promptAsync()}
-        disabled={loading || !request}
+        onPress={onGoogleSignInPress}
+        disabled={loading || (Platform.OS === 'ios' && !request)}
       >
         <View style={styles.socialIcon}>
           <GoogleLogo size={20} />
