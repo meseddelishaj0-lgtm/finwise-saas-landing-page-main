@@ -12,11 +12,17 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Alert,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
@@ -30,6 +36,7 @@ interface Sender {
 interface Message {
   id: number;
   content: string;
+  imageUrl?: string | null;
   senderId: number;
   createdAt: string;
   sender: Sender;
@@ -51,6 +58,10 @@ export default function ConversationScreen() {
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -99,17 +110,131 @@ export default function ConversationScreen() {
     }
   };
 
+  const pickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const uploadImage = async (uri: string): Promise<string | null> => {
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      const filename = uri.split('/').pop() || 'image.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('file', {
+        uri,
+        name: filename,
+        type,
+      } as unknown as Blob);
+
+      const response = await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        headers: {
+          'x-user-id': userId || '',
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.url;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const deleteMessage = async (messageId: number) => {
+    if (!userId || !conversationId) return;
+
+    Alert.alert(
+      'Delete Message',
+      'Are you sure you want to delete this message?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            // Optimistic update
+            const deletedMessage = messages.find(m => m.id === messageId);
+            setMessages((prev) => prev.filter((m) => m.id !== messageId));
+
+            try {
+              const response = await fetch(
+                `${API_BASE_URL}/messages/${conversationId}?messageId=${messageId}`,
+                {
+                  method: 'DELETE',
+                  headers: { 'x-user-id': userId },
+                }
+              );
+
+              if (!response.ok) {
+                // Restore message on error
+                if (deletedMessage) {
+                  setMessages((prev) => [...prev, deletedMessage].sort(
+                    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                  ));
+                }
+                Alert.alert('Error', 'Failed to delete message');
+              }
+            } catch (error) {
+              console.error('Error deleting message:', error);
+              if (deletedMessage) {
+                setMessages((prev) => [...prev, deletedMessage].sort(
+                  (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                ));
+              }
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const sendMessage = async () => {
-    if (!message.trim() || !userId || !conversationId) return;
+    if ((!message.trim() && !selectedImage) || !userId || !conversationId) return;
 
     const content = message.trim();
+    let imageUrl: string | null = null;
+
+    // Upload image first if selected
+    if (selectedImage) {
+      imageUrl = await uploadImage(selectedImage);
+      if (!imageUrl && !content) {
+        Alert.alert('Error', 'Failed to upload image');
+        return;
+      }
+    }
+
     setMessage('');
+    setSelectedImage(null);
     setSending(true);
 
     // Optimistic update
     const tempMessage: Message = {
       id: Date.now(),
       content,
+      imageUrl,
       senderId: parseInt(userId),
       createdAt: new Date().toISOString(),
       sender: {
@@ -128,7 +253,7 @@ export default function ConversationScreen() {
           'Content-Type': 'application/json',
           'x-user-id': userId,
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, imageUrl }),
       });
 
       if (response.ok) {
@@ -180,16 +305,42 @@ export default function ConversationScreen() {
         {showDate && (
           <Text style={styles.dateHeader}>{formatDate(item.createdAt)}</Text>
         )}
-        <View style={[styles.messageContainer, isMe ? styles.myMessage : styles.theirMessage]}>
-          <View style={[styles.messageBubble, isMe ? styles.myBubble : styles.theirBubble]}>
-            <Text style={[styles.messageText, isMe ? styles.myText : styles.theirText]}>
-              {item.content}
-            </Text>
+        <TouchableOpacity
+          style={[styles.messageContainer, isMe ? styles.myMessage : styles.theirMessage]}
+          onLongPress={() => isMe && deleteMessage(item.id)}
+          delayLongPress={500}
+          activeOpacity={0.8}
+        >
+          <View style={[
+            styles.messageBubble,
+            isMe ? styles.myBubble : styles.theirBubble,
+            item.imageUrl && styles.imageBubble
+          ]}>
+            {item.imageUrl && (
+              <TouchableOpacity
+                onPress={() => {
+                  setViewingImage(item.imageUrl || null);
+                  setImageViewerVisible(true);
+                }}
+                activeOpacity={0.9}
+              >
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.messageImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            )}
+            {item.content ? (
+              <Text style={[styles.messageText, isMe ? styles.myText : styles.theirText]}>
+                {item.content}
+              </Text>
+            ) : null}
             <Text style={[styles.messageTime, isMe ? styles.myTime : styles.theirTime]}>
               {formatTime(item.createdAt)}
             </Text>
           </View>
-        </View>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -220,7 +371,7 @@ export default function ConversationScreen() {
         {otherUser && (
           <TouchableOpacity
             style={styles.headerUser}
-            onPress={() => router.push(`/profile/${otherUser.id}`)}
+            onPress={() => router.push(`/profile/${otherUser.id}` as any)}
           >
             {otherUser.profileImage ? (
               <Image source={{ uri: otherUser.profileImage }} style={styles.headerAvatar} />
@@ -268,7 +419,23 @@ export default function ConversationScreen() {
           />
         )}
 
+        {/* Selected Image Preview */}
+        {selectedImage && (
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+            <TouchableOpacity
+              style={styles.removeImageButton}
+              onPress={() => setSelectedImage(null)}
+            >
+              <Ionicons name="close-circle" size={24} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.inputContainer}>
+          <TouchableOpacity style={styles.attachButton} onPress={pickImage}>
+            <Ionicons name="image-outline" size={24} color="#007AFF" />
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
@@ -279,11 +446,14 @@ export default function ConversationScreen() {
             maxLength={1000}
           />
           <TouchableOpacity
-            style={[styles.sendButton, !message.trim() && styles.sendButtonDisabled]}
+            style={[
+              styles.sendButton,
+              (!message.trim() && !selectedImage) && styles.sendButtonDisabled
+            ]}
             onPress={sendMessage}
-            disabled={!message.trim() || sending}
+            disabled={(!message.trim() && !selectedImage) || sending || uploadingImage}
           >
-            {sending ? (
+            {sending || uploadingImage ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Ionicons name="send" size={20} color="#fff" />
@@ -291,6 +461,30 @@ export default function ConversationScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Image Viewer Modal */}
+      <Modal
+        visible={imageViewerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setImageViewerVisible(false)}
+      >
+        <View style={styles.imageViewerContainer}>
+          <TouchableOpacity
+            style={styles.imageViewerClose}
+            onPress={() => setImageViewerVisible(false)}
+          >
+            <Ionicons name="close" size={28} color="#FFF" />
+          </TouchableOpacity>
+          {viewingImage && (
+            <Image
+              source={{ uri: viewingImage }}
+              style={styles.fullImage}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -447,5 +641,55 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#C7C7CC',
+  },
+  imageBubble: {
+    padding: 4,
+  },
+  messageImage: {
+    width: SCREEN_WIDTH * 0.6,
+    height: SCREEN_WIDTH * 0.6,
+    borderRadius: 14,
+    marginBottom: 4,
+  },
+  attachButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
+  },
+  imagePreviewContainer: {
+    backgroundColor: '#fff',
+    padding: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+    position: 'relative',
+  },
+  imagePreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 4,
+    left: 84,
+  },
+  imageViewerContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageViewerClose: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+  fullImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH,
   },
 });

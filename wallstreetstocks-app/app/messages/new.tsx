@@ -12,13 +12,17 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Alert,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface RecipientUser {
   id: number;
@@ -31,6 +35,7 @@ interface RecipientUser {
 interface Message {
   id: number;
   content: string;
+  imageUrl?: string | null;
   senderId: number;
   createdAt: string;
 }
@@ -43,6 +48,8 @@ export default function NewConversationScreen() {
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -73,17 +80,83 @@ export default function NewConversationScreen() {
     }
   };
 
+  const pickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photo library.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setSelectedImage(result.assets[0].uri);
+    }
+  };
+
+  const uploadImage = async (uri: string): Promise<string | null> => {
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      const filename = uri.split('/').pop() || 'image.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+      formData.append('file', {
+        uri,
+        name: filename,
+        type,
+      } as unknown as Blob);
+
+      const response = await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        headers: {
+          'x-user-id': userId || '',
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.url;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const sendMessage = async () => {
-    if (!message.trim() || !userId || !recipientId) return;
+    if ((!message.trim() && !selectedImage) || !userId || !recipientId) return;
 
     const content = message.trim();
+    let imageUrl: string | null = null;
+
+    // Upload image first if selected
+    if (selectedImage) {
+      imageUrl = await uploadImage(selectedImage);
+      if (!imageUrl && !content) {
+        Alert.alert('Error', 'Failed to upload image');
+        return;
+      }
+    }
+
     setMessage('');
+    setSelectedImage(null);
     setSending(true);
 
     // Optimistic update
     const tempMessage: Message = {
       id: Date.now(),
       content,
+      imageUrl,
       senderId: parseInt(userId),
       createdAt: new Date().toISOString(),
     };
@@ -98,7 +171,8 @@ export default function NewConversationScreen() {
         },
         body: JSON.stringify({
           recipientId: parseInt(recipientId),
-          content
+          content,
+          imageUrl
         }),
       });
 
@@ -246,7 +320,23 @@ export default function NewConversationScreen() {
           />
         )}
 
+        {/* Selected Image Preview */}
+        {selectedImage && (
+          <View style={styles.imagePreviewContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+            <TouchableOpacity
+              style={styles.removeImageButton}
+              onPress={() => setSelectedImage(null)}
+            >
+              <Ionicons name="close-circle" size={24} color="#FF3B30" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.inputContainer}>
+          <TouchableOpacity style={styles.attachButton} onPress={pickImage}>
+            <Ionicons name="image-outline" size={24} color="#007AFF" />
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
@@ -258,11 +348,14 @@ export default function NewConversationScreen() {
             autoFocus
           />
           <TouchableOpacity
-            style={[styles.sendButton, !message.trim() && styles.sendButtonDisabled]}
+            style={[
+              styles.sendButton,
+              (!message.trim() && !selectedImage) && styles.sendButtonDisabled
+            ]}
             onPress={sendMessage}
-            disabled={!message.trim() || sending}
+            disabled={(!message.trim() && !selectedImage) || sending || uploadingImage}
           >
-            {sending ? (
+            {sending || uploadingImage ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Ionicons name="send" size={20} color="#fff" />
@@ -464,5 +557,29 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#C7C7CC',
+  },
+  attachButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
+  },
+  imagePreviewContainer: {
+    backgroundColor: '#fff',
+    padding: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+    position: 'relative',
+  },
+  imagePreview: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 4,
+    left: 84,
   },
 });

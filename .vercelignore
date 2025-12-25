@@ -1,0 +1,40 @@
+# Mobile app (React Native/Expo) - not needed for web deployment
+wallstreetstocks-app/
+
+# Dependencies (Vercel installs these)
+node_modules/
+
+# Build artifacts
+.next/
+out/
+build/
+
+# Generated files
+generated/
+*.tsbuildinfo
+
+# Local files
+.env*.local
+.DS_Store
+*.pem
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# Misc files that shouldn't be deployed
+-files
+22
+53
+et --hard commit-hash
+finwise@0.1.0
+next
+not_modified_since_yesterday.txt
+npx
+tore --source=commit-hash -- .# create branch to preserve current state
+vercel

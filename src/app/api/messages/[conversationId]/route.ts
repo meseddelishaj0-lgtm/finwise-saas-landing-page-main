@@ -106,6 +106,7 @@ export async function GET(
       messages: messages.reverse().map((msg) => ({
         id: msg.id,
         content: msg.content,
+        imageUrl: msg.imageUrl,
         createdAt: msg.createdAt.toISOString(),
         senderId: msg.senderId,
         sender: msg.sender,
@@ -142,11 +143,11 @@ export async function POST(
     const userIdNum = parseInt(userId);
     const conversationIdNum = parseInt(conversationId);
     const body = await request.json();
-    const { content } = body;
+    const { content, imageUrl } = body;
 
-    if (!content || !content.trim()) {
+    if ((!content || !content.trim()) && !imageUrl) {
       return NextResponse.json(
-        { error: "Message content is required" },
+        { error: "Message content or image is required" },
         { status: 400 }
       );
     }
@@ -196,7 +197,8 @@ export async function POST(
       data: {
         conversationId: conversationIdNum,
         senderId: userIdNum,
-        content: content.trim(),
+        content: content?.trim() || '',
+        imageUrl: imageUrl || null,
       },
       include: {
         sender: {
@@ -220,6 +222,7 @@ export async function POST(
       message: {
         id: message.id,
         content: message.content,
+        imageUrl: message.imageUrl,
         createdAt: message.createdAt.toISOString(),
         senderId: message.senderId,
         sender: message.sender,
@@ -231,6 +234,79 @@ export async function POST(
     console.error("Error sending message:", error);
     return NextResponse.json(
       { error: "Failed to send message" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/messages/[conversationId] - Delete a message
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ conversationId: string }> }
+) {
+  try {
+    const userId = request.headers.get("x-user-id");
+    const { conversationId } = await params;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID required" },
+        { status: 401 }
+      );
+    }
+
+    const userIdNum = parseInt(userId);
+    const url = new URL(request.url);
+    const messageId = url.searchParams.get("messageId");
+
+    if (!messageId) {
+      return NextResponse.json(
+        { error: "Message ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const messageIdNum = parseInt(messageId);
+
+    // Find the message and verify ownership
+    const message = await prisma.message.findUnique({
+      where: { id: messageIdNum },
+      include: { conversation: true },
+    });
+
+    if (!message) {
+      return NextResponse.json(
+        { error: "Message not found" },
+        { status: 404 }
+      );
+    }
+
+    // Only the sender can delete their own message
+    if (message.senderId !== userIdNum) {
+      return NextResponse.json(
+        { error: "You can only delete your own messages" },
+        { status: 403 }
+      );
+    }
+
+    // Verify the message belongs to the specified conversation
+    if (message.conversationId !== parseInt(conversationId)) {
+      return NextResponse.json(
+        { error: "Message does not belong to this conversation" },
+        { status: 400 }
+      );
+    }
+
+    // Delete the message
+    await prisma.message.delete({
+      where: { id: messageIdNum },
+    });
+
+    return NextResponse.json({ success: true, deletedMessageId: messageIdNum });
+  } catch (error) {
+    console.error("Error deleting message:", error);
+    return NextResponse.json(
+      { error: "Failed to delete message" },
       { status: 500 }
     );
   }

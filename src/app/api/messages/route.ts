@@ -112,11 +112,11 @@ export async function POST(request: NextRequest) {
 
     const userIdNum = parseInt(userId);
     const body = await request.json();
-    const { recipientId, content } = body;
+    const { recipientId, content, imageUrl } = body;
 
-    if (!recipientId || !content) {
+    if (!recipientId || (!content && !imageUrl)) {
       return NextResponse.json(
-        { error: "Recipient ID and content are required" },
+        { error: "Recipient ID and content or image are required" },
         { status: 400 }
       );
     }
@@ -180,7 +180,8 @@ export async function POST(request: NextRequest) {
       data: {
         conversationId: conversation.id,
         senderId: userIdNum,
-        content: content.trim(),
+        content: content?.trim() || '',
+        imageUrl: imageUrl || null,
       },
       include: {
         sender: {
@@ -204,6 +205,7 @@ export async function POST(request: NextRequest) {
       message: {
         id: message.id,
         content: message.content,
+        imageUrl: message.imageUrl,
         createdAt: message.createdAt.toISOString(),
         senderId: message.senderId,
         sender: message.sender,
