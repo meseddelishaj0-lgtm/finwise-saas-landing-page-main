@@ -11,7 +11,6 @@ import {
   ENTITLEMENT_IDS,
   getActiveEntitlement,
   PRODUCT_IDS,
-  getSubscriptionTier,
 } from '../services/revenueCat';
 
 interface SubscriptionState {
@@ -329,23 +328,33 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
   }, []);
 
+  // Helper function to convert tier string to number
+  const tierToNumber = (tier: string | null): number => {
+    switch (tier) {
+      case 'diamond': return 3;
+      case 'platinum': return 2;
+      case 'gold': return 1;
+      default: return 0;
+    }
+  };
+
   // Check if user has access to a feature based on tier
   const hasFeatureAccess = useCallback((requiredTier: number): boolean => {
-    if (!state.isPremium || !state.activeSubscription) {
+    if (!state.isPremium) {
       return false;
     }
-    
-    const userTier = getSubscriptionTier(state.activeSubscription);
+
+    // Use the already-calculated currentTier which properly detects from entitlement ID first
+    const userTier = tierToNumber(state.currentTier);
+    console.log(`🔐 Access check: required=${requiredTier}, user=${userTier}, tier=${state.currentTier}`);
     return userTier >= requiredTier;
-  }, [state.isPremium, state.activeSubscription]);
+  }, [state.isPremium, state.currentTier]);
 
   // Get current subscription tier
   const getActiveSubscriptionTier = useCallback((): number => {
-    if (!state.activeSubscription) {
-      return 0;
-    }
-    return getSubscriptionTier(state.activeSubscription);
-  }, [state.activeSubscription]);
+    // Use the already-calculated currentTier which properly detects from entitlement ID first
+    return tierToNumber(state.currentTier);
+  }, [state.currentTier]);
 
   // Helper getters for specific packages
   const goldPackage = state.packages.find(p =>
