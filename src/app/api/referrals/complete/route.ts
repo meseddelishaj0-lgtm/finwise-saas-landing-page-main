@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-// Reward tiers
+// Reward tiers with subscription tier levels
 const REWARD_TIERS = [
-  { referrals: 5, reward: '1 Week Premium', days: 7 },
-  { referrals: 10, reward: '1 Month Premium', days: 30 },
-  { referrals: 15, reward: '2 Months Premium', days: 60 },
-  { referrals: 20, reward: '3 Months Premium', days: 90 },
-  { referrals: 30, reward: '6 Months Premium', days: 180 },
-  { referrals: 50, reward: '1 Year Premium', days: 365 },
+  { referrals: 5, reward: '1 Week Gold', days: 7, tier: 'gold' },
+  { referrals: 10, reward: '1 Month Gold', days: 30, tier: 'gold' },
+  { referrals: 15, reward: '2 Months Platinum', days: 60, tier: 'platinum' },
+  { referrals: 20, reward: '3 Months Platinum', days: 90, tier: 'platinum' },
+  { referrals: 30, reward: '6 Months Diamond', days: 180, tier: 'diamond' },
+  { referrals: 50, reward: '1 Year Diamond', days: 365, tier: 'diamond' },
 ];
 
 function calculatePremiumDays(completedReferrals: number): number {
@@ -19,6 +19,16 @@ function calculatePremiumDays(completedReferrals: number): number {
     }
   }
   return totalDays;
+}
+
+function calculateReferralTier(completedReferrals: number): string {
+  let tier = 'free';
+  for (const rewardTier of REWARD_TIERS) {
+    if (completedReferrals >= rewardTier.referrals) {
+      tier = rewardTier.tier;
+    }
+  }
+  return tier;
 }
 
 // POST /api/referrals/complete - Complete a referral (mark as done)
@@ -64,6 +74,7 @@ export async function POST(request: NextRequest) {
     });
 
     const totalDays = calculatePremiumDays(completedCount);
+    const referralTier = calculateReferralTier(completedCount);
 
     if (totalDays > 0) {
       // Calculate new expiry date
@@ -76,13 +87,14 @@ export async function POST(request: NextRequest) {
       const newExpiry = new Date(startDate);
       newExpiry.setDate(newExpiry.getDate() + totalDays);
 
-      // Update referrer's premium status
+      // Update referrer's premium status with appropriate tier
       await prisma.user.update({
         where: { id: referrer.id },
         data: {
           referralPremiumDays: totalDays,
           referralPremiumExpiry: newExpiry,
-          subscriptionTier: 'gold',
+          // Tier based on referral count: 5-14=Gold, 15-29=Platinum, 30+=Diamond
+          subscriptionTier: referralTier,
           subscriptionExpiry: newExpiry,
           subscriptionStatus: 'active',
         },

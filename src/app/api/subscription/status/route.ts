@@ -58,9 +58,10 @@ export async function GET(request: NextRequest) {
     if (hasRevenueCatSubscription && user.subscriptionTier) {
       activeTier = user.subscriptionTier;
       activeExpiry = user.subscriptionExpiry?.toISOString() || null;
-    } else if (hasReferralPremium) {
-      // Referral premium gives Gold tier access
-      activeTier = 'gold';
+    } else if (hasReferralPremium && user.subscriptionTier) {
+      // Referral premium tier is stored in subscriptionTier
+      // Based on referral count: 5-14=Gold, 15-29=Platinum, 30+=Diamond
+      activeTier = user.subscriptionTier;
       activeExpiry = user.referralPremiumExpiry?.toISOString() || null;
     }
 

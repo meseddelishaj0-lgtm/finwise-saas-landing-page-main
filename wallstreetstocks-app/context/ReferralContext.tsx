@@ -7,14 +7,15 @@ const REFERRAL_DATA_KEY = 'referral_data';
 const REFERRAL_CODE_KEY = 'referral_code';
 const API_URL = 'https://www.wallstreetstocks.ai';
 
-// Reward tiers configuration
+// Reward tiers configuration with subscription tier levels
+// Higher referral counts unlock higher subscription tiers
 export const REWARD_TIERS = [
-  { referrals: 5, reward: '1 Week Premium', days: 7, icon: 'star' },
-  { referrals: 10, reward: '1 Month Premium', days: 30, icon: 'diamond' },
-  { referrals: 15, reward: '2 Months Premium', days: 60, icon: 'trophy' },
-  { referrals: 20, reward: '3 Months Premium', days: 90, icon: 'medal' },
-  { referrals: 30, reward: '6 Months Premium', days: 180, icon: 'ribbon' },
-  { referrals: 50, reward: '1 Year Premium', days: 365, icon: 'crown' },
+  { referrals: 5, reward: '1 Week Gold', days: 7, icon: 'star', tier: 'gold' },
+  { referrals: 10, reward: '1 Month Gold', days: 30, icon: 'star', tier: 'gold' },
+  { referrals: 15, reward: '2 Months Platinum', days: 60, icon: 'diamond', tier: 'platinum' },
+  { referrals: 20, reward: '3 Months Platinum', days: 90, icon: 'diamond', tier: 'platinum' },
+  { referrals: 30, reward: '6 Months Diamond', days: 180, icon: 'trophy', tier: 'diamond' },
+  { referrals: 50, reward: '1 Year Diamond', days: 365, icon: 'crown', tier: 'diamond' },
 ];
 
 export interface Referral {

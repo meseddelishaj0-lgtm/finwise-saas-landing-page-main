@@ -239,10 +239,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           hasReferralPremium = backendStatus.hasReferralPremium;
           referralPremiumExpiry = backendStatus.referralPremiumExpiry;
 
-          // If user has referral premium but no RevenueCat subscription, grant gold access
+          // If user has referral premium but no RevenueCat subscription, use backend tier
+          // Tier is based on referral count: 5-14=Gold, 15-29=Platinum, 30+=Diamond
           if (!isPremium && hasReferralPremium) {
             isPremium = true;
-            currentTier = 'gold';
+            currentTier = backendStatus.backendTier || 'gold';
           }
         }
       }
