@@ -62,9 +62,12 @@ export default function Signup() {
   const router = useRouter();
 
   // Google OAuth configuration
+  // For production: androidClientId with proper SHA-1 fingerprint
+  // For Expo Go testing: uses webClientId as fallback
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
     androidClientId: '596401606956-pkeydhp63hdp0qp073m1fu0df9q46.apps.googleusercontent.com',
+    webClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com',
   });
 
   // Debug: Log the redirect URI being used
