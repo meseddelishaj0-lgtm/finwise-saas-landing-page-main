@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View, StatusBar, Platform } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SubscriptionProvider, useSubscription } from "../context/SubscriptionContext";
 import { StockProvider } from "../context/StockContext";
 import { WatchlistProvider } from "../context/WatchlistContext";
@@ -37,35 +38,37 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        <SubscriptionProvider>
-          <ReferralProvider>
-            <WatchlistProvider>
-              <StockProvider>
-                <UserProfileProvider>
-                  <NotificationProvider>
-                    <AppInitializer>
-                      <View style={{ flex: 1, backgroundColor: "black" }}>
-                        <StatusBar
-                          barStyle="light-content"
-                          backgroundColor="black"
-                          translucent={Platform.OS === 'android'}
-                        />
-                        <Stack
-                          screenOptions={{
-                            headerShown: false,
-                          }}
-                        />
-                      </View>
-                    </AppInitializer>
-                  </NotificationProvider>
-                </UserProfileProvider>
-              </StockProvider>
-            </WatchlistProvider>
-          </ReferralProvider>
-        </SubscriptionProvider>
-      </SafeAreaProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+          <SubscriptionProvider>
+            <ReferralProvider>
+              <WatchlistProvider>
+                <StockProvider>
+                  <UserProfileProvider>
+                    <NotificationProvider>
+                      <AppInitializer>
+                        <View style={{ flex: 1, backgroundColor: "black" }}>
+                          <StatusBar
+                            barStyle="light-content"
+                            backgroundColor="black"
+                            translucent={Platform.OS === 'android'}
+                          />
+                          <Stack
+                            screenOptions={{
+                              headerShown: false,
+                            }}
+                          />
+                        </View>
+                      </AppInitializer>
+                    </NotificationProvider>
+                  </UserProfileProvider>
+                </StockProvider>
+              </WatchlistProvider>
+            </ReferralProvider>
+          </SubscriptionProvider>
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
