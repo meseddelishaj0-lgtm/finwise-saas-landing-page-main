@@ -25,10 +25,8 @@ if (Platform.OS === 'ios') {
   AppleAuthentication = require('expo-apple-authentication');
 }
 
-// Only call maybeCompleteAuthSession on iOS to prevent Android crashes
-if (Platform.OS === 'ios') {
-  WebBrowser.maybeCompleteAuthSession();
-}
+// Complete auth session for OAuth redirects
+WebBrowser.maybeCompleteAuthSession();
 
 const API_URL = 'https://www.wallstreetstocks.ai';
 
@@ -63,12 +61,10 @@ export default function Signup() {
   const { signup, socialLogin } = useAuth();
   const router = useRouter();
 
-  // Use webClientId for Android (more reliable, uses browser-based OAuth)
-  // iosClientId for iOS native OAuth
+  // Google OAuth configuration
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
-    webClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com',
-    // Android uses webClientId via browser redirect (no SHA-1 fingerprint needed)
+    androidClientId: '596401606956-pkeydhp63hdp0qp073m1fu0df9q46.apps.googleusercontent.com',
   });
 
   // Debug: Log the redirect URI being used
