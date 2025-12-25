@@ -10,6 +10,9 @@ import {
   RefreshControl,
   ActivityIndicator,
   Image,
+  Modal,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,11 +41,31 @@ interface Conversation {
   updatedAt: string;
 }
 
+interface SearchUser {
+  id: number;
+  name: string | null;
+  email: string;
+  username?: string | null;
+  profileImage?: string | null;
+  _count?: {
+    posts: number;
+    followers: number;
+  };
+}
+
 export default function MessagesScreen() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // New message modal state
+  const [newMessageModal, setNewMessageModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [suggestedUsers, setSuggestedUsers] = useState<SearchUser[]>([]);
+  const [startingConversation, setStartingConversation] = useState(false);
 
   useEffect(() => {
     loadUserId();
@@ -96,6 +119,106 @@ export default function MessagesScreen() {
       fetchConversations(userId);
     }
   }, [userId]);
+
+  const fetchSuggestedUsers = async (uid: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/user/suggested?userId=${uid}&limit=20`);
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestedUsers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching suggested users:', error);
+    }
+  };
+
+  const searchUsers = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      // Search for users by username or name
+      const response = await fetch(
+        `${API_BASE_URL}/user/by-username?query=${encodeURIComponent(query)}&userId=${userId}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        // Handle both single user and array responses
+        if (Array.isArray(data)) {
+          setSearchResults(data.filter((u: SearchUser) => u.id.toString() !== userId));
+        } else if (data.users) {
+          setSearchResults(data.users.filter((u: SearchUser) => u.id.toString() !== userId));
+        } else if (data.id) {
+          // Single user found
+          setSearchResults(data.id.toString() !== userId ? [data] : []);
+        } else {
+          setSearchResults([]);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const openNewMessageModal = () => {
+    setNewMessageModal(true);
+    setSearchQuery('');
+    setSearchResults([]);
+    if (userId) {
+      fetchSuggestedUsers(userId);
+    }
+  };
+
+  const startConversation = async (recipientId: number) => {
+    if (!userId) return;
+
+    // Check if conversation already exists
+    const existingConversation = conversations.find(
+      conv => conv.otherUser.id === recipientId
+    );
+
+    if (existingConversation) {
+      setNewMessageModal(false);
+      router.push(`/messages/${existingConversation.id}`);
+      return;
+    }
+
+    // Navigate to a new conversation screen
+    setNewMessageModal(false);
+    router.push(`/messages/new?recipientId=${recipientId}`);
+  };
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) {
+        searchUsers(searchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const getDisplayName = (user: SearchUser): string => {
+    if (user.name && !user.name.includes('@')) return user.name;
+    if (user.username) return user.username;
+    return 'User';
+  };
+
+  const getHandle = (user: SearchUser): string => {
+    if (user.username) return user.username;
+    if (user.name && !user.name.includes('@')) {
+      return user.name.toLowerCase().replace(/\s+/g, '');
+    }
+    return `user${user.id}`;
+  };
 
   const formatTime = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -189,7 +312,9 @@ export default function MessagesScreen() {
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Messages</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity onPress={openNewMessageModal} style={styles.newMessageButton}>
+          <Ionicons name="create-outline" size={24} color="#007AFF" />
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -201,8 +326,12 @@ export default function MessagesScreen() {
           <Ionicons name="chatbubbles-outline" size={64} color="#8E8E93" />
           <Text style={styles.emptyTitle}>No Messages Yet</Text>
           <Text style={styles.emptySubtitle}>
-            Visit a user profile and tap Message to start chatting
+            Tap the compose button to start a conversation
           </Text>
+          <TouchableOpacity style={styles.startMessageButton} onPress={openNewMessageModal}>
+            <Ionicons name="add" size={20} color="#FFF" />
+            <Text style={styles.startMessageButtonText}>New Message</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
@@ -214,6 +343,87 @@ export default function MessagesScreen() {
           contentContainerStyle={styles.listContent}
         />
       )}
+
+      {/* New Message Modal */}
+      <Modal
+        visible={newMessageModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setNewMessageModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setNewMessageModal(false)}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>New Message</Text>
+            <View style={{ width: 60 }} />
+          </View>
+
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#8E8E93" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name or username..."
+              placeholderTextColor="#8E8E93"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={20} color="#8E8E93" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {searchLoading ? (
+            <View style={styles.searchLoadingContainer}>
+              <ActivityIndicator size="small" color="#007AFF" />
+            </View>
+          ) : searchQuery.length > 0 && searchResults.length === 0 ? (
+            <View style={styles.noResultsContainer}>
+              <Ionicons name="person-outline" size={48} color="#C7C7CC" />
+              <Text style={styles.noResultsText}>No users found</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={searchQuery.length > 0 ? searchResults : suggestedUsers}
+              keyExtractor={(item) => item.id.toString()}
+              ListHeaderComponent={
+                searchQuery.length === 0 && suggestedUsers.length > 0 ? (
+                  <Text style={styles.sectionHeader}>Suggested</Text>
+                ) : null
+              }
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.userItem}
+                  onPress={() => startConversation(item.id)}
+                >
+                  <View style={styles.userAvatarContainer}>
+                    {item.profileImage ? (
+                      <Image source={{ uri: item.profileImage }} style={styles.userAvatar} />
+                    ) : (
+                      <View style={styles.userAvatarPlaceholder}>
+                        <Text style={styles.userAvatarText}>
+                          {getDisplayName(item)[0].toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{getDisplayName(item)}</Text>
+                    <Text style={styles.userHandle}>@{getHandle(item)}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                </TouchableOpacity>
+              )}
+              ItemSeparatorComponent={() => <View style={styles.userSeparator} />}
+              contentContainerStyle={styles.userListContent}
+            />
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -346,5 +556,129 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E5E5EA',
     marginLeft: 84,
+  },
+  newMessageButton: {
+    width: 40,
+    alignItems: 'flex-end',
+  },
+  startMessageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+    gap: 8,
+    marginTop: 20,
+  },
+  startMessageButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  cancelText: {
+    fontSize: 17,
+    color: '#007AFF',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000',
+  },
+  searchLoadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noResultsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#8E8E93',
+    marginTop: 12,
+  },
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
+    textTransform: 'uppercase',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#F2F2F7',
+  },
+  userItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  userAvatarContainer: {
+    marginRight: 12,
+  },
+  userAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+  },
+  userAvatarPlaceholder: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E5E5EA',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userAvatarText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userHandle: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+  userSeparator: {
+    height: 1,
+    backgroundColor: '#E5E5EA',
+    marginLeft: 76,
+  },
+  userListContent: {
+    paddingBottom: 20,
   },
 });

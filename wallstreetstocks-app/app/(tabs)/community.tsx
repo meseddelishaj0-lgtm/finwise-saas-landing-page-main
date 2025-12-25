@@ -2214,14 +2214,13 @@ export default function CommunityPage() {
                 </View>
               </View>
 
-              {/* Follow Button - Show for other users */}
+              {/* Follow & Message Buttons - Show for other users */}
               {selectedProfile?.id !== getUserId() && (
                 <View style={styles.profileActionButtons}>
                   <TouchableOpacity
                     style={[
                       styles.followButton,
                       selectedProfile?.isFollowing && styles.followingButton,
-                      { flex: 1 }
                     ]}
                     onPress={handleFollowUser}
                     disabled={followLoading}
@@ -2243,6 +2242,20 @@ export default function CommunityPage() {
                         </Text>
                       </>
                     )}
+                  </TouchableOpacity>
+
+                  {/* Message Button */}
+                  <TouchableOpacity
+                    style={styles.messageButton}
+                    onPress={() => {
+                      if (selectedProfile?.id) {
+                        setProfileModal(false);
+                        router.push(`/messages/new?recipientId=${selectedProfile.id}`);
+                      }
+                    }}
+                  >
+                    <Ionicons name="chatbubble-outline" size={18} color="#007AFF" />
+                    <Text style={styles.messageButtonText}>Message</Text>
                   </TouchableOpacity>
 
                   {/* More Options Button */}
@@ -3589,6 +3602,23 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   followingButtonText: {
+    color: '#007AFF',
+  },
+  messageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+    gap: 6,
+  },
+  messageButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#007AFF',
   },
   editProfileButton: {
