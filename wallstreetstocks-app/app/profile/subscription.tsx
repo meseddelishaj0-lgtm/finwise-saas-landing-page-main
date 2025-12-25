@@ -136,12 +136,14 @@ export default function SubscriptionPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedTier, setSelectedTier] = useState<TierKey>("platinum");
   const [_customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [activeSubscription, setActiveSubscription] = useState<string | null>(null);
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
   const [showManageSection, setShowManageSection] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
 
   // Refresh data every time the screen comes into focus
   useFocusEffect(
@@ -204,6 +206,22 @@ export default function SubscriptionPage() {
   const loadSubscriptionDetails = async () => {
     const details = await getSubscriptionDetails();
     setSubscriptionDetails(details);
+
+    // Check if subscription is expired (has expiration date in the past)
+    if (details.expirationDate) {
+      const expiryDate = new Date(details.expirationDate);
+      const now = new Date();
+      const expired = expiryDate < now && !details.isActive;
+      setIsExpired(expired);
+
+      // If expired, reset the active subscription state
+      if (expired) {
+        setActiveSubscription(null);
+        setShowManageSection(false);
+      }
+    } else {
+      setIsExpired(false);
+    }
   };
 
   const getPackageForTier = (tierId: string): PurchasesPackage | undefined => {
@@ -370,8 +388,15 @@ export default function SubscriptionPage() {
   };
 
   const handleRestore = async () => {
-    setLoading(true);
+    setRestoring(true);
     try {
+      // Force sync first to get latest data from stores
+      try {
+        await Purchases.syncPurchases();
+      } catch (e) {
+        console.log('Sync error (non-blocking):', e);
+      }
+
       const info = await Purchases.restorePurchases();
       setCustomerInfo(info);
 
@@ -380,15 +405,16 @@ export default function SubscriptionPage() {
       if (entitlement) {
         setActiveSubscription(entitlement.productIdentifier);
         setShowManageSection(true);
+        setIsExpired(false);
         await loadSubscriptionDetails();
         Alert.alert("Success", "Your subscription has been restored!");
       } else {
-        Alert.alert("No Subscriptions Found", "We couldn't find any active subscriptions.");
+        Alert.alert("No Subscriptions Found", "We couldn't find any active subscriptions to restore. If you recently subscribed, please try again in a few minutes.");
       }
     } catch (error: any) {
-      Alert.alert("Restore Failed", error.message || "Unable to restore purchases.");
+      Alert.alert("Restore Failed", error.message || "Unable to restore purchases. Please try again.");
     } finally {
-      setLoading(false);
+      setRestoring(false);
     }
   };
 
@@ -447,6 +473,25 @@ export default function SubscriptionPage() {
     return null;
   };
 
+  // Render expired subscription banner
+  const renderExpiredBanner = () => {
+    if (!isExpired) return null;
+
+    return (
+      <View style={styles.expiredBanner}>
+        <View style={styles.expiredIconContainer}>
+          <XCircle size={24} color="#FF3B30" />
+        </View>
+        <View style={styles.expiredContent}>
+          <Text style={styles.expiredTitle}>Subscription Expired</Text>
+          <Text style={styles.expiredSubtitle}>
+            Your subscription has expired. Resubscribe to continue enjoying premium features.
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   const renderCurrentSubscriptionCard = () => {
     if (!subscriptionDetails?.isActive) return null;
 
@@ -455,6 +500,23 @@ export default function SubscriptionPage() {
 
     const tier = TIERS[currentTierKey];
     const Icon = tier.icon;
+
+    // Check if subscription is expiring soon (within 7 days)
+    const isExpiringSoon = (() => {
+      if (!subscriptionDetails.expirationDate || subscriptionDetails.willRenew) return false;
+      const expiryDate = new Date(subscriptionDetails.expirationDate);
+      const now = new Date();
+      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      return daysUntilExpiry > 0 && daysUntilExpiry <= 7;
+    })();
+
+    // Calculate days until expiry for the warning message
+    const getDaysUntilExpiry = () => {
+      if (!subscriptionDetails.expirationDate) return 0;
+      const expiryDate = new Date(subscriptionDetails.expirationDate);
+      const now = new Date();
+      return Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    };
 
     return (
       <View style={[styles.currentSubCard, { borderColor: tier.color }]}>
@@ -472,6 +534,24 @@ export default function SubscriptionPage() {
             </View>
           )}
         </View>
+
+        {/* Expiring Soon Warning */}
+        {isExpiringSoon && (
+          <View style={styles.expiringWarning}>
+            <Text style={styles.expiringWarningText}>
+              ⚠️ Your subscription expires in {getDaysUntilExpiry()} day{getDaysUntilExpiry() !== 1 ? 's' : ''}. Resubscribe to keep your premium features.
+            </Text>
+          </View>
+        )}
+
+        {/* Canceled Warning */}
+        {subscriptionDetails.isCanceled && !isExpiringSoon && (
+          <View style={styles.canceledWarning}>
+            <Text style={styles.canceledWarningText}>
+              Your subscription has been canceled. You'll have access until {formatExpirationDate(subscriptionDetails.expirationDate)}.
+            </Text>
+          </View>
+        )}
 
         <View style={styles.currentSubDetails}>
           <View style={styles.detailRow}>
@@ -634,6 +714,9 @@ export default function SubscriptionPage() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Expired Subscription Banner */}
+        {renderExpiredBanner()}
+
         {/* Current Subscription Section */}
         {showManageSection && renderCurrentSubscriptionCard()}
 
@@ -711,8 +794,19 @@ export default function SubscriptionPage() {
         )}
 
         {/* Restore Purchases */}
-        <TouchableOpacity style={styles.restoreButton} onPress={handleRestore}>
-          <Text style={styles.restoreText}>Restore Purchases</Text>
+        <TouchableOpacity
+          style={[styles.restoreButton, restoring && styles.restoreButtonDisabled]}
+          onPress={handleRestore}
+          disabled={restoring}
+        >
+          {restoring ? (
+            <View style={styles.restoreLoading}>
+              <ActivityIndicator size="small" color="#007AFF" />
+              <Text style={styles.restoreText}>Restoring...</Text>
+            </View>
+          ) : (
+            <Text style={styles.restoreText}>Restore Purchases</Text>
+          )}
         </TouchableOpacity>
 
         {/* Terms */}
@@ -827,6 +921,32 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
   },
+  expiringWarning: {
+    backgroundColor: "#FFF3E0",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#FFE0B2",
+  },
+  expiringWarningText: {
+    fontSize: 13,
+    color: "#E65100",
+    lineHeight: 18,
+  },
+  canceledWarning: {
+    backgroundColor: "#FFF3F3",
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#FFCDD2",
+  },
+  canceledWarningText: {
+    fontSize: 13,
+    color: "#D32F2F",
+    lineHeight: 18,
+  },
   currentSubDetails: {
     backgroundColor: "#F8F9FA",
     borderRadius: 12,
@@ -876,6 +996,40 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#FF3B30",
     fontWeight: "500",
+  },
+  // Expired Banner
+  expiredBanner: {
+    flexDirection: "row",
+    backgroundColor: "#FFF3F3",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#FFCDD2",
+    alignItems: "center",
+  },
+  expiredIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFEBEE",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  expiredContent: {
+    flex: 1,
+  },
+  expiredTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#D32F2F",
+    marginBottom: 4,
+  },
+  expiredSubtitle: {
+    fontSize: 13,
+    color: "#666",
+    lineHeight: 18,
   },
   // Hero Section
   heroSection: {
@@ -1091,6 +1245,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     marginBottom: 20,
+  },
+  restoreButtonDisabled: {
+    opacity: 0.7,
+  },
+  restoreLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   restoreText: {
     fontSize: 15,

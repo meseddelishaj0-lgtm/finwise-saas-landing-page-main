@@ -93,13 +93,40 @@ const getTierFromEntitlementOrProduct = (entitlementId: string | null, productId
 export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const [state, setState] = useState<SubscriptionState>(initialState);
 
+  // Handle subscription changes from RevenueCat listener
+  const handleCustomerInfoUpdate = useCallback((customerInfo: CustomerInfo) => {
+    console.log('📱 Subscription status updated from RevenueCat');
+    const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
+    const entitlement = activeEntitlementId ? customerInfo.entitlements.active[activeEntitlementId] : null;
+    const activeSubscription = entitlement?.productIdentifier || null;
+    const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
+
+    setState(prev => ({
+      ...prev,
+      customerInfo,
+      isPremium: !!entitlement,
+      activeSubscription,
+      currentTier,
+      expirationDate: entitlement?.expirationDate || null,
+    }));
+  }, []);
+
   // Initialize RevenueCat
   const initialize = useCallback(async (userId?: string) => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
-      
+
       await initializeRevenueCat(userId);
-      
+
+      // Set up listener for subscription changes (catches external changes like App Store cancellations)
+      try {
+        const Purchases = require('react-native-purchases').default;
+        Purchases.addCustomerInfoUpdateListener(handleCustomerInfoUpdate);
+        console.log('✅ Subscription change listener registered');
+      } catch (listenerError) {
+        console.warn('Could not add subscription listener:', listenerError);
+      }
+
       // Get initial subscription status and offerings in parallel
       const [status, packages] = await Promise.all([
         checkPremiumStatus(),
@@ -108,7 +135,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
       // status now includes activeEntitlementId for better tier detection
       const currentTier = getTierFromEntitlementOrProduct(status.activeEntitlementId || null, status.activeSubscription);
-      
+
       setState(prev => ({
         ...prev,
         isInitialized: true,
@@ -128,7 +155,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         error: error.message || 'Failed to initialize',
       }));
     }
-  }, []);
+  }, [handleCustomerInfoUpdate]);
 
   // Identify user (call after login)
   const handleIdentifyUser = useCallback(async (userId: string) => {
