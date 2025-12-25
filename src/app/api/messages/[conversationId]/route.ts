@@ -1,175 +1,237 @@
-// src/app/api/messages/[conversationId]/route.ts
-// Messages within a conversation
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { sendPushNotificationToUser } from '@/lib/pushNotifications';
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-export const dynamic = 'force-dynamic';
-
-// Get messages in a conversation
+// GET /api/messages/[conversationId] - Get messages in a conversation
 export async function GET(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
-    const userId = req.headers.get('x-user-id');
+    const userId = request.headers.get("x-user-id");
+    const { conversationId } = await params;
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: "User ID required" },
+        { status: 401 }
+      );
     }
 
-    const { conversationId } = await params;
-    const userIdInt = parseInt(userId);
-    const conversationIdInt = parseInt(conversationId);
+    const userIdNum = parseInt(userId);
+    const conversationIdNum = parseInt(conversationId);
 
-    // Verify user is part of conversation
-    const conversation = await prisma.conversation.findFirst({
-      where: {
-        id: conversationIdInt,
-        OR: [
-          { participant1: userIdInt },
-          { participant2: userIdInt },
-        ],
-      },
+    // Verify user is part of this conversation
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationIdNum },
       include: {
         user1: {
-          select: { id: true, username: true, name: true, profileImage: true, isVerified: true },
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            profileImage: true,
+            isVerified: true,
+          },
         },
         user2: {
-          select: { id: true, username: true, name: true, profileImage: true, isVerified: true },
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            profileImage: true,
+            isVerified: true,
+          },
         },
       },
     });
 
     if (!conversation) {
-      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 }
+      );
     }
 
-    // Get messages with pagination
-    const { searchParams } = new URL(req.url);
-    const cursor = searchParams.get('cursor');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    if (conversation.participant1 !== userIdNum && conversation.participant2 !== userIdNum) {
+      return NextResponse.json(
+        { error: "Access denied" },
+        { status: 403 }
+      );
+    }
 
+    // Get pagination params
+    const url = new URL(request.url);
+    const limit = parseInt(url.searchParams.get("limit") || "50");
+    const before = url.searchParams.get("before"); // cursor for pagination
+
+    // Get messages
     const messages = await prisma.message.findMany({
-      where: { conversationId: conversationIdInt },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      ...(cursor && {
-        cursor: { id: parseInt(cursor) },
-        skip: 1,
-      }),
+      where: {
+        conversationId: conversationIdNum,
+        ...(before && { id: { lt: parseInt(before) } }),
+      },
       include: {
         sender: {
-          select: { id: true, username: true, name: true, profileImage: true },
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            profileImage: true,
+          },
         },
       },
+      orderBy: { createdAt: "desc" },
+      take: limit,
     });
 
-    // Mark unread messages as read
+    // Mark messages as read
     await prisma.message.updateMany({
       where: {
-        conversationId: conversationIdInt,
-        senderId: { not: userIdInt },
+        conversationId: conversationIdNum,
+        senderId: { not: userIdNum },
         isRead: false,
       },
       data: { isRead: true },
     });
 
-    const otherUser = conversation.participant1 === userIdInt
+    const otherUser = conversation.participant1 === userIdNum
       ? conversation.user2
       : conversation.user1;
 
     return NextResponse.json({
-      messages: messages.reverse(),
-      otherUser,
-      nextCursor: messages.length === limit ? messages[0].id : null,
+      conversation: {
+        id: conversation.id,
+        otherUser,
+      },
+      messages: messages.reverse().map((msg) => ({
+        id: msg.id,
+        content: msg.content,
+        createdAt: msg.createdAt.toISOString(),
+        senderId: msg.senderId,
+        sender: msg.sender,
+        isRead: msg.isRead,
+        isFromMe: msg.senderId === userIdNum,
+      })),
+      hasMore: messages.length === limit,
     });
   } catch (error) {
-    console.error('Conversation GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });
+    console.error("Error fetching messages:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch messages" },
+      { status: 500 }
+    );
   }
 }
 
-// Send a message
+// POST /api/messages/[conversationId] - Send a message in a conversation
 export async function POST(
-  req: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
-    const userId = req.headers.get('x-user-id');
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    const userId = request.headers.get("x-user-id");
     const { conversationId } = await params;
-    const { content } = await req.json();
 
-    if (!content?.trim()) {
-      return NextResponse.json({ error: 'Message content required' }, { status: 400 });
+    if (!userId) {
+      return NextResponse.json(
+        { error: "User ID required" },
+        { status: 401 }
+      );
     }
 
-    const userIdInt = parseInt(userId);
-    const conversationIdInt = parseInt(conversationId);
+    const userIdNum = parseInt(userId);
+    const conversationIdNum = parseInt(conversationId);
+    const body = await request.json();
+    const { content } = body;
 
-    // Verify user is part of conversation
-    const conversation = await prisma.conversation.findFirst({
+    if (!content || !content.trim()) {
+      return NextResponse.json(
+        { error: "Message content is required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify user is part of this conversation
+    const conversation = await prisma.conversation.findUnique({
+      where: { id: conversationIdNum },
+    });
+
+    if (!conversation) {
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 }
+      );
+    }
+
+    if (conversation.participant1 !== userIdNum && conversation.participant2 !== userIdNum) {
+      return NextResponse.json(
+        { error: "Access denied" },
+        { status: 403 }
+      );
+    }
+
+    // Check if blocked
+    const otherUserId = conversation.participant1 === userIdNum
+      ? conversation.participant2
+      : conversation.participant1;
+
+    const isBlocked = await prisma.block.findFirst({
       where: {
-        id: conversationIdInt,
         OR: [
-          { participant1: userIdInt },
-          { participant2: userIdInt },
+          { blockerId: otherUserId, blockedId: userIdNum },
+          { blockerId: userIdNum, blockedId: otherUserId },
         ],
       },
     });
 
-    if (!conversation) {
-      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+    if (isBlocked) {
+      return NextResponse.json(
+        { error: "Cannot send message to this user" },
+        { status: 403 }
+      );
     }
 
-    // Get sender info for notification
-    const sender = await prisma.user.findUnique({
-      where: { id: userIdInt },
-      select: { username: true, name: true },
-    });
-
-    // Create message
+    // Create the message
     const message = await prisma.message.create({
       data: {
-        conversationId: conversationIdInt,
-        senderId: userIdInt,
+        conversationId: conversationIdNum,
+        senderId: userIdNum,
         content: content.trim(),
       },
       include: {
         sender: {
-          select: { id: true, username: true, name: true, profileImage: true },
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            profileImage: true,
+          },
         },
       },
     });
 
-    // Update conversation
+    // Update conversation's lastMessageAt
     await prisma.conversation.update({
-      where: { id: conversationIdInt },
-      data: {
-        lastMessage: content.trim().substring(0, 100),
-        lastMessageAt: new Date(),
-      },
+      where: { id: conversationIdNum },
+      data: { lastMessageAt: new Date() },
     });
 
-    // Send push notification to recipient
-    const recipientId = conversation.participant1 === userIdInt
-      ? conversation.participant2
-      : conversation.participant1;
-
-    const senderName = sender?.name || sender?.username || 'Someone';
-    await sendPushNotificationToUser(
-      recipientId,
-      `New message from ${senderName}`,
-      content.trim().substring(0, 100),
-      { type: 'message', conversationId: conversationIdInt }
-    );
-
-    return NextResponse.json({ message });
+    return NextResponse.json({
+      message: {
+        id: message.id,
+        content: message.content,
+        createdAt: message.createdAt.toISOString(),
+        senderId: message.senderId,
+        sender: message.sender,
+        isRead: message.isRead,
+        isFromMe: true,
+      },
+    });
   } catch (error) {
-    console.error('Message POST error:', error);
-    return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
+    console.error("Error sending message:", error);
+    return NextResponse.json(
+      { error: "Failed to send message" },
+      { status: 500 }
+    );
   }
 }

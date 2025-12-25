@@ -63,6 +63,21 @@ export default function MessagesScreen() {
       const response = await fetch(`${API_BASE_URL}/messages`, {
         headers: { 'x-user-id': uid },
       });
+
+      // Check if response is OK
+      if (!response.ok) {
+        console.error('API error:', response.status, response.statusText);
+        return;
+      }
+
+      // Check content type to ensure it's JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('API returned non-JSON response:', text.substring(0, 200));
+        return;
+      }
+
       const data = await response.json();
       if (data.conversations) {
         setConversations(data.conversations);

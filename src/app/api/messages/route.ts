@@ -1,25 +1,26 @@
-// src/app/api/messages/route.ts
-// Direct Messages API - Conversations list
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
-export const dynamic = 'force-dynamic';
-
-// Get user's conversations
-export async function GET(req: NextRequest) {
+// GET /api/messages - Get all conversations for a user
+export async function GET(request: NextRequest) {
   try {
-    const userId = req.headers.get('x-user-id');
+    const userId = request.headers.get("x-user-id");
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: "User ID required" },
+        { status: 401 }
+      );
     }
 
-    const userIdInt = parseInt(userId);
+    const userIdNum = parseInt(userId);
 
+    // Get all conversations where user is either participant1 or participant2
     const conversations = await prisma.conversation.findMany({
       where: {
         OR: [
-          { participant1: userIdInt },
-          { participant2: userIdInt },
+          { participant1: userIdNum },
+          { participant2: userIdNum },
         ],
       },
       include: {
@@ -42,108 +43,125 @@ export async function GET(req: NextRequest) {
           },
         },
         messages: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 1,
           select: {
             id: true,
             content: true,
+            createdAt: true,
             senderId: true,
             isRead: true,
-            createdAt: true,
           },
         },
       },
-      orderBy: { lastMessageAt: 'desc' },
+      orderBy: { lastMessageAt: "desc" },
     });
 
-    // Format conversations with the other user info
-    const formattedConversations = conversations.map(conv => {
-      const otherUser = conv.participant1 === userIdInt ? conv.user2 : conv.user1;
-      const lastMessage = conv.messages[0];
-      const unreadCount = lastMessage && !lastMessage.isRead && lastMessage.senderId !== userIdInt ? 1 : 0;
+    // Format conversations for the app
+    const formattedConversations = conversations.map((conv) => {
+      const otherUser = conv.participant1 === userIdNum ? conv.user2 : conv.user1;
+      const lastMessage = conv.messages[0] || null;
+
+      // Count unread messages
+      const unreadCount = conv.messages.filter(
+        (msg) => !msg.isRead && msg.senderId !== userIdNum
+      ).length;
 
       return {
         id: conv.id,
-        otherUser,
-        lastMessage: lastMessage ? {
-          content: lastMessage.content,
-          createdAt: lastMessage.createdAt,
-          isFromMe: lastMessage.senderId === userIdInt,
-        } : null,
+        otherUser: {
+          id: otherUser.id,
+          username: otherUser.username,
+          name: otherUser.name,
+          profileImage: otherUser.profileImage,
+          isVerified: otherUser.isVerified,
+        },
+        lastMessage: lastMessage
+          ? {
+              content: lastMessage.content,
+              createdAt: lastMessage.createdAt.toISOString(),
+              isFromMe: lastMessage.senderId === userIdNum,
+            }
+          : null,
         unreadCount,
-        updatedAt: conv.lastMessageAt || conv.createdAt,
+        updatedAt: conv.lastMessageAt?.toISOString() || conv.createdAt.toISOString(),
       };
     });
 
     return NextResponse.json({ conversations: formattedConversations });
   } catch (error) {
-    console.error('Messages GET error:', error);
-    return NextResponse.json({ error: 'Failed to fetch conversations' }, { status: 500 });
+    console.error("Error fetching conversations:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch conversations" },
+      { status: 500 }
+    );
   }
 }
 
-// Start a new conversation or get existing one
-export async function POST(req: NextRequest) {
+// POST /api/messages - Start a new conversation or send a message
+export async function POST(request: NextRequest) {
   try {
-    const userId = req.headers.get('x-user-id');
+    const userId = request.headers.get("x-user-id");
+
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: "User ID required" },
+        { status: 401 }
+      );
     }
 
-    const { recipientId } = await req.json();
+    const userIdNum = parseInt(userId);
+    const body = await request.json();
+    const { recipientId, content } = body;
 
-    if (!recipientId) {
-      return NextResponse.json({ error: 'Recipient ID required' }, { status: 400 });
+    if (!recipientId || !content) {
+      return NextResponse.json(
+        { error: "Recipient ID and content are required" },
+        { status: 400 }
+      );
     }
 
-    const userIdInt = parseInt(userId);
-    const recipientIdInt = parseInt(recipientId);
-
-    if (userIdInt === recipientIdInt) {
-      return NextResponse.json({ error: 'Cannot message yourself' }, { status: 400 });
-    }
+    const recipientIdNum = parseInt(recipientId);
 
     // Check if recipient exists
     const recipient = await prisma.user.findUnique({
-      where: { id: recipientIdInt },
+      where: { id: recipientIdNum },
     });
 
     if (!recipient) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: "Recipient not found" },
+        { status: 404 }
+      );
     }
 
-    // Check if blocked
+    // Check if user is blocked
     const isBlocked = await prisma.block.findFirst({
       where: {
         OR: [
-          { blockerId: userIdInt, blockedId: recipientIdInt },
-          { blockerId: recipientIdInt, blockedId: userIdInt },
+          { blockerId: recipientIdNum, blockedId: userIdNum },
+          { blockerId: userIdNum, blockedId: recipientIdNum },
         ],
       },
     });
 
     if (isBlocked) {
-      return NextResponse.json({ error: 'Cannot message this user' }, { status: 403 });
+      return NextResponse.json(
+        { error: "Cannot send message to this user" },
+        { status: 403 }
+      );
     }
 
-    // Find or create conversation (ordered by smaller ID first for consistency)
-    const [p1, p2] = userIdInt < recipientIdInt
-      ? [userIdInt, recipientIdInt]
-      : [recipientIdInt, userIdInt];
+    // Find or create conversation (ensure consistent ordering of user IDs)
+    const [smallerId, largerId] = userIdNum < recipientIdNum
+      ? [userIdNum, recipientIdNum]
+      : [recipientIdNum, userIdNum];
 
     let conversation = await prisma.conversation.findUnique({
       where: {
         participant1_participant2: {
-          participant1: p1,
-          participant2: p2,
-        },
-      },
-      include: {
-        user1: {
-          select: { id: true, username: true, name: true, profileImage: true, isVerified: true },
-        },
-        user2: {
-          select: { id: true, username: true, name: true, profileImage: true, isVerified: true },
+          participant1: smallerId,
+          participant2: largerId,
         },
       },
     });
@@ -151,32 +169,53 @@ export async function POST(req: NextRequest) {
     if (!conversation) {
       conversation = await prisma.conversation.create({
         data: {
-          participant1: p1,
-          participant2: p2,
-        },
-        include: {
-          user1: {
-            select: { id: true, username: true, name: true, profileImage: true, isVerified: true },
-          },
-          user2: {
-            select: { id: true, username: true, name: true, profileImage: true, isVerified: true },
-          },
+          participant1: smallerId,
+          participant2: largerId,
         },
       });
     }
 
-    const otherUser = conversation.participant1 === userIdInt
-      ? conversation.user2
-      : conversation.user1;
-
-    return NextResponse.json({
-      conversation: {
-        id: conversation.id,
-        otherUser,
+    // Create the message
+    const message = await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        senderId: userIdNum,
+        content: content.trim(),
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+            profileImage: true,
+          },
+        },
       },
     });
+
+    // Update conversation's lastMessageAt
+    await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: { lastMessageAt: new Date() },
+    });
+
+    return NextResponse.json({
+      message: {
+        id: message.id,
+        content: message.content,
+        createdAt: message.createdAt.toISOString(),
+        senderId: message.senderId,
+        sender: message.sender,
+        isRead: message.isRead,
+      },
+      conversationId: conversation.id,
+    });
   } catch (error) {
-    console.error('Messages POST error:', error);
-    return NextResponse.json({ error: 'Failed to create conversation' }, { status: 500 });
+    console.error("Error sending message:", error);
+    return NextResponse.json(
+      { error: "Failed to send message" },
+      { status: 500 }
+    );
   }
 }
