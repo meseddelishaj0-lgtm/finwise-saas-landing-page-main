@@ -1,5 +1,5 @@
 // app/(tabs)/screener.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -392,6 +392,10 @@ export default function Screener() {
   const [heatMapStocks, setHeatMapStocks] = useState<HeatMapStock[]>([]);
   const [heatMapLoading, setHeatMapLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Array<{ symbol: string; name: string; exchangeShortName: string }>>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [results, setResults] = useState<Stock[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -561,6 +565,68 @@ export default function Screener() {
     return quoteMap;
   };
 
+  // Search stocks using FMP API
+  const searchStocks = async (query: string) => {
+    if (!query || query.length < 1) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    setShowSearchResults(true);
+    try {
+      const response = await fetch(
+        `${FMP_BASE_URL}/search?query=${encodeURIComponent(query)}&limit=10&exchange=NYSE,NASDAQ,AMEX&apikey=${FMP_API_KEY}`
+      );
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        setSearchResults(data.map((item: any) => ({
+          symbol: item.symbol,
+          name: item.name || item.symbol,
+          exchangeShortName: item.exchangeShortName || '',
+        })));
+      } else {
+        setSearchResults([]);
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Debounced search handler
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+
+    // Clear previous timeout
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+
+    // If empty, clear results immediately
+    if (!text) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    // Debounce the API call
+    searchTimeout.current = setTimeout(() => {
+      searchStocks(text);
+    }, 300);
+  };
+
+  // Handle selecting a search result
+  const handleSearchResultSelect = (symbol: string) => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+    router.push(`/symbol/${symbol}` as any);
+  };
+
   const enrichStocksWithQuotes = async (stocks: Stock[]): Promise<Stock[]> => {
     try {
       const needsQuotes = stocks.some(s => s.change === 0 && s.changePercent === 0);
@@ -714,12 +780,6 @@ export default function Screener() {
     router.push('/(modals)/paywall' as any);
   };
 
-  // Check if a filter or preset is accessible
-  const isPremiumFilterAccessible = (isPremium?: boolean) => {
-    if (!isPremium) return true;
-    return hasPlatinumAccess;
-  };
-
   const renderPreset = ({ item }: { item: Preset }) => {
     const isLocked = item.isPremium && !hasPlatinumAccess;
     return (
@@ -834,10 +894,60 @@ export default function Screener() {
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#999" />
-          <TextInput style={styles.searchInput} placeholder="Search by name or symbol..." placeholderTextColor="#999" value={searchQuery} onChangeText={setSearchQuery} />
-          {searchQuery.length > 0 && <TouchableOpacity onPress={() => setSearchQuery('')}><Ionicons name="close-circle" size={20} color="#999" /></TouchableOpacity>}
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name or symbol..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={handleSearchChange}
+            onFocus={() => searchQuery && setShowSearchResults(true)}
+          />
+          {searchLoading && <ActivityIndicator size="small" color="#007AFF" style={{ marginRight: 8 }} />}
+          {searchQuery.length > 0 && !searchLoading && (
+            <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchResults([]); setShowSearchResults(false); }}>
+              <Ionicons name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Search Results Dropdown */}
+        {showSearchResults && searchResults.length > 0 && (
+          <View style={styles.searchResultsDropdown}>
+            {searchResults.map((item, index) => (
+              <TouchableOpacity
+                key={`${item.symbol}-${index}`}
+                style={styles.searchResultItem}
+                onPress={() => handleSearchResultSelect(item.symbol)}
+              >
+                <View style={styles.searchResultLeft}>
+                  <Text style={styles.searchResultSymbol}>{item.symbol}</Text>
+                  <Text style={styles.searchResultName} numberOfLines={1}>{item.name}</Text>
+                </View>
+                <Text style={styles.searchResultExchange}>{item.exchangeShortName}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* No Results Message */}
+        {showSearchResults && searchQuery.length > 0 && searchResults.length === 0 && !searchLoading && (
+          <View style={styles.searchResultsDropdown}>
+            <View style={styles.noResultsContainer}>
+              <Ionicons name="search-outline" size={24} color="#999" />
+              <Text style={styles.noResultsText}>No stocks found for "{searchQuery}"</Text>
+            </View>
+          </View>
+        )}
       </View>
+
+      {/* Backdrop to close search results */}
+      {showSearchResults && (
+        <TouchableOpacity
+          style={styles.searchBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowSearchResults(false)}
+        />
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(activePreset, filters); }} />}>
         <View style={styles.section}>
@@ -1044,7 +1154,7 @@ const styles = StyleSheet.create({
   headerButton: { padding: 8, position: 'relative' },
   headerBadge: { position: 'absolute', top: 4, right: 4, backgroundColor: '#007AFF', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center' },
   headerBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  searchContainer: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#fff' },
+  searchContainer: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#fff', zIndex: 1001, position: 'relative' },
   searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
   searchInput: { flex: 1, fontSize: 16, marginLeft: 10, color: '#000' },
   section: { marginTop: 20 },
@@ -1163,4 +1273,74 @@ const styles = StyleSheet.create({
   heatMapSymbol: { fontWeight: '700' },
   heatMapChange: { marginTop: 1 },
   heatMapPrice: { fontSize: 8, marginTop: 1, opacity: 0.8 },
+  // Search Results Dropdown Styles
+  searchResultsDropdown: {
+    position: 'absolute',
+    top: 56,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 1000,
+    maxHeight: 350,
+    overflow: 'hidden',
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  searchResultLeft: {
+    flex: 1,
+    marginRight: 12,
+  },
+  searchResultSymbol: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+  },
+  searchResultName: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  searchResultExchange: {
+    fontSize: 12,
+    color: '#999',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    fontWeight: '500',
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+  },
+  noResultsText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  searchBackdrop: {
+    position: 'absolute',
+    top: 140,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    zIndex: 999,
+  },
 });
