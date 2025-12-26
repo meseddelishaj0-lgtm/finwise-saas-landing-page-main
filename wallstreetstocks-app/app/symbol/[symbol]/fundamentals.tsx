@@ -149,7 +149,7 @@ export default function FundamentalsTab() {
 
   return (
     <View style={styles.container}>
-      {/* Tab Bar */}
+      {/* Tab Bar - Compact */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -164,8 +164,8 @@ export default function FundamentalsTab() {
           >
             <Ionicons
               name={tab.icon as any}
-              size={16}
-              color={activeTab === tab.key ? "#FFF" : "#8E8E93"}
+              size={14}
+              color={activeTab === tab.key ? "#007AFF" : "#636366"}
             />
             <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
               {tab.label}
@@ -1818,33 +1818,32 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 15,
   },
-  // Tab Bar
+  // Tab Bar - Compact Design
   tabBar: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#1C1C1E",
+    backgroundColor: "#0D0D0D",
+    maxHeight: 44,
   },
   tabBarContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    gap: 4,
   },
   tab: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#1C1C1E",
-    marginRight: 8,
-    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "transparent",
+    gap: 4,
   },
   tabActive: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#1C1C1E",
   },
   tabText: {
-    color: "#8E8E93",
-    fontSize: 13,
-    fontWeight: "600",
+    color: "#636366",
+    fontSize: 12,
+    fontWeight: "500",
   },
   tabTextActive: {
     color: "#FFF",
