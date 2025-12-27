@@ -505,6 +505,8 @@ export default function SubscriptionPage() {
     const isExpiringSoon = (() => {
       if (!subscriptionDetails.expirationDate || subscriptionDetails.willRenew) return false;
       const expiryDate = new Date(subscriptionDetails.expirationDate);
+      // Validate the date is valid
+      if (isNaN(expiryDate.getTime())) return false;
       const now = new Date();
       const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       return daysUntilExpiry > 0 && daysUntilExpiry <= 7;
@@ -514,8 +516,11 @@ export default function SubscriptionPage() {
     const getDaysUntilExpiry = () => {
       if (!subscriptionDetails.expirationDate) return 0;
       const expiryDate = new Date(subscriptionDetails.expirationDate);
+      // Validate the date is valid
+      if (isNaN(expiryDate.getTime())) return 0;
       const now = new Date();
-      return Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      const days = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      return Math.max(0, days); // Ensure we don't return negative days
     };
 
     return (

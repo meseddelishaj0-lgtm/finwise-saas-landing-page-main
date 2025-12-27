@@ -96,8 +96,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   // Handle subscription changes from RevenueCat listener
   const handleCustomerInfoUpdate = useCallback((customerInfo: CustomerInfo) => {
     console.log('📱 Subscription status updated from RevenueCat');
-    const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
-    const entitlement = activeEntitlementId ? customerInfo.entitlements.active[activeEntitlementId] : null;
+
+    // Safe null checks for entitlements
+    const activeEntitlements = customerInfo?.entitlements?.active || {};
+    const activeEntitlementId = getActiveEntitlement(activeEntitlements);
+    const entitlement = activeEntitlementId ? activeEntitlements[activeEntitlementId] : null;
     const activeSubscription = entitlement?.productIdentifier || null;
     const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
 
@@ -163,8 +166,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
       const customerInfo = await identifyUser(userId);
-      const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
-      const entitlement = activeEntitlementId ? customerInfo.entitlements.active[activeEntitlementId] : null;
+      const activeEntitlements = customerInfo?.entitlements?.active || {};
+      const activeEntitlementId = getActiveEntitlement(activeEntitlements);
+      const entitlement = activeEntitlementId ? activeEntitlements[activeEntitlementId] : null;
       const activeSubscription = entitlement?.productIdentifier || null;
       const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
       
@@ -325,8 +329,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const result = await purchasePackage(pkg);
       
       if (result.success && result.customerInfo) {
-        const activeEntitlementId = getActiveEntitlement(result.customerInfo.entitlements.active);
-        const entitlement = activeEntitlementId ? result.customerInfo.entitlements.active[activeEntitlementId] : null;
+        const activeEntitlements = result.customerInfo?.entitlements?.active || {};
+        const activeEntitlementId = getActiveEntitlement(activeEntitlements);
+        const entitlement = activeEntitlementId ? activeEntitlements[activeEntitlementId] : null;
         const activeSubscription = entitlement?.productIdentifier || null;
         const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
 
@@ -372,8 +377,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const result = await restorePurchases();
       
       if (result.success && result.customerInfo) {
-        const activeEntitlementId = getActiveEntitlement(result.customerInfo.entitlements.active);
-        const entitlement = activeEntitlementId ? result.customerInfo.entitlements.active[activeEntitlementId] : null;
+        const activeEntitlements = result.customerInfo?.entitlements?.active || {};
+        const activeEntitlementId = getActiveEntitlement(activeEntitlements);
+        const entitlement = activeEntitlementId ? activeEntitlements[activeEntitlementId] : null;
         const activeSubscription = entitlement?.productIdentifier || null;
         const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
 

@@ -42,6 +42,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userIdNum = Number(userId);
+    if (isNaN(userIdNum)) {
+      return NextResponse.json(
+        { error: 'Invalid user ID' },
+        { status: 400 }
+      );
+    }
+
     // Get subscription info from RevenueCat
     const rcUserId = revenueCatUserId || userId.toString();
     const subscriberInfo = await getRevenueCatSubscriberInfo(rcUserId);
@@ -53,9 +61,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for active entitlements
-    const activeEntitlement = subscriberInfo.entitlements['WallStreetStocks Pro'];
-    
+    // Check for active entitlements - check all entitlement IDs
+    const VALID_ENTITLEMENTS = ['WallStreetStocks Pro', 'gold_access', 'platinum_access', 'diamond_access', 'pro'];
+    let activeEntitlement: RevenueCatEntitlement | null = null;
+
+    // Find first active entitlement
+    if (subscriberInfo.entitlements) {
+      for (const entitlementId of VALID_ENTITLEMENTS) {
+        if (subscriberInfo.entitlements[entitlementId]) {
+          activeEntitlement = subscriberInfo.entitlements[entitlementId];
+          break;
+        }
+      }
+      // Also check if any other entitlement exists
+      if (!activeEntitlement) {
+        const entitlementKeys = Object.keys(subscriberInfo.entitlements);
+        if (entitlementKeys.length > 0) {
+          activeEntitlement = subscriberInfo.entitlements[entitlementKeys[0]];
+        }
+      }
+    }
+
     let subscriptionData = {
       currentPlan: null as string | null,
       nextBillingDate: null as Date | null,
@@ -63,12 +89,13 @@ export async function POST(request: NextRequest) {
     };
 
     if (activeEntitlement) {
+      const expiresDate = activeEntitlement.expires_date;
+      const isExpired = expiresDate ? new Date(expiresDate) < new Date() : false;
+
       subscriptionData = {
         currentPlan: activeEntitlement.product_identifier,
-        nextBillingDate: activeEntitlement.expires_date 
-          ? new Date(activeEntitlement.expires_date) 
-          : null,
-        isActive: true,
+        nextBillingDate: expiresDate ? new Date(expiresDate) : null,
+        isActive: !isExpired,
       };
     }
 
@@ -121,9 +148,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const userIdNum = Number(userId);
+    if (isNaN(userIdNum)) {
+      return NextResponse.json(
+        { error: 'Invalid user ID' },
+        { status: 400 }
+      );
+    }
+
     // Get user from database
     const user = await prisma.user.findUnique({
-      where: { id: Number(userId) },
+      where: { id: userIdNum },
       select: {
         id: true,
         email: true,

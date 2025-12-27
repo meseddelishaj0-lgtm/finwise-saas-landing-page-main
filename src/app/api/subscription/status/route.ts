@@ -15,6 +15,12 @@ export async function GET(request: NextRequest) {
     }
 
     const userIdNum = parseInt(userId);
+    if (isNaN(userIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid user ID" },
+        { status: 400 }
+      );
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: userIdNum },
