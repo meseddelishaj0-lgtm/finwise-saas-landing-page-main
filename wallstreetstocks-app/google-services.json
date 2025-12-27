@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "52267659627",
+    "project_id": "fir-config-60649",
+    "storage_bucket": "fir-config-60649.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52267659627:android:34ee94b725876398005c2e",
+        "android_client_info": {
+          "package_name": "ai.wallstreetstocks.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1u0FUiElr1H8szDQr60CuQOUPx6L40_o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

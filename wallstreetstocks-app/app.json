@@ -32,6 +32,7 @@
     },
     "android": {
       "package": "ai.wallstreetstocks.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/wallstreetstocks-android.png"
