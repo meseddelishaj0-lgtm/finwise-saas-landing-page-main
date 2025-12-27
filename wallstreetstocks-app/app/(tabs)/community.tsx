@@ -802,11 +802,11 @@ export default function CommunityPage() {
 
       console.log('📤 Creating post:', JSON.stringify(postData));
 
-      // Close modal before API call
-      setCreatePostModal(false);
-      
       const newPost = await createPost(postData);
       console.log('✅ Post created successfully');
+
+      // Close modal only after successful API call
+      setCreatePostModal(false);
 
       // Reset form
       setNewPostTitle('');
@@ -850,10 +850,8 @@ export default function CommunityPage() {
               ...post,
               isLiked: newLikedState,
               _count: {
-                ...post._count!,
-                likes: newLikedState 
-                  ? (post._count?.likes || 0) + 1 
-                  : Math.max(0, (post._count?.likes || 0) - 1)
+                ...(post._count || { likes: 0, comments: 0 }),
+                likes: Math.max(0, (post._count?.likes ?? 0) + (newLikedState ? 1 : -1))
               }
             }
           : post
@@ -868,10 +866,8 @@ export default function CommunityPage() {
               ...post,
               isLiked: newLikedState,
               _count: {
-                ...post._count!,
-                likes: newLikedState 
-                  ? (post._count?.likes || 0) + 1 
-                  : Math.max(0, (post._count?.likes || 0) - 1)
+                ...(post._count || { likes: 0, comments: 0 }),
+                likes: Math.max(0, (post._count?.likes ?? 0) + (newLikedState ? 1 : -1))
               }
             }
           : post
@@ -915,9 +911,8 @@ export default function CommunityPage() {
               ...comment,
               isLiked: newLikedState,
               _count: {
-                likes: newLikedState 
-                  ? (comment._count?.likes || 0) + 1 
-                  : Math.max(0, (comment._count?.likes || 0) - 1)
+                ...(comment._count || { likes: 0 }),
+                likes: Math.max(0, (comment._count?.likes ?? 0) + (newLikedState ? 1 : -1))
               }
             }
           : comment
@@ -1031,7 +1026,7 @@ export default function CommunityPage() {
   const handleMentionPress = async (username: string) => {
     try {
       const response = await fetch(
-        `https://www.wallstreetstocks.ai/api/user/by-username?username=${username}`
+        `https://www.wallstreetstocks.ai/api/user/by-username?username=${encodeURIComponent(username)}`
       );
       if (response.ok) {
         const user = await response.json();
@@ -2670,14 +2665,14 @@ export default function CommunityPage() {
             {commentsLoading ? (
               <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
             ) : comments.length > 0 ? (
-              comments.map((comment) => (
+              comments.filter(comment => comment.user).map((comment) => (
                 <View key={comment.id} style={styles.commentItem}>
-                  <Avatar 
-                    user={comment.user} 
-                    size={36} 
+                  <Avatar
+                    user={comment.user!}
+                    size={36}
                     onPress={() => {
                       setCommentsModal(false);
-                      setTimeout(() => handleOpenProfile(comment.user), 300);
+                      setTimeout(() => handleOpenProfile(comment.user!), 300);
                     }}
                   />
                   <View style={styles.commentContent}>
@@ -2685,15 +2680,15 @@ export default function CommunityPage() {
                       <TouchableOpacity
                         onPress={() => {
                           setCommentsModal(false);
-                          setTimeout(() => handleOpenProfile(comment.user), 300);
+                          setTimeout(() => handleOpenProfile(comment.user!), 300);
                         }}
                         activeOpacity={0.7}
                         style={styles.commentUserRow}
                       >
                         <Text style={styles.commentUsername}>
-                          {getUserDisplayName(comment.user)}
+                          {getUserDisplayName(comment.user!)}
                         </Text>
-                        <Text style={styles.commentHandle}>@{getHandle(comment.user)}</Text>
+                        <Text style={styles.commentHandle}>@{getHandle(comment.user!)}</Text>
                       </TouchableOpacity>
                       <Text style={styles.commentText}>{comment.content}</Text>
                     </View>
@@ -2708,7 +2703,7 @@ export default function CommunityPage() {
                           size={14}
                           color={comment.isLiked ? "#FF3B30" : "#8E8E93"}
                         />
-                        <Text style={styles.commentLikeCount}>{comment._count?.likes || 0}</Text>
+                        <Text style={styles.commentLikeCount}>{comment._count?.likes ?? 0}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={styles.commentOptionsButton}
