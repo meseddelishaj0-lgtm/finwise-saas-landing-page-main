@@ -99,6 +99,21 @@ model Post {
   sentiments    Sentiment[]
   tickerMentions TickerMention[]
   mentions      Mention[]
+  views         PostView[]
+}
+
+// Post view tracking for insights
+model PostView {
+  id        Int      @id @default(autoincrement())
+  postId    Int
+  userId    Int?     // Null for anonymous views
+  viewedAt  DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userId])
+  @@index([viewedAt])
 }
 
 model Comment {

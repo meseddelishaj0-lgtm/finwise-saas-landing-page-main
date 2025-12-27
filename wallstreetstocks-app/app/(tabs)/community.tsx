@@ -234,6 +234,7 @@ export default function CommunityPage() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [postInsights, setPostInsights] = useState<{ totalViews: number; uniqueViewers: number } | null>(null);
   
   // Profile State
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
@@ -1085,10 +1086,39 @@ export default function CommunityPage() {
     }
   };
 
+  // Track and fetch post views
+  const trackPostView = async (postId: number) => {
+    const userId = getUserId();
+    try {
+      // Record the view
+      await fetch(`https://www.wallstreetstocks.ai/api/posts/${postId}/views`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(userId && { 'x-user-id': userId.toString() }),
+        },
+      });
+
+      // Fetch insights
+      const response = await fetch(`https://www.wallstreetstocks.ai/api/posts/${postId}/views`);
+      if (response.ok) {
+        const data = await response.json();
+        setPostInsights({
+          totalViews: data.totalViews || 0,
+          uniqueViewers: data.uniqueViewers || 0,
+        });
+      }
+    } catch (error) {
+      console.error('Error tracking post view:', error);
+    }
+  };
+
   // Modal handlers
   const handleOpenComments = (post: Post) => {
     setSelectedPost(post);
+    setPostInsights(null); // Reset insights
     loadComments(post.id);
+    trackPostView(post.id); // Track view and fetch insights
     setCommentsModal(true);
   };
 
@@ -2652,12 +2682,32 @@ export default function CommunityPage() {
                     activeOpacity={0.9}
                     onPress={() => handleOpenImage(selectedPost.mediaUrl || selectedPost.image || '')}
                   >
-                    <Image 
-                      source={{ uri: selectedPost.mediaUrl || selectedPost.image }} 
-                      style={styles.postImage} 
+                    <Image
+                      source={{ uri: selectedPost.mediaUrl || selectedPost.image }}
+                      style={styles.postImage}
                       resizeMode="cover"
                     />
                   </TouchableOpacity>
+                )}
+
+                {/* Post Insights */}
+                {postInsights && (
+                  <View style={styles.postInsights}>
+                    <View style={styles.insightItem}>
+                      <Ionicons name="eye-outline" size={16} color="#666" />
+                      <Text style={styles.insightText}>
+                        {postInsights.totalViews} {postInsights.totalViews === 1 ? 'view' : 'views'}
+                      </Text>
+                    </View>
+                    {postInsights.uniqueViewers > 0 && (
+                      <View style={styles.insightItem}>
+                        <Ionicons name="people-outline" size={16} color="#666" />
+                        <Text style={styles.insightText}>
+                          {postInsights.uniqueViewers} {postInsights.uniqueViewers === 1 ? 'viewer' : 'viewers'}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 )}
               </View>
             )}
@@ -4211,5 +4261,26 @@ const styles = StyleSheet.create({
   sentimentBarBullish: {
     height: '100%',
     backgroundColor: '#34C759',
+  },
+
+  // Post Insights
+  postInsights: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 12,
+    marginTop: 12,
+    borderTopWidth: 0.5,
+    borderTopColor: '#E5E5EA',
+    gap: 16,
+  },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  insightText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
   },
 });
