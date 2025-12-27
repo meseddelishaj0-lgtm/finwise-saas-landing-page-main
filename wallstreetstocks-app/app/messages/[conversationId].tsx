@@ -94,12 +94,18 @@ export default function ConversationScreen() {
       const response = await fetch(`${API_BASE_URL}/messages/${conversationId}`, {
         headers: { 'x-user-id': uid },
       });
+
+      if (!response.ok) {
+        console.error('Failed to fetch messages:', response.status);
+        return;
+      }
+
       const data = await response.json();
-      if (data.messages) {
+      if (Array.isArray(data.messages)) {
         setMessages(data.messages);
       }
-      if (data.otherUser) {
-        setOtherUser(data.otherUser);
+      if (data.conversation?.otherUser) {
+        setOtherUser(data.conversation.otherUser);
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -231,14 +237,15 @@ export default function ConversationScreen() {
     setSending(true);
 
     // Optimistic update
+    const userIdNum = parseInt(userId);
     const tempMessage: Message = {
       id: Date.now(),
       content,
       imageUrl,
-      senderId: parseInt(userId),
+      senderId: userIdNum,
       createdAt: new Date().toISOString(),
       sender: {
-        id: parseInt(userId),
+        id: userIdNum,
         username: '',
         name: null,
         profileImage: null,
@@ -295,7 +302,8 @@ export default function ConversationScreen() {
   };
 
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
-    const isMe = item.senderId === parseInt(userId || '0');
+    const userIdNum = userId ? parseInt(userId) : 0;
+    const isMe = !isNaN(userIdNum) && item.senderId === userIdNum;
     const showDate =
       index === 0 ||
       formatDate(item.createdAt) !== formatDate(messages[index - 1].createdAt);

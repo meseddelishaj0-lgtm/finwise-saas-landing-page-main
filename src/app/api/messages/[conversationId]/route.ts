@@ -20,6 +20,13 @@ export async function GET(
     const userIdNum = parseInt(userId);
     const conversationIdNum = parseInt(conversationId);
 
+    if (isNaN(userIdNum) || isNaN(conversationIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid user ID or conversation ID" },
+        { status: 400 }
+      );
+    }
+
     // Verify user is part of this conversation
     const conversation = await prisma.conversation.findUnique({
       where: { id: conversationIdNum },
@@ -61,14 +68,31 @@ export async function GET(
 
     // Get pagination params
     const url = new URL(request.url);
-    const limit = parseInt(url.searchParams.get("limit") || "50");
+    const limitParam = url.searchParams.get("limit");
+    const limit = Math.min(Math.max(parseInt(limitParam || "50"), 1), 100);
     const before = url.searchParams.get("before"); // cursor for pagination
+
+    // Validate pagination params
+    if (isNaN(limit)) {
+      return NextResponse.json(
+        { error: "Invalid limit parameter" },
+        { status: 400 }
+      );
+    }
+
+    const beforeNum = before ? parseInt(before) : null;
+    if (before && isNaN(beforeNum as number)) {
+      return NextResponse.json(
+        { error: "Invalid cursor parameter" },
+        { status: 400 }
+      );
+    }
 
     // Get messages
     const messages = await prisma.message.findMany({
       where: {
         conversationId: conversationIdNum,
-        ...(before && { id: { lt: parseInt(before) } }),
+        ...(beforeNum && { id: { lt: beforeNum } }),
       },
       include: {
         sender: {
@@ -142,6 +166,14 @@ export async function POST(
 
     const userIdNum = parseInt(userId);
     const conversationIdNum = parseInt(conversationId);
+
+    if (isNaN(userIdNum) || isNaN(conversationIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid user ID or conversation ID" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { content, imageUrl } = body;
 
@@ -256,6 +288,13 @@ export async function DELETE(
     }
 
     const userIdNum = parseInt(userId);
+    if (isNaN(userIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid user ID" },
+        { status: 400 }
+      );
+    }
+
     const url = new URL(request.url);
     const messageId = url.searchParams.get("messageId");
 
@@ -267,6 +306,12 @@ export async function DELETE(
     }
 
     const messageIdNum = parseInt(messageId);
+    if (isNaN(messageIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid message ID" },
+        { status: 400 }
+      );
+    }
 
     // Find the message and verify ownership
     const message = await prisma.message.findUnique({

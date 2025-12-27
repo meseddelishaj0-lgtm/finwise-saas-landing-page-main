@@ -10,8 +10,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "userId is required" }, { status: 401 });
     }
 
+    const userIdNum = parseInt(userId);
+    if (isNaN(userIdNum)) {
+      return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userIdNum }
     });
 
     if (!user) {

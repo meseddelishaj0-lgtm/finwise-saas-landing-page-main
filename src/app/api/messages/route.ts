@@ -14,6 +14,12 @@ export async function GET(request: NextRequest) {
     }
 
     const userIdNum = parseInt(userId);
+    if (isNaN(userIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid user ID" },
+        { status: 400 }
+      );
+    }
 
     // Get all conversations where user is either participant1 or participant2
     const conversations = await prisma.conversation.findMany({
@@ -57,15 +63,29 @@ export async function GET(request: NextRequest) {
       orderBy: { lastMessageAt: "desc" },
     });
 
+    // Get unread counts for all conversations
+    const unreadCounts = await prisma.message.groupBy({
+      by: ['conversationId'],
+      where: {
+        conversationId: { in: conversations.map(c => c.id) },
+        isRead: false,
+        senderId: { not: userIdNum },
+      },
+      _count: true,
+    });
+
+    // Create a map for quick lookup
+    const unreadCountMap = new Map(
+      unreadCounts.map(item => [item.conversationId, item._count])
+    );
+
     // Format conversations for the app
     const formattedConversations = conversations.map((conv) => {
       const otherUser = conv.participant1 === userIdNum ? conv.user2 : conv.user1;
       const lastMessage = conv.messages[0] || null;
 
-      // Count unread messages
-      const unreadCount = conv.messages.filter(
-        (msg) => !msg.isRead && msg.senderId !== userIdNum
-      ).length;
+      // Get unread count from the map
+      const unreadCount = unreadCountMap.get(conv.id) || 0;
 
       return {
         id: conv.id,
@@ -111,6 +131,13 @@ export async function POST(request: NextRequest) {
     }
 
     const userIdNum = parseInt(userId);
+    if (isNaN(userIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid user ID" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { recipientId, content, imageUrl } = body;
 
@@ -122,6 +149,12 @@ export async function POST(request: NextRequest) {
     }
 
     const recipientIdNum = parseInt(recipientId);
+    if (isNaN(recipientIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid recipient ID" },
+        { status: 400 }
+      );
+    }
 
     // Check if recipient exists
     const recipient = await prisma.user.findUnique({
@@ -245,6 +278,13 @@ export async function DELETE(request: NextRequest) {
 
     const userIdNum = parseInt(userId);
     const conversationIdNum = parseInt(conversationId);
+
+    if (isNaN(userIdNum) || isNaN(conversationIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid user ID or conversation ID" },
+        { status: 400 }
+      );
+    }
 
     // Find the conversation and verify user is a participant
     const conversation = await prisma.conversation.findUnique({
