@@ -11,28 +11,35 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/lib/auth';
+import Constants from 'expo-constants';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://finwise-saas-landing-page-main.vercel.app';
 
 export default function ReportProblem() {
   const router = useRouter();
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [email, setEmail] = useState('');
   const [includeScreenshot, setIncludeScreenshot] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Categories matching the API expectations
   const categories = [
-    { id: 'bug', icon: 'bug', label: 'App Bug or Crash', color: '#FF3B30' },
-    { id: 'data', icon: 'cloud-offline', label: 'Data Not Loading', color: '#FF9500' },
-    { id: 'account', icon: 'person', label: 'Account Issue', color: '#007AFF' },
-    { id: 'payment', icon: 'card', label: 'Payment Problem', color: '#34C759' },
-    { id: 'content', icon: 'flag', label: 'Report Content', color: '#AF52DE' },
-    { id: 'feature', icon: 'bulb', label: 'Feature Request', color: '#5856D6' },
+    { id: 'app_crash', icon: 'bug', label: 'App Crash', color: '#FF3B30' },
+    { id: 'ui_issue', icon: 'phone-portrait', label: 'UI Issue', color: '#FF9500' },
+    { id: 'slow_laggy', icon: 'speedometer', label: 'Slow / Laggy', color: '#FFCC00' },
+    { id: 'data_error', icon: 'cloud-offline', label: 'Data Error', color: '#007AFF' },
+    { id: 'login_issue', icon: 'log-in', label: 'Login Issue', color: '#AF52DE' },
     { id: 'other', icon: 'ellipsis-horizontal', label: 'Other', color: '#8E8E93' },
   ];
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedCategory) {
       Alert.alert('Select Category', 'Please select a problem category.');
       return;
@@ -42,12 +49,50 @@ export default function ReportProblem() {
       return;
     }
 
-    // Here you would typically send to your API
-    Alert.alert(
-      'Report Submitted',
-      'Thank you for your feedback! Our team will review your report and get back to you if needed.',
-      [{ text: 'OK', onPress: () => router.back() }]
-    );
+    setIsSubmitting(true);
+
+    try {
+      // Collect device info
+      const deviceInfo = {
+        platform: Platform.OS,
+        osVersion: Platform.Version,
+        appVersion: Constants.expoConfig?.version || '1.0.0',
+        deviceName: Platform.OS === 'ios' ? 'iPhone' : 'Android Device',
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/bug-report`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id || null,
+          category: selectedCategory,
+          description: description.trim(),
+          contactEmail: email.trim() || user?.email || null,
+          screenshotUrl: null, // TODO: Implement screenshot upload
+          deviceInfo,
+          appVersion: Constants.expoConfig?.version || '1.0.0',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        Alert.alert(
+          'Report Submitted',
+          data.message || 'Thank you for your feedback! Our team will review your report.',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      } else {
+        Alert.alert('Error', data.error || 'Failed to submit report. Please try again.');
+      }
+    } catch (error) {
+      console.error('Bug report submission error:', error);
+      Alert.alert('Error', 'Network error. Please check your connection and try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -58,8 +103,12 @@ export default function ReportProblem() {
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Report a Problem</Text>
-        <TouchableOpacity onPress={handleSubmit}>
-          <Text style={styles.submitText}>Submit</Text>
+        <TouchableOpacity onPress={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#007AFF" />
+          ) : (
+            <Text style={styles.submitText}>Submit</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -160,8 +209,16 @@ export default function ReportProblem() {
           </View>
 
           {/* Submit Button */}
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Submit Report</Text>
+          <TouchableOpacity
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit Report</Text>
+            )}
           </TouchableOpacity>
 
           <View style={{ height: 40 }} />
@@ -350,6 +407,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#A0C4FF',
   },
   submitButtonText: {
     color: '#fff',

@@ -66,6 +66,7 @@ model User {
   priceAlerts           PriceAlert[]
   referralsMade         Referral[]       @relation("ReferrerUser")
   referralsReceived     Referral[]       @relation("ReferredUser")
+  bugReports            BugReport[]
 }
 
 model Forum {
@@ -428,4 +429,28 @@ model Referral {
   @@index([referrerId])
   @@index([referredUserId])
   @@index([referralCode])
+}
+
+// Bug reports from users
+model BugReport {
+  id            Int       @id @default(autoincrement())
+  userId        Int?      // Optional - can be submitted without login
+  category      String    // app_crash, ui_issue, slow_laggy, data_error, login_issue, other
+  description   String
+  contactEmail  String?
+  screenshotUrl String?
+  deviceInfo    String?   // JSON string with device details
+  appVersion    String?
+  status        String    @default("pending") // pending, in_progress, resolved, closed
+  priority      String?   // low, medium, high, critical
+  adminNotes    String?
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([category])
+  @@index([status])
 }
