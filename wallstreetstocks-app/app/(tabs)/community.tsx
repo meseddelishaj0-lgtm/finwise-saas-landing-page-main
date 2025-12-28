@@ -198,7 +198,8 @@ interface Notification {
   type: 'like' | 'comment' | 'follow' | 'mention';
   fromUser: User;
   post?: { id: number; title: string };
-  read: boolean;
+  isRead: boolean;
+  message?: string;
   createdAt: string;
 }
 
@@ -623,7 +624,7 @@ export default function CommunityPage() {
     try {
       const notifs = await fetchNotifications(userId);
       setNotifications(notifs || []);
-      setUnreadCount((notifs || []).filter((n: Notification) => !n.read).length);
+      setUnreadCount((notifs || []).filter((n: Notification) => !n.isRead).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       setNotifications([]);
@@ -2597,9 +2598,9 @@ export default function CommunityPage() {
           <ScrollView style={styles.notificationsList}>
             {notifications.length > 0 ? (
               notifications.map((notif) => (
-                <TouchableOpacity 
-                  key={notif.id} 
-                  style={[styles.notificationItem, !notif.read && styles.notificationUnread]}
+                <TouchableOpacity
+                  key={notif.id}
+                  style={[styles.notificationItem, !notif.isRead && styles.notificationUnread]}
                   onPress={() => {
                     if (notif.fromUser) {
                       setNotificationsModal(false);
