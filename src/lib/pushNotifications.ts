@@ -193,6 +193,10 @@ export const NotificationMessages = {
     title: 'You were mentioned',
     body: `${actorName} mentioned you in a post`,
   }),
+  message: (senderName: string, preview?: string) => ({
+    title: senderName,
+    body: preview ? (preview.length > 50 ? preview.substring(0, 50) + '...' : preview) : 'Sent you a message',
+  }),
   priceAlert: (symbol: string, price: string, direction: 'above' | 'below') => ({
     title: `${symbol} Price Alert`,
     body: `${symbol} is now ${direction === 'above' ? 'above' : 'below'} ${price}`,

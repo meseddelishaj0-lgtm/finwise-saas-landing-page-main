@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { sendPushNotificationToUser, NotificationMessages } from "@/lib/pushNotifications";
 
 // GET /api/messages/[conversationId] - Get messages in a conversation
 export async function GET(
@@ -249,6 +250,30 @@ export async function POST(
       where: { id: conversationIdNum },
       data: { lastMessageAt: new Date() },
     });
+
+    // Send push notification to recipient
+    try {
+      const senderName = message.sender.name || message.sender.username || 'Someone';
+      const messagePreview = content?.trim() || (imageUrl ? '📷 Photo' : 'New message');
+      const notification = NotificationMessages.message(senderName, messagePreview);
+
+      await sendPushNotificationToUser(
+        otherUserId,
+        notification.title,
+        notification.body,
+        {
+          type: 'message',
+          conversationId: conversationIdNum,
+          senderId: userIdNum,
+        },
+        {
+          channelId: 'social',
+        }
+      );
+    } catch (notifError) {
+      // Don't fail the message send if notification fails
+      console.error("Error sending message notification:", notifError);
+    }
 
     return NextResponse.json({
       message: {
