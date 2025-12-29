@@ -242,6 +242,9 @@ export default function Dashboard() {
   const [trending, setTrending] = useState<any[]>([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
 
+  // Unread messages count
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
   // Portfolio data
   const [portfolio, setPortfolio] = useState({
     totalValue: 0,
@@ -306,6 +309,34 @@ export default function Dashboard() {
     useCallback(() => {
       refreshWatchlist();
     }, [refreshWatchlist])
+  );
+
+  // Fetch unread messages count
+  const fetchUnreadMessagesCount = useCallback(async () => {
+    try {
+      const storedUserId = await AsyncStorage.getItem('userId');
+      if (!storedUserId) return;
+
+      const response = await fetch('https://www.wallstreetstocks.ai/api/messages', {
+        headers: { 'x-user-id': storedUserId },
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const conversations = data.conversations || [];
+      const totalUnread = conversations.reduce((sum: number, conv: any) => sum + (conv.unreadCount || 0), 0);
+      setUnreadMessagesCount(totalUnread);
+    } catch (error) {
+      console.error('Error fetching unread messages:', error);
+    }
+  }, []);
+
+  // Refresh unread messages count when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadMessagesCount();
+    }, [fetchUnreadMessagesCount])
   );
 
   // Fetch live market indices data
@@ -1167,8 +1198,15 @@ export default function Dashboard() {
             )}
           </View>
 
-          <TouchableOpacity onPress={() => router.push('/messages')}>
+          <TouchableOpacity onPress={() => router.push('/messages')} style={styles.messagesIconContainer}>
             <Ionicons name="chatbubble-ellipses-outline" size={26} color="#007AFF" />
+            {unreadMessagesCount > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadBadgeText}>
+                  {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -3387,5 +3425,29 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#000',
+  },
+
+  // Messages icon with badge
+  messagesIconContainer: {
+    position: 'relative',
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+    borderWidth: 2,
+    borderColor: '#F5F5F7',
+  },
+  unreadBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });
