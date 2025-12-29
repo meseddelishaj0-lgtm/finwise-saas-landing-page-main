@@ -193,6 +193,8 @@ export default function Dashboard() {
   const [newStockShares, setNewStockShares] = useState('');
   const [newStockAvgCost, setNewStockAvgCost] = useState('');
   const [addingStock, setAddingStock] = useState(false);
+  const [stockSearchResults, setStockSearchResults] = useState<any[]>([]);
+  const [showStockSearchDropdown, setShowStockSearchDropdown] = useState(false);
 
   // Edit Holding Modal
   const [editHoldingModal, setEditHoldingModal] = useState(false);
@@ -772,6 +774,8 @@ export default function Dashboard() {
       setNewStockSymbol('');
       setNewStockShares('');
       setNewStockAvgCost('');
+      setStockSearchResults([]);
+      setShowStockSearchDropdown(false);
       setAddStockModal(false);
 
       setTimeout(() => {
@@ -994,6 +998,40 @@ export default function Dashboard() {
 
     return () => clearTimeout(delayDebounce);
   }, [watchlistSymbol]);
+
+  // Search for Add Stock modal
+  const searchStockTickers = async (query: string) => {
+    if (!query || query.length < 1) {
+      setStockSearchResults([]);
+      setShowStockSearchDropdown(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${BASE_URL}/search?query=${query}&limit=8&apikey=${FMP_API_KEY}`
+      );
+      const data = await res.json();
+
+      if (data && Array.isArray(data)) {
+        setStockSearchResults(data);
+        setShowStockSearchDropdown(true);
+      }
+    } catch (err) {
+      console.error('Stock search error:', err);
+    }
+  };
+
+  // Debounce Add Stock search
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      if (newStockSymbol) {
+        searchStockTickers(newStockSymbol);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [newStockSymbol]);
 
   // Refresh all data
   const handleRefresh = async () => {
@@ -1786,7 +1824,11 @@ export default function Dashboard() {
         visible={addStockModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setAddStockModal(false)}
+        onRequestClose={() => {
+          setAddStockModal(false);
+          setStockSearchResults([]);
+          setShowStockSearchDropdown(false);
+        }}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -1798,7 +1840,11 @@ export default function Dashboard() {
                 <Text style={styles.modalTitle}>Add Stock</Text>
                 <Text style={styles.modalSubtitle}>Add to your portfolio</Text>
               </View>
-              <TouchableOpacity onPress={() => setAddStockModal(false)}>
+              <TouchableOpacity onPress={() => {
+                setAddStockModal(false);
+                setStockSearchResults([]);
+                setShowStockSearchDropdown(false);
+              }}>
                 <Ionicons name="close-circle" size={32} color="#999" />
               </TouchableOpacity>
             </View>
@@ -1806,15 +1852,65 @@ export default function Dashboard() {
             <View style={styles.modalForm}>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Stock Symbol</Text>
-                <TextInput
-                  style={styles.modalInput}
-                  placeholder="e.g., AAPL"
-                  placeholderTextColor="#999"
-                  value={newStockSymbol}
-                  onChangeText={setNewStockSymbol}
-                  autoCapitalize="characters"
-                  editable={!addingStock}
-                />
+                <View style={styles.watchlistSearchContainer}>
+                  <Ionicons name="search" size={20} color="#8E8E93" style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={styles.watchlistSearchInput}
+                    placeholder="Search by symbol or company name"
+                    placeholderTextColor="#999"
+                    value={newStockSymbol}
+                    onChangeText={(text) => {
+                      setNewStockSymbol(text);
+                      if (text.length === 0) {
+                        setShowStockSearchDropdown(false);
+                      }
+                    }}
+                    autoCapitalize="characters"
+                    editable={!addingStock}
+                  />
+                  {newStockSymbol.length > 0 && (
+                    <TouchableOpacity onPress={() => {
+                      setNewStockSymbol('');
+                      setShowStockSearchDropdown(false);
+                    }}>
+                      <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Stock Search Dropdown */}
+                {showStockSearchDropdown && stockSearchResults.length > 0 && (
+                  <View style={styles.watchlistSearchDropdown}>
+                    <ScrollView
+                      style={styles.watchlistSearchScrollView}
+                      keyboardShouldPersistTaps="handled"
+                    >
+                      {stockSearchResults.map((result, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.watchlistSearchResultItem}
+                          onPress={() => {
+                            setNewStockSymbol(result.symbol);
+                            setShowStockSearchDropdown(false);
+                            setStockSearchResults([]);
+                          }}
+                        >
+                          <View style={styles.watchlistSearchResultLeft}>
+                            <Text style={styles.watchlistSearchResultSymbol}>{result.symbol}</Text>
+                            <Text style={styles.watchlistSearchResultName} numberOfLines={1}>
+                              {result.name}
+                            </Text>
+                          </View>
+                          <View style={styles.watchlistSearchResultRight}>
+                            <View style={styles.addBadge}>
+                              <Ionicons name="add" size={16} color="#007AFF" />
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
               </View>
 
               <View style={styles.inputRow}>
