@@ -1123,6 +1123,72 @@ export default function CommunityPage() {
     setCommentsModal(true);
   };
 
+  // Handle notification tap - open post for like/comment, profile for follow
+  const handleNotificationTap = async (notif: Notification) => {
+    setNotificationsModal(false);
+
+    // For follow notifications, open the user's profile
+    if (notif.type === 'follow') {
+      if (notif.fromUser) {
+        setTimeout(() => handleOpenProfile(notif.fromUser), 300);
+      }
+      return;
+    }
+
+    // For like/comment/mention notifications, open the post
+    if ((notif.type === 'like' || notif.type === 'comment' || notif.type === 'mention') && notif.post?.id) {
+      // First try to find the post in already loaded posts
+      const existingPost = posts.find(p => p.id === notif.post!.id);
+
+      if (existingPost) {
+        setTimeout(() => handleOpenComments(existingPost), 300);
+        return;
+      }
+
+      // If not found, fetch the post from API
+      try {
+        const response = await fetch(`https://www.wallstreetstocks.ai/api/posts/${notif.post.id}`);
+        if (response.ok) {
+          const postData = await response.json();
+          // Adapt the response to match Post type
+          const post: Post = {
+            id: postData.id,
+            title: postData.title,
+            content: postData.content,
+            mediaUrl: postData.mediaUrl,
+            createdAt: postData.createdAt,
+            user: postData.user,
+            userId: postData.userId,
+            forum: postData.forum,
+            forumId: postData.forumId,
+            _count: {
+              comments: postData._count?.comments || 0,
+              likes: postData._count?.likes || 0,
+            },
+          };
+          setTimeout(() => handleOpenComments(post), 300);
+        } else {
+          // If post not found, fallback to opening profile
+          if (notif.fromUser) {
+            setTimeout(() => handleOpenProfile(notif.fromUser), 300);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching post for notification:', error);
+        // Fallback to opening profile
+        if (notif.fromUser) {
+          setTimeout(() => handleOpenProfile(notif.fromUser), 300);
+        }
+      }
+      return;
+    }
+
+    // Fallback: open the user's profile
+    if (notif.fromUser) {
+      setTimeout(() => handleOpenProfile(notif.fromUser), 300);
+    }
+  };
+
   const handleOpenImage = (imageUrl: string) => {
     setSelectedImage(imageUrl);
     setImageViewerModal(true);
@@ -2601,12 +2667,7 @@ export default function CommunityPage() {
                 <TouchableOpacity
                   key={notif.id}
                   style={[styles.notificationItem, !notif.isRead && styles.notificationUnread]}
-                  onPress={() => {
-                    if (notif.fromUser) {
-                      setNotificationsModal(false);
-                      setTimeout(() => handleOpenProfile(notif.fromUser), 300);
-                    }
-                  }}
+                  onPress={() => handleNotificationTap(notif)}
                   activeOpacity={0.7}
                 >
                   <Avatar user={notif.fromUser} size={44} />
