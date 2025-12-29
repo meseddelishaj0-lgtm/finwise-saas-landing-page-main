@@ -2705,7 +2705,7 @@ export default function CommunityPage() {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalContainer}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
         >
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCommentsModal(false)}>
