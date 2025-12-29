@@ -2702,7 +2702,11 @@ export default function CommunityPage() {
         presentationStyle="pageSheet"
         onRequestClose={() => setCommentsModal(false)}
       >
-        <View style={styles.modalContainer}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalContainer}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+        >
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCommentsModal(false)}>
               <Ionicons name="close" size={28} color="#000" />
@@ -2835,10 +2839,7 @@ export default function CommunityPage() {
             )}
           </ScrollView>
 
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.commentInputContainer}
-          >
+          <View style={styles.commentInputContainer}>
             <Avatar user={authUser as User | null | undefined} size={36} />
             <View style={styles.commentInputWrapper}>
               <TextInput
@@ -2864,9 +2865,9 @@ export default function CommunityPage() {
                 <Ionicons name="send" size={18} color="#FFF" />
               )}
             </TouchableOpacity>
-          </KeyboardAvoidingView>
+          </View>
 
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* POST OPTIONS MODAL */}
