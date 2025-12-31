@@ -1047,23 +1047,38 @@ export default function Dashboard() {
   };
 
   // Initial fetch - only start after data is loaded from AsyncStorage
+  // Stagger calls to prevent overwhelming the app on login
   useEffect(() => {
     if (!holdingsInitialized || contextWatchlistLoading) return;
 
-    fetchMarketChips();
-    fetchTrending();
-    fetchPortfolio();
-    fetchStockPicks();
-    fetchWatchlist();
+    // Stagger initial API calls to prevent app from becoming unresponsive
+    const loadData = async () => {
+      try {
+        // Load critical data first
+        await fetchMarketChips();
+        // Small delay before next batch
+        await new Promise(resolve => setTimeout(resolve, 100));
+        fetchTrending();
+        fetchWatchlist();
+        // Another small delay
+        await new Promise(resolve => setTimeout(resolve, 100));
+        fetchPortfolio();
+        fetchStockPicks();
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
+    };
 
-    // Refresh every 15 seconds for more real-time data
+    loadData();
+
+    // Refresh every 60 seconds (reduced from 15s to prevent performance issues)
     const interval = setInterval(() => {
       fetchMarketChips();
       fetchTrending();
       fetchPortfolio();
       fetchWatchlist();
       fetchStockPicks();
-    }, 15000);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [holdingsInitialized, contextWatchlistLoading]);
@@ -1075,9 +1090,17 @@ export default function Dashboard() {
     }
   }, [portfolioTimeRange]);
 
-  // Refetch watchlist data when watchlist array changes
+  // Track if initial watchlist data was loaded to prevent duplicate fetches
+  const watchlistInitialLoadDone = React.useRef(false);
+
+  // Refetch watchlist data when watchlist array changes (but not on initial load)
   useEffect(() => {
     if (!contextWatchlistLoading && watchlist.length > 0) {
+      // Skip if this is the initial load (initial useEffect handles it)
+      if (!watchlistInitialLoadDone.current) {
+        watchlistInitialLoadDone.current = true;
+        return;
+      }
       fetchWatchlist();
     } else if (!contextWatchlistLoading && watchlist.length === 0) {
       setWatchlistData([]);
