@@ -1,5 +1,5 @@
-// app/symbol/[symbol]/chart.tsx - Premium Stock Chart
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+// app/symbol/[symbol]/chart.tsx - Premium Stock Chart (Optimized)
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
+// Cache settings
+const CHART_CACHE_PREFIX = 'chart_cache_';
+const QUOTE_CACHE_PREFIX = 'quote_cache_';
+const CACHE_TTL = {
+  '1D': 60 * 1000,      // 1 minute for intraday
+  '5D': 5 * 60 * 1000,  // 5 minutes
+  '1M': 15 * 60 * 1000, // 15 minutes
+  '3M': 30 * 60 * 1000, // 30 minutes
+  '1Y': 60 * 60 * 1000, // 1 hour
+  'ALL': 60 * 60 * 1000 // 1 hour
+};
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CHART_HEIGHT = SCREEN_HEIGHT * 0.38;
 
@@ -32,6 +44,35 @@ interface ChartDataPoint {
   value: number;
   label: string;
   date: Date;
+}
+
+interface CachedData<T> {
+  data: T;
+  timestamp: number;
+}
+
+// Cache helpers
+async function getCachedData<T>(key: string, ttl: number): Promise<T | null> {
+  try {
+    const cached = await AsyncStorage.getItem(key);
+    if (cached) {
+      const { data, timestamp }: CachedData<T> = JSON.parse(cached);
+      if (Date.now() - timestamp < ttl) {
+        return data;
+      }
+    }
+  } catch (e) {
+    // Cache miss or error
+  }
+  return null;
+}
+
+async function setCachedData<T>(key: string, data: T): Promise<void> {
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch (e) {
+    // Ignore cache write errors
+  }
 }
 
 export default function ChartTab() {
@@ -94,9 +135,25 @@ export default function ChartTab() {
   const isPositive = priceChange.amount >= 0;
   const priceColor = isPositive ? '#00C853' : '#FF3B30';
 
-  // Fetch quote data
-  const fetchQuote = async () => {
+  // Fetch quote data with caching
+  const fetchQuote = useCallback(async (useCache = true) => {
     if (!cleanSymbol) return;
+
+    const cacheKey = `${QUOTE_CACHE_PREFIX}${cleanSymbol}`;
+
+    // Try cache first for instant display
+    if (useCache) {
+      const cached = await getCachedData<any>(cacheKey, 30 * 1000); // 30 sec cache
+      if (cached) {
+        setCurrentPrice(cached.price);
+        setPreviousClose(cached.previousClose);
+        setDayHigh(cached.dayHigh);
+        setDayLow(cached.dayLow);
+        setLastUpdated(new Date(cached.timestamp || Date.now()));
+      }
+    }
+
+    // Fetch fresh data
     try {
       const encodedSymbol = encodeURIComponent(cleanSymbol.replace(/\//g, ''));
       const res = await fetch(
@@ -112,16 +169,37 @@ export default function ChartTab() {
         setDayLow(q.dayLow);
         setLastUpdated(new Date());
         setError(null);
+
+        // Cache the quote
+        await setCachedData(cacheKey, { ...q, timestamp: Date.now() });
       }
     } catch (err) {
       console.error('Quote fetch error:', err);
     }
-  };
+  }, [cleanSymbol]);
 
-  // Fetch chart data based on timeframe
-  const fetchChartData = async () => {
+  // Fetch chart data based on timeframe with caching
+  const fetchChartData = useCallback(async (showLoadingSpinner = true) => {
     if (!cleanSymbol) return;
-    setLoading(true);
+
+    const cacheKey = `${CHART_CACHE_PREFIX}${cleanSymbol}_${timeframe}`;
+    const cacheTTL = CACHE_TTL[timeframe];
+
+    // Try cache first for instant display
+    const cachedChart = await getCachedData<ChartDataPoint[]>(cacheKey, cacheTTL);
+    if (cachedChart && cachedChart.length > 0) {
+      // Restore Date objects from cached data
+      const restoredData = cachedChart.map(d => ({
+        ...d,
+        date: new Date(d.date)
+      }));
+      setChartData(restoredData);
+      setLoading(false);
+      // Continue to fetch fresh data in background (don't return)
+    } else if (showLoadingSpinner) {
+      setLoading(true);
+    }
+
     setError(null);
 
     try {
@@ -271,16 +349,22 @@ export default function ChartTab() {
       if (formatted.length > 0) {
         setChartData(formatted);
         setError(null);
-      } else {
+        // Cache the data for next time
+        await setCachedData(cacheKey, formatted);
+      } else if (!cachedChart) {
+        // Only show error if we don't have cached data
         setError('No data available');
       }
     } catch (err: any) {
       console.error('Chart data error:', err);
-      setError('Unable to load chart');
+      // Only show error if we don't have cached data to display
+      if (!cachedChart || cachedChart.length === 0) {
+        setError('Unable to load chart');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [cleanSymbol, timeframe]);
 
   // Calculate Y-axis bounds
   const yAxisBounds = useMemo(() => {
@@ -325,21 +409,24 @@ export default function ChartTab() {
       ])
     ).start();
 
-    fetchQuote();
-    fetchChartData();
+    // Load data in parallel for faster initial load
+    Promise.all([
+      fetchQuote(true),
+      fetchChartData(true)
+    ]);
 
     // Set up polling - 15 seconds for 1D live data, 60 seconds for other timeframes
     if (intervalRef.current) clearInterval(intervalRef.current);
     const pollInterval = timeframe === '1D' ? 15000 : 60000;
     intervalRef.current = setInterval(() => {
-      fetchQuote();
-      if (timeframe === '1D') fetchChartData();
+      fetchQuote(false); // Don't use cache for polling
+      if (timeframe === '1D') fetchChartData(false);
     }, pollInterval);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [cleanSymbol, timeframe]);
+  }, [cleanSymbol, timeframe, fetchQuote, fetchChartData]);
 
   const handleTimeframeChange = (tf: Timeframe) => {
     if (tf !== timeframe) {
@@ -487,7 +574,7 @@ export default function ChartTab() {
             <View style={styles.errorContainer}>
               <Ionicons name="alert-circle" size={48} color="#8E8E93" />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={fetchChartData}>
+              <TouchableOpacity style={styles.retryButton} onPress={() => fetchChartData(true)}>
                 <Text style={styles.retryText}>Retry</Text>
               </TouchableOpacity>
             </View>
