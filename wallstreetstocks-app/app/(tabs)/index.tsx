@@ -13,6 +13,7 @@ import {
   Alert,
   RefreshControl,
   KeyboardAvoidingView,
+  InteractionManager,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -1047,40 +1048,37 @@ export default function Dashboard() {
   };
 
   // Initial fetch - only start after data is loaded from AsyncStorage
-  // Stagger calls to prevent overwhelming the app on login
+  // Use InteractionManager to not block UI animations, then load data in parallel
   useEffect(() => {
     if (!holdingsInitialized || contextWatchlistLoading) return;
 
-    // Stagger initial API calls to prevent app from becoming unresponsive
-    const loadData = async () => {
-      try {
-        // Load critical data first
-        await fetchMarketChips();
-        // Small delay before next batch
-        await new Promise(resolve => setTimeout(resolve, 100));
-        fetchTrending();
-        fetchWatchlist();
-        // Another small delay
-        await new Promise(resolve => setTimeout(resolve, 100));
-        fetchPortfolio();
-        fetchStockPicks();
-      } catch (error) {
-        console.error('Error loading initial data:', error);
-      }
-    };
+    // Wait for UI to settle, then load all data in parallel for speed
+    const task = InteractionManager.runAfterInteractions(() => {
+      // Load all data in parallel - faster than sequential
+      Promise.all([
+        fetchMarketChips().catch(e => console.warn('Market chips error:', e)),
+        fetchTrending().catch(e => console.warn('Trending error:', e)),
+        fetchWatchlist().catch(e => console.warn('Watchlist error:', e)),
+        fetchPortfolio().catch(e => console.warn('Portfolio error:', e)),
+        fetchStockPicks().catch(e => console.warn('Stock picks error:', e)),
+      ]);
+    });
 
-    loadData();
-
-    // Refresh every 60 seconds (reduced from 15s to prevent performance issues)
+    // Refresh every 60 seconds
     const interval = setInterval(() => {
-      fetchMarketChips();
-      fetchTrending();
-      fetchPortfolio();
-      fetchWatchlist();
-      fetchStockPicks();
+      Promise.all([
+        fetchMarketChips().catch(e => console.warn('Refresh market error:', e)),
+        fetchTrending().catch(e => console.warn('Refresh trending error:', e)),
+        fetchPortfolio().catch(e => console.warn('Refresh portfolio error:', e)),
+        fetchWatchlist().catch(e => console.warn('Refresh watchlist error:', e)),
+        fetchStockPicks().catch(e => console.warn('Refresh picks error:', e)),
+      ]);
     }, 60000);
 
-    return () => clearInterval(interval);
+    return () => {
+      task.cancel();
+      clearInterval(interval);
+    };
   }, [holdingsInitialized, contextWatchlistLoading]);
 
   // Refetch portfolio when time range changes
