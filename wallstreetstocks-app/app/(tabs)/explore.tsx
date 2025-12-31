@@ -17,6 +17,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
+import { fetchWithTimeout } from "@/utils/performance";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
@@ -503,12 +504,13 @@ export default function Explore() {
     "DVY": "Dividend Select",
   };
 
-  // Fetch Treasury Rates
+  // Fetch Treasury Rates with timeout
   const fetchTreasuryRates = async () => {
     setTreasuryLoading(true);
     try {
-      const response = await fetch(
-        `https://financialmodelingprep.com/stable/treasury-rates?apikey=${FMP_API_KEY}`
+      const response = await fetchWithTimeout(
+        `https://financialmodelingprep.com/stable/treasury-rates?apikey=${FMP_API_KEY}`,
+        { timeout: 10000 }
       );
       const data = await response.json();
 
@@ -559,14 +561,15 @@ export default function Explore() {
     return { spread, isInverted: spread < 0 };
   };
 
-  // Fetch historical data for sparklines
+  // Fetch historical data for sparklines with timeout
   const fetchSparklineData = async (symbol: string): Promise<number[]> => {
     try {
-      const response = await fetch(
-        `${BASE_URL}/historical-chart/1hour/${symbol}?apikey=${FMP_API_KEY}`
+      const response = await fetchWithTimeout(
+        `${BASE_URL}/historical-chart/1hour/${symbol}?apikey=${FMP_API_KEY}`,
+        { timeout: 10000 }
       );
       const data = await response.json();
-      
+
       if (Array.isArray(data) && data.length > 0) {
         return data.slice(0, 24).map((item: any) => item.close).reverse();
       }
@@ -577,7 +580,7 @@ export default function Explore() {
     }
   };
 
-  // Fetch header cards data based on active tab
+  // Fetch header cards data based on active tab with timeout
   const fetchHeaderCards = async () => {
     // Use dynamic symbols for stocks tab based on region
     const symbols = activeTab === "stocks" ? getStockHeaderSymbols() : TAB_HEADER_SYMBOLS[activeTab];
@@ -588,8 +591,9 @@ export default function Explore() {
 
     try {
       const symbolsStr = symbols.join(",");
-      const response = await fetch(
-        `${BASE_URL}/quote/${symbolsStr}?apikey=${FMP_API_KEY}`
+      const response = await fetchWithTimeout(
+        `${BASE_URL}/quote/${symbolsStr}?apikey=${FMP_API_KEY}`,
+        { timeout: 10000 }
       );
       const data = await response.json();
 
@@ -637,17 +641,19 @@ export default function Explore() {
     setSearchLoading(true);
 
     try {
-      const searchRes = await fetch(
-        `${BASE_URL}/search?query=${encodeURIComponent(query)}&limit=20&apikey=${FMP_API_KEY}`
+      const searchRes = await fetchWithTimeout(
+        `${BASE_URL}/search?query=${encodeURIComponent(query)}&limit=20&apikey=${FMP_API_KEY}`,
+        { timeout: 10000 }
       );
       const searchData = await searchRes.json();
 
       if (searchData && Array.isArray(searchData)) {
         const symbols = searchData.slice(0, 10).map((item: any) => item.symbol).join(',');
-        
+
         if (symbols) {
-          const quoteRes = await fetch(
-            `${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
+          const quoteRes = await fetchWithTimeout(
+            `${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`,
+            { timeout: 10000 }
           );
           const quoteData = await quoteRes.json();
 
@@ -733,11 +739,12 @@ export default function Explore() {
       // Special handling for dividends tab
       if (activeTab === "dividends") {
         const dividendStocks = ["AAPL", "MSFT", "JNJ", "PG", "KO", "PEP", "VZ", "T", "XOM", "CVX", "JPM", "BAC", "WMT", "HD", "MCD", "ABBV", "MRK", "PFE", "INTC", "IBM"];
-        
+
         const dividendPromises = dividendStocks.map(async (symbol) => {
           try {
-            const res = await fetch(
-              `https://financialmodelingprep.com/stable/dividends?symbol=${symbol}&apikey=${FMP_API_KEY}`
+            const res = await fetchWithTimeout(
+              `https://financialmodelingprep.com/stable/dividends?symbol=${symbol}&apikey=${FMP_API_KEY}`,
+              { timeout: 10000 }
             );
             const divData = await res.json();
             if (Array.isArray(divData) && divData.length > 0) {
@@ -773,7 +780,7 @@ export default function Explore() {
         return;
       }
 
-      const res = await fetch(url);
+      const res = await fetchWithTimeout(url, { timeout: 15000 });
       const json = await res.json();
 
       if (json.Error || json.error) {
@@ -819,7 +826,7 @@ export default function Explore() {
           // For ETF, get quotes for more data
           const etfSymbols = json.slice(0, 100).map((item: any) => item.symbol).filter(Boolean);
           if (etfSymbols.length > 0) {
-            const quoteRes = await fetch(`${BASE_URL}/quote/${etfSymbols.join(",")}?apikey=${FMP_API_KEY}`);
+            const quoteRes = await fetchWithTimeout(`${BASE_URL}/quote/${etfSymbols.join(",")}?apikey=${FMP_API_KEY}`, { timeout: 15000 });
             const quoteData = await quoteRes.json();
             if (Array.isArray(quoteData)) {
               cleaned = quoteData.map((item: any) => ({

@@ -95,6 +95,90 @@ class APICache {
 // Global cache instance
 export const apiCache = new APICache();
 
+// ===== FETCH WITH TIMEOUT =====
+
+/**
+ * Fetch with automatic timeout to prevent hanging requests.
+ * This is critical for App Store approval - apps should not hang.
+ */
+export async function fetchWithTimeout(
+  url: string,
+  options: RequestInit & { timeout?: number } = {}
+): Promise<Response> {
+  const { timeout = 15000, ...fetchOptions } = options;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal,
+    });
+    return response;
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeout}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Fetch JSON with timeout, automatic parsing, and error handling.
+ */
+export async function fetchJSON<T = any>(
+  url: string,
+  options: RequestInit & { timeout?: number } = {}
+): Promise<T> {
+  const response = await fetchWithTimeout(url, options);
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Batch fetch with concurrency limit to prevent overwhelming the network.
+ * Returns results in the same order as input URLs.
+ */
+export async function batchFetch<T>(
+  urls: string[],
+  options: {
+    timeout?: number;
+    concurrency?: number;
+    onProgress?: (completed: number, total: number) => void;
+  } = {}
+): Promise<(T | null)[]> {
+  const { timeout = 15000, concurrency = 5, onProgress } = options;
+  const results: (T | null)[] = new Array(urls.length).fill(null);
+  let completed = 0;
+
+  // Process in chunks
+  for (let i = 0; i < urls.length; i += concurrency) {
+    const chunk = urls.slice(i, i + concurrency);
+    const chunkPromises = chunk.map(async (url, chunkIndex) => {
+      try {
+        const data = await fetchJSON<T>(url, { timeout });
+        results[i + chunkIndex] = data;
+      } catch (e) {
+        console.warn(`Batch fetch failed for ${url}:`, e);
+        results[i + chunkIndex] = null;
+      }
+      completed++;
+      onProgress?.(completed, urls.length);
+    });
+
+    await Promise.all(chunkPromises);
+  }
+
+  return results;
+}
+
 // ===== DEBOUNCING =====
 
 export function debounce<T extends (...args: any[]) => any>(

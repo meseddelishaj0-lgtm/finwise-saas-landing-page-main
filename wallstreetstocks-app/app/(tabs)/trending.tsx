@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
+import { fetchWithTimeout } from "@/utils/performance";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
@@ -309,14 +310,15 @@ export default function Trending() {
     "AMZN": "Amazon",
   };
 
-  // Fetch sparkline data
+  // Fetch sparkline data with timeout
   const fetchSparklineData = async (symbol: string): Promise<number[]> => {
     try {
-      const response = await fetch(
-        `${BASE}/historical-chart/1hour/${symbol}?apikey=${FMP_API_KEY}`
+      const response = await fetchWithTimeout(
+        `${BASE}/historical-chart/1hour/${symbol}?apikey=${FMP_API_KEY}`,
+        { timeout: 10000 }
       );
       const data = await response.json();
-      
+
       if (Array.isArray(data) && data.length > 0) {
         return data.slice(0, 24).map((item: any) => item.close).reverse();
       }
@@ -327,12 +329,13 @@ export default function Trending() {
     }
   };
 
-  // Fetch header cards data
+  // Fetch header cards data with timeout
   const fetchHeaderCards = async () => {
     try {
       const symbolsStr = HEADER_SYMBOLS.join(",");
-      const response = await fetch(
-        `${BASE}/quote/${symbolsStr}?apikey=${FMP_API_KEY}`
+      const response = await fetchWithTimeout(
+        `${BASE}/quote/${symbolsStr}?apikey=${FMP_API_KEY}`,
+        { timeout: 10000 }
       );
       const data = await response.json();
 
@@ -462,7 +465,7 @@ export default function Trending() {
     setError(null);
 
     try {
-      const res = await fetch(endpoints[activeTab]);
+      const res = await fetchWithTimeout(endpoints[activeTab], { timeout: 15000 });
       const json = await res.json();
 
       if (json.Error || json.error) {
