@@ -35,7 +35,10 @@ export async function GET(req: NextRequest) {
       take: 50
     });
 
-    return NextResponse.json(notifications, { status: 200 });
+    const response = NextResponse.json(notifications, { status: 200 });
+    // Cache for 10 seconds with stale-while-revalidate for faster subsequent loads
+    response.headers.set('Cache-Control', 'private, s-maxage=10, stale-while-revalidate=30');
+    return response;
   } catch (err) {
     console.error("❌ Error fetching notifications:", err);
     return NextResponse.json({ error: "Failed to load notifications" }, { status: 500 });
