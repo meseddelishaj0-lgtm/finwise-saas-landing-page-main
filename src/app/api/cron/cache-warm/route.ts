@@ -1,15 +1,16 @@
 // api/cron/cache-warm/route.ts
 // Cron job to pre-warm cache for popular stocks and trending data
 // Runs every 2 minutes to keep hot data fresh
+// Gracefully handles missing KV configuration
 
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Allow up to 60 seconds for this cron job
 
 const FMP_API_KEY = process.env.FMP_API_KEY;
 const CRON_SECRET = process.env.CRON_SECRET;
+const KV_CONFIGURED = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 
 // Popular symbols to always keep warm
 const HOT_SYMBOLS = [
@@ -43,6 +44,17 @@ interface Quote {
   previousClose: number;
 }
 
+// Lazy load KV only if configured
+async function getKV() {
+  if (!KV_CONFIGURED) return null;
+  try {
+    const { kv } = await import("@vercel/kv");
+    return kv;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchQuotesFromFMP(symbols: string[]): Promise<Quote[]> {
   if (symbols.length === 0) return [];
 
@@ -65,6 +77,18 @@ export async function GET(req: NextRequest) {
     const authHeader = req.headers.get("authorization");
     if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const kv = await getKV();
+
+    // If KV is not configured, just return success (nothing to warm)
+    if (!kv) {
+      return NextResponse.json({
+        success: true,
+        message: "KV not configured - skipping cache warm",
+        kvEnabled: false,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     const startTime = Date.now();
@@ -153,6 +177,7 @@ export async function GET(req: NextRequest) {
       success: true,
       cached: cachedCount,
       errors: errorCount,
+      kvEnabled: true,
       duration: `${duration}ms`,
       timestamp: new Date().toISOString(),
     });

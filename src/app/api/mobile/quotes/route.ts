@@ -1,15 +1,16 @@
 // api/mobile/quotes/route.ts
-// Batch quotes endpoint with Vercel KV caching for mobile app
-// Reduces multiple API calls to one, with 30-second cache per symbol
+// Batch quotes endpoint for mobile app
+// Reduces multiple API calls to one, with optional KV caching
 
 import { NextRequest, NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
 
 export const runtime = "edge"; // Edge Runtime for faster global response
 export const dynamic = "force-dynamic";
 
 const FMP_API_KEY = process.env.FMP_API_KEY;
-const CACHE_TTL = 30; // Cache quotes for 30 seconds
+
+// Check if KV is configured
+const KV_CONFIGURED = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 
 interface Quote {
   symbol: string;
@@ -33,6 +34,17 @@ interface Quote {
   pe: number;
   sharesOutstanding: number;
   timestamp: number;
+}
+
+// Lazy load KV only if configured
+async function getKV() {
+  if (!KV_CONFIGURED) return null;
+  try {
+    const { kv } = await import("@vercel/kv");
+    return kv;
+  } catch {
+    return null;
+  }
 }
 
 // Fetch quotes from FMP API
@@ -77,40 +89,48 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ quotes: [], cached: false });
     }
 
-    // Check KV cache for each symbol
-    const cacheKeys = symbols.map((s) => `quote:${s}`);
-    const cachedResults: (Quote | null)[] = await Promise.all(
-      cacheKeys.map((key) => kv.get<Quote>(key).catch(() => null))
-    );
+    const kv = await getKV();
+    let quotes: Quote[] = [];
+    let uncachedSymbols: string[] = symbols;
+    let cachedCount = 0;
 
-    // Separate cached and uncached symbols
-    const quotes: Quote[] = [];
-    const uncachedSymbols: string[] = [];
+    // Try to get from KV cache if available
+    if (kv) {
+      try {
+        const cacheKeys = symbols.map((s) => `quote:${s}`);
+        const cachedResults: (Quote | null)[] = await Promise.all(
+          cacheKeys.map((key) => kv.get<Quote>(key).catch(() => null))
+        );
 
-    symbols.forEach((symbol, index) => {
-      const cached = cachedResults[index];
-      if (cached) {
-        quotes.push(cached);
-      } else {
-        uncachedSymbols.push(symbol);
+        uncachedSymbols = [];
+        symbols.forEach((symbol, index) => {
+          const cached = cachedResults[index];
+          if (cached) {
+            quotes.push(cached);
+            cachedCount++;
+          } else {
+            uncachedSymbols.push(symbol);
+          }
+        });
+      } catch (cacheError) {
+        console.warn("KV cache read error:", cacheError);
+        uncachedSymbols = symbols;
       }
-    });
+    }
 
     // Fetch uncached quotes from FMP
     if (uncachedSymbols.length > 0) {
       const freshQuotes = await fetchQuotesFromFMP(uncachedSymbols);
-
-      // Cache fresh quotes in KV (fire and forget for speed)
-      const cachePromises = freshQuotes.map((quote) =>
-        kv.set(`quote:${quote.symbol}`, quote, { ex: CACHE_TTL }).catch((err) => {
-          console.warn(`Failed to cache ${quote.symbol}:`, err);
-        })
-      );
-
-      // Don't await cache writes to avoid blocking response
-      Promise.all(cachePromises);
-
       quotes.push(...freshQuotes);
+
+      // Cache fresh quotes in KV if available (fire and forget)
+      if (kv && freshQuotes.length > 0) {
+        Promise.all(
+          freshQuotes.map((quote) =>
+            kv.set(`quote:${quote.symbol}`, quote, { ex: 30 }).catch(() => {})
+          )
+        ).catch(() => {});
+      }
     }
 
     // Sort quotes to match original request order
@@ -124,8 +144,9 @@ export async function GET(req: NextRequest) {
     const response = NextResponse.json({
       quotes,
       cached: uncachedSymbols.length === 0,
-      cachedCount: symbols.length - uncachedSymbols.length,
+      cachedCount,
       freshCount: uncachedSymbols.length,
+      kvEnabled: KV_CONFIGURED,
       timestamp: Date.now(),
     });
 
@@ -138,10 +159,29 @@ export async function GET(req: NextRequest) {
     return response;
   } catch (error) {
     console.error("Batch quotes error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch quotes", quotes: [] },
-      { status: 500 }
-    );
+
+    // Fallback: try direct FMP fetch without any caching
+    try {
+      const { searchParams } = new URL(req.url);
+      const symbolsParam = searchParams.get("symbols") || "";
+      const symbols = symbolsParam.split(",").map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 50);
+      const quotes = await fetchQuotesFromFMP(symbols);
+
+      return NextResponse.json({
+        quotes,
+        cached: false,
+        cachedCount: 0,
+        freshCount: quotes.length,
+        kvEnabled: false,
+        fallback: true,
+        timestamp: Date.now(),
+      });
+    } catch (fallbackError) {
+      return NextResponse.json(
+        { error: "Failed to fetch quotes", quotes: [] },
+        { status: 500 }
+      );
+    }
   }
 }
 
@@ -164,35 +204,8 @@ export async function POST(req: NextRequest) {
       .filter((s) => s.length > 0 && s.length <= 10)
       .slice(0, 50);
 
-    // Check KV cache
-    const cacheKeys = validSymbols.map((s) => `quote:${s}`);
-    const cachedResults: (Quote | null)[] = await Promise.all(
-      cacheKeys.map((key) => kv.get<Quote>(key).catch(() => null))
-    );
-
-    const quotes: Quote[] = [];
-    const uncachedSymbols: string[] = [];
-
-    validSymbols.forEach((symbol, index) => {
-      const cached = cachedResults[index];
-      if (cached) {
-        quotes.push(cached);
-      } else {
-        uncachedSymbols.push(symbol);
-      }
-    });
-
-    // Fetch uncached quotes
-    if (uncachedSymbols.length > 0) {
-      const freshQuotes = await fetchQuotesFromFMP(uncachedSymbols);
-
-      // Cache in background
-      freshQuotes.forEach((quote) => {
-        kv.set(`quote:${quote.symbol}`, quote, { ex: CACHE_TTL }).catch(() => {});
-      });
-
-      quotes.push(...freshQuotes);
-    }
+    // Fetch all quotes from FMP (simpler approach for POST)
+    const quotes = await fetchQuotesFromFMP(validSymbols);
 
     // Sort to match request order
     const symbolOrder = new Map(validSymbols.map((s, i) => [s, i]));
@@ -204,9 +217,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       quotes,
-      cached: uncachedSymbols.length === 0,
-      cachedCount: validSymbols.length - uncachedSymbols.length,
-      freshCount: uncachedSymbols.length,
+      cached: false,
+      cachedCount: 0,
+      freshCount: quotes.length,
       timestamp: Date.now(),
     });
   } catch (error) {
