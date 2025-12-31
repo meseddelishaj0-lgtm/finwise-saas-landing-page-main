@@ -4,6 +4,7 @@ import { Tabs, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SymbolHeader from "./header";
+import { setToMemory, CACHE_KEYS } from "../../../utils/memoryCache";
 
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const CHART_CACHE_PREFIX = 'chart_cache_';
@@ -26,8 +27,11 @@ async function prefetchSymbolData(symbol: string) {
       chartRes.json()
     ]);
 
-    // Cache quote data
+    // Cache quote data to BOTH memory (instant) and AsyncStorage (persistent)
     if (quoteData?.[0]) {
+      // Memory cache for instant access
+      setToMemory(CACHE_KEYS.quote(cleanSymbol), quoteData[0]);
+      // AsyncStorage for persistence
       await AsyncStorage.setItem(
         `${QUOTE_CACHE_PREFIX}${cleanSymbol}`,
         JSON.stringify({ data: { ...quoteData[0], timestamp: Date.now() }, timestamp: Date.now() })
@@ -50,6 +54,9 @@ async function prefetchSymbolData(symbol: string) {
           date: new Date(d.date),
         }));
 
+      // Memory cache for instant access
+      setToMemory(CACHE_KEYS.chart(cleanSymbol, '1D'), formatted);
+      // AsyncStorage for persistence
       await AsyncStorage.setItem(
         `${CHART_CACHE_PREFIX}${cleanSymbol}_1D`,
         JSON.stringify({ data: formatted, timestamp: Date.now() })

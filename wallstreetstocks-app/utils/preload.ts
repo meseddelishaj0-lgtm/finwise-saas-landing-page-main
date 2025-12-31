@@ -2,6 +2,7 @@
 // Pre-load popular stocks data on app startup for instant loading
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setToMemory, CACHE_KEYS } from './memoryCache';
 
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const QUOTE_CACHE_PREFIX = 'quote_cache_';
@@ -72,7 +73,13 @@ export async function preloadPopularStocks(): Promise<void> {
       return;
     }
 
-    // Cache each quote
+    // Cache each quote to BOTH memory (instant) and AsyncStorage (persistent)
+    quotes.forEach(quote => {
+      // Memory cache for instant access
+      setToMemory(CACHE_KEYS.quote(quote.symbol), quote);
+    });
+
+    // Also save to AsyncStorage for persistence
     const cachePromises = quotes.map(quote =>
       AsyncStorage.setItem(
         `${QUOTE_CACHE_PREFIX}${quote.symbol}`,
@@ -125,14 +132,20 @@ export async function preloadTrendingStocks(): Promise<void> {
     ];
 
     const uniqueSymbols = [...new Set(allQuotes.map((q: any) => q.symbol))];
-    const cachePromises = allQuotes
-      .filter((q: any, i: number) => uniqueSymbols.indexOf(q.symbol) === i) // Dedupe
-      .map((quote: any) =>
-        AsyncStorage.setItem(
-          `${QUOTE_CACHE_PREFIX}${quote.symbol}`,
-          JSON.stringify({ data: { ...quote, timestamp: Date.now() }, timestamp: Date.now() })
-        )
-      );
+    const deduped = allQuotes.filter((q: any, i: number) => uniqueSymbols.indexOf(q.symbol) === i);
+
+    // Save to memory cache for instant access
+    deduped.forEach((quote: any) => {
+      setToMemory(CACHE_KEYS.quote(quote.symbol), quote);
+    });
+
+    // Also save to AsyncStorage for persistence
+    const cachePromises = deduped.map((quote: any) =>
+      AsyncStorage.setItem(
+        `${QUOTE_CACHE_PREFIX}${quote.symbol}`,
+        JSON.stringify({ data: { ...quote, timestamp: Date.now() }, timestamp: Date.now() })
+      )
+    );
 
     await Promise.all(cachePromises);
     console.log(`Pre-loaded ${uniqueSymbols.length} trending stocks`);

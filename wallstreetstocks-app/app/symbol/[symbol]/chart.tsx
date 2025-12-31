@@ -18,6 +18,7 @@ import { useLocalSearchParams, useGlobalSearchParams, useSegments } from 'expo-r
 import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getFromMemory, setToMemory, CACHE_KEYS } from '../../../utils/memoryCache';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -102,12 +103,17 @@ export default function ChartTab() {
         .toUpperCase()
     : null;
 
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
-  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
-  const [previousClose, setPreviousClose] = useState<number | null>(null);
-  const [dayHigh, setDayHigh] = useState<number | null>(null);
-  const [dayLow, setDayLow] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Try to get data from memory cache SYNCHRONOUSLY for instant display
+  const memQuote = cleanSymbol ? getFromMemory<any>(CACHE_KEYS.quote(cleanSymbol)) : null;
+  const memChart = cleanSymbol ? getFromMemory<ChartDataPoint[]>(CACHE_KEYS.chart(cleanSymbol, '1D')) : null;
+
+  const [chartData, setChartData] = useState<ChartDataPoint[]>(memChart || []);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(memQuote?.price ?? null);
+  const [previousClose, setPreviousClose] = useState<number | null>(memQuote?.previousClose ?? null);
+  const [dayHigh, setDayHigh] = useState<number | null>(memQuote?.dayHigh ?? null);
+  const [dayLow, setDayLow] = useState<number | null>(memQuote?.dayLow ?? null);
+  // Only show loading if we don't have memory cached data
+  const [loading, setLoading] = useState(!memQuote && !memChart);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>('1D');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -170,7 +176,9 @@ export default function ChartTab() {
         setLastUpdated(new Date());
         setError(null);
 
-        // Cache the quote
+        // Save to MEMORY cache (instant access next time)
+        setToMemory(CACHE_KEYS.quote(cleanSymbol), q);
+        // Also save to AsyncStorage for persistence
         await setCachedData(cacheKey, { ...q, timestamp: Date.now() });
       }
     } catch (err) {
@@ -185,19 +193,29 @@ export default function ChartTab() {
     const cacheKey = `${CHART_CACHE_PREFIX}${cleanSymbol}_${timeframe}`;
     const cacheTTL = CACHE_TTL[timeframe];
 
-    // Try cache first for instant display
-    const cachedChart = await getCachedData<ChartDataPoint[]>(cacheKey, cacheTTL);
-    if (cachedChart && cachedChart.length > 0) {
-      // Restore Date objects from cached data
-      const restoredData = cachedChart.map(d => ({
-        ...d,
-        date: new Date(d.date)
-      }));
-      setChartData(restoredData);
+    // Try MEMORY cache first (synchronous - instant!)
+    const memCached = getFromMemory<ChartDataPoint[]>(CACHE_KEYS.chart(cleanSymbol, timeframe), cacheTTL);
+    if (memCached && memCached.length > 0) {
+      setChartData(memCached);
       setLoading(false);
-      // Continue to fetch fresh data in background (don't return)
-    } else if (showLoadingSpinner) {
-      setLoading(true);
+      // Continue to fetch fresh data in background
+    }
+
+    // Try AsyncStorage cache if no memory cache
+    if (!memCached) {
+      const cachedChart = await getCachedData<ChartDataPoint[]>(cacheKey, cacheTTL);
+      if (cachedChart && cachedChart.length > 0) {
+        // Restore Date objects from cached data
+        const restoredData = cachedChart.map(d => ({
+          ...d,
+          date: new Date(d.date)
+        }));
+        setChartData(restoredData);
+        setToMemory(CACHE_KEYS.chart(cleanSymbol, timeframe), restoredData); // Populate memory cache
+        setLoading(false);
+      } else if (showLoadingSpinner) {
+        setLoading(true);
+      }
     }
 
     setError(null);
@@ -349,16 +367,18 @@ export default function ChartTab() {
       if (formatted.length > 0) {
         setChartData(formatted);
         setError(null);
-        // Cache the data for next time
+        // Save to MEMORY cache (instant access next time)
+        setToMemory(CACHE_KEYS.chart(cleanSymbol, timeframe), formatted);
+        // Also save to AsyncStorage for persistence
         await setCachedData(cacheKey, formatted);
-      } else if (!cachedChart) {
-        // Only show error if we don't have cached data
+      } else if (!memCached) {
+        // Only show error if we don't have any cached data
         setError('No data available');
       }
     } catch (err: any) {
       console.error('Chart data error:', err);
       // Only show error if we don't have cached data to display
-      if (!cachedChart || cachedChart.length === 0) {
+      if (!memCached) {
         setError('Unable to load chart');
       }
     } finally {
