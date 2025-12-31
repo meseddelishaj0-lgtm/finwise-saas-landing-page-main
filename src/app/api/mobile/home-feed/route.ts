@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge'; // Use Edge Runtime for faster response (Vercel Pro)
+// Note: Can't use Edge Runtime because Prisma requires Node.js APIs
 
 export async function GET(req: NextRequest) {
   try {

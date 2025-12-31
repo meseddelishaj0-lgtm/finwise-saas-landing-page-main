@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 import { kv } from "@vercel/kv";
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge'; // Edge Runtime for faster response
+// Note: Can't use Edge Runtime here because Prisma requires Node.js APIs
 
 const CACHE_TTL = 60; // Cache trending data for 60 seconds
 
