@@ -103,6 +103,34 @@ export const fetchPosts = async (forumSlug?: string, currentUserId?: number): Pr
   }
 };
 
+// Combined home feed endpoint - fetches posts, notifications count, and unread messages in one call
+// Uses Edge Runtime and caching for faster response
+export const fetchHomeFeed = async (userId?: number): Promise<{
+  posts: any[];
+  notificationsCount: number;
+  unreadMessagesCount: number;
+  cachedAt: string;
+}> => {
+  try {
+    const params = userId ? `?userId=${userId}` : '';
+    const result = await apiRequest(`/api/mobile/home-feed${params}`, { method: 'GET' });
+    return {
+      posts: Array.isArray(result.posts) ? result.posts : [],
+      notificationsCount: result.notificationsCount || 0,
+      unreadMessagesCount: result.unreadMessagesCount || 0,
+      cachedAt: result.cachedAt || new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('Error fetching home feed:', error);
+    return {
+      posts: [],
+      notificationsCount: 0,
+      unreadMessagesCount: 0,
+      cachedAt: new Date().toISOString(),
+    };
+  }
+};
+
 export const createPost = async (data: {
   title: string;
   content: string;
