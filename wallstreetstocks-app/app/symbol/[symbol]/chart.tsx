@@ -103,17 +103,26 @@ export default function ChartTab() {
         .toUpperCase()
     : null;
 
-  // Try to get data from memory cache SYNCHRONOUSLY for instant display
-  const memQuote = cleanSymbol ? getFromMemory<any>(CACHE_KEYS.quote(cleanSymbol)) : null;
-  const memChart = cleanSymbol ? getFromMemory<ChartDataPoint[]>(CACHE_KEYS.chart(cleanSymbol, '1D')) : null;
+  // Use useMemo to safely access memory cache during render
+  const initialData = useMemo(() => {
+    if (!cleanSymbol) return { quote: null, chart: null };
+    try {
+      const quote = getFromMemory<any>(CACHE_KEYS.quote(cleanSymbol));
+      const chart = getFromMemory<ChartDataPoint[]>(CACHE_KEYS.chart(cleanSymbol, '1D'));
+      return { quote, chart };
+    } catch (e) {
+      console.warn('Memory cache access error:', e);
+      return { quote: null, chart: null };
+    }
+  }, [cleanSymbol]);
 
-  const [chartData, setChartData] = useState<ChartDataPoint[]>(memChart || []);
-  const [currentPrice, setCurrentPrice] = useState<number | null>(memQuote?.price ?? null);
-  const [previousClose, setPreviousClose] = useState<number | null>(memQuote?.previousClose ?? null);
-  const [dayHigh, setDayHigh] = useState<number | null>(memQuote?.dayHigh ?? null);
-  const [dayLow, setDayLow] = useState<number | null>(memQuote?.dayLow ?? null);
-  // Only show loading if we don't have memory cached data
-  const [loading, setLoading] = useState(!memQuote && !memChart);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>(initialData.chart || []);
+  const [currentPrice, setCurrentPrice] = useState<number | null>(initialData.quote?.price ?? null);
+  const [previousClose, setPreviousClose] = useState<number | null>(initialData.quote?.previousClose ?? null);
+  const [dayHigh, setDayHigh] = useState<number | null>(initialData.quote?.dayHigh ?? null);
+  const [dayLow, setDayLow] = useState<number | null>(initialData.quote?.dayLow ?? null);
+  // Only show loading if we don't have cached data
+  const [loading, setLoading] = useState(!initialData.quote && !initialData.chart);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>('1D');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -194,15 +203,20 @@ export default function ChartTab() {
     const cacheTTL = CACHE_TTL[timeframe];
 
     // Try MEMORY cache first (synchronous - instant!)
-    const memCached = getFromMemory<ChartDataPoint[]>(CACHE_KEYS.chart(cleanSymbol, timeframe), cacheTTL);
-    if (memCached && memCached.length > 0) {
-      setChartData(memCached);
-      setLoading(false);
-      // Continue to fetch fresh data in background
+    let memCached: ChartDataPoint[] | null = null;
+    try {
+      memCached = getFromMemory<ChartDataPoint[]>(CACHE_KEYS.chart(cleanSymbol, timeframe), cacheTTL);
+      if (memCached && memCached.length > 0) {
+        setChartData(memCached);
+        setLoading(false);
+        // Continue to fetch fresh data in background
+      }
+    } catch (e) {
+      console.warn('Memory cache error:', e);
     }
 
     // Try AsyncStorage cache if no memory cache
-    if (!memCached) {
+    if (!memCached || memCached.length === 0) {
       const cachedChart = await getCachedData<ChartDataPoint[]>(cacheKey, cacheTTL);
       if (cachedChart && cachedChart.length > 0) {
         // Restore Date objects from cached data
