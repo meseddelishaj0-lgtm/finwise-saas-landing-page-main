@@ -554,8 +554,8 @@ export default function ChartTab() {
     : priceChange.percent;
   const displayColor = displayChange >= 0 ? '#00C853' : '#FF3B30';
 
-  // Show skeleton only if loading AND no cached data
-  if (loading && chartData.length === 0) {
+  // Show skeleton if loading OR no data yet (prevents black screen)
+  if (loading || (chartData.length === 0 && currentPrice === null)) {
     return (
       <View style={styles.container}>
         <View style={styles.skeletonContainer}>
@@ -572,6 +572,12 @@ export default function ChartTab() {
               <View key={i} style={[styles.skeletonBox, { width: 48, height: 36, borderRadius: 18 }]} />
             ))}
           </View>
+          {/* Show error message if there's an error */}
+          {error && (
+            <View style={{ marginTop: 20, alignItems: 'center' }}>
+              <Text style={{ color: '#FF3B30', fontSize: 14 }}>{error}</Text>
+            </View>
+          )}
         </View>
       </View>
     );
