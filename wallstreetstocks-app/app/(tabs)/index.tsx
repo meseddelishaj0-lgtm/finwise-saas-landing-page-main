@@ -1,5 +1,5 @@
 // app/(tabs)/index.tsx - REDESIGNED CLEAN WHITE VERSION WITH WATCHLIST
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,11 @@ import {
   RefreshControl,
   KeyboardAvoidingView,
   InteractionManager,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { LineChart } from 'react-native-chart-kit';
 import { LineChart as GiftedLineChart } from 'react-native-gifted-charts';
 import { Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +26,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useWatchlist } from '@/context/WatchlistContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiCache } from '@/utils/performance';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -1047,6 +1049,37 @@ export default function Dashboard() {
     setRefreshing(false);
   };
 
+  // App state tracking for smart polling (pause when backgrounded)
+  const appState = useRef(AppState.currentState);
+  const [isAppActive, setIsAppActive] = useState(true);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Handle app state changes for smart polling
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      const wasActive = appState.current === 'active';
+      const isActive = nextAppState === 'active';
+      appState.current = nextAppState;
+
+      if (wasActive !== isActive) {
+        setIsAppActive(isActive);
+
+        // Refresh data immediately when app comes back to foreground
+        if (isActive && holdingsInitialized && !contextWatchlistLoading) {
+          console.log('📱 App returned to foreground - refreshing data');
+          Promise.all([
+            fetchMarketChips().catch(e => console.warn('Refresh market error:', e)),
+            fetchTrending().catch(e => console.warn('Refresh trending error:', e)),
+            fetchPortfolio().catch(e => console.warn('Refresh portfolio error:', e)),
+            fetchWatchlist().catch(e => console.warn('Refresh watchlist error:', e)),
+          ]);
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, [holdingsInitialized, contextWatchlistLoading]);
+
   // Initial fetch - only start after data is loaded from AsyncStorage
   // Use InteractionManager to not block UI animations, then load data in parallel
   useEffect(() => {
@@ -1064,22 +1097,43 @@ export default function Dashboard() {
       ]);
     });
 
-    // Refresh every 60 seconds
-    const interval = setInterval(() => {
-      Promise.all([
-        fetchMarketChips().catch(e => console.warn('Refresh market error:', e)),
-        fetchTrending().catch(e => console.warn('Refresh trending error:', e)),
-        fetchPortfolio().catch(e => console.warn('Refresh portfolio error:', e)),
-        fetchWatchlist().catch(e => console.warn('Refresh watchlist error:', e)),
-        fetchStockPicks().catch(e => console.warn('Refresh picks error:', e)),
-      ]);
-    }, 60000);
-
     return () => {
       task.cancel();
-      clearInterval(interval);
     };
   }, [holdingsInitialized, contextWatchlistLoading]);
+
+  // Smart polling - only poll when app is active (saves battery)
+  useEffect(() => {
+    if (!holdingsInitialized || contextWatchlistLoading) return;
+
+    // Clear existing interval
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+
+    // Only start polling if app is active
+    if (isAppActive) {
+      pollingIntervalRef.current = setInterval(() => {
+        console.log('🔄 Smart polling - refreshing data');
+        Promise.all([
+          fetchMarketChips().catch(e => console.warn('Refresh market error:', e)),
+          fetchTrending().catch(e => console.warn('Refresh trending error:', e)),
+          fetchPortfolio().catch(e => console.warn('Refresh portfolio error:', e)),
+          fetchWatchlist().catch(e => console.warn('Refresh watchlist error:', e)),
+          fetchStockPicks().catch(e => console.warn('Refresh picks error:', e)),
+        ]);
+      }, 60000);
+    } else {
+      console.log('⏸️ App inactive - pausing polling to save battery');
+    }
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [holdingsInitialized, contextWatchlistLoading, isAppActive]);
 
   // Refetch portfolio when time range changes
   useEffect(() => {
@@ -1106,8 +1160,8 @@ export default function Dashboard() {
     }
   }, [watchlist, contextWatchlistLoading]);
 
-  // Compute filtered and sorted watchlist
-  const getFilteredSortedWatchlist = () => {
+  // Memoized filtered and sorted watchlist - prevents recalculation on every render
+  const filteredWatchlist = useMemo(() => {
     let filtered = [...watchlistData];
 
     // Apply filter
@@ -1138,9 +1192,7 @@ export default function Dashboard() {
     }
 
     return filtered;
-  };
-
-  const filteredWatchlist = getFilteredSortedWatchlist();
+  }, [watchlistData, watchlistFilter, watchlistSort]);
 
   // Get icon for index type
   const getIndexIcon = (symbol: string): string => {

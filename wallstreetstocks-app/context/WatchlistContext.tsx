@@ -1,5 +1,5 @@
-// context/WatchlistContext.tsx - Unified Watchlist Management
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+// context/WatchlistContext.tsx - Unified Watchlist Management with Optimizations
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -7,6 +7,9 @@ const WATCHLIST_KEY = 'user_watchlist';
 const API_URL = 'https://www.wallstreetstocks.ai';
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
+
+// Debounce delay for AsyncStorage saves (500ms)
+const SAVE_DEBOUNCE_MS = 500;
 
 interface WatchlistContextType {
   watchlist: string[];
@@ -23,6 +26,10 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [watchlistLoading, setWatchlistLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+
+  // Debounce timer ref for optimized saves
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingWatchlistRef = useRef<string[]>([]);
 
   // Load watchlist from AsyncStorage on mount
   const loadWatchlist = useCallback(async () => {
@@ -51,12 +58,46 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     loadWatchlist();
   }, [loadWatchlist]);
 
-  // Save to AsyncStorage whenever watchlist changes
+  // Debounced save to AsyncStorage - batches rapid changes together
   useEffect(() => {
-    if (initialized && watchlist.length >= 0) {
-      AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(watchlist));
+    if (!initialized) return;
+
+    // Store pending watchlist
+    pendingWatchlistRef.current = watchlist;
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
+
+    // Set new debounced save
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(pendingWatchlistRef.current));
+        console.log('💾 Watchlist saved (debounced)');
+      } catch (err) {
+        console.error('Error saving watchlist:', err);
+      }
+    }, SAVE_DEBOUNCE_MS);
+
+    // Cleanup
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [watchlist, initialized]);
+
+  // Ensure save happens on unmount if pending
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        // Force immediate save on unmount
+        AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(pendingWatchlistRef.current)).catch(console.error);
+      }
+    };
+  }, []);
 
   // Check if symbol is in watchlist
   const isInWatchlist = useCallback((symbol: string): boolean => {

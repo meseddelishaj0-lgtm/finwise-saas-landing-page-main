@@ -1,5 +1,5 @@
 // services/communityApi.ts
-// React Native API client for Next.js backend
+// React Native API client for Next.js backend - Optimized with caching
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -7,20 +7,46 @@ import { Platform } from 'react-native';
 // ===== CONFIGURATION =====
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
-// ===== AUTH TOKEN MANAGEMENT =====
+// ===== AUTH TOKEN CACHING (5-minute TTL) =====
+let cachedAuthToken: { value: string | null; timestamp: number } | null = null;
+const AUTH_TOKEN_TTL = 5 * 60 * 1000; // 5 minutes
 
 const getAuthToken = async (): Promise<string | null> => {
+  const now = Date.now();
+
+  // Return cached token if still valid
+  if (cachedAuthToken && now - cachedAuthToken.timestamp < AUTH_TOKEN_TTL) {
+    return cachedAuthToken.value;
+  }
+
   try {
-    return await AsyncStorage.getItem('authToken');
+    const token = await AsyncStorage.getItem('authToken');
+    cachedAuthToken = { value: token, timestamp: now };
+    return token;
   } catch (error) {
     console.error('Error getting auth token:', error);
     return null;
   }
 };
 
+// Invalidate cached token (call on logout)
+export const invalidateAuthTokenCache = (): void => {
+  cachedAuthToken = null;
+};
+
+// ===== REQUEST DEDUPLICATION =====
+const pendingRequests = new Map<string, Promise<any>>();
+
+// Generate cache key for request deduplication
+const getRequestKey = (endpoint: string, method: string, body?: string): string => {
+  return `${method}:${endpoint}:${body || ''}`;
+};
+
 export const storeAuthToken = async (token: string): Promise<void> => {
   try {
     await AsyncStorage.setItem('authToken', token);
+    // Update cache immediately
+    cachedAuthToken = { value: token, timestamp: Date.now() };
   } catch (error) {
     console.error('Error storing auth token:', error);
   }
@@ -29,6 +55,8 @@ export const storeAuthToken = async (token: string): Promise<void> => {
 export const clearAuthToken = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem('authToken');
+    // Invalidate cache
+    invalidateAuthTokenCache();
   } catch (error) {
     console.error('Error clearing auth token:', error);
   }
@@ -37,53 +65,81 @@ export const clearAuthToken = async (): Promise<void> => {
 // ===== API REQUEST HELPER =====
 
 const apiRequest = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
+  const method = options.method || 'GET';
+  const body = options.body as string | undefined;
+
+  // Deduplicate GET requests - reuse in-flight requests
+  if (method === 'GET') {
+    const requestKey = getRequestKey(endpoint, method, body);
+    const pending = pendingRequests.get(requestKey);
+    if (pending) {
+      console.log(`🔄 Reusing in-flight request: ${endpoint}`);
+      return pending;
+    }
+  }
+
   const token = await getAuthToken();
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),
     ...options.headers,
   };
 
-  try {
-    const url = `${API_BASE_URL}${endpoint}`;
-    console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    console.log(`📡 Response Status: ${response.status}`);
-
-    const responseText = await response.text();
-
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}`;
-      try {
-        const errorData = JSON.parse(responseText);
-        errorMessage = errorData.error || errorData.message || errorMessage;
-      } catch {
-        errorMessage = responseText || errorMessage;
-      }
-      throw new Error(errorMessage);
-    }
-
-    if (!responseText || responseText.trim() === '') {
-      return { success: true };
-    }
-
+  const requestPromise = (async () => {
     try {
-      const data = JSON.parse(responseText);
-      return data;
-    } catch (parseError) {
-      console.error('⚠️ JSON Parse Error:', parseError);
-      return { success: true, raw: responseText };
+      const url = `${API_BASE_URL}${endpoint}`;
+      console.log(`🌐 API Request: ${method} ${url}`);
+
+      const response = await fetch(url, {
+        ...options,
+        headers,
+      });
+
+      console.log(`📡 Response Status: ${response.status}`);
+
+      const responseText = await response.text();
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          errorMessage = responseText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (!responseText || responseText.trim() === '') {
+        return { success: true };
+      }
+
+      try {
+        const data = JSON.parse(responseText);
+        return data;
+      } catch (parseError) {
+        console.error('⚠️ JSON Parse Error:', parseError);
+        return { success: true, raw: responseText };
+      }
+    } catch (error: any) {
+      console.error(`💥 API Request Failed: ${endpoint}`, error?.message || error);
+      throw error;
     }
-  } catch (error: any) {
-    console.error(`💥 API Request Failed: ${endpoint}`, error?.message || error);
-    throw error;
+  })();
+
+  // Track GET requests for deduplication
+  if (method === 'GET') {
+    const requestKey = getRequestKey(endpoint, method, body);
+    pendingRequests.set(requestKey, requestPromise);
+
+    // Remove from pending after completion
+    requestPromise.finally(() => {
+      pendingRequests.delete(requestKey);
+    });
   }
+
+  return requestPromise;
 };
 
 // ===== POSTS API =====

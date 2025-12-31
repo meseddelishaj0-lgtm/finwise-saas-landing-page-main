@@ -1,4 +1,4 @@
-// app/(tabs)/community.tsx
+// app/(tabs)/community.tsx - Optimized with expo-image for caching
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -7,7 +7,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Image,
   ActivityIndicator,
   RefreshControl,
   Modal,
@@ -17,6 +16,7 @@ import {
   Dimensions,
   Share,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -1739,16 +1739,19 @@ export default function CommunityPage() {
     return getHandle(user);
   };
 
-  // Avatar Component
+  // Avatar Component - optimized with expo-image caching
   const Avatar = ({ user, size = 44, onPress }: { user: User | null | undefined; size?: number; onPress?: () => void }) => {
     const color = getAvatarColor(user?.id || 0);
     const initials = getUserInitials(user);
     const avatarImage = user?.image || user?.profileImage;
-    
+
     const avatarContent = avatarImage ? (
-      <Image 
-        source={{ uri: avatarImage }} 
-        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#E5E5EA' }} 
+      <Image
+        source={{ uri: avatarImage }}
+        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#E5E5EA' }}
+        cachePolicy="memory-disk"
+        transition={150}
+        contentFit="cover"
       />
     ) : (
       <View style={{ 
@@ -2136,9 +2139,11 @@ export default function CommunityPage() {
                 onPress={() => handleOpenImage(post.mediaUrl || post.image || '')}
               >
                 <Image 
-                  source={{ uri: post.mediaUrl || post.image }} 
-                  style={styles.postImage} 
-                  resizeMode="cover"
+                  source={{ uri: post.mediaUrl || post.image }}
+                  style={styles.postImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
                 />
               </TouchableOpacity>
             )}
@@ -2461,9 +2466,11 @@ export default function CommunityPage() {
                         }}
                       >
                         <Image 
-                          source={{ uri: post.mediaUrl || post.image }} 
-                          style={styles.profilePostImage} 
-                          resizeMode="cover"
+                          source={{ uri: post.mediaUrl || post.image }}
+                          style={styles.profilePostImage}
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                          transition={200}
                         />
                       </TouchableOpacity>
                     )}
@@ -2579,7 +2586,7 @@ export default function CommunityPage() {
             {/* Image Preview */}
             {newPostImage && (
               <View style={styles.imagePreviewContainer}>
-                <Image source={{ uri: newPostImage }} style={styles.imagePreview} />
+                <Image source={{ uri: newPostImage }} style={styles.imagePreview} contentFit="cover" />
                 <TouchableOpacity
                   style={styles.removeImageButton}
                   onPress={() => setNewPostImage(null)}
@@ -2778,7 +2785,9 @@ export default function CommunityPage() {
                     <Image
                       source={{ uri: selectedPost.mediaUrl || selectedPost.image }}
                       style={styles.postImage}
-                      resizeMode="cover"
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={200}
                     />
                   </TouchableOpacity>
                 )}
@@ -3146,7 +3155,8 @@ export default function CommunityPage() {
               <Image
                 source={{ uri: selectedImage }}
                 style={styles.fullScreenImage}
-                resizeMode="contain"
+                contentFit="contain"
+                cachePolicy="memory-disk"
               />
             )}
           </View>
