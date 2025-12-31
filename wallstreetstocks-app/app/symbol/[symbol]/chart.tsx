@@ -520,12 +520,24 @@ export default function ChartTab() {
     : priceChange.percent;
   const displayColor = displayChange >= 0 ? '#00C853' : '#FF3B30';
 
+  // Show skeleton only if loading AND no cached data
   if (loading && chartData.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading chart...</Text>
+        <View style={styles.skeletonContainer}>
+          {/* Price skeleton */}
+          <View style={styles.priceSkeleton}>
+            <View style={[styles.skeletonBox, { width: 140, height: 44 }]} />
+            <View style={[styles.skeletonBox, { width: 100, height: 28, marginTop: 8, borderRadius: 14 }]} />
+          </View>
+          {/* Chart skeleton */}
+          <View style={[styles.skeletonBox, { width: '100%', height: 200, marginTop: 20 }]} />
+          {/* Timeframe pills skeleton */}
+          <View style={styles.timeframeSkeleton}>
+            {[1,2,3,4,5,6].map(i => (
+              <View key={i} style={[styles.skeletonBox, { width: 48, height: 36, borderRadius: 18 }]} />
+            ))}
+          </View>
         </View>
       </View>
     );
@@ -909,6 +921,24 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginTop: 12,
     fontSize: 15,
+  },
+  // Skeleton styles
+  skeletonContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  priceSkeleton: {
+    marginBottom: 10,
+  },
+  skeletonBox: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 8,
+  },
+  timeframeSkeleton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+    paddingHorizontal: 4,
   },
   // Price Section
   priceSection: {

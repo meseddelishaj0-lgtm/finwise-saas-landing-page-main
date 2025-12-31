@@ -1,16 +1,19 @@
-// app/symbol/[symbol]/sentiment.tsx - FIXED VERSION
-import React, { useEffect, useState } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  ActivityIndicator, 
-  TouchableOpacity 
+// app/symbol/[symbol]/sentiment.tsx - WITH CACHING
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity
 } from "react-native";
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const FMP_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
+const SENTIMENT_CACHE_PREFIX = 'sentiment_cache_';
+const SENTIMENT_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 interface SentimentData {
   symbol: string;
@@ -66,23 +69,43 @@ export default function SentimentTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSentiment = async () => {
+  const fetchSentiment = useCallback(async (skipCache = false) => {
     if (!cleanSymbol) {
       setLoading(false);
       setError('No symbol provided');
       return;
     }
 
-    setLoading(true);
+    const cacheKey = `${SENTIMENT_CACHE_PREFIX}${cleanSymbol}`;
+
+    // Try cache first
+    if (!skipCache) {
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          const { sentimentData, ratingsData, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < SENTIMENT_CACHE_TTL) {
+            if (sentimentData) setSentiment(sentimentData);
+            if (ratingsData) setRatings(ratingsData);
+            setLoading(false);
+            // Continue to fetch fresh data in background
+          }
+        }
+      } catch (e) {
+        // Cache miss
+      }
+    }
+
+    if (sentiment.length === 0 && !ratings) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
-      console.log('Fetching sentiment for:', cleanSymbol);
-      
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      // Fetch both sentiment and analyst ratings
+      // Fetch both sentiment and analyst ratings in parallel
       const [sentimentRes, ratingsRes] = await Promise.all([
         fetch(
           `https://financialmodelingprep.com/api/v4/historical/social-sentiment?symbol=${cleanSymbol}&apikey=${FMP_KEY}`,
@@ -96,11 +119,15 @@ export default function SentimentTab() {
 
       clearTimeout(timeoutId);
 
+      let newSentiment = null;
+      let newRatings = null;
+
       // Process sentiment data
       if (sentimentRes.ok) {
         const sentimentData = await sentimentRes.json();
         if (sentimentData && Array.isArray(sentimentData) && sentimentData.length > 0) {
-          setSentiment(sentimentData.slice(0, 30));
+          newSentiment = sentimentData.slice(0, 30);
+          setSentiment(newSentiment);
         }
       }
 
@@ -108,29 +135,39 @@ export default function SentimentTab() {
       if (ratingsRes.ok) {
         const ratingsData = await ratingsRes.json();
         if (ratingsData && Array.isArray(ratingsData) && ratingsData.length > 0) {
-          setRatings(ratingsData[0]);
+          newRatings = ratingsData[0];
+          setRatings(newRatings);
         }
       }
 
-      if (!sentimentRes.ok && !ratingsRes.ok) {
+      // Cache the data
+      if (newSentiment || newRatings) {
+        await AsyncStorage.setItem(cacheKey, JSON.stringify({
+          sentimentData: newSentiment,
+          ratingsData: newRatings,
+          timestamp: Date.now()
+        }));
+      }
+
+      if (!sentimentRes.ok && !ratingsRes.ok && sentiment.length === 0) {
         throw new Error('Unable to fetch sentiment data');
       }
 
       setError(null);
     } catch (err: any) {
-      console.error('Sentiment fetch error:', err);
-      
-      const errorMessage = err.name === 'AbortError'
-        ? 'Request timeout. Please try again.'
-        : err.message?.includes('Network')
-        ? 'Network error. Check your connection.'
-        : `Limited sentiment data for ${cleanSymbol}`;
-      
-      setError(errorMessage);
+      // Only show error if we don't have cached data
+      if (sentiment.length === 0 && !ratings) {
+        const errorMessage = err.name === 'AbortError'
+          ? 'Request timeout. Please try again.'
+          : err.message?.includes('Network')
+          ? 'Network error. Check your connection.'
+          : `Limited sentiment data for ${cleanSymbol}`;
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [cleanSymbol, sentiment.length, ratings]);
 
   useEffect(() => {
     console.log('Sentiment tab mounted with symbol:', cleanSymbol);
@@ -140,7 +177,7 @@ export default function SentimentTab() {
   }, [cleanSymbol]);
 
   const handleRetry = () => {
-    fetchSentiment();
+    fetchSentiment(true); // Skip cache on retry
   };
 
   const formatDate = (dateString: string) => {

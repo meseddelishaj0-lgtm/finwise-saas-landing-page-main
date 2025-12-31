@@ -1,18 +1,21 @@
-// app/symbol/[symbol]/news.tsx - IMPROVED VERSION
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  StyleSheet, 
-  TouchableOpacity, 
+// app/symbol/[symbol]/news.tsx - WITH CACHING
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
   ActivityIndicator,
   Linking,
-  RefreshControl 
+  RefreshControl
 } from "react-native";
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const NEWS_CACHE_PREFIX = 'news_cache_';
+const NEWS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 interface NewsItem {
   title: string;
@@ -90,83 +93,83 @@ export default function NewsTab() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchNews = async (isRefresh = false) => {
+  const fetchNews = useCallback(async (isRefresh = false) => {
     if (!cleanSymbol) {
-      console.error('No symbol provided');
       setLoading(false);
       setError('No symbol provided. Please navigate from a stock page.');
       return;
     }
 
+    const cacheKey = `${NEWS_CACHE_PREFIX}${cleanSymbol}`;
+
+    // Try cache first (unless refreshing)
+    if (!isRefresh) {
+      try {
+        const cached = await AsyncStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < NEWS_CACHE_TTL && Array.isArray(data) && data.length > 0) {
+            setNews(data);
+            setLoading(false);
+            // Continue to fetch fresh data in background
+          }
+        }
+      } catch (e) {
+        // Cache miss, continue to fetch
+      }
+    }
+
     if (isRefresh) {
       setRefreshing(true);
-    } else {
+    } else if (news.length === 0) {
       setLoading(true);
     }
     setError(null);
 
     try {
-      console.log('Fetching news for symbol:', cleanSymbol);
-      
       const url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${cleanSymbol}&limit=20&apikey=${FMP_API_KEY}`;
-      console.log('Request URL:', url);
-      
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
-      
-      const response = await fetch(url, { 
-        signal: controller.signal 
+
+      const response = await fetch(url, {
+        signal: controller.signal
       });
 
       clearTimeout(timeoutId);
 
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        throw new Error(`HTTP ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('News data received, type:', typeof data);
-      console.log('Is array?', Array.isArray(data));
-      console.log('Length:', data?.length);
-      console.log('First item:', data?.[0] ? JSON.stringify(data[0]).substring(0, 200) : 'none');
 
       if (Array.isArray(data) && data.length > 0) {
-        console.log('✅ Setting news with', data.length, 'articles');
         setNews(data);
         setError(null);
+        // Cache the data
+        await AsyncStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
       } else if (Array.isArray(data) && data.length === 0) {
-        console.log('⚠️ Empty array returned');
-        setNews([]);
-        setError(`No recent news for ${cleanSymbol}`);
-      } else {
-        console.log('❌ Invalid response format:', typeof data);
-        setNews([]);
-        setError(`Invalid response from API`);
+        if (news.length === 0) {
+          setError(`No recent news for ${cleanSymbol}`);
+        }
       }
     } catch (err: any) {
-      console.error('❌ News fetch error:', err);
-      console.error('Error name:', err.name);
-      console.error('Error message:', err.message);
-      
-      if (err.name === 'AbortError') {
-        setError('Request timeout. Please try again.');
-      } else if (err.message?.includes('Network')) {
-        setError('Network error. Please check your connection.');
-      } else {
-        setError(`Error loading news: ${err.message}`);
+      // Only show error if we don't have cached data
+      if (news.length === 0) {
+        if (err.name === 'AbortError') {
+          setError('Request timeout. Please try again.');
+        } else if (err.message?.includes('Network')) {
+          setError('Network error. Please check your connection.');
+        } else {
+          setError(`Error loading news: ${err.message}`);
+        }
       }
-      setNews([]);
     } finally {
-      console.log('✅ Fetch complete, setting loading to false');
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [cleanSymbol, news.length]);
 
   useEffect(() => {
     console.log('NewsTab mounted with cleanSymbol:', cleanSymbol);
