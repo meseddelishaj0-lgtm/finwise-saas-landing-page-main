@@ -179,14 +179,28 @@ async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
 
   try {
     const symbolsParam = symbols.join(',');
+    console.log(`📊 Fetching batch quotes for: ${symbolsParam}`);
     const res = await fetch(`${API_BASE_URL}/api/mobile/quotes?symbols=${encodeURIComponent(symbolsParam)}`);
+
+    if (!res.ok) {
+      throw new Error(`API returned ${res.status}`);
+    }
+
     const data = await res.json();
+    console.log(`✅ Batch quotes received: ${data.quotes?.length || 0} quotes (cached: ${data.cachedCount || 0})`);
     return data.quotes || [];
   } catch (error) {
-    console.warn('Batch quotes fallback to FMP:', error);
+    console.warn('⚠️ Batch quotes fallback to FMP:', error);
     // Fallback to direct FMP API
-    const res = await fetch(`${BASE_URL}/quote/${symbols.join(',')}?apikey=${FMP_API_KEY}`);
-    return await res.json();
+    try {
+      const res = await fetch(`${BASE_URL}/quote/${symbols.join(',')}?apikey=${FMP_API_KEY}`);
+      const data = await res.json();
+      console.log(`✅ FMP fallback received: ${Array.isArray(data) ? data.length : 0} quotes`);
+      return Array.isArray(data) ? data : [];
+    } catch (fmpError) {
+      console.error('❌ FMP fallback also failed:', fmpError);
+      return [];
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 // app/messages/index.tsx
 // Direct Messages - Conversations List
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import {
   View,
   Text,
@@ -20,10 +20,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
+import { FLATLIST_PERFORMANCE_PROPS, ITEM_HEIGHTS } from '@/components/OptimizedListItems';
 
 const DELETE_BUTTON_WIDTH = 80;
+const CONVERSATION_ITEM_HEIGHT = 89; // Fixed height for getItemLayout optimization
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
+
+// getItemLayout for FlatList optimization
+const getConversationLayout = (_data: any, index: number) => ({
+  length: CONVERSATION_ITEM_HEIGHT,
+  offset: CONVERSATION_ITEM_HEIGHT * index,
+  index,
+});
 
 interface OtherUser {
   id: number;
@@ -422,6 +431,8 @@ export default function MessagesScreen() {
           data={conversations}
           renderItem={renderConversation}
           keyExtractor={(item) => item.id.toString()}
+          getItemLayout={getConversationLayout}
+          {...FLATLIST_PERFORMANCE_PROPS}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           contentContainerStyle={styles.listContent}
@@ -578,6 +589,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     backgroundColor: '#fff',
+    height: CONVERSATION_ITEM_HEIGHT, // Fixed height for getItemLayout optimization
   },
   avatarContainer: {
     position: 'relative',

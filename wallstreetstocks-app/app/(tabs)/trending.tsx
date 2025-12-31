@@ -1,5 +1,5 @@
 // app/(tabs)/trending.tsx - WITH AUTO-SCROLLING HEADER CARDS + TAB ICONS
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, memo } from "react";
 import {
   View,
   Text,
@@ -16,9 +16,18 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
+import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
+const STOCK_ROW_HEIGHT = 76; // Fixed row height for getItemLayout optimization
+
+// getItemLayout for FlatList optimization (enables instant scroll-to-index)
+const getStockRowLayout = (_data: any, index: number) => ({
+  length: STOCK_ROW_HEIGHT,
+  offset: STOCK_ROW_HEIGHT * index,
+  index,
+});
 
 type TabType = "trending" | "gainers" | "losers" | "indices" | "forex" | "commodities";
 
@@ -688,9 +697,8 @@ export default function Trending() {
         data={data}
         renderItem={renderItem}
         keyExtractor={(item, index) => `${item.symbol}-${index}`}
-        initialNumToRender={20}
-        windowSize={10}
-        removeClippedSubviews={true}
+        getItemLayout={getStockRowLayout}
+        {...FLATLIST_PERFORMANCE_PROPS}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -916,6 +924,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
+    height: STOCK_ROW_HEIGHT, // Fixed height for getItemLayout optimization
   },
   left: { 
     flexDirection: "row", 

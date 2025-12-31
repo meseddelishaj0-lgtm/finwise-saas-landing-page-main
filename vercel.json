@@ -3,6 +3,10 @@
     {
       "path": "/api/price-alerts/check",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/cache-warm",
+      "schedule": "*/2 * * * *"
     }
   ]
 }
