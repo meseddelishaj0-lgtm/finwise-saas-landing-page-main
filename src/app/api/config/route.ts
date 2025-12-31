@@ -73,27 +73,32 @@ export async function GET(req: NextRequest) {
 
     // Get all config values
     try {
-      const allConfig = await getAll();
+      const allConfig = await getAll() as Record<string, any> | undefined;
 
       // Merge with defaults (Edge Config values override defaults)
+      const features = typeof allConfig?.features === 'object' ? allConfig.features : {};
+      const api = typeof allConfig?.api === 'object' ? allConfig.api : {};
+      const mobile = typeof allConfig?.mobile === 'object' ? allConfig.mobile : {};
+      const rateLimits = typeof allConfig?.rateLimits === 'object' ? allConfig.rateLimits : {};
+
       const mergedConfig = {
         ...DEFAULT_CONFIG,
-        ...allConfig,
+        ...(allConfig || {}),
         features: {
           ...DEFAULT_CONFIG.features,
-          ...(allConfig?.features || {}),
+          ...features,
         },
         api: {
           ...DEFAULT_CONFIG.api,
-          ...(allConfig?.api || {}),
+          ...api,
         },
         mobile: {
           ...DEFAULT_CONFIG.mobile,
-          ...(allConfig?.mobile || {}),
+          ...mobile,
         },
         rateLimits: {
           ...DEFAULT_CONFIG.rateLimits,
-          ...(allConfig?.rateLimits || {}),
+          ...rateLimits,
         },
       };
 
