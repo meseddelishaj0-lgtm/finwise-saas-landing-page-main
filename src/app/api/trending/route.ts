@@ -1,9 +1,13 @@
 // api/trending/route.ts
-// Trending tickers like StockTwits
+// Trending tickers like StockTwits - with Vercel KV caching
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { kv } from "@vercel/kv";
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge'; // Edge Runtime for faster response
+
+const CACHE_TTL = 60; // Cache trending data for 60 seconds
 
 // GET /api/trending - Get trending tickers
 export async function GET(req: NextRequest) {
@@ -11,6 +15,20 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
     const timeframe = searchParams.get("timeframe") || "24h";
+
+    // Check KV cache first
+    const cacheKey = `trending:${timeframe}:${limit}`;
+    try {
+      const cached = await kv.get(cacheKey);
+      if (cached) {
+        const response = NextResponse.json(cached);
+        response.headers.set('X-Cache', 'HIT');
+        response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+        return response;
+      }
+    } catch (cacheError) {
+      console.warn('KV cache read error:', cacheError);
+    }
 
     // Calculate the time threshold
     let timeThreshold = new Date();
@@ -75,7 +93,15 @@ export async function GET(req: NextRequest) {
       })
     );
 
-    return NextResponse.json(trendingTickers);
+    // Cache result in KV (fire and forget)
+    kv.set(cacheKey, trendingTickers, { ex: CACHE_TTL }).catch((err) => {
+      console.warn('KV cache write error:', err);
+    });
+
+    const response = NextResponse.json(trendingTickers);
+    response.headers.set('X-Cache', 'MISS');
+    response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
+    return response;
   } catch (error) {
     console.error("Error fetching trending:", error);
     return NextResponse.json({ error: "Failed to fetch trending" }, { status: 500 });

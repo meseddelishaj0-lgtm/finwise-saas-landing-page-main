@@ -171,6 +171,24 @@ const interpolateData = (data: { value: number; label: string; dataPointText?: s
 
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const API_BASE_URL = 'https://www.wallstreetstocks.ai';
+
+// Batch quotes helper - uses Vercel KV cached endpoint for faster response
+async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
+  if (symbols.length === 0) return [];
+
+  try {
+    const symbolsParam = symbols.join(',');
+    const res = await fetch(`${API_BASE_URL}/api/mobile/quotes?symbols=${encodeURIComponent(symbolsParam)}`);
+    const data = await res.json();
+    return data.quotes || [];
+  } catch (error) {
+    console.warn('Batch quotes fallback to FMP:', error);
+    // Fallback to direct FMP API
+    const res = await fetch(`${BASE_URL}/quote/${symbols.join(',')}?apikey=${FMP_API_KEY}`);
+    return await res.json();
+  }
+}
 
 // Stock picks preview data
 const STOCK_PICKS_PREVIEW = [
@@ -344,7 +362,7 @@ export default function Dashboard() {
     }, [fetchUnreadMessagesCount])
   );
 
-  // Fetch live market indices data
+  // Fetch live market indices data - uses batch quotes with KV caching
   const fetchMarketChips = async () => {
     setIndicesLoading(true);
     try {
@@ -363,11 +381,9 @@ export default function Dashboard() {
         'USO': 'Oil',
         'TLT': '20+ Yr Treasury',
       };
-      
-      const res = await fetch(
-        `${BASE_URL}/quote/${symbols.join(',')}?apikey=${FMP_API_KEY}`
-      );
-      const data = await res.json();
+
+      // Use batch quotes endpoint with KV caching
+      const data = await fetchBatchQuotes(symbols);
 
       if (data && Array.isArray(data)) {
         const updated = symbols.map(symbol => {
@@ -458,7 +474,7 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch watchlist data
+  // Fetch watchlist data - uses batch quotes with KV caching
   const fetchWatchlist = async () => {
     if (watchlist.length === 0) {
       setWatchlistData([]);
@@ -468,11 +484,8 @@ export default function Dashboard() {
 
     setWatchlistDataLoading(true);
     try {
-      const symbols = watchlist.join(',');
-      const res = await fetch(
-        `${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
-      );
-      const data = await res.json();
+      // Use batch quotes endpoint with KV caching
+      const data = await fetchBatchQuotes(watchlist);
 
       if (data && Array.isArray(data)) {
         const watchlistWithCharts = await Promise.all(
@@ -524,9 +537,9 @@ export default function Dashboard() {
   // Fetch stock picks preview data
   const fetchStockPicks = async () => {
     try {
-      const symbols = STOCK_PICKS_PREVIEW.map(p => p.symbol).join(',');
-      const res = await fetch(`${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`);
-      const data = await res.json();
+      const symbols = STOCK_PICKS_PREVIEW.map(p => p.symbol);
+      // Use batch quotes endpoint with KV caching
+      const data = await fetchBatchQuotes(symbols);
 
       if (data && Array.isArray(data)) {
         const enrichedPicks = STOCK_PICKS_PREVIEW.map(pick => {
@@ -562,11 +575,9 @@ export default function Dashboard() {
         return;
       }
 
-      const symbols = userHoldings.map(h => h.symbol).join(',');
-      const res = await fetch(
-        `${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`
-      );
-      const quotes = await res.json();
+      const symbols = userHoldings.map(h => h.symbol);
+      // Use batch quotes endpoint with KV caching
+      const quotes = await fetchBatchQuotes(symbols);
 
       if (quotes && Array.isArray(quotes)) {
         const holdings = userHoldings.map((holding) => {
@@ -754,11 +765,9 @@ export default function Dashboard() {
 
     try {
       const symbol = newStockSymbol.toUpperCase().trim();
-      
-      const quoteRes = await fetch(
-        `${BASE_URL}/quote/${symbol}?apikey=${FMP_API_KEY}`
-      );
-      const quoteData = await quoteRes.json();
+
+      // Use batch quotes endpoint with KV caching
+      const quoteData = await fetchBatchQuotes([symbol]);
 
       if (!quoteData || !Array.isArray(quoteData) || quoteData.length === 0) {
         Alert.alert('Error', `Stock ${symbol} not found`);
