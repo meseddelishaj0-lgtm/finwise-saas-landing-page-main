@@ -19,6 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
 import { useUserProfile } from "@/context/UserProfileContext";
+import { SubscriptionBadgeProfile } from "@/components/SubscriptionBadge";
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -207,7 +208,6 @@ export default function PersonalInfoScreen() {
   const displayFollowers = userProfile?._count?.followers ?? 0;
   const displayPosts = userProfile?._count?.posts ?? posts.length ?? 0;
   const displayLikes = userProfile?._count?.likes ?? 0;
-  const isPremium = userProfile?.subscriptionTier && userProfile.subscriptionTier !== "free";
 
   const renderPost = (item: Post) => (
     <TouchableOpacity key={item.id} style={styles.postItem} activeOpacity={0.7}>
@@ -330,13 +330,8 @@ export default function PersonalInfoScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Premium Badge */}
-          {isPremium && (
-            <View style={styles.premiumBadge}>
-              <Ionicons name="diamond-outline" size={16} color="#007AFF" />
-              <Text style={styles.premiumText}>Premium Member</Text>
-            </View>
-          )}
+          {/* Subscription Badge */}
+          <SubscriptionBadgeProfile tier={userProfile?.subscriptionTier as any} />
         </View>
 
         {/* Tabs */}
@@ -539,22 +534,6 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 14,
     color: "#666",
-  },
-  premiumBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: "#E8F4FD",
-    borderRadius: 20,
-    alignSelf: "flex-start",
-  },
-  premiumText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#007AFF",
   },
   tabsContainer: {
     flexDirection: "row",

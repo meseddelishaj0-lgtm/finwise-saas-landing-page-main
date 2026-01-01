@@ -48,6 +48,7 @@ import {
 import FormattedContent from '@/components/FormattedContent';
 import TrendingTickers from '@/components/TrendingTickers';
 import { PremiumFeatureCard, FEATURE_TIERS } from '@/components/PremiumFeatureGate';
+import { SubscriptionBadgeInline } from '@/components/SubscriptionBadge';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { router } from 'expo-router';
 
@@ -67,6 +68,7 @@ interface User {
   username?: string | null;
   image?: string | null;
   profileImage?: string | null;
+  subscriptionTier?: string | null;
 }
 
 // Helper to check if a string looks like an auto-generated/email name
@@ -136,6 +138,7 @@ const getHandle = (user: User | null | undefined): string => {
 interface UserProfile extends User {
   bio?: string;
   createdAt?: string;
+  subscriptionTier?: string | null;
   _count?: {
     posts: number;
     followers: number;
@@ -2076,6 +2079,7 @@ export default function CommunityPage() {
                   <Text style={styles.username}>
                     {getUserDisplayName(post.user)}
                   </Text>
+                  <SubscriptionBadgeInline tier={post.user?.subscriptionTier as any} />
                   <Text style={styles.userHandle}>@{getHandle(post.user)}</Text>
                   {post.ticker && (
                     <View style={styles.tickerBadge}>
@@ -2294,11 +2298,12 @@ export default function CommunityPage() {
                 <Text style={styles.profileName}>
                   {getDisplayName(selectedProfile)}
                 </Text>
+                <SubscriptionBadgeInline tier={selectedProfile?.subscriptionTier as any} />
                 {profileLoading && (
                   <ActivityIndicator size="small" color="#007AFF" style={{ marginLeft: 8 }} />
                 )}
               </View>
-              
+
               <Text style={styles.profileEmail}>@{getHandle(selectedProfile)}</Text>
 
               {selectedProfile?.bio && (
@@ -2840,6 +2845,7 @@ export default function CommunityPage() {
                         <Text style={styles.commentUsername}>
                           {getUserDisplayName(comment.user!)}
                         </Text>
+                        <SubscriptionBadgeInline tier={comment.user?.subscriptionTier as any} />
                         <Text style={styles.commentHandle}>@{getHandle(comment.user!)}</Text>
                       </TouchableOpacity>
                       <Text style={styles.commentText}>{comment.content}</Text>

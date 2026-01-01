@@ -29,7 +29,8 @@ export async function GET(req: NextRequest) {
               name: true,
               username: true,
               profileImage: true,
-              isVerified: true
+              isVerified: true,
+              subscriptionTier: true
             }
           },
           forum: { select: { id: true, title: true, slug: true } },

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     const posts = await prisma.post.findMany({
       where,
       include: {
-        user: { select: { id: true, name: true, email: true, username: true, profileImage: true, karma: true, isVerified: true } },
+        user: { select: { id: true, name: true, email: true, username: true, profileImage: true, karma: true, isVerified: true, subscriptionTier: true } },
         forum: { select: { id: true, title: true, slug: true } },
         _count: { select: { comments: true, likes: true, sentiments: true } },
         tickerMentions: { select: { ticker: true } },
@@ -138,7 +138,7 @@ export async function POST(req: NextRequest) {
         mediaUrl: mediaUrl || null,
       },
       include: {
-        user: { select: { id: true, name: true, email: true, username: true, profileImage: true } },
+        user: { select: { id: true, name: true, email: true, username: true, profileImage: true, subscriptionTier: true } },
         forum: { select: { id: true, title: true, slug: true } },
         _count: { select: { comments: true, likes: true } },
       }
