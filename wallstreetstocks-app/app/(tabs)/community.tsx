@@ -649,32 +649,6 @@ export default function CommunityPage() {
     }
   }, [posts.length, getUserId, fetchPosts]);
 
-  // Combined home feed loader - fetches posts, notifications count, and messages in one call
-  // Uses Edge Runtime and caching for faster response
-  const loadHomeFeed = useCallback(async () => {
-    try {
-      setLoading(posts.length === 0);
-      const userId = getUserId();
-      const data = await fetchHomeFeed(userId || undefined);
-
-      // Update posts
-      setPosts(data.posts || []);
-
-      // Update notification badge count (note: this is just the count, not full notifications)
-      // We still need loadNotifications for the full notification list when bell is tapped
-      setUnreadCount(data.notificationsCount);
-
-      console.log(`📱 Home feed loaded: ${data.posts.length} posts, ${data.notificationsCount} notifications, cached at ${data.cachedAt}`);
-    } catch (error) {
-      console.error('Error fetching home feed:', error);
-      // Fallback to individual calls
-      loadPosts();
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [posts.length, getUserId, loadPosts]);
-
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
