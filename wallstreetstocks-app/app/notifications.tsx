@@ -116,13 +116,13 @@ export default function Notifications() {
       case 'comment':
       case 'reply':
       case 'mention':
-        if (notification.post) {
-          router.push(`/community/post/${notification.post.id}` as any);
+        if (notification.post?.id) {
+          router.push(`/post/${notification.post.id}` as any);
         }
         break;
       case 'follow':
-        if (notification.fromUser) {
-          router.push(`/profile/my-profile?userId=${notification.fromUser.id}`);
+        if (notification.fromUser?.id) {
+          router.push(`/profile/user/${notification.fromUser.id}` as any);
         }
         break;
       case 'price_alert':
