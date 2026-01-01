@@ -24,26 +24,6 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/lib/auth';
 import { useUserProfile } from '@/context/UserProfileContext';
-import {
-  fetchPosts,
-  createPost,
-  searchPosts,
-  fetchComments,
-  createComment,
-  likePost,
-  likeComment,
-  fetchNotifications,
-  markAllNotificationsRead,
-  uploadImage,
-  getCurrentUser,
-  voteSentiment,
-  addToWatchlist,
-  blockUser,
-  muteUser,
-  reportUser,
-  getBlockedUsers,
-  getMutedUsers,
-} from '@/services/communityApi';
 import FormattedContent from '@/components/FormattedContent';
 import TrendingTickers from '@/components/TrendingTickers';
 import { PremiumFeatureCard, FEATURE_TIERS } from '@/components/PremiumFeatureGate';
@@ -52,6 +32,201 @@ import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { router } from 'expo-router';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// ===== DIRECT API CALLS =====
+const API_BASE = 'https://www.wallstreetstocks.ai';
+
+const fetchPosts = async (forumSlug?: string, currentUserId?: number): Promise<any[]> => {
+  try {
+    const params = new URLSearchParams();
+    if (forumSlug) params.append('forum', forumSlug);
+    if (currentUserId) params.append('currentUserId', currentUserId.toString());
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await fetch(`${API_BASE}/api/posts${query}`);
+    if (!response.ok) throw new Error('Failed to fetch posts');
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('❌ fetchPosts error:', error);
+    return [];
+  }
+};
+
+const createPost = async (data: { title: string; content: string; forumId: number; userId: number; mediaUrl?: string }): Promise<any> => {
+  const response = await fetch(`${API_BASE}/api/posts`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create post');
+  }
+  return response.json();
+};
+
+const searchPosts = async (query: string, ticker?: string): Promise<any[]> => {
+  try {
+    let url = `${API_BASE}/api/posts/search?q=${encodeURIComponent(query)}`;
+    if (ticker) url += `&ticker=${encodeURIComponent(ticker)}`;
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('❌ searchPosts error:', error);
+    return [];
+  }
+};
+
+const fetchComments = async (postId: string | number, userId?: number): Promise<any[]> => {
+  try {
+    let url = `${API_BASE}/api/comments?postId=${postId}`;
+    if (userId) url += `&userId=${userId}`;
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('❌ fetchComments error:', error);
+    return [];
+  }
+};
+
+const createComment = async (postId: string | number, content: string, userId: number): Promise<any> => {
+  const response = await fetch(`${API_BASE}/api/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ postId: Number(postId), content, userId }),
+  });
+  if (!response.ok) throw new Error('Failed to create comment');
+  return response.json();
+};
+
+const likePost = async (postId: string, userId: number): Promise<{ liked: boolean; likesCount?: number }> => {
+  try {
+    const response = await fetch(`${API_BASE}/api/likes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId: Number(postId), userId }),
+    });
+    if (!response.ok) throw new Error('Failed to like post');
+    const result = await response.json();
+    return { liked: result?.liked ?? true, likesCount: result?.likesCount };
+  } catch (error) {
+    console.error('❌ likePost error:', error);
+    throw error;
+  }
+};
+
+const likeComment = async (commentId: string, userId: number): Promise<{ liked: boolean; likesCount?: number }> => {
+  try {
+    const response = await fetch(`${API_BASE}/api/likes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commentId: Number(commentId), userId }),
+    });
+    if (!response.ok) throw new Error('Failed to like comment');
+    const result = await response.json();
+    return { liked: result?.liked ?? true, likesCount: result?.likesCount };
+  } catch (error) {
+    console.error('❌ likeComment error:', error);
+    throw error;
+  }
+};
+
+const fetchNotifications = async (userId: number): Promise<any[]> => {
+  try {
+    const response = await fetch(`${API_BASE}/api/notifications?userId=${userId}`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('❌ fetchNotifications error:', error);
+    return [];
+  }
+};
+
+const markAllNotificationsRead = async (userId: number): Promise<void> => {
+  await fetch(`${API_BASE}/api/notifications/read-all`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId }),
+  });
+};
+
+const uploadImage = async (imageUri: string): Promise<{ url: string }> => {
+  const formData = new FormData();
+  const filename = imageUri.split('/').pop() || 'image.jpg';
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : 'image/jpeg';
+  formData.append('file', { uri: imageUri, name: filename, type } as any);
+
+  const response = await fetch(`${API_BASE}/api/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) throw new Error('Failed to upload image');
+  const result = await response.json();
+  return { url: result.url };
+};
+
+const getCurrentUser = async (): Promise<any> => {
+  try {
+    const response = await fetch(`${API_BASE}/api/auth/session`);
+    if (!response.ok) return null;
+    return response.json();
+  } catch (error) {
+    return null;
+  }
+};
+
+const voteSentiment = async (userId: number, postId: number, type: 'bullish' | 'bearish'): Promise<any> => {
+  const response = await fetch(`${API_BASE}/api/sentiment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, postId, type }),
+  });
+  if (!response.ok) throw new Error('Failed to vote');
+  return response.json();
+};
+
+const addToWatchlist = async (userId: number, ticker: string): Promise<void> => {
+  await fetch(`${API_BASE}/api/watchlist`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, ticker }),
+  });
+};
+
+const blockUser = async (blockerId: number, blockedId: number): Promise<{ success: boolean }> => {
+  const response = await fetch(`${API_BASE}/api/community/social/${blockedId}/block`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ blockerId }),
+  });
+  return { success: response.ok };
+};
+
+const muteUser = async (muterId: number, mutedId: number): Promise<{ success: boolean }> => {
+  const response = await fetch(`${API_BASE}/api/community/social/${mutedId}/mute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ muterId }),
+  });
+  return { success: response.ok };
+};
+
+const reportUser = async (reporterId: number, reportedId: number, reason: string, postId?: number, commentId?: number): Promise<{ success: boolean }> => {
+  const response = await fetch(`${API_BASE}/api/community/report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reporterId, reportedId, reason, postId, commentId }),
+  });
+  return { success: response.ok };
+};
+
+// ===== END DIRECT API CALLS =====
 
 // Avatar color palette
 const AVATAR_COLORS = [
