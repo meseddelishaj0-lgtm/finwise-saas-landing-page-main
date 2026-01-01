@@ -121,6 +121,11 @@ export default function ChartTab() {
   const [previousClose, setPreviousClose] = useState<number | null>(initialData.quote?.previousClose ?? null);
   const [dayHigh, setDayHigh] = useState<number | null>(initialData.quote?.dayHigh ?? null);
   const [dayLow, setDayLow] = useState<number | null>(initialData.quote?.dayLow ?? null);
+  // Extended hours state
+  const [extendedHoursPrice, setExtendedHoursPrice] = useState<number | null>(null);
+  const [extendedHoursChange, setExtendedHoursChange] = useState<number | null>(null);
+  const [extendedHoursChangePercent, setExtendedHoursChangePercent] = useState<number | null>(null);
+  const [marketStatus, setMarketStatus] = useState<'pre-market' | 'open' | 'after-hours' | 'closed'>('closed');
   // Only show loading if we don't have cached data
   const [loading, setLoading] = useState(!initialData.quote && !initialData.chart);
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +155,32 @@ export default function ChartTab() {
 
   const isPositive = priceChange.amount >= 0;
   const priceColor = isPositive ? '#00C853' : '#FF3B30';
+
+  // Determine market status based on current time (US Eastern)
+  const getMarketStatus = useCallback((): 'pre-market' | 'open' | 'after-hours' | 'closed' => {
+    const now = new Date();
+    // Convert to Eastern Time
+    const options: Intl.DateTimeFormatOptions = { timeZone: 'America/New_York', hour: 'numeric', minute: 'numeric', hour12: false };
+    const formatter = new Intl.DateTimeFormat('en-US', options);
+    const parts = formatter.formatToParts(now);
+    const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+    const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+    const totalMinutes = hour * 60 + minute;
+
+    const day = now.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short' });
+
+    // Weekend = closed
+    if (day === 'Sat' || day === 'Sun') return 'closed';
+
+    // Pre-market: 4:00 AM - 9:30 AM ET
+    if (totalMinutes >= 4 * 60 && totalMinutes < 9 * 60 + 30) return 'pre-market';
+    // Market open: 9:30 AM - 4:00 PM ET
+    if (totalMinutes >= 9 * 60 + 30 && totalMinutes < 16 * 60) return 'open';
+    // After-hours: 4:00 PM - 8:00 PM ET
+    if (totalMinutes >= 16 * 60 && totalMinutes < 20 * 60) return 'after-hours';
+
+    return 'closed';
+  }, []);
 
   // Fetch quote data with caching
   const fetchQuote = useCallback(async (useCache = true) => {
@@ -195,6 +226,47 @@ export default function ChartTab() {
       console.error('Quote fetch error:', err);
     }
   }, [cleanSymbol]);
+
+  // Fetch extended hours (pre-market / after-hours) data
+  const fetchExtendedHours = useCallback(async () => {
+    if (!cleanSymbol) return;
+
+    const status = getMarketStatus();
+    setMarketStatus(status);
+
+    // Only fetch extended hours data when market is closed or in extended session
+    if (status === 'open') {
+      setExtendedHoursPrice(null);
+      setExtendedHoursChange(null);
+      setExtendedHoursChangePercent(null);
+      return;
+    }
+
+    try {
+      const encodedSymbol = encodeURIComponent(cleanSymbol.replace(/\//g, ''));
+
+      // Use pre-market or after-market endpoint based on status
+      const endpoint = status === 'pre-market'
+        ? `https://financialmodelingprep.com/api/v4/pre-post-market-trade/${encodedSymbol}?apikey=${FMP_API_KEY}`
+        : `https://financialmodelingprep.com/api/v4/pre-post-market-trade/${encodedSymbol}?apikey=${FMP_API_KEY}`;
+
+      const res = await fetch(endpoint);
+      const data = await res.json();
+
+      if (data && data.price && currentPrice !== null) {
+        const extPrice = data.price;
+        const change = extPrice - currentPrice;
+        const changePercent = currentPrice > 0 ? (change / currentPrice) * 100 : 0;
+
+        setExtendedHoursPrice(extPrice);
+        setExtendedHoursChange(change);
+        setExtendedHoursChangePercent(changePercent);
+      }
+    } catch (err) {
+      console.error('Extended hours fetch error:', err);
+      // Silently fail - extended hours data is optional
+    }
+  }, [cleanSymbol, currentPrice, getMarketStatus]);
 
   // Fetch chart data based on timeframe with caching
   const fetchChartData = useCallback(async (showLoadingSpinner = true) => {
@@ -442,7 +514,10 @@ export default function ChartTab() {
     Promise.all([
       fetchQuote(true),
       fetchChartData(true)
-    ]);
+    ]).then(() => {
+      // Fetch extended hours after regular quote loads
+      fetchExtendedHours();
+    });
 
     // Set up polling - 15 seconds for 1D live data, 60 seconds for other timeframes
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -450,12 +525,13 @@ export default function ChartTab() {
     intervalRef.current = setInterval(() => {
       fetchQuote(false); // Don't use cache for polling
       if (timeframe === '1D') fetchChartData(false);
+      fetchExtendedHours(); // Also refresh extended hours
     }, pollInterval);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [cleanSymbol, timeframe, fetchQuote, fetchChartData]);
+  }, [cleanSymbol, timeframe, fetchQuote, fetchChartData, fetchExtendedHours]);
 
   const handleTimeframeChange = (tf: Timeframe) => {
     if (tf !== timeframe) {
@@ -604,10 +680,67 @@ export default function ChartTab() {
 
           {!pointerData && (
             <View style={styles.updateRow}>
+              {/* Market Status Badge */}
+              <View style={[
+                styles.marketStatusBadge,
+                marketStatus === 'open' && styles.marketStatusOpen,
+                marketStatus === 'pre-market' && styles.marketStatusPreMarket,
+                marketStatus === 'after-hours' && styles.marketStatusAfterHours,
+                marketStatus === 'closed' && styles.marketStatusClosed,
+              ]}>
+                <View style={[
+                  styles.marketStatusDot,
+                  marketStatus === 'open' && { backgroundColor: '#00C853' },
+                  marketStatus === 'pre-market' && { backgroundColor: '#FF9500' },
+                  marketStatus === 'after-hours' && { backgroundColor: '#AF52DE' },
+                  marketStatus === 'closed' && { backgroundColor: '#8E8E93' },
+                ]} />
+                <Text style={[
+                  styles.marketStatusText,
+                  marketStatus === 'open' && { color: '#00C853' },
+                  marketStatus === 'pre-market' && { color: '#FF9500' },
+                  marketStatus === 'after-hours' && { color: '#AF52DE' },
+                  marketStatus === 'closed' && { color: '#8E8E93' },
+                ]}>
+                  {marketStatus === 'open' ? 'Market Open' :
+                   marketStatus === 'pre-market' ? 'Pre-Market' :
+                   marketStatus === 'after-hours' ? 'After Hours' : 'Market Closed'}
+                </Text>
+              </View>
               <Text style={styles.lastUpdated}>
                 {lastUpdated.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
               </Text>
               <Animated.View style={[styles.liveDot, { transform: [{ scale: pulseAnim }] }]} />
+            </View>
+          )}
+
+          {/* Extended Hours Price Display */}
+          {extendedHoursPrice !== null && marketStatus !== 'open' && (
+            <View style={styles.extendedHoursContainer}>
+              <View style={styles.extendedHoursRow}>
+                <Text style={styles.extendedHoursLabel}>
+                  {marketStatus === 'pre-market' ? 'Pre-Market' : 'After Hours'}
+                </Text>
+                <Text style={styles.extendedHoursPrice}>
+                  {formatPrice(extendedHoursPrice)}
+                </Text>
+                <View style={[
+                  styles.extendedHoursChange,
+                  { backgroundColor: (extendedHoursChange ?? 0) >= 0 ? '#00C85315' : '#FF3B3015' }
+                ]}>
+                  <Ionicons
+                    name={(extendedHoursChange ?? 0) >= 0 ? 'arrow-up' : 'arrow-down'}
+                    size={10}
+                    color={(extendedHoursChange ?? 0) >= 0 ? '#00C853' : '#FF3B30'}
+                  />
+                  <Text style={[
+                    styles.extendedHoursChangeText,
+                    { color: (extendedHoursChange ?? 0) >= 0 ? '#00C853' : '#FF3B30' }
+                  ]}>
+                    {(extendedHoursChange ?? 0) >= 0 ? '+' : ''}{(extendedHoursChange ?? 0).toFixed(2)} ({(extendedHoursChangePercent ?? 0) >= 0 ? '+' : ''}{(extendedHoursChangePercent ?? 0).toFixed(2)}%)
+                  </Text>
+                </View>
+              </View>
             </View>
           )}
         </View>
@@ -1317,5 +1450,75 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 17,
     fontWeight: '700',
+  },
+  // Market Status Styles
+  marketStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#1C1C1E',
+    marginRight: 8,
+  },
+  marketStatusOpen: {
+    backgroundColor: '#00C85315',
+  },
+  marketStatusPreMarket: {
+    backgroundColor: '#FF950015',
+  },
+  marketStatusAfterHours: {
+    backgroundColor: '#AF52DE15',
+  },
+  marketStatusClosed: {
+    backgroundColor: '#8E8E9315',
+  },
+  marketStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+    backgroundColor: '#8E8E93',
+  },
+  marketStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#8E8E93',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  // Extended Hours Styles
+  extendedHoursContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#2C2C2E',
+  },
+  extendedHoursRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  extendedHoursLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  extendedHoursPrice: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  extendedHoursChange: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 2,
+  },
+  extendedHoursChangeText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
