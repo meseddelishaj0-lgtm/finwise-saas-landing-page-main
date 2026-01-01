@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Add cache headers for Vercel Edge Network (cache for 30 seconds, revalidate in background)
+    // Return fresh data - no caching for community feed to ensure new posts show immediately
     const response = NextResponse.json({
       posts: enhancedPosts,
       notificationsCount: notifications,
@@ -124,10 +124,10 @@ export async function GET(req: NextRequest) {
       cachedAt: new Date().toISOString(),
     });
 
-    // Stale-while-revalidate: serve cached for 30s, revalidate in background for up to 60s
+    // Disable caching to ensure fresh posts on every request
     response.headers.set(
       'Cache-Control',
-      'public, s-maxage=30, stale-while-revalidate=60'
+      'no-store, no-cache, must-revalidate'
     );
 
     return response;
