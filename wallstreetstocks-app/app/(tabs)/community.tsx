@@ -503,7 +503,7 @@ export default function CommunityPage() {
 
       if (response.ok) {
         const users = await response.json();
-        console.log('👥 Suggested users:', users.map((u: any) => ({ id: u.id, name: u.name, followers: u._count?.followers })));
+        console.log('👥 Suggested users:', users.map((u: any) => ({ id: u.id, name: u.name, followers: u._count?.followers, isFollowing: u.isFollowing })));
         setSuggestedUsers(users || []);
       } else {
         // Fallback: get active users from posts
