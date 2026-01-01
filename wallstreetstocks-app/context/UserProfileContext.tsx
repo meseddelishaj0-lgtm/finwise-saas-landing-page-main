@@ -30,6 +30,7 @@ interface UserProfileContextType {
   loading: boolean;
   error: string | null;
   refreshProfile: () => Promise<void>;
+  updateProfile: (data: Partial<UserProfileData>) => void;
   getDisplayName: () => string;
   getUsername: () => string;
   getHandle: () => string;
@@ -170,11 +171,18 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
     return profile?.profileImage || null;
   }, [profile]);
 
+  // Update profile directly without re-fetching (to avoid read replica lag)
+  const updateProfile = useCallback((data: Partial<UserProfileData>) => {
+    console.log('🔵 UserProfileContext: Updating profile directly:', data);
+    setProfile(prev => prev ? { ...prev, ...data } : null);
+  }, []);
+
   const value: UserProfileContextType = {
     profile,
     loading,
     error,
     refreshProfile: fetchProfile,
+    updateProfile,
     getDisplayName,
     getUsername,
     getHandle,

@@ -26,7 +26,7 @@ const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 export default function EditProfile() {
   const router = useRouter();
   const { user: authUser } = useAuth();
-  const { refreshProfile } = useUserProfile();
+  const { updateProfile } = useUserProfile();
   
   // Form State
   const [name, setName] = useState('');
@@ -226,6 +226,20 @@ export default function EditProfile() {
         if (responseData.name !== name.trim()) {
           console.warn('⚠️ Name mismatch after save:', { sent: name.trim(), received: responseData.name });
         }
+
+        // Update the profile context directly with the response data
+        // This avoids read replica lag issues with re-fetching
+        console.log('🔵 Updating profile context with response data...');
+        updateProfile({
+          name: responseData.name,
+          username: responseData.username,
+          bio: responseData.bio,
+          location: responseData.location,
+          website: responseData.website,
+          profileImage: responseData.profileImage,
+          bannerImage: responseData.bannerImage,
+        });
+        console.log('🔵 Profile context updated');
       } else {
         console.log('🔵 No userId, saving only to local storage');
       }
@@ -233,14 +247,6 @@ export default function EditProfile() {
       // Also save to local storage as backup
       const data = { name: name.trim(), username, email, bio, location, website, avatar, bannerImage };
       await AsyncStorage.setItem('personalInfo', JSON.stringify(data));
-
-      // Small delay to ensure database write is complete
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Refresh the profile context to get updated data
-      console.log('🔵 Refreshing profile context...');
-      await refreshProfile();
-      console.log('🔵 Profile context refreshed');
 
       Alert.alert('Saved!', 'Your profile has been updated.', [
         { text: 'OK', onPress: () => router.back() }
