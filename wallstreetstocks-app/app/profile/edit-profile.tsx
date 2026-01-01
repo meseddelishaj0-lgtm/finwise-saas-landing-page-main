@@ -46,7 +46,8 @@ export default function EditProfile() {
     return null;
   };
 
-  // Load profile data on mount
+  // Load profile data on mount - use Auth context as source of truth
+  // Only reload when user ID changes (login/logout), NOT when user data changes
   React.useEffect(() => {
     const loadProfile = async () => {
       const userId = getUserId();
@@ -70,11 +71,26 @@ export default function EditProfile() {
         return;
       }
 
+      // FIRST: Use Auth context data (persisted locally, always fresh)
+      // This avoids Neon read replica lag issues
+      if (authUser) {
+        console.log('🔵 EditProfile: Using Auth context data:', { name: authUser.name, username: authUser.username });
+        setName(authUser.name || '');
+        setUsername(authUser.username || '');
+        setEmail(authUser.email || '');
+        setBio(authUser.bio || '');
+        setLocation((authUser as any).location || '');
+        setWebsite((authUser as any).website || '');
+        setAvatar(authUser.profileImage || null);
+        setBannerImage((authUser as any).bannerImage || null);
+      }
+
+      // THEN: Fetch from API for any fields not in Auth (like subscriptionTier)
+      // But DON'T overwrite Auth fields - they are source of truth
       try {
-        // Use /api/user/:id endpoint which returns fresh data
         const timestamp = Date.now();
         const url = `${API_BASE_URL}/api/user/${userId}?_t=${timestamp}`;
-        console.log('🔵 EditProfile: Fetching from:', url);
+        console.log('🔵 EditProfile: Fetching additional data from:', url);
 
         const response = await fetch(url, {
           method: 'GET',
@@ -86,15 +102,18 @@ export default function EditProfile() {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('🔵 EditProfile: Profile loaded:', { name: data.name, username: data.username });
-          setName(data.name || '');
-          setUsername(data.username || '');
-          setEmail(data.email || '');
-          setBio(data.bio || '');
-          setLocation(data.location || '');
-          setWebsite(data.website || '');
-          setAvatar(data.profileImage || null);
-          setBannerImage(data.bannerImage || null);
+          console.log('🔵 EditProfile: API data received:', { name: data.name, username: data.username });
+
+          // Only use API data for fields NOT in Auth context
+          // Auth context is the source of truth for editable fields
+          if (!authUser?.name && data.name) setName(data.name);
+          if (!authUser?.username && data.username) setUsername(data.username);
+          if (!authUser?.email && data.email) setEmail(data.email);
+          if (!authUser?.bio && data.bio) setBio(data.bio);
+          if (!(authUser as any)?.location && data.location) setLocation(data.location);
+          if (!(authUser as any)?.website && data.website) setWebsite(data.website);
+          if (!authUser?.profileImage && data.profileImage) setAvatar(data.profileImage);
+          if (!(authUser as any)?.bannerImage && data.bannerImage) setBannerImage(data.bannerImage);
         } else {
           console.error('🔴 EditProfile: Failed to fetch profile:', response.status);
         }
@@ -106,7 +125,7 @@ export default function EditProfile() {
     };
 
     loadProfile();
-  }, [authUser]);
+  }, [authUser?.id]); // Only reload on user ID change, NOT on data change
 
   // Validate username as user types
   const handleUsernameChange = (text: string) => {
