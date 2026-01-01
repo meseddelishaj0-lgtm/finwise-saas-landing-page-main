@@ -39,7 +39,12 @@ export async function GET(req: NextRequest) {
       });
 
       followingIds = following.map(f => f.followingId);
-      console.log(`👥 User ${currentUserId} is following:`, followingIds);
+
+      // Debug: Also count total follows
+      const followCount = await prisma.follow.count({
+        where: { followerId: currentUserId },
+      });
+      console.log(`👥 User ${currentUserId} is following ${followCount} users:`, followingIds);
     }
 
     // Exclude only self and blocked users (NOT followed users)
@@ -81,7 +86,14 @@ export async function GET(req: NextRequest) {
       isFollowing: followingIds.includes(user.id),
     }));
 
-    return NextResponse.json(usersWithFollowState, { status: 200 });
+    // Temporarily include debug info
+    return NextResponse.json({
+      users: usersWithFollowState,
+      debug: {
+        currentUserId,
+        followingIds,
+      }
+    }, { status: 200 });
   } catch (err) {
     console.error("❌ Error fetching suggested users:", err);
     return NextResponse.json({ error: "Failed to load suggested users" }, { status: 500 });
