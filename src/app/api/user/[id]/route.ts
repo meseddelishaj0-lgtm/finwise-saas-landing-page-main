@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@/generated/prisma/client/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { prisma as sharedPrisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 
@@ -97,10 +96,14 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Use fresh connection for both write and read-back
+  const prisma = createFreshPrisma();
+
   try {
     const userId = parseInt(params.id, 10);
 
     if (isNaN(userId)) {
+      await prisma.$disconnect();
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
@@ -115,21 +118,20 @@ export async function PUT(
       // Validate username format
       const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
       if (!usernameRegex.test(username)) {
+        await prisma.$disconnect();
         return NextResponse.json(
           { error: 'Username must be 3-20 characters, letters, numbers, and underscores only' },
           { status: 400 }
         );
       }
 
-      // Check if username is taken by another user
-      const existingUser = await sharedPrisma.user.findFirst({
-        where: {
-          username: username.toLowerCase(),
-          NOT: { id: userId },
-        },
-      });
+      // Check if username is taken by another user (use fresh connection)
+      const existingUsers = await prisma.$queryRaw<any[]>`
+        SELECT id FROM "User" WHERE LOWER(username) = LOWER(${username}) AND id != ${userId} LIMIT 1
+      `;
 
-      if (existingUser) {
+      if (existingUsers.length > 0) {
+        await prisma.$disconnect();
         return NextResponse.json({ error: 'Username is already taken' }, { status: 409 });
       }
 
@@ -160,7 +162,8 @@ export async function PUT(
 
     console.log('📝 Updating user profile via /api/user/[id]:', { userId, updateData });
 
-    const updatedUser = await sharedPrisma.user.update({
+    // Use fresh connection for the update
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: updateData,
       select: {
@@ -184,9 +187,11 @@ export async function PUT(
 
     console.log('✅ User profile updated:', { id: updatedUser.id, name: updatedUser.name, tier: updatedUser.subscriptionTier });
 
+    await prisma.$disconnect();
     return NextResponse.json(updatedUser, { status: 200, headers: NO_CACHE_HEADERS });
   } catch (err) {
     console.error("❌ Error updating user:", err);
+    await prisma.$disconnect();
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
   }
 }
