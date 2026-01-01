@@ -95,7 +95,7 @@ export async function PUT(request: NextRequest) {
 
     // Build update data - only include fields that were provided
     const updateData: Record<string, any> = {};
-    
+
     if (username !== undefined) updateData.username = username.toLowerCase();
     if (name !== undefined) updateData.name = name;
     if (bio !== undefined) updateData.bio = bio;
@@ -103,6 +103,16 @@ export async function PUT(request: NextRequest) {
     if (website !== undefined) updateData.website = website;
     if (profileImage !== undefined) updateData.profileImage = profileImage;
     if (bannerImage !== undefined) updateData.bannerImage = bannerImage;
+
+    // Allow subscription tier updates (for sync from mobile app)
+    if (body.subscriptionTier !== undefined) {
+      const validTiers = ['free', 'gold', 'platinum', 'diamond'];
+      const tier = body.subscriptionTier.toLowerCase();
+      if (validTiers.includes(tier)) {
+        updateData.subscriptionTier = tier;
+        updateData.subscriptionStatus = tier !== 'free' ? 'active' : null;
+      }
+    }
     
     // Mark profile as complete if username and name are set
     if (username && name) {
