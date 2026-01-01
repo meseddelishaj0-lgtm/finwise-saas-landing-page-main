@@ -121,10 +121,7 @@ export default function ChartTab() {
   const [previousClose, setPreviousClose] = useState<number | null>(initialData.quote?.previousClose ?? null);
   const [dayHigh, setDayHigh] = useState<number | null>(initialData.quote?.dayHigh ?? null);
   const [dayLow, setDayLow] = useState<number | null>(initialData.quote?.dayLow ?? null);
-  // Extended hours state
-  const [extendedHoursPrice, setExtendedHoursPrice] = useState<number | null>(null);
-  const [extendedHoursChange, setExtendedHoursChange] = useState<number | null>(null);
-  const [extendedHoursChangePercent, setExtendedHoursChangePercent] = useState<number | null>(null);
+  // Market status state
   const [marketStatus, setMarketStatus] = useState<'pre-market' | 'open' | 'after-hours' | 'closed'>('closed');
   // Only show loading if we don't have cached data
   const [loading, setLoading] = useState(!initialData.quote && !initialData.chart);
@@ -227,46 +224,11 @@ export default function ChartTab() {
     }
   }, [cleanSymbol]);
 
-  // Fetch extended hours (pre-market / after-hours) data
-  const fetchExtendedHours = useCallback(async () => {
-    if (!cleanSymbol) return;
-
+  // Update market status
+  const updateMarketStatus = useCallback(() => {
     const status = getMarketStatus();
     setMarketStatus(status);
-
-    // Only fetch extended hours data when market is closed or in extended session
-    if (status === 'open') {
-      setExtendedHoursPrice(null);
-      setExtendedHoursChange(null);
-      setExtendedHoursChangePercent(null);
-      return;
-    }
-
-    try {
-      const encodedSymbol = encodeURIComponent(cleanSymbol.replace(/\//g, ''));
-
-      // Use pre-market or after-market endpoint based on status
-      const endpoint = status === 'pre-market'
-        ? `https://financialmodelingprep.com/api/v4/pre-post-market-trade/${encodedSymbol}?apikey=${FMP_API_KEY}`
-        : `https://financialmodelingprep.com/api/v4/pre-post-market-trade/${encodedSymbol}?apikey=${FMP_API_KEY}`;
-
-      const res = await fetch(endpoint);
-      const data = await res.json();
-
-      if (data && data.price && currentPrice !== null) {
-        const extPrice = data.price;
-        const change = extPrice - currentPrice;
-        const changePercent = currentPrice > 0 ? (change / currentPrice) * 100 : 0;
-
-        setExtendedHoursPrice(extPrice);
-        setExtendedHoursChange(change);
-        setExtendedHoursChangePercent(changePercent);
-      }
-    } catch (err) {
-      console.error('Extended hours fetch error:', err);
-      // Silently fail - extended hours data is optional
-    }
-  }, [cleanSymbol, currentPrice, getMarketStatus]);
+  }, [getMarketStatus]);
 
   // Fetch chart data based on timeframe with caching
   const fetchChartData = useCallback(async (showLoadingSpinner = true) => {
@@ -514,10 +476,10 @@ export default function ChartTab() {
     Promise.all([
       fetchQuote(true),
       fetchChartData(true)
-    ]).then(() => {
-      // Fetch extended hours after regular quote loads
-      fetchExtendedHours();
-    });
+    ]);
+
+    // Update market status
+    updateMarketStatus();
 
     // Set up polling - 15 seconds for 1D live data, 60 seconds for other timeframes
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -525,13 +487,13 @@ export default function ChartTab() {
     intervalRef.current = setInterval(() => {
       fetchQuote(false); // Don't use cache for polling
       if (timeframe === '1D') fetchChartData(false);
-      fetchExtendedHours(); // Also refresh extended hours
+      updateMarketStatus(); // Refresh market status
     }, pollInterval);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [cleanSymbol, timeframe, fetchQuote, fetchChartData, fetchExtendedHours]);
+  }, [cleanSymbol, timeframe, fetchQuote, fetchChartData, updateMarketStatus]);
 
   const handleTimeframeChange = (tf: Timeframe) => {
     if (tf !== timeframe) {
@@ -714,35 +676,6 @@ export default function ChartTab() {
             </View>
           )}
 
-          {/* Extended Hours Price Display */}
-          {extendedHoursPrice !== null && marketStatus !== 'open' && (
-            <View style={styles.extendedHoursContainer}>
-              <View style={styles.extendedHoursRow}>
-                <Text style={styles.extendedHoursLabel}>
-                  {marketStatus === 'pre-market' ? 'Pre-Market' : 'After Hours'}
-                </Text>
-                <Text style={styles.extendedHoursPrice}>
-                  {formatPrice(extendedHoursPrice)}
-                </Text>
-                <View style={[
-                  styles.extendedHoursChange,
-                  { backgroundColor: (extendedHoursChange ?? 0) >= 0 ? '#00C85315' : '#FF3B3015' }
-                ]}>
-                  <Ionicons
-                    name={(extendedHoursChange ?? 0) >= 0 ? 'arrow-up' : 'arrow-down'}
-                    size={10}
-                    color={(extendedHoursChange ?? 0) >= 0 ? '#00C853' : '#FF3B30'}
-                  />
-                  <Text style={[
-                    styles.extendedHoursChangeText,
-                    { color: (extendedHoursChange ?? 0) >= 0 ? '#00C853' : '#FF3B30' }
-                  ]}>
-                    {(extendedHoursChange ?? 0) >= 0 ? '+' : ''}{(extendedHoursChange ?? 0).toFixed(2)} ({(extendedHoursChangePercent ?? 0) >= 0 ? '+' : ''}{(extendedHoursChangePercent ?? 0).toFixed(2)}%)
-                  </Text>
-                </View>
-              </View>
-            </View>
-          )}
         </View>
 
         {/* Chart */}
@@ -1486,39 +1419,5 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  // Extended Hours Styles
-  extendedHoursContainer: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#2C2C2E',
-  },
-  extendedHoursRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  extendedHoursLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    fontWeight: '500',
-  },
-  extendedHoursPrice: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  extendedHoursChange: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    gap: 2,
-  },
-  extendedHoursChangeText: {
-    fontSize: 11,
-    fontWeight: '600',
   },
 });
