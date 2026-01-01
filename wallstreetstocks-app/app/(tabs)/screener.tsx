@@ -19,6 +19,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
+
+const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
+
+interface SavedPreset {
+  id: string;
+  name: string;
+  filters: Record<string, string>;
+  createdAt: string;
+}
 
 // FMP API Key - move to env in production
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
@@ -532,11 +543,129 @@ export default function Screener() {
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
+  // Saved Presets State
+  const [savedPresets, setSavedPresets] = useState<SavedPreset[]>([]);
+  const [showSavedPresetsModal, setShowSavedPresetsModal] = useState(false);
+  const [showSavePresetModal, setShowSavePresetModal] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [savingPreset, setSavingPreset] = useState(false);
+  const [loadingPresets, setLoadingPresets] = useState(false);
+  const [deletingPresetId, setDeletingPresetId] = useState<string | null>(null);
+
   const activeFilterCount = Object.values(filters).filter(v => v && v !== 'Any').length;
 
   const getFiltersByCategory = (category: string) => {
     if (category === 'all') return filterCategories;
     return filterCategories.filter(f => f.category === category);
+  };
+
+  // Fetch saved presets from API
+  const fetchSavedPresets = useCallback(async () => {
+    setLoadingPresets(true);
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        setSavedPresets([]);
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/screener-presets?userId=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSavedPresets(data.presets || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch presets:', err);
+    } finally {
+      setLoadingPresets(false);
+    }
+  }, []);
+
+  // Save new preset to API
+  const savePreset = async () => {
+    if (!newPresetName.trim()) {
+      Alert.alert('Error', 'Please enter a name for your preset');
+      return;
+    }
+
+    if (activeFilterCount === 0) {
+      Alert.alert('Error', 'Please select at least one filter to save');
+      return;
+    }
+
+    setSavingPreset(true);
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        Alert.alert('Login Required', 'Please log in to save presets');
+        setSavingPreset(false);
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/screener-presets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          name: newPresetName.trim(),
+          filters,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSavedPresets(prev => [data.preset, ...prev]);
+        setShowSavePresetModal(false);
+        setNewPresetName('');
+        Alert.alert('Success', 'Preset saved successfully!');
+      } else {
+        const errorData = await response.json();
+        Alert.alert('Error', errorData.error || 'Failed to save preset');
+      }
+    } catch (err) {
+      console.error('Failed to save preset:', err);
+      Alert.alert('Error', 'Failed to save preset. Please try again.');
+    } finally {
+      setSavingPreset(false);
+    }
+  };
+
+  // Delete preset from API
+  const deletePreset = async (presetId: string) => {
+    setDeletingPresetId(presetId);
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) return;
+
+      const response = await fetch(`${API_BASE_URL}/screener-presets/${presetId}?userId=${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setSavedPresets(prev => prev.filter(p => p.id !== presetId));
+      } else {
+        Alert.alert('Error', 'Failed to delete preset');
+      }
+    } catch (err) {
+      console.error('Failed to delete preset:', err);
+      Alert.alert('Error', 'Failed to delete preset');
+    } finally {
+      setDeletingPresetId(null);
+    }
+  };
+
+  // Load preset filters
+  const loadPreset = (preset: SavedPreset) => {
+    setFilters(preset.filters);
+    setActivePreset(null);
+    setShowSavedPresetsModal(false);
+    fetchData(null, preset.filters);
+  };
+
+  // Handle bookmark button press
+  const handleBookmarkPress = () => {
+    fetchSavedPresets();
+    setShowSavedPresetsModal(true);
   };
 
   // Fetch Heat Map Data
@@ -1015,7 +1144,9 @@ export default function Screener() {
             <Ionicons name="options" size={24} color="#000" />
             {activeFilterCount > 0 && <View style={styles.headerBadge}><Text style={styles.headerBadgeText}>{activeFilterCount}</Text></View>}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton}><Ionicons name="bookmark-outline" size={24} color="#000" /></TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton} onPress={handleBookmarkPress}>
+            <Ionicons name={savedPresets.length > 0 ? "bookmark" : "bookmark-outline"} size={24} color={savedPresets.length > 0 ? "#007AFF" : "#000"} />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -1310,6 +1441,147 @@ export default function Screener() {
         </SafeAreaView>
       </Modal>
 
+      {/* Saved Presets Modal */}
+      <Modal visible={showSavedPresetsModal} animationType="slide" transparent onRequestClose={() => setShowSavedPresetsModal(false)}>
+        <View style={styles.savedPresetsOverlay}>
+          <View style={styles.savedPresetsContainer}>
+            <View style={styles.savedPresetsHeader}>
+              <Text style={styles.savedPresetsTitle}>Saved Presets</Text>
+              <TouchableOpacity onPress={() => setShowSavedPresetsModal(false)}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Save Current Filters Button */}
+            {activeFilterCount > 0 && (
+              <TouchableOpacity
+                style={styles.saveCurrentBtn}
+                onPress={() => {
+                  setShowSavedPresetsModal(false);
+                  setShowSavePresetModal(true);
+                }}
+              >
+                <LinearGradient
+                  colors={['#007AFF', '#0055FF']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.saveCurrentGradient}
+                >
+                  <Ionicons name="add-circle" size={20} color="#fff" />
+                  <Text style={styles.saveCurrentText}>Save Current Filters ({activeFilterCount})</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+
+            {loadingPresets ? (
+              <View style={styles.presetsLoading}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={styles.presetsLoadingText}>Loading presets...</Text>
+              </View>
+            ) : savedPresets.length === 0 ? (
+              <View style={styles.noPresetsContainer}>
+                <Ionicons name="bookmark-outline" size={64} color="#CCC" />
+                <Text style={styles.noPresetsTitle}>No Saved Presets</Text>
+                <Text style={styles.noPresetsText}>
+                  {activeFilterCount > 0
+                    ? 'Tap "Save Current Filters" to save your first preset'
+                    : 'Select some filters and save them for quick access later'}
+                </Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.presetsList} showsVerticalScrollIndicator={false}>
+                {savedPresets.map((preset) => {
+                  const filterCount = Object.values(preset.filters).filter(v => v && v !== 'Any').length;
+                  return (
+                    <TouchableOpacity
+                      key={preset.id}
+                      style={styles.presetItem}
+                      onPress={() => loadPreset(preset)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.presetItemLeft}>
+                        <View style={styles.presetIconBg}>
+                          <Ionicons name="funnel" size={20} color="#007AFF" />
+                        </View>
+                        <View style={styles.presetItemInfo}>
+                          <Text style={styles.presetItemName}>{preset.name}</Text>
+                          <Text style={styles.presetItemFilters}>{filterCount} filter{filterCount !== 1 ? 's' : ''}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.presetItemRight}>
+                        <TouchableOpacity
+                          style={styles.presetDeleteBtn}
+                          onPress={() => {
+                            Alert.alert(
+                              'Delete Preset',
+                              `Are you sure you want to delete "${preset.name}"?`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                { text: 'Delete', style: 'destructive', onPress: () => deletePreset(preset.id) },
+                              ]
+                            );
+                          }}
+                        >
+                          {deletingPresetId === preset.id ? (
+                            <ActivityIndicator size="small" color="#FF3B30" />
+                          ) : (
+                            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                          )}
+                        </TouchableOpacity>
+                        <Ionicons name="chevron-forward" size={20} color="#CCC" />
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Save Preset Modal */}
+      <Modal visible={showSavePresetModal} animationType="fade" transparent onRequestClose={() => setShowSavePresetModal(false)}>
+        <View style={styles.savePresetOverlay}>
+          <View style={styles.savePresetContainer}>
+            <Text style={styles.savePresetTitle}>Save Filter Preset</Text>
+            <Text style={styles.savePresetSubtitle}>Give your {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} a name</Text>
+
+            <TextInput
+              style={styles.presetNameInput}
+              placeholder="e.g., High Growth Tech Stocks"
+              placeholderTextColor="#999"
+              value={newPresetName}
+              onChangeText={setNewPresetName}
+              autoFocus
+              maxLength={50}
+            />
+
+            <View style={styles.savePresetActions}>
+              <TouchableOpacity
+                style={styles.savePresetCancelBtn}
+                onPress={() => {
+                  setShowSavePresetModal(false);
+                  setNewPresetName('');
+                }}
+              >
+                <Text style={styles.savePresetCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.savePresetSaveBtn, savingPreset && styles.savePresetSaveBtnDisabled]}
+                onPress={savePreset}
+                disabled={savingPreset}
+              >
+                {savingPreset ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.savePresetSaveText}>Save Preset</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {activeFilterCount > 0 && !activePreset && (
         <TouchableOpacity style={styles.fab} onPress={() => fetchData(null, filters)}>
           <LinearGradient colors={['#007AFF', '#0055FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabGradient}>
@@ -1572,5 +1844,191 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.3)',
     zIndex: 999,
+  },
+  // Saved Presets Modal Styles
+  savedPresetsOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  savedPresetsContainer: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: '80%',
+  },
+  savedPresetsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  savedPresetsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+  },
+  saveCurrentBtn: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  saveCurrentGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  saveCurrentText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  presetsLoading: {
+    padding: 60,
+    alignItems: 'center',
+  },
+  presetsLoadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
+  noPresetsContainer: {
+    padding: 60,
+    alignItems: 'center',
+  },
+  noPresetsTitle: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  noPresetsText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  presetsList: {
+    paddingHorizontal: 20,
+  },
+  presetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+  },
+  presetItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  presetIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#E8F2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  presetItemInfo: {
+    flex: 1,
+  },
+  presetItemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  presetItemFilters: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  presetItemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  presetDeleteBtn: {
+    padding: 8,
+  },
+  // Save Preset Modal Styles
+  savePresetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  savePresetContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 340,
+  },
+  savePresetTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+    textAlign: 'center',
+  },
+  savePresetSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  presetNameInput: {
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    color: '#000',
+    backgroundColor: '#F8F9FA',
+    marginBottom: 20,
+  },
+  savePresetActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  savePresetCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
+    alignItems: 'center',
+  },
+  savePresetCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  savePresetSaveBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+  },
+  savePresetSaveBtnDisabled: {
+    opacity: 0.6,
+  },
+  savePresetSaveText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
