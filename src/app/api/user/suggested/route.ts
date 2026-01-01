@@ -32,23 +32,13 @@ export async function GET(req: NextRequest) {
         blockedIds.push(b.blockerId, b.blockedId);
       });
 
-      // Get users being followed (to mark isFollowing)
-      // Use broader query that's proven to work, then filter
-      const allFollowsForUser = await prisma.follow.findMany({
-        where: {
-          OR: [
-            { followerId: currentUserId },
-            { followingId: currentUserId },
-          ],
-        },
-      });
+      // Get users being followed using raw query to bypass any caching
+      const followingRaw = await prisma.$queryRaw<{ followingId: number }[]>`
+        SELECT "followingId" FROM "Follow" WHERE "followerId" = ${currentUserId}
+      `;
 
-      // Filter to get only follows where this user is the follower
-      followingIds = allFollowsForUser
-        .filter(f => f.followerId === currentUserId)
-        .map(f => f.followingId);
-
-      console.log(`👥 User ${currentUserId} following:`, followingIds);
+      followingIds = followingRaw.map(f => f.followingId);
+      console.log(`👥 User ${currentUserId} following (raw):`, followingIds);
     }
 
     // Exclude only self and blocked users (NOT followed users)
