@@ -457,10 +457,10 @@ export default function CommunityPage() {
     setProfileLoading(true);
     
     try {
-      // Use /api/user/profile endpoint which returns fresh data
-      const apiUrl = `https://www.wallstreetstocks.ai/api/user/profile?userId=${user.id}&t=${Date.now()}`;
+      // Use /api/user/:id endpoint which returns fresh data
+      const apiUrl = `https://www.wallstreetstocks.ai/api/user/${user.id}?t=${Date.now()}`;
       console.log('🔵 Fetching profile from:', apiUrl);
-      
+
       const response = await fetch(apiUrl, {
         headers: {
           'Cache-Control': 'no-cache',
@@ -725,10 +725,10 @@ export default function CommunityPage() {
       return;
     }
     
-    // Fetch profile directly for the modal
+    // Fetch profile directly for the modal using /api/user/:id
     try {
       const response = await fetch(
-        `https://www.wallstreetstocks.ai/api/user/profile?userId=${userId}`
+        `https://www.wallstreetstocks.ai/api/user/${userId}?t=${Date.now()}`
       );
       if (response.ok) {
         const profile = await response.json();

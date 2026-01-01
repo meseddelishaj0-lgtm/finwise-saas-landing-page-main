@@ -260,17 +260,16 @@ export const useAuth = create<AuthState>()(
         console.log('Data:', data);
 
         try {
-          const response = await fetch(`${API_URL}/api/user/profile`, {
+          // Use /api/user/:id endpoint which is more reliable
+          const response = await fetch(`${API_URL}/api/user/${user.id}`, {
             method: 'PUT',
-            headers: { 
+            headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
               'Authorization': `Bearer ${token}`,
+              'Cache-Control': 'no-cache',
             },
-            body: JSON.stringify({
-              ...data,
-              userId: user.id, // Always include userId in body
-            }),
+            body: JSON.stringify(data),
           });
 
           console.log('Status:', response.status);

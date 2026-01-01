@@ -63,9 +63,10 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
     setError(null);
 
     try {
-      // Add timestamp to bust cache
+      // Use the /api/user/:id endpoint which returns fresh data
+      // The /api/user/profile endpoint was returning stale/cached data
       const timestamp = Date.now();
-      const url = `${API_BASE_URL}/api/user/profile?userId=${authUser.id}&_t=${timestamp}`;
+      const url = `${API_BASE_URL}/api/user/${authUser.id}?_t=${timestamp}`;
       console.log('🔵 UserProfileContext: Fetching from:', url);
 
       const response = await fetch(url, {

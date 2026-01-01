@@ -114,7 +114,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }));
   }, []);
 
-  // Sync subscription tier to database
+  // Sync subscription tier to database using the reliable /api/user/:id endpoint
   const syncSubscriptionToDatabase = useCallback(async (
     userId: string,
     tier: string,
@@ -122,20 +122,23 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     expirationDate: string | null
   ) => {
     try {
-      const response = await fetch(`${API_URL}/api/subscription/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // Use the /api/user/:id endpoint which is proven to work correctly
+      const response = await fetch(`${API_URL}/api/user/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
         body: JSON.stringify({
-          userId,
-          tier,
-          productId,
-          expirationDate,
+          subscriptionTier: tier,
         }),
       });
       if (response.ok) {
-        console.log('✅ Subscription tier synced to database:', tier);
+        const data = await response.json();
+        console.log('✅ Subscription tier synced to database:', tier, data?.subscriptionTier);
       } else {
-        console.warn('⚠️ Failed to sync subscription tier to database');
+        const errorText = await response.text();
+        console.warn('⚠️ Failed to sync subscription tier to database:', errorText);
       }
     } catch (error) {
       console.warn('⚠️ Error syncing subscription to database:', error);

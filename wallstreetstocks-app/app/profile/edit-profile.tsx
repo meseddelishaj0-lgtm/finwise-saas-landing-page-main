@@ -71,9 +71,9 @@ export default function EditProfile() {
       }
 
       try {
-        // Add timestamp to bust cache and ensure fresh data
+        // Use /api/user/:id endpoint which returns fresh data
         const timestamp = Date.now();
-        const url = `${API_BASE_URL}/api/user/profile?userId=${userId}&_t=${timestamp}`;
+        const url = `${API_BASE_URL}/api/user/${userId}?_t=${timestamp}`;
         console.log('🔵 EditProfile: Fetching from:', url);
 
         const response = await fetch(url, {
@@ -195,10 +195,11 @@ export default function EditProfile() {
           bannerImage,
         };
 
-        console.log('🔵 Sending PUT request to:', `${API_BASE_URL}/api/user/profile`);
+        // Use /api/user/:id endpoint which is more reliable
+        console.log('🔵 Sending PUT request to:', `${API_BASE_URL}/api/user/${userId}`);
         console.log('🔵 Payload:', JSON.stringify(payload));
 
-        const response = await fetch(`${API_BASE_URL}/api/user/profile`, {
+        const response = await fetch(`${API_BASE_URL}/api/user/${userId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
