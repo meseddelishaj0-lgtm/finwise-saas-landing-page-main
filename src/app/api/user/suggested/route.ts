@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@/generated/prisma/client/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
 
 export const dynamic = 'force-dynamic';
 
+// Create a fresh connection for each request to ensure no stale data
+function createFreshPrisma() {
+  const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!;
+  const adapter = new PrismaNeon({ connectionString });
+  return new PrismaClient({ adapter });
+}
+
 // GET /api/user/suggested - Get suggested users to follow
 export async function GET(req: NextRequest) {
+  // Create fresh client to avoid stale reads
+  const prisma = createFreshPrisma();
+
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId");
@@ -88,9 +99,13 @@ export async function GET(req: NextRequest) {
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
+
+    // Cleanup
+    await prisma.$disconnect();
     return response;
   } catch (err) {
     console.error("❌ Error fetching suggested users:", err);
+    await prisma.$disconnect();
     return NextResponse.json({ error: "Failed to load suggested users" }, { status: 500 });
   }
 }
