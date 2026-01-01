@@ -33,30 +33,22 @@ export async function GET(req: NextRequest) {
       });
 
       // Get users being followed (to mark isFollowing)
-      const following = await prisma.follow.findMany({
-        where: { followerId: currentUserId },
-        select: { followingId: true },
-      });
-
-      followingIds = following.map(f => f.followingId);
-
-      // Debug: Count total follows for this user
-      const followCount = await prisma.follow.count({
-        where: { followerId: currentUserId },
-      });
-
-      // Debug: Get ALL follows involving this user
-      const allFollows = await prisma.follow.findMany({
+      // Use broader query that's proven to work, then filter
+      const allFollowsForUser = await prisma.follow.findMany({
         where: {
           OR: [
             { followerId: currentUserId },
             { followingId: currentUserId },
           ],
         },
-        take: 10,
       });
-      console.log(`👥 User ${currentUserId} follows (${followCount}):`, followingIds);
-      console.log(`👥 All follows involving user ${currentUserId}:`, allFollows);
+
+      // Filter to get only follows where this user is the follower
+      followingIds = allFollowsForUser
+        .filter(f => f.followerId === currentUserId)
+        .map(f => f.followingId);
+
+      console.log(`👥 User ${currentUserId} following:`, followingIds);
     }
 
     // Exclude only self and blocked users (NOT followed users)
@@ -98,26 +90,7 @@ export async function GET(req: NextRequest) {
       isFollowing: followingIds.includes(user.id),
     }));
 
-    // Temporarily include debug info
-    // Get all follows to debug
-    const debugFollows = currentUserId ? await prisma.follow.findMany({
-      where: {
-        OR: [
-          { followerId: currentUserId },
-          { followingId: currentUserId },
-        ],
-      },
-      take: 10,
-    }) : [];
-
-    return NextResponse.json({
-      users: usersWithFollowState,
-      debug: {
-        currentUserId,
-        followingIds,
-        allFollowsForUser: debugFollows,
-      }
-    }, { status: 200 });
+    return NextResponse.json(usersWithFollowState, { status: 200 });
   } catch (err) {
     console.error("❌ Error fetching suggested users:", err);
     return NextResponse.json({ error: "Failed to load suggested users" }, { status: 500 });
