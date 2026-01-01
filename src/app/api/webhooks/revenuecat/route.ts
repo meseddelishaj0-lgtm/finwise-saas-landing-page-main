@@ -50,26 +50,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
+    // Map product ID to subscription tier
+    const getSubscriptionTier = (productId: string): string => {
+      const productIdLower = productId?.toLowerCase() || '';
+      if (productIdLower.includes('diamond') || productIdLower.includes('29.99') || productIdLower.includes('premium_plus')) {
+        return 'diamond';
+      }
+      if (productIdLower.includes('platinum') || productIdLower.includes('19.99') || productIdLower.includes('premium')) {
+        return 'platinum';
+      }
+      if (productIdLower.includes('gold') || productIdLower.includes('9.99') || productIdLower.includes('basic')) {
+        return 'gold';
+      }
+      // Default to gold for any subscription
+      return 'gold';
+    };
+
     // Handle different event types
     switch (eventType) {
       case 'INITIAL_PURCHASE':
       case 'RENEWAL':
       case 'PRODUCT_CHANGE':
         // User purchased or renewed subscription
+        const tier = getSubscriptionTier(productId);
         await prisma.user.update({
           where: { id: userId },
           data: {
             currentPlan: productId,
             nextBillingDate: expirationDate,
+            subscriptionTier: tier,
+            subscriptionStatus: 'active',
+            subscriptionExpiry: expirationDate,
+            subscriptionProductId: productId,
           },
         });
-        console.log(`Subscription activated for user ${userId}: ${productId}`);
+        console.log(`Subscription activated for user ${userId}: ${productId} (tier: ${tier})`);
         break;
 
       case 'CANCELLATION':
         // User cancelled but may still have access until expiration
         console.log(`Subscription cancelled for user ${userId}, expires: ${expirationDate}`);
         // Don't remove access yet - they have until expiration date
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            subscriptionStatus: 'cancelled',
+          },
+        });
         break;
 
       case 'EXPIRATION':
@@ -80,6 +107,10 @@ export async function POST(request: NextRequest) {
           data: {
             currentPlan: null,
             nextBillingDate: null,
+            subscriptionTier: 'free',
+            subscriptionStatus: 'expired',
+            subscriptionExpiry: null,
+            subscriptionProductId: null,
           },
         });
         console.log(`Subscription expired for user ${userId}`);

@@ -321,13 +321,41 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }
   }, []);
 
+  // Sync subscription tier to database
+  const syncSubscriptionToDatabase = useCallback(async (
+    userId: string,
+    tier: string,
+    productId: string | null,
+    expirationDate: string | null
+  ) => {
+    try {
+      const response = await fetch(`${API_URL}/api/subscription/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          tier,
+          productId,
+          expirationDate,
+        }),
+      });
+      if (response.ok) {
+        console.log('✅ Subscription tier synced to database:', tier);
+      } else {
+        console.warn('⚠️ Failed to sync subscription tier to database');
+      }
+    } catch (error) {
+      console.warn('⚠️ Error syncing subscription to database:', error);
+    }
+  }, []);
+
   // Purchase a package
   const purchase = useCallback(async (pkg: PurchasesPackage): Promise<boolean> => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
-      
+
       const result = await purchasePackage(pkg);
-      
+
       if (result.success && result.customerInfo) {
         const activeEntitlements = result.customerInfo?.entitlements?.active || {};
         const activeEntitlementId = getActiveEntitlement(activeEntitlements);
@@ -346,6 +374,19 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           currentTier,
           expirationDate: entitlement?.expirationDate || null,
         }));
+
+        // Sync subscription tier to database for badge display
+        const userDataStr = await AsyncStorage.getItem('userData');
+        const userData = userDataStr ? JSON.parse(userDataStr) : null;
+        const userId = userData?.id?.toString();
+        if (userId && currentTier) {
+          await syncSubscriptionToDatabase(
+            userId,
+            currentTier,
+            activeSubscription,
+            entitlement?.expirationDate || null
+          );
+        }
 
         return true;
       } else {
@@ -395,6 +436,19 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           expirationDate: entitlement?.expirationDate || null,
         }));
 
+        // Sync subscription tier to database for badge display
+        const userDataStr = await AsyncStorage.getItem('userData');
+        const userData = userDataStr ? JSON.parse(userDataStr) : null;
+        const userId = userData?.id?.toString();
+        if (userId && currentTier) {
+          await syncSubscriptionToDatabase(
+            userId,
+            currentTier,
+            activeSubscription,
+            entitlement?.expirationDate || null
+          );
+        }
+
         return true;
       } else {
         setState(prev => ({
@@ -412,10 +466,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         isLoading: false,
         error: error.message || 'Restore failed',
       }));
-      
+
       return false;
     }
-  }, []);
+  }, [syncSubscriptionToDatabase]);
 
   // Helper function to convert tier string to number
   const tierToNumber = (tier: string | null): number => {
