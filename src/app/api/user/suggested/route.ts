@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
       });
 
       followingIds = following.map(f => f.followingId);
+      console.log(`👥 User ${currentUserId} is following:`, followingIds);
     }
 
     // Exclude only self and blocked users (NOT followed users)
