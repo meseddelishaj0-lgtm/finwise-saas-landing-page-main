@@ -442,6 +442,8 @@ export default function CommunityPage() {
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [suggestedLoading, setSuggestedLoading] = useState(true);
   const [dismissedUsers, setDismissedUsers] = useState<number[]>([]);
+  // Track local follow changes to preserve optimistic updates across re-fetches
+  const [localFollowChanges, setLocalFollowChanges] = useState<Map<number, boolean>>(new Map());
   
   // Modals
   const [createPostModal, setCreatePostModal] = useState(false);
@@ -554,7 +556,16 @@ export default function CommunityPage() {
       })));
 
       if (users.length > 0) {
-        setSuggestedUsers(users);
+        // Merge with local follow changes to preserve optimistic updates
+        const mergedUsers = users.map((user: any) => {
+          const localChange = localFollowChanges.get(user.id);
+          if (localChange !== undefined) {
+            console.log(`👥 Preserving local follow state for user ${user.id}: ${localChange}`);
+            return { ...user, isFollowing: localChange };
+          }
+          return user;
+        });
+        setSuggestedUsers(mergedUsers);
       } else {
         // Fallback: get active users from posts
         const uniqueUsers = posts
@@ -582,7 +593,7 @@ export default function CommunityPage() {
     } finally {
       setSuggestedLoading(false);
     }
-  }, [posts, getUserId]);
+  }, [posts, getUserId, localFollowChanges]);
 
   const handleQuickFollow = async (targetUserId: number) => {
     const userId = getUserId();
@@ -598,8 +609,12 @@ export default function CommunityPage() {
     // Find the user and check current state
     const targetUser = suggestedUsers.find(u => u.id === targetUserId);
     const wasFollowing = targetUser?.isFollowing || false;
+    const newFollowState = !wasFollowing;
 
-    console.log('👤 Quick follow:', { userId, targetUserId, wasFollowing });
+    console.log('👤 Quick follow:', { userId, targetUserId, wasFollowing, newFollowState });
+
+    // Track local change to preserve across re-fetches (prevents Neon replica lag issues)
+    setLocalFollowChanges(prev => new Map(prev).set(targetUserId, newFollowState));
 
     // Optimistic update - toggle the follow state
     setSuggestedUsers(prev =>
@@ -607,7 +622,7 @@ export default function CommunityPage() {
         user.id === targetUserId
           ? {
               ...user,
-              isFollowing: !wasFollowing,
+              isFollowing: newFollowState,
               _count: {
                 ...user._count,
                 followers: wasFollowing
@@ -624,20 +639,17 @@ export default function CommunityPage() {
       const result = await followUserApi(userId, targetUserId);
       console.log('👤 Follow response:', result);
 
-      // Update with actual state from server
-      setSuggestedUsers(prev =>
-        prev.map(user =>
-          user.id === targetUserId
-            ? {
-                ...user,
-                isFollowing: result.isFollowing,
-              }
-            : user
-        )
-      );
+      // Don't update from server response - trust local state (server may return stale data from replica)
+      // The local follow change is tracked and will persist across re-fetches
     } catch (error) {
       console.error('❌ Error following user:', error);
-      // Revert on error
+      // Revert local change tracking
+      setLocalFollowChanges(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(targetUserId);
+        return newMap;
+      });
+      // Revert UI
       setSuggestedUsers(prev =>
         prev.map(user =>
           user.id === targetUserId
@@ -782,7 +794,7 @@ export default function CommunityPage() {
 
   const handleFollowUser = async () => {
     if (!selectedProfile?.id) return;
-    
+
     const userId = getUserId();
     if (!userId) {
       Alert.alert('Error', 'Please log in to follow users');
@@ -795,14 +807,18 @@ export default function CommunityPage() {
 
     setFollowLoading(true);
     const wasFollowing = selectedProfile.isFollowing;
+    const newFollowState = !wasFollowing;
+
+    // Track local change to preserve across re-fetches (prevents Neon replica lag issues)
+    setLocalFollowChanges(prev => new Map(prev).set(selectedProfile.id, newFollowState));
 
     // Optimistic update
     setSelectedProfile(prev => prev ? {
       ...prev,
-      isFollowing: !wasFollowing,
+      isFollowing: newFollowState,
       _count: {
         ...prev._count!,
-        followers: wasFollowing 
+        followers: wasFollowing
           ? Math.max(0, (prev._count?.followers || 0) - 1)
           : (prev._count?.followers || 0) + 1,
       }
@@ -812,12 +828,12 @@ export default function CommunityPage() {
     setSuggestedUsers(prev =>
       prev.map(user =>
         user.id === selectedProfile.id
-          ? { 
-              ...user, 
-              isFollowing: !wasFollowing,
+          ? {
+              ...user,
+              isFollowing: newFollowState,
               _count: {
                 ...user._count,
-                followers: wasFollowing 
+                followers: wasFollowing
                   ? Math.max(0, (user._count?.followers || 0) - 1)
                   : (user._count?.followers || 0) + 1,
                 posts: user._count?.posts || 0,
@@ -842,23 +858,29 @@ export default function CommunityPage() {
       }
     } catch (error) {
       console.error('Error following user:', error);
+      // Revert local change tracking
+      setLocalFollowChanges(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(selectedProfile.id);
+        return newMap;
+      });
       // Revert on error
       setSelectedProfile(prev => prev ? {
         ...prev,
         isFollowing: wasFollowing,
         _count: {
           ...prev._count!,
-          followers: wasFollowing 
+          followers: wasFollowing
             ? (prev._count?.followers || 0) + 1
             : Math.max(0, (prev._count?.followers || 0) - 1),
         }
       } : null);
-      
+
       setSuggestedUsers(prev =>
         prev.map(user =>
           user.id === selectedProfile.id
-            ? { 
-                ...user, 
+            ? {
+                ...user,
                 isFollowing: wasFollowing,
                 _count: {
                   ...user._count,
