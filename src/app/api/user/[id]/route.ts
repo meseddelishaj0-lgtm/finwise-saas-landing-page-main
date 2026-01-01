@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@/generated/prisma/client/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { prisma as sharedPrisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
+
+// Create a fresh connection for reads to avoid stale data
+function createFreshPrisma() {
+  const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!;
+  const adapter = new PrismaNeon({ connectionString });
+  return new PrismaClient({ adapter });
+}
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -14,6 +23,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Create fresh connection to avoid stale reads after updates
+  const prisma = createFreshPrisma();
+
   try {
     const userId = parseInt(params.id, 10);
 
@@ -51,6 +63,7 @@ export async function GET(
     });
 
     if (!user) {
+      await prisma.$disconnect();
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -69,12 +82,14 @@ export async function GET(
       isFollowing = !!follow;
     }
 
+    await prisma.$disconnect();
     return NextResponse.json({
       ...user,
       isFollowing,
     }, { status: 200, headers: NO_CACHE_HEADERS });
   } catch (err) {
     console.error("❌ Error fetching user:", err);
+    await prisma.$disconnect();
     return NextResponse.json({ error: "Failed to load user" }, { status: 500 });
   }
 }
@@ -109,7 +124,7 @@ export async function PUT(
       }
 
       // Check if username is taken by another user
-      const existingUser = await prisma.user.findFirst({
+      const existingUser = await sharedPrisma.user.findFirst({
         where: {
           username: username.toLowerCase(),
           NOT: { id: userId },
@@ -147,7 +162,7 @@ export async function PUT(
 
     console.log('📝 Updating user profile via /api/user/[id]:', { userId, updateData });
 
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await sharedPrisma.user.update({
       where: { id: userId },
       data: updateData,
       select: {
