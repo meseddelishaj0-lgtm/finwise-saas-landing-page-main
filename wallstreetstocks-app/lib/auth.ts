@@ -15,6 +15,9 @@ interface User {
   username?: string;
   profileImage?: string;
   bio?: string;
+  location?: string;
+  website?: string;
+  bannerImage?: string;
   profileComplete?: boolean;
 }
 
@@ -22,7 +25,10 @@ interface ProfileUpdateData {
   name?: string;
   username?: string;
   bio?: string;
+  location?: string;
+  website?: string;
   profileImage?: string;
+  bannerImage?: string;
   profileComplete?: boolean;
 }
 

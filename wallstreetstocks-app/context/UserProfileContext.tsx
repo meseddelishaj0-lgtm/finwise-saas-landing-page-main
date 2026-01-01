@@ -83,7 +83,7 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
         console.log('🔵 UserProfileContext: API returned:', data.name, '@' + data.username);
         console.log('🔵 UserProfileContext: Auth has:', authUser.name, '@' + authUser.username);
 
-        // IMPORTANT: Use Auth context data as source of truth for name/username
+        // IMPORTANT: Use Auth context data as source of truth for profile fields
         // Auth context is persisted locally and has the freshest data after profile updates
         // API may return stale data due to Neon read replica lag
         const mergedProfile = {
@@ -92,7 +92,10 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
           name: authUser.name || data.name,
           username: authUser.username || data.username,
           bio: authUser.bio || data.bio,
+          location: (authUser as any).location || data.location,
+          website: (authUser as any).website || data.website,
           profileImage: authUser.profileImage || data.profileImage,
+          bannerImage: (authUser as any).bannerImage || data.bannerImage,
         };
 
         console.log('🔵 UserProfileContext: Using merged profile:', mergedProfile.name, '@' + mergedProfile.username);
@@ -107,10 +110,10 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
             email: authUser.email,
             username: authUser.username || null,
             bio: authUser.bio || null,
-            location: null,
-            website: null,
+            location: (authUser as any).location || null,
+            website: (authUser as any).website || null,
             profileImage: authUser.profileImage || null,
-            bannerImage: null,
+            bannerImage: (authUser as any).bannerImage || null,
             subscriptionTier: null,
             createdAt: '',
           });
@@ -127,10 +130,10 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
           email: authUser.email,
           username: authUser.username || null,
           bio: authUser.bio || null,
-          location: null,
-          website: null,
+          location: (authUser as any).location || null,
+          website: (authUser as any).website || null,
           profileImage: authUser.profileImage || null,
-          bannerImage: null,
+          bannerImage: (authUser as any).bannerImage || null,
           subscriptionTier: null,
           createdAt: '',
         });
@@ -139,7 +142,7 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
     } finally {
       setLoading(false);
     }
-  }, [authUser?.id, authUser?.name, authUser?.username, authUser?.bio, authUser?.profileImage, authLoading]);
+  }, [authUser?.id, authUser?.name, authUser?.username, authUser?.bio, authUser?.profileImage, (authUser as any)?.location, (authUser as any)?.website, (authUser as any)?.bannerImage, authLoading]);
 
   // Fetch profile when auth changes or auth finishes loading
   // Auth data is merged into profile as source of truth (avoids Neon replica lag)

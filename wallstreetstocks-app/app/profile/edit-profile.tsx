@@ -247,7 +247,10 @@ export default function EditProfile() {
           name: responseData.name,
           username: responseData.username,
           bio: responseData.bio,
+          location: responseData.location,
+          website: responseData.website,
           profileImage: responseData.profileImage,
+          bannerImage: responseData.bannerImage,
         });
 
         console.log('🔵 Profile contexts updated');
