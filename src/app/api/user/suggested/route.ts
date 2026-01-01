@@ -91,11 +91,7 @@ export async function GET(req: NextRequest) {
       isFollowing: followingIds.includes(user.id),
     }));
 
-    // Debug: Include raw followingIds in response
-    const response = NextResponse.json({
-      users: usersWithFollowState,
-      _debug: { followingIds, currentUserId }
-    }, { status: 200 });
+    const response = NextResponse.json(usersWithFollowState, { status: 200 });
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
