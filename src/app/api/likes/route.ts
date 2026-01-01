@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@/generated/prisma/client/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import prisma from "@/lib/prisma";
 import { sendPushNotificationToUser, NotificationMessages } from "@/lib/pushNotifications";
+
+// Create a fresh connection for reads to avoid stale data
+function createFreshPrisma() {
+  const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!;
+  const adapter = new PrismaNeon({ connectionString });
+  return new PrismaClient({ adapter });
+}
 
 // POST /api/likes - Toggle like
 export async function POST(req: NextRequest) {
@@ -130,6 +139,9 @@ export async function POST(req: NextRequest) {
 
 // GET /api/likes?postId=123 - Get likes (PUBLIC)
 export async function GET(req: NextRequest) {
+  // Create fresh connection to avoid stale reads from replicas
+  const freshPrisma = createFreshPrisma();
+
   try {
     const { searchParams } = new URL(req.url);
     const postIdParam = searchParams.get("postId");
@@ -145,7 +157,7 @@ export async function GET(req: NextRequest) {
     const postId = postIdParam ? parseInt(postIdParam, 10) : undefined;
     const commentId = commentIdParam ? parseInt(commentIdParam, 10) : undefined;
 
-    const likes = await prisma.like.findMany({
+    const likes = await freshPrisma.like.findMany({
       where: postId ? { postId } : { commentId },
       include: {
         user: { select: { id: true, name: true, email: true } }
@@ -153,9 +165,11 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" }
     });
 
+    await freshPrisma.$disconnect();
     return NextResponse.json(likes, { status: 200 });
   } catch (err) {
     console.error("❌ Error fetching likes:", err);
+    await freshPrisma.$disconnect();
     return NextResponse.json({ error: "Failed to fetch likes" }, { status: 500 });
   }
 }

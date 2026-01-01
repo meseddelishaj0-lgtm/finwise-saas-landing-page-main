@@ -1,11 +1,23 @@
 // api/posts/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@/generated/prisma/client/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import prisma from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 
+// Create a fresh connection for reads to avoid stale data
+function createFreshPrisma() {
+  const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!;
+  const adapter = new PrismaNeon({ connectionString });
+  return new PrismaClient({ adapter });
+}
+
 // GET /api/posts - Get all posts (PUBLIC)
 export async function GET(req: NextRequest) {
+  // Create fresh connection to avoid stale reads from replicas
+  const freshPrisma = createFreshPrisma();
+
   try {
     const { searchParams } = new URL(req.url);
     const forumSlug = searchParams.get("forum");
@@ -13,18 +25,18 @@ export async function GET(req: NextRequest) {
     const currentUserId = searchParams.get("currentUserId");
 
     const where: any = {};
-    
+
     if (forumSlug) {
       where.forum = { slug: forumSlug };
     }
-    
+
     if (userId) {
       where.userId = parseInt(userId, 10);
     }
 
     // Filter out posts from blocked users
     if (currentUserId) {
-      const blockedUsers = await prisma.block.findMany({
+      const blockedUsers = await freshPrisma.block.findMany({
         where: {
           OR: [
             { blockerId: parseInt(currentUserId, 10) },
@@ -33,16 +45,16 @@ export async function GET(req: NextRequest) {
         },
         select: { blockerId: true, blockedId: true },
       });
-      
+
       const blockedIds = blockedUsers.flatMap(b => [b.blockerId, b.blockedId]);
       const uniqueBlockedIds = [...new Set(blockedIds)].filter(id => id !== parseInt(currentUserId, 10));
-      
+
       if (uniqueBlockedIds.length > 0) {
         where.userId = { notIn: uniqueBlockedIds };
       }
     }
 
-    const posts = await prisma.post.findMany({
+    const posts = await freshPrisma.post.findMany({
       where,
       include: {
         user: { select: { id: true, name: true, email: true, username: true, profileImage: true, karma: true, isVerified: true, subscriptionTier: true } },
@@ -60,7 +72,7 @@ export async function GET(req: NextRequest) {
     // Get user's likes if currentUserId is provided
     const userLikedPostIds = new Set<number>();
     if (currentUserId) {
-      const userLikes = await prisma.like.findMany({
+      const userLikes = await freshPrisma.like.findMany({
         where: {
           userId: parseInt(currentUserId, 10),
           postId: { in: posts.map(p => p.id) },
@@ -72,7 +84,7 @@ export async function GET(req: NextRequest) {
 
     // Add sentiment counts and isLiked to each post
     const postsWithSentiment = await Promise.all(posts.map(async (post) => {
-      const sentimentCounts = await prisma.sentiment.groupBy({
+      const sentimentCounts = await freshPrisma.sentiment.groupBy({
         by: ['type'],
         where: { postId: post.id },
         _count: { type: true },
@@ -94,9 +106,11 @@ export async function GET(req: NextRequest) {
       };
     }));
 
+    await freshPrisma.$disconnect();
     return NextResponse.json(postsWithSentiment, { status: 200 });
   } catch (err) {
     console.error("❌ Error fetching posts:", err);
+    await freshPrisma.$disconnect();
     return NextResponse.json({ error: "Failed to load posts" }, { status: 500 });
   }
 }
