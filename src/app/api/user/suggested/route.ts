@@ -40,11 +40,23 @@ export async function GET(req: NextRequest) {
 
       followingIds = following.map(f => f.followingId);
 
-      // Debug: Also count total follows
+      // Debug: Count total follows for this user
       const followCount = await prisma.follow.count({
         where: { followerId: currentUserId },
       });
-      console.log(`👥 User ${currentUserId} is following ${followCount} users:`, followingIds);
+
+      // Debug: Get ALL follows involving this user
+      const allFollows = await prisma.follow.findMany({
+        where: {
+          OR: [
+            { followerId: currentUserId },
+            { followingId: currentUserId },
+          ],
+        },
+        take: 10,
+      });
+      console.log(`👥 User ${currentUserId} follows (${followCount}):`, followingIds);
+      console.log(`👥 All follows involving user ${currentUserId}:`, allFollows);
     }
 
     // Exclude only self and blocked users (NOT followed users)
@@ -87,11 +99,23 @@ export async function GET(req: NextRequest) {
     }));
 
     // Temporarily include debug info
+    // Get all follows to debug
+    const debugFollows = currentUserId ? await prisma.follow.findMany({
+      where: {
+        OR: [
+          { followerId: currentUserId },
+          { followingId: currentUserId },
+        ],
+      },
+      take: 10,
+    }) : [];
+
     return NextResponse.json({
       users: usersWithFollowState,
       debug: {
         currentUserId,
         followingIds,
+        allFollowsForUser: debugFollows,
       }
     }, { status: 200 });
   } catch (err) {
