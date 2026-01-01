@@ -226,6 +226,49 @@ const reportUser = async (reporterId: number, reportedId: number, reason: string
   return { success: response.ok };
 };
 
+const fetchSuggestedUsersApi = async (userId?: number): Promise<any[]> => {
+  try {
+    const url = userId
+      ? `${API_BASE}/api/user/suggested?userId=${userId}`
+      : `${API_BASE}/api/user/suggested`;
+    const response = await fetch(url, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      },
+    });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('❌ fetchSuggestedUsersApi error:', error);
+    return [];
+  }
+};
+
+const followUserApi = async (followerId: number, followingId: number): Promise<{ success: boolean; action: string; isFollowing: boolean }> => {
+  try {
+    const response = await fetch(`${API_BASE}/api/follows`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ followerId, followingId }),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to follow user');
+    }
+    const result = await response.json();
+    return {
+      success: true,
+      action: result.action || 'followed',
+      isFollowing: result.isFollowing ?? true,
+    };
+  } catch (error) {
+    console.error('❌ followUserApi error:', error);
+    throw error;
+  }
+};
+
 // ===== END DIRECT API CALLS =====
 
 // Avatar color palette
@@ -497,20 +540,23 @@ export default function CommunityPage() {
     try {
       const userId = getUserId();
       console.log('👥 Fetching suggested users for userId:', userId);
-      const response = await fetch(
-        `https://www.wallstreetstocks.ai/api/user/suggested${userId ? `?userId=${userId}` : ''}`
-      );
 
-      if (response.ok) {
-        const users = await response.json();
-        console.log('👥 Suggested users:', users.map((u: any) => ({ id: u.id, name: u.name, followers: u._count?.followers, isFollowing: u.isFollowing })));
-        setSuggestedUsers(users || []);
+      const users = await fetchSuggestedUsersApi(userId || undefined);
+      console.log('👥 Suggested users:', users.map((u: any) => ({
+        id: u.id,
+        name: u.name,
+        followers: u._count?.followers,
+        isFollowing: u.isFollowing
+      })));
+
+      if (users.length > 0) {
+        setSuggestedUsers(users);
       } else {
         // Fallback: get active users from posts
         const uniqueUsers = posts
           .map(p => p.user)
-          .filter((user, index, self) => 
-            user && 
+          .filter((user, index, self) =>
+            user &&
             user.id !== getUserId() &&
             self.findIndex(u => u?.id === user.id) === index
           )
@@ -522,8 +568,8 @@ export default function CommunityPage() {
       // Fallback to users from posts
       const uniqueUsers = posts
         .map(p => p.user)
-        .filter((user, index, self) => 
-          user && 
+        .filter((user, index, self) =>
+          user &&
           user.id !== getUserId() &&
           self.findIndex(u => u?.id === user.id) === index
         )
@@ -547,18 +593,20 @@ export default function CommunityPage() {
 
     // Find the user and check current state
     const targetUser = suggestedUsers.find(u => u.id === targetUserId);
-    const wasFollowing = targetUser?.isFollowing;
+    const wasFollowing = targetUser?.isFollowing || false;
 
-    // Optimistic update
+    console.log('👤 Quick follow:', { userId, targetUserId, wasFollowing });
+
+    // Optimistic update - toggle the follow state
     setSuggestedUsers(prev =>
       prev.map(user =>
         user.id === targetUserId
-          ? { 
-              ...user, 
+          ? {
+              ...user,
               isFollowing: !wasFollowing,
               _count: {
                 ...user._count,
-                followers: wasFollowing 
+                followers: wasFollowing
                   ? Math.max(0, (user._count?.followers || 0) - 1)
                   : (user._count?.followers || 0) + 1,
                 posts: user._count?.posts || 0,
@@ -569,37 +617,32 @@ export default function CommunityPage() {
     );
 
     try {
-      console.log('👤 Following user:', { followerId: userId, followingId: targetUserId });
-      const response = await fetch(
-        `https://www.wallstreetstocks.ai/api/follows`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ followerId: userId, followingId: targetUserId }),
-        }
-      );
-
-      const result = await response.json();
+      const result = await followUserApi(userId, targetUserId);
       console.log('👤 Follow response:', result);
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to follow user');
-      }
-
-      // Keep the user in the list with updated follow state (don't remove them)
-      // This provides better UX - user can see who they followed and unfollow if needed
+      // Update with actual state from server
+      setSuggestedUsers(prev =>
+        prev.map(user =>
+          user.id === targetUserId
+            ? {
+                ...user,
+                isFollowing: result.isFollowing,
+              }
+            : user
+        )
+      );
     } catch (error) {
       console.error('❌ Error following user:', error);
       // Revert on error
       setSuggestedUsers(prev =>
         prev.map(user =>
           user.id === targetUserId
-            ? { 
-                ...user, 
+            ? {
+                ...user,
                 isFollowing: wasFollowing,
                 _count: {
                   ...user._count,
-                  followers: wasFollowing 
+                  followers: wasFollowing
                     ? (user._count?.followers || 0) + 1
                     : Math.max(0, (user._count?.followers || 0) - 1),
                   posts: user._count?.posts || 0,
