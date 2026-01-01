@@ -57,7 +57,20 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Add sentiment counts to each post
+    // Get user's likes if currentUserId is provided
+    const userLikedPostIds = new Set<number>();
+    if (currentUserId) {
+      const userLikes = await prisma.like.findMany({
+        where: {
+          userId: parseInt(currentUserId, 10),
+          postId: { in: posts.map(p => p.id) },
+        },
+        select: { postId: true },
+      });
+      userLikes.forEach(l => l.postId && userLikedPostIds.add(l.postId));
+    }
+
+    // Add sentiment counts and isLiked to each post
     const postsWithSentiment = await Promise.all(posts.map(async (post) => {
       const sentimentCounts = await prisma.sentiment.groupBy({
         by: ['type'],
@@ -71,6 +84,7 @@ export async function GET(req: NextRequest) {
       return {
         ...post,
         tickers: post.tickerMentions.map(tm => tm.ticker),
+        isLiked: userLikedPostIds.has(post.id),
         sentiment: {
           bullish,
           bearish,

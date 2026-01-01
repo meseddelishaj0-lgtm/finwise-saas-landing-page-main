@@ -17,6 +17,8 @@ export async function GET(req: NextRequest) {
       recentPosts,
       notifications,
       unreadMessagesCount,
+      userLikes,
+      userSentiments,
     ] = await Promise.all([
       // Get recent posts (limit 20 for mobile)
       prisma.post.findMany({
@@ -35,6 +37,7 @@ export async function GET(req: NextRequest) {
           },
           forum: { select: { id: true, title: true, slug: true } },
           _count: { select: { comments: true, likes: true } },
+          tickerMentions: { select: { ticker: true } },
         },
       }),
 
@@ -59,11 +62,63 @@ export async function GET(req: NextRequest) {
           isRead: false,
         },
       }) : 0,
+
+      // Get user's likes on posts (to show isLiked state)
+      userIdNum ? prisma.like.findMany({
+        where: {
+          userId: userIdNum,
+          postId: { not: null },
+        },
+        select: { postId: true },
+      }) : [],
+
+      // Get user's sentiment votes
+      userIdNum ? prisma.sentiment.findMany({
+        where: { userId: userIdNum },
+        select: { postId: true, type: true },
+      }) : [],
     ]);
+
+    // Create lookup sets for quick access
+    const likedPostIds = new Set(userLikes.map(l => l.postId));
+    const userSentimentMap = new Map(userSentiments.map(s => [s.postId, s.type]));
+
+    // Get sentiment counts for all posts
+    const postIds = recentPosts.map(p => p.id);
+    const sentimentCounts = await prisma.sentiment.groupBy({
+      by: ['postId', 'type'],
+      where: { postId: { in: postIds } },
+      _count: { type: true },
+    });
+
+    // Create sentiment map
+    const sentimentMap = new Map<number, { bullish: number; bearish: number }>();
+    sentimentCounts.forEach(s => {
+      const current = sentimentMap.get(s.postId) || { bullish: 0, bearish: 0 };
+      if (s.type === 'bullish') current.bullish = s._count.type;
+      if (s.type === 'bearish') current.bearish = s._count.type;
+      sentimentMap.set(s.postId, current);
+    });
+
+    // Enhance posts with isLiked, tickers, and sentiment data
+    const enhancedPosts = recentPosts.map(post => {
+      const sentiment = sentimentMap.get(post.id) || { bullish: 0, bearish: 0 };
+      return {
+        ...post,
+        isLiked: likedPostIds.has(post.id),
+        tickers: post.tickerMentions.map(tm => tm.ticker),
+        sentiment: {
+          bullish: sentiment.bullish,
+          bearish: sentiment.bearish,
+          total: sentiment.bullish + sentiment.bearish,
+          userVote: userSentimentMap.get(post.id) || null,
+        },
+      };
+    });
 
     // Add cache headers for Vercel Edge Network (cache for 30 seconds, revalidate in background)
     const response = NextResponse.json({
-      posts: recentPosts,
+      posts: enhancedPosts,
       notificationsCount: notifications,
       unreadMessagesCount,
       cachedAt: new Date().toISOString(),

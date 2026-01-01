@@ -51,8 +51,10 @@ export async function GET(req: NextRequest) {
       select: {
         id: true,
         name: true,
+        username: true,
         email: true,
         profileImage: true,
+        subscriptionTier: true,
         _count: {
           select: {
             posts: true,
@@ -67,7 +69,13 @@ export async function GET(req: NextRequest) {
       take: limit,
     });
 
-    return NextResponse.json(users, { status: 200 });
+    // Add isFollowing: false since we excluded followed users
+    const usersWithFollowState = users.map(user => ({
+      ...user,
+      isFollowing: false,
+    }));
+
+    return NextResponse.json(usersWithFollowState, { status: 200 });
   } catch (err) {
     console.error("❌ Error fetching suggested users:", err);
     return NextResponse.json({ error: "Failed to load suggested users" }, { status: 500 });

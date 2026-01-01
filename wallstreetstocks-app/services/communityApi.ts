@@ -335,19 +335,39 @@ export const markAllNotificationsRead = async (userId: number): Promise<any> => 
 // ===== FOLLOWS API =====
 
 export const followUser = async (targetUserId: string, userId: number): Promise<any> => {
-  return apiRequest('/api/follows', {
-    method: 'POST',
-    body: JSON.stringify({ 
-      targetUserId: Number(targetUserId), 
-      userId: Number(userId) 
-    }),
-  });
+  try {
+    console.log('👤 Following user:', targetUserId, 'by user:', userId);
+    const result = await apiRequest('/api/follows', {
+      method: 'POST',
+      body: JSON.stringify({
+        followerId: Number(userId),      // Current user is the follower
+        followingId: Number(targetUserId) // Target user is being followed
+      }),
+    });
+    console.log('👤 Follow result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Error following user:', error);
+    throw error;
+  }
 };
 
 export const unfollowUser = async (targetUserId: string, userId: number): Promise<any> => {
-  return apiRequest(`/api/follows/${targetUserId}?userId=${userId}`, {
-    method: 'DELETE',
-  });
+  try {
+    console.log('👤 Unfollowing user:', targetUserId, 'by user:', userId);
+    const result = await apiRequest('/api/follows', {
+      method: 'DELETE',
+      body: JSON.stringify({
+        followerId: Number(userId),
+        followingId: Number(targetUserId)
+      }),
+    });
+    console.log('👤 Unfollow result:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Error unfollowing user:', error);
+    throw error;
+  }
 };
 
 export const getFollowers = async (userId: string): Promise<any[]> => {
