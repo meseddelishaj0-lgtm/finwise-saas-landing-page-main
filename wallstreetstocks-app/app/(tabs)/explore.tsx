@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { fetchWithTimeout } from "@/utils/performance";
+import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
@@ -291,15 +292,18 @@ const TreasuryRateCard = ({
 };
 
 // Large Header Card Component
-const HeaderCard = ({ 
-  item, 
+const HeaderCard = ({
+  item,
   onPress,
   showSparkline = true,
-}: { 
-  item: ChipData; 
+}: {
+  item: ChipData;
   onPress: () => void;
   showSparkline?: boolean;
 }) => {
+  const priceValue = item.value !== "..." ? Number(item.value) : 0;
+  const changeValue = parseFloat(item.change) || 0;
+
   return (
     <TouchableOpacity
       style={[
@@ -312,14 +316,21 @@ const HeaderCard = ({
       <View style={styles.headerCardTop}>
         <View style={styles.headerCardInfo}>
           <Text style={styles.headerCardSymbol}>{item.name}</Text>
-          <Text style={styles.headerCardPrice}>
-            ${item.value !== "..." ? Number(item.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "..."}
-          </Text>
+          {item.value !== "..." ? (
+            <AnimatedPrice
+              value={priceValue}
+              style={styles.headerCardPrice}
+              flashOnChange={true}
+              decimals={2}
+            />
+          ) : (
+            <Text style={styles.headerCardPrice}>$...</Text>
+          )}
         </View>
         {showSparkline && (
           <View style={styles.headerCardSparkline}>
-            <MiniSparkline 
-              data={item.sparklineData} 
+            <MiniSparkline
+              data={item.sparklineData}
               isPositive={item.isPositive}
               width={40}
               height={22}
@@ -336,12 +347,15 @@ const HeaderCard = ({
           size={10}
           color={item.isPositive ? "#00C853" : "#FF1744"}
         />
-        <Text style={[
-          styles.headerCardChangeText,
-          item.isPositive ? styles.positive : styles.negative
-        ]}>
-          {item.isPositive ? "+" : ""}{item.change}%
-        </Text>
+        <AnimatedChange
+          value={changeValue}
+          style={{
+            ...styles.headerCardChangeText,
+            color: item.isPositive ? "#00C853" : "#FF1744"
+          }}
+          showArrow={false}
+          flashOnChange={true}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -1089,16 +1103,24 @@ export default function Explore() {
           </View>
         </View>
         <View style={styles.itemRight}>
-          <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+          <AnimatedPrice
+            value={item.price}
+            style={styles.itemPrice}
+            flashOnChange={true}
+            decimals={2}
+          />
           <View style={[styles.changeBadge, isPositive ? styles.changeBadgePositive : styles.changeBadgeNegative]}>
             <Ionicons
               name={isPositive ? "arrow-up" : "arrow-down"}
               size={12}
               color={isPositive ? "#00C853" : "#FF1744"}
             />
-            <Text style={[styles.changeText, isPositive ? styles.positive : styles.negative]}>
-              {Math.abs(item.changePercent).toFixed(2)}%
-            </Text>
+            <AnimatedChange
+              value={item.changePercent}
+              style={{ ...styles.changeText, color: isPositive ? "#00C853" : "#FF1744" }}
+              showArrow={false}
+              flashOnChange={true}
+            />
           </View>
         </View>
       </TouchableOpacity>
@@ -1146,7 +1168,10 @@ export default function Explore() {
 
       {/* Header with Search */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Explore</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>Explore</Text>
+          <LiveIndicator />
+        </View>
         <View style={styles.headerRight}>
           {showSearch ? (
             <View style={styles.searchContainer}>
@@ -1575,6 +1600,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#f0f0f0",
   },
   headerTitle: { fontSize: Platform.OS === 'android' ? 22 : 34, fontWeight: "800", color: "#000", letterSpacing: -0.5 },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
   headerRight: { flexDirection: "row", alignItems: "center" },
   searchButton: {
     width: 40,

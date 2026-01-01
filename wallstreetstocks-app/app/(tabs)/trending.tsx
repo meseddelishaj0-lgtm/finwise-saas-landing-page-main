@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
 import { fetchWithTimeout } from "@/utils/performance";
+import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
@@ -124,13 +125,16 @@ const MiniSparkline = ({
 };
 
 // Header Card Component
-const HeaderCard = ({ 
-  item, 
+const HeaderCard = ({
+  item,
   onPress,
-}: { 
-  item: ChipData; 
+}: {
+  item: ChipData;
   onPress: () => void;
 }) => {
+  const priceValue = item.value !== "..." ? Number(item.value) : 0;
+  const changeValue = parseFloat(item.change) || 0;
+
   return (
     <TouchableOpacity
       style={[
@@ -143,13 +147,20 @@ const HeaderCard = ({
       <View style={styles.headerCardTop}>
         <View style={styles.headerCardInfo}>
           <Text style={styles.headerCardSymbol}>{item.name}</Text>
-          <Text style={styles.headerCardPrice}>
-            ${item.value !== "..." ? Number(item.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "..."}
-          </Text>
+          {item.value !== "..." ? (
+            <AnimatedPrice
+              value={priceValue}
+              style={styles.headerCardPrice}
+              flashOnChange={true}
+              decimals={2}
+            />
+          ) : (
+            <Text style={styles.headerCardPrice}>$...</Text>
+          )}
         </View>
         <View style={styles.headerCardSparkline}>
-          <MiniSparkline 
-            data={item.sparklineData} 
+          <MiniSparkline
+            data={item.sparklineData}
             isPositive={item.isPositive}
             width={40}
             height={22}
@@ -165,12 +176,15 @@ const HeaderCard = ({
           size={10}
           color={item.isPositive ? "#00C853" : "#FF1744"}
         />
-        <Text style={[
-          styles.headerCardChangeText,
-          item.isPositive ? styles.positive : styles.negative
-        ]}>
-          {item.isPositive ? "+" : ""}{item.change}%
-        </Text>
+        <AnimatedChange
+          value={changeValue}
+          style={{
+            ...styles.headerCardChangeText,
+            color: item.isPositive ? "#00C853" : "#FF1744"
+          }}
+          showArrow={false}
+          flashOnChange={true}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -571,7 +585,12 @@ export default function Trending() {
         </View>
         <View style={styles.right}>
           {item.price && (
-            <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+            <AnimatedPrice
+              value={item.price}
+              style={styles.price}
+              flashOnChange={true}
+              decimals={2}
+            />
           )}
           <View style={[styles.changeBadge, positive ? styles.changeBadgePositive : styles.changeBadgeNegative]}>
             <Ionicons
@@ -579,9 +598,12 @@ export default function Trending() {
               size={14}
               color={positive ? "#00C853" : "#FF1744"}
             />
-            <Text style={[styles.changeText, { color: positive ? "#00C853" : "#FF1744" }]}>
-              {Math.abs(numChange).toFixed(2)}%
-            </Text>
+            <AnimatedChange
+              value={numChange}
+              style={{ ...styles.changeText, color: positive ? "#00C853" : "#FF1744" }}
+              showArrow={false}
+              flashOnChange={true}
+            />
           </View>
         </View>
       </TouchableOpacity>
@@ -595,10 +617,7 @@ export default function Trending() {
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <Text style={styles.title}>Trending</Text>
-            <View style={styles.liveIndicator}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>Live</Text>
-            </View>
+            <LiveIndicator />
           </View>
         </View>
         <View style={styles.center}>
@@ -618,10 +637,7 @@ export default function Trending() {
         <View style={styles.headerTopRow}>
           <Text style={styles.title}>Trending</Text>
           <View style={styles.headerRight}>
-            <View style={styles.liveIndicator}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>Live</Text>
-            </View>
+            <LiveIndicator />
             <TouchableOpacity style={styles.refreshBtn} onPress={fetchLiveData}>
               <Ionicons name="refresh" size={20} color="#6b7280" />
             </TouchableOpacity>
