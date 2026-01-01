@@ -747,6 +747,8 @@ export default function CommunityPage() {
           name: profileData.name,
           username: profileData.username,
           id: profileData.id,
+          isFollowing: profileData.isFollowing,
+          followers: profileData._count?.followers,
         });
         setSelectedProfile(profileData);
       } else {
