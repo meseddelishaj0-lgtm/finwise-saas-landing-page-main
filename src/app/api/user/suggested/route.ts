@@ -90,7 +90,11 @@ export async function GET(req: NextRequest) {
       isFollowing: followingIds.includes(user.id),
     }));
 
-    return NextResponse.json(usersWithFollowState, { status: 200 });
+    const response = NextResponse.json(usersWithFollowState, { status: 200 });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   } catch (err) {
     console.error("❌ Error fetching suggested users:", err);
     return NextResponse.json({ error: "Failed to load suggested users" }, { status: 500 });
