@@ -27,6 +27,7 @@ import { useSubscription } from '@/context/SubscriptionContext';
 import { useWatchlist } from '@/context/WatchlistContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiCache } from '@/utils/performance';
+import { AnimatedPrice, AnimatedChange, LiveIndicator } from '@/components/AnimatedPrice';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -1348,10 +1349,7 @@ export default function Dashboard() {
         <View style={styles.indicesSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Market Overview</Text>
-            <View style={styles.liveIndicatorContainer}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE</Text>
-            </View>
+            <LiveIndicator />
           </View>
           
           {indicesLoading ? (
@@ -1381,16 +1379,24 @@ export default function Dashboard() {
                     <Text style={styles.indexSymbol}>{index.symbol}</Text>
                   </View>
                   <Text style={styles.indexName} numberOfLines={1}>{index.name}</Text>
-                  <Text style={styles.indexPrice}>${index.price.toFixed(2)}</Text>
+                  <AnimatedPrice
+                    value={index.price}
+                    style={styles.indexPrice}
+                    flashOnChange={true}
+                    decimals={2}
+                  />
                   <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
-                    <Ionicons 
-                      name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'} 
-                      size={12} 
-                      color={index.color} 
+                    <Ionicons
+                      name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'}
+                      size={12}
+                      color={index.color}
                     />
-                    <Text style={[styles.indexChange, { color: index.color }]}>
-                      {index.changePercent >= 0 ? '+' : ''}{index.changePercent.toFixed(2)}%
-                    </Text>
+                    <AnimatedChange
+                      value={index.changePercent}
+                      style={{ ...styles.indexChange, color: index.color }}
+                      showArrow={false}
+                      flashOnChange={true}
+                    />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -1728,9 +1734,14 @@ export default function Dashboard() {
                   </View>
                   
                   <View style={styles.watchlistRowRight}>
-                    <Text style={styles.watchlistRowPrice}>${stock.price.toFixed(2)}</Text>
+                    <AnimatedPrice
+                      value={stock.price}
+                      style={styles.watchlistRowPrice}
+                      flashOnChange={true}
+                      decimals={2}
+                    />
                     <View style={styles.watchlistRowChangeContainer}>
-                      <Ionicons 
+                      <Ionicons
                         name={stock.changePercent >= 0 ? 'arrow-up' : 'arrow-down'} 
                         size={12} 
                         color={stock.color} 
@@ -1845,10 +1856,7 @@ export default function Dashboard() {
         <View style={styles.trendingSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Trending Now</Text>
-            <View style={styles.liveIndicatorContainer}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE</Text>
-            </View>
+            <LiveIndicator />
           </View>
 
           {trendingLoading ? (
@@ -1876,8 +1884,13 @@ export default function Dashboard() {
                     />
                   </View>
                   
-                  <Text style={styles.trendingPrice}>${stock.price.toFixed(2)}</Text>
-                  
+                  <AnimatedPrice
+                    value={stock.price}
+                    style={styles.trendingPrice}
+                    flashOnChange={true}
+                    decimals={2}
+                  />
+
                   <GiftedLineChart
                     data={interpolateSparkline(stock.data.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.98, (stock.price || 100) * 1.02, stock.price || 100], 18).map(value => ({ value }))}
                     width={chartWidth - 10}
@@ -1903,9 +1916,12 @@ export default function Dashboard() {
                     mostNegativeValue={-5}
                   />
                   
-                  <Text style={[styles.trendingChange, { color: stock.color }]}>
-                    {stock.changePercent >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
-                  </Text>
+                  <AnimatedChange
+                    value={stock.changePercent}
+                    style={{ ...styles.trendingChange, color: stock.color }}
+                    showArrow={false}
+                    flashOnChange={true}
+                  />
                 </TouchableOpacity>
               ))}
             </ScrollView>
