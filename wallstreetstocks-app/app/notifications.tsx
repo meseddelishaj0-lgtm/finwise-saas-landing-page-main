@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
@@ -117,12 +117,20 @@ export default function Notifications() {
       case 'reply':
       case 'mention':
         if (notification.post?.id) {
-          router.push(`/post/${notification.post.id}` as any);
+          // Navigate to community tab and open the post modal
+          router.push({
+            pathname: '/(tabs)/community',
+            params: { openPostId: notification.post.id.toString() },
+          } as any);
         }
         break;
       case 'follow':
         if (notification.fromUser?.id) {
-          router.push(`/profile/user/${notification.fromUser.id}` as any);
+          // Navigate to community tab and open user profile
+          router.push({
+            pathname: '/(tabs)/community',
+            params: { openUserId: notification.fromUser.id.toString() },
+          } as any);
         }
         break;
       case 'price_alert':

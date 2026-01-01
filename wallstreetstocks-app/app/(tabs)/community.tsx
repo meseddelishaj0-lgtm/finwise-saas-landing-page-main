@@ -20,7 +20,7 @@ import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/lib/auth';
 import { useUserProfile } from '@/context/UserProfileContext';
@@ -429,10 +429,11 @@ interface Notification {
 
 export default function CommunityPage() {
   const navRouter = useRouter();
+  const searchParams = useLocalSearchParams<{ openPostId?: string; openUserId?: string }>();
   const { user: authUser } = useAuth();
   const { profile: userProfile, getDisplayName: getContextDisplayName } = useUserProfile();
   const { canAccess, withPremiumAccess, isPremium } = usePremiumFeature();
-  
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -1981,6 +1982,76 @@ export default function CommunityPage() {
       setSearchResults([]);
     }
   }, [searchQuery]);
+
+  // Handle deep links from notifications (openPostId, openUserId)
+  useEffect(() => {
+    const handleDeepLink = async () => {
+      // Handle opening a specific post
+      if (searchParams.openPostId) {
+        const postId = parseInt(searchParams.openPostId, 10);
+        console.log('🔗 Deep link: Opening post', postId);
+
+        // First try to find the post in already loaded posts
+        const existingPost = posts.find(p => p.id === postId);
+        if (existingPost) {
+          handleOpenComments(existingPost);
+          // Clear the param to prevent re-opening on re-render
+          navRouter.setParams({ openPostId: undefined } as any);
+          return;
+        }
+
+        // If not found, fetch the post from API
+        try {
+          const response = await fetch(`https://www.wallstreetstocks.ai/api/posts/${postId}`);
+          if (response.ok) {
+            const postData = await response.json();
+            const post: Post = {
+              id: postData.id,
+              title: postData.title,
+              content: postData.content,
+              mediaUrl: postData.mediaUrl,
+              ticker: postData.ticker,
+              imageUrl: postData.imageUrl,
+              createdAt: postData.createdAt,
+              likes: postData._count?.likes || postData.likes || 0,
+              commentCount: postData._count?.comments || postData.commentCount || 0,
+              isLiked: postData.isLiked || false,
+              user: postData.user || { id: postData.userId, name: null, username: null, profileImage: null },
+              userId: postData.userId,
+            };
+            handleOpenComments(post);
+          }
+        } catch (error) {
+          console.error('Error fetching post for deep link:', error);
+        }
+        // Clear the param
+        navRouter.setParams({ openPostId: undefined } as any);
+      }
+
+      // Handle opening a specific user profile
+      if (searchParams.openUserId) {
+        const userId = parseInt(searchParams.openUserId, 10);
+        console.log('🔗 Deep link: Opening user profile', userId);
+
+        try {
+          const response = await fetch(`https://www.wallstreetstocks.ai/api/user/${userId}`);
+          if (response.ok) {
+            const userData = await response.json();
+            handleOpenProfile(userData);
+          }
+        } catch (error) {
+          console.error('Error fetching user for deep link:', error);
+        }
+        // Clear the param
+        navRouter.setParams({ openUserId: undefined } as any);
+      }
+    };
+
+    // Only run when posts are loaded (to check existing posts first)
+    if (!loading && (searchParams.openPostId || searchParams.openUserId)) {
+      handleDeepLink();
+    }
+  }, [searchParams.openPostId, searchParams.openUserId, loading, posts]);
 
   // Helper function to get display name for any user (use current user profile for self)
   const getUserDisplayName = (user: User | null | undefined): string => {
