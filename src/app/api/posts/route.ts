@@ -57,7 +57,6 @@ export async function GET(req: NextRequest) {
     const posts = await freshPrisma.post.findMany({
       where,
       include: {
-        user: { select: { id: true, name: true, email: true, username: true, profileImage: true, karma: true, isVerified: true, subscriptionTier: true } },
         forum: { select: { id: true, title: true, slug: true } },
         _count: { select: { comments: true, likes: true, sentiments: true } },
         tickerMentions: { select: { ticker: true } },
@@ -69,13 +68,32 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    // Fetch fresh user data using raw SQL to bypass Neon replica lag
+    const userIds = [...new Set(posts.map(p => p.userId))];
+    const usersMap = new Map<number, any>();
+
+    if (userIds.length > 0) {
+      const users = await freshPrisma.$queryRaw<any[]>`
+        SELECT id, name, email, username, "profileImage", karma, "isVerified", "subscriptionTier"
+        FROM "User"
+        WHERE id = ANY(${userIds})
+      `;
+      users.forEach(u => usersMap.set(u.id, u));
+    }
+
+    // Attach fresh user data to posts
+    const postsWithUsers = posts.map(post => ({
+      ...post,
+      user: usersMap.get(post.userId) || null,
+    }));
+
     // Get user's likes if currentUserId is provided
     const userLikedPostIds = new Set<number>();
     if (currentUserId) {
       const userLikes = await freshPrisma.like.findMany({
         where: {
           userId: parseInt(currentUserId, 10),
-          postId: { in: posts.map(p => p.id) },
+          postId: { in: postsWithUsers.map(p => p.id) },
         },
         select: { postId: true },
       });
@@ -83,7 +101,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Add sentiment counts and isLiked to each post
-    const postsWithSentiment = await Promise.all(posts.map(async (post) => {
+    const postsWithSentiment = await Promise.all(postsWithUsers.map(async (post) => {
       const sentimentCounts = await freshPrisma.sentiment.groupBy({
         by: ['type'],
         where: { postId: post.id },
