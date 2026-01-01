@@ -7,8 +7,9 @@ neonConfig.poolQueryViaFetch = true
 // Disable connection caching to ensure fresh reads
 neonConfig.fetchConnectionCache = false
 
-// Use the database connection string
-const connectionString = process.env.DATABASE_URL!
+// Use unpooled connection for direct reads (avoids read replica lag)
+// Fall back to pooled if unpooled not available
+const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!
 
 // Create adapter with connection string (NOT Pool for serverless)
 const adapter = new PrismaNeon({ connectionString })
