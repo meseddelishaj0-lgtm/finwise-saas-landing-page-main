@@ -496,12 +496,14 @@ export default function CommunityPage() {
     setSuggestedLoading(true);
     try {
       const userId = getUserId();
+      console.log('👥 Fetching suggested users for userId:', userId);
       const response = await fetch(
         `https://www.wallstreetstocks.ai/api/user/suggested${userId ? `?userId=${userId}` : ''}`
       );
-      
+
       if (response.ok) {
         const users = await response.json();
+        console.log('👥 Suggested users:', users.map((u: any) => ({ id: u.id, name: u.name, followers: u._count?.followers })));
         setSuggestedUsers(users || []);
       } else {
         // Fallback: get active users from posts
@@ -567,6 +569,7 @@ export default function CommunityPage() {
     );
 
     try {
+      console.log('👤 Following user:', { followerId: userId, followingId: targetUserId });
       const response = await fetch(
         `https://www.wallstreetstocks.ai/api/follows`,
         {
@@ -576,11 +579,19 @@ export default function CommunityPage() {
         }
       );
 
+      const result = await response.json();
+      console.log('👤 Follow response:', result);
+
       if (!response.ok) {
-        throw new Error('Failed to follow user');
+        throw new Error(result.error || 'Failed to follow user');
+      }
+
+      // If successfully followed, remove from suggested list (they'll be excluded on next fetch anyway)
+      if (result.action === 'followed') {
+        setSuggestedUsers(prev => prev.filter(user => user.id !== targetUserId));
       }
     } catch (error) {
-      console.error('Error following user:', error);
+      console.error('❌ Error following user:', error);
       // Revert on error
       setSuggestedUsers(prev =>
         prev.map(user =>
