@@ -58,7 +58,7 @@ interface Post {
 export default function PersonalInfoScreen() {
   const router = useRouter();
   const { user: authUser } = useAuth();
-  const { profile: userProfile, loading: profileLoading, refreshProfile, getDisplayName, getUsername, getHandle } = useUserProfile();
+  const { profile: userProfile, loading: profileLoading, getDisplayName, getUsername, getHandle } = useUserProfile();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,10 +72,11 @@ export default function PersonalInfoScreen() {
     return null;
   };
 
-  const fetchUserProfile = async () => {
+  // Fetch posts and local data (but NOT profile - that's handled by UserProfileContext)
+  const fetchUserData = async () => {
     try {
       const userId = getUserId();
-      
+
       // Also load local data as fallback
       const savedLocal = await AsyncStorage.getItem("personalInfo");
       if (savedLocal) {
@@ -89,8 +90,9 @@ export default function PersonalInfoScreen() {
         return;
       }
 
-      // Refresh profile from context
-      await refreshProfile();
+      // NOTE: Do NOT call refreshProfile() here!
+      // UserProfileContext already handles profile loading.
+      // Calling it would overwrite local updates with stale API data.
 
       // Fetch user's posts
       const postsRes = await fetch(`${API_BASE_URL}/posts?userId=${userId}`);
@@ -100,27 +102,44 @@ export default function PersonalInfoScreen() {
         setPosts(Array.isArray(postsData) ? postsData : []);
       }
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("Error fetching user data:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
+  // Only run on initial mount or when user ID changes (login/logout)
   useEffect(() => {
-    fetchUserProfile();
-  }, [authUser]);
+    fetchUserData();
+  }, [authUser?.id]);
 
-  // Refresh when screen comes into focus (e.g., after editing profile)
+  // NOTE: Do NOT refresh profile from API on focus!
+  // The UserProfileContext already has the correct data from local updates.
+  // Fetching from API on focus would overwrite local updates with stale replica data.
+  // Only fetch posts on focus (posts don't have the same replica lag issue for display name)
   useFocusEffect(
     useCallback(() => {
-      fetchUserProfile();
-    }, [authUser])
+      const fetchPosts = async () => {
+        const userId = authUser?.id ? Number(authUser.id) : null;
+        if (!userId) return;
+        try {
+          const postsRes = await fetch(`${API_BASE_URL}/posts?userId=${userId}`);
+          if (postsRes.ok) {
+            const postsData = await postsRes.json();
+            setPosts(Array.isArray(postsData) ? postsData : []);
+          }
+        } catch (error) {
+          console.error("Error fetching posts on focus:", error);
+        }
+      };
+      fetchPosts();
+    }, [authUser?.id])
   );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchUserProfile();
+    fetchUserData();
   }, []);
 
   const pickBannerImage = async () => {

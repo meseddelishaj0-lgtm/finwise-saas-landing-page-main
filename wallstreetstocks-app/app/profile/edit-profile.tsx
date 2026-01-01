@@ -25,8 +25,8 @@ const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
 export default function EditProfile() {
   const router = useRouter();
-  const { user: authUser } = useAuth();
-  const { updateProfile } = useUserProfile();
+  const { user: authUser, setUserData } = useAuth();
+  const { updateProfile: updateUserProfile } = useUserProfile();
   
   // Form State
   const [name, setName] = useState('');
@@ -227,10 +227,12 @@ export default function EditProfile() {
           console.warn('⚠️ Name mismatch after save:', { sent: name.trim(), received: responseData.name });
         }
 
-        // Update the profile context directly with the response data
+        // Update BOTH contexts directly with the response data
         // This avoids read replica lag issues with re-fetching
-        console.log('🔵 Updating profile context with response data...');
-        updateProfile({
+        console.log('🔵 Updating profile contexts with response data...');
+
+        // Update UserProfileContext (used by Profile tab, Community)
+        updateUserProfile({
           name: responseData.name,
           username: responseData.username,
           bio: responseData.bio,
@@ -239,7 +241,16 @@ export default function EditProfile() {
           profileImage: responseData.profileImage,
           bannerImage: responseData.bannerImage,
         });
-        console.log('🔵 Profile context updated');
+
+        // Update Auth context (used by Menu) - direct state update, no API call
+        setUserData({
+          name: responseData.name,
+          username: responseData.username,
+          bio: responseData.bio,
+          profileImage: responseData.profileImage,
+        });
+
+        console.log('🔵 Profile contexts updated');
       } else {
         console.log('🔵 No userId, saving only to local storage');
       }

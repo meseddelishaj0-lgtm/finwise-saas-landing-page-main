@@ -35,6 +35,7 @@ interface AuthState {
   signup: (email: string, password: string, name?: string, username?: string) => Promise<void>;
   socialLogin: (email: string, name?: string, profileImage?: string, provider?: 'google' | 'apple') => Promise<void>;
   updateProfile: (data: ProfileUpdateData) => Promise<void>;
+  setUserData: (data: Partial<User>) => void; // Update user state without API call
   forgotPassword: (email: string) => Promise<{ message: string; devCode?: string }>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -53,6 +54,15 @@ export const useAuth = create<AuthState>()(
 
       setIsNewUser: (value: boolean) => {
         set({ isNewUser: value });
+      },
+
+      // Update user data locally without API call (for sync with other contexts)
+      setUserData: (data: Partial<User>) => {
+        const { user } = get();
+        if (user) {
+          console.log('🔵 Auth: Updating user data locally:', data);
+          set({ user: { ...user, ...data } });
+        }
       },
 
       init: async () => {
