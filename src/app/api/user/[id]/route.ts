@@ -33,40 +33,37 @@ export async function GET(
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
-    // Use Prisma ORM (works better with fresh connection than raw SQL)
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        username: true,
-        bio: true,
-        location: true,
-        website: true,
-        profileImage: true,
-        bannerImage: true,
-        profileComplete: true,
-        createdAt: true,
-        subscriptionTier: true,
-        subscriptionStatus: true,
-        karma: true,
-        isVerified: true,
-        _count: {
-          select: {
-            posts: true,
-            followers: true,
-            following: true,
-            likes: true,
-          },
-        },
-      },
-    });
+    // Use raw SQL to force reading from primary database (bypasses Neon replica lag)
+    const users = await prisma.$queryRaw<any[]>`
+      SELECT
+        id, name, email, username, bio, location, website,
+        "profileImage", "bannerImage", "profileComplete", "createdAt",
+        "subscriptionTier", "subscriptionStatus", karma, "isVerified"
+      FROM "User"
+      WHERE id = ${userId}
+      LIMIT 1
+    `;
 
-    if (!user) {
+    if (!users || users.length === 0) {
       await prisma.$disconnect();
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    const user = users[0];
+
+    // Get counts using raw SQL for consistency
+    const postCount = await prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count FROM "Post" WHERE "userId" = ${userId}
+    `;
+    const followerCount = await prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count FROM "Follow" WHERE "followingId" = ${userId}
+    `;
+    const followingCount = await prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count FROM "Follow" WHERE "followerId" = ${userId}
+    `;
+    const likeCount = await prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*) as count FROM "Like" WHERE "userId" = ${userId}
+    `;
 
     // Check if current user is following this user
     const { searchParams } = new URL(req.url);
@@ -74,22 +71,51 @@ export async function GET(
 
     let isFollowing = false;
     if (currentUserId) {
-      const follow = await prisma.follow.findFirst({
-        where: {
-          followerId: parseInt(currentUserId, 10),
-          followingId: userId,
-        },
-      });
-      isFollowing = !!follow;
+      const followCheck = await prisma.$queryRaw<any[]>`
+        SELECT 1 FROM "Follow"
+        WHERE "followerId" = ${parseInt(currentUserId, 10)}
+        AND "followingId" = ${userId}
+        LIMIT 1
+      `;
+      isFollowing = followCheck.length > 0;
     }
 
-    console.log('📍 GET /api/user/[id] - Fresh data:', { id: user.id, name: user.name, username: user.username });
+    const result = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      bio: user.bio,
+      location: user.location,
+      website: user.website,
+      profileImage: user.profileImage,
+      bannerImage: user.bannerImage,
+      profileComplete: user.profileComplete,
+      createdAt: user.createdAt,
+      subscriptionTier: user.subscriptionTier,
+      subscriptionStatus: user.subscriptionStatus,
+      karma: user.karma,
+      isVerified: user.isVerified,
+      _count: {
+        posts: Number(postCount[0].count),
+        followers: Number(followerCount[0].count),
+        following: Number(followingCount[0].count),
+        likes: Number(likeCount[0].count),
+      },
+      isFollowing,
+    };
+
+    console.log('📍 GET /api/user/[id] - Raw SQL fresh data:', { id: result.id, name: result.name, username: result.username });
 
     await prisma.$disconnect();
-    return NextResponse.json({
-      ...user,
-      isFollowing,
-    }, { status: 200, headers: NO_CACHE_HEADERS });
+    return NextResponse.json(result, {
+      status: 200,
+      headers: {
+        ...NO_CACHE_HEADERS,
+        'Surrogate-Control': 'no-store',
+        'CDN-Cache-Control': 'no-store',
+      }
+    });
   } catch (err) {
     console.error("❌ Error fetching user:", err);
     await prisma.$disconnect();
