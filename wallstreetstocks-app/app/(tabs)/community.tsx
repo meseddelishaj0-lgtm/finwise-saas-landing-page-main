@@ -26,7 +26,6 @@ import { useAuth } from '@/lib/auth';
 import { useUserProfile } from '@/context/UserProfileContext';
 import {
   fetchPosts,
-  fetchHomeFeed,
   createPost,
   searchPosts,
   fetchComments,
@@ -1728,8 +1727,9 @@ export default function CommunityPage() {
   useEffect(() => {
     fetchCurrentUserData();
     fetchUserProfile();
-    loadHomeFeed(); // Uses combined endpoint with Edge Runtime + caching
-  }, [fetchUserProfile, loadHomeFeed]);
+    loadPosts(); // Direct API call to /api/posts
+    loadNotifications(); // Separate call for notifications
+  }, [fetchUserProfile, loadPosts, loadNotifications]);
 
   // Refetch user profile when authUser changes
   useEffect(() => {
@@ -1902,7 +1902,7 @@ export default function CommunityPage() {
             refreshing={refreshing}
             onRefresh={() => {
               setRefreshing(true);
-              loadHomeFeed(); // Combined endpoint for posts + notification count
+              loadPosts(); // Direct API call to /api/posts
               fetchSuggestedUsers();
             }}
             tintColor="#007AFF"
