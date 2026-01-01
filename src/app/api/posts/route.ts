@@ -1,6 +1,6 @@
 // api/posts/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@/generated/prisma/client/client";
+import { PrismaClient, Prisma } from "@/generated/prisma/client/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import prisma from "@/lib/prisma";
 
@@ -73,11 +73,13 @@ export async function GET(req: NextRequest) {
     const usersMap = new Map<number, any>();
 
     if (userIds.length > 0) {
+      // Use Prisma.join for proper array parameter handling in raw SQL
       const users = await freshPrisma.$queryRaw<any[]>`
         SELECT id, name, email, username, "profileImage", karma, "isVerified", "subscriptionTier"
         FROM "User"
-        WHERE id = ANY(${userIds})
+        WHERE id IN (${Prisma.join(userIds)})
       `;
+      console.log('📍 Posts API - Fresh user data:', users.map(u => ({ id: u.id, name: u.name })));
       users.forEach(u => usersMap.set(u.id, u));
     }
 
