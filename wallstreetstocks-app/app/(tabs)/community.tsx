@@ -586,10 +586,8 @@ export default function CommunityPage() {
         throw new Error(result.error || 'Failed to follow user');
       }
 
-      // If successfully followed, remove from suggested list (they'll be excluded on next fetch anyway)
-      if (result.action === 'followed') {
-        setSuggestedUsers(prev => prev.filter(user => user.id !== targetUserId));
-      }
+      // Keep the user in the list with updated follow state (don't remove them)
+      // This provides better UX - user can see who they followed and unfollow if needed
     } catch (error) {
       console.error('❌ Error following user:', error);
       // Revert on error

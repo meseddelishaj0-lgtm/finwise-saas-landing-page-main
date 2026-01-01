@@ -10,21 +10,13 @@ export async function GET(req: NextRequest) {
     const userId = searchParams.get("userId");
     const limit = parseInt(searchParams.get("limit") || "10", 10);
 
-    // Get users that the current user is not following
-    let excludeIds: number[] = [];
-    
-    if (userId) {
-      const currentUserId = parseInt(userId, 10);
-      excludeIds.push(currentUserId);
-      
-      // Get users already being followed
-      const following = await prisma.follow.findMany({
-        where: { followerId: currentUserId },
-        select: { followingId: true },
-      });
-      
-      excludeIds.push(...following.map(f => f.followingId));
-      
+    const currentUserId = userId ? parseInt(userId, 10) : null;
+
+    // Get blocked users to exclude
+    let blockedIds: number[] = [];
+    let followingIds: number[] = [];
+
+    if (currentUserId) {
       // Get blocked users
       const blocked = await prisma.block.findMany({
         where: {
@@ -35,17 +27,30 @@ export async function GET(req: NextRequest) {
         },
         select: { blockerId: true, blockedId: true },
       });
-      
+
       blocked.forEach(b => {
-        excludeIds.push(b.blockerId, b.blockedId);
+        blockedIds.push(b.blockerId, b.blockedId);
       });
+
+      // Get users being followed (to mark isFollowing)
+      const following = await prisma.follow.findMany({
+        where: { followerId: currentUserId },
+        select: { followingId: true },
+      });
+
+      followingIds = following.map(f => f.followingId);
     }
+
+    // Exclude only self and blocked users (NOT followed users)
+    const excludeIds = currentUserId
+      ? [currentUserId, ...blockedIds]
+      : blockedIds;
 
     // Get active users with most followers/posts
     const users = await prisma.user.findMany({
       where: {
         id: {
-          notIn: excludeIds,
+          notIn: excludeIds.length > 0 ? excludeIds : undefined,
         },
       },
       select: {
@@ -69,10 +74,10 @@ export async function GET(req: NextRequest) {
       take: limit,
     });
 
-    // Add isFollowing: false since we excluded followed users
+    // Add isFollowing state for each user
     const usersWithFollowState = users.map(user => ({
       ...user,
-      isFollowing: false,
+      isFollowing: followingIds.includes(user.id),
     }));
 
     return NextResponse.json(usersWithFollowState, { status: 200 });
