@@ -89,30 +89,46 @@ export async function DELETE(
   { params }: { params: { postId: string } }
 ) {
   try {
+    const postId = parseInt(params.postId);
+    let userId: number | null = null;
+
+    // Try session auth first (web)
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (session?.user?.email) {
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email }
+      });
+      if (user) {
+        userId = user.id;
+      }
     }
 
-    const postId = parseInt(params.postId);
+    // Fallback to x-user-id header (mobile app)
+    if (!userId) {
+      const headerUserId = req.headers.get('x-user-id');
+      if (headerUserId) {
+        userId = parseInt(headerUserId, 10);
+      }
+    }
 
-    // Find the user by email
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const post = await prisma.post.findUnique({ where: { id: postId } });
     if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 });
-    
-    if (post.userId !== user.id) {
+
+    if (post.userId !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await prisma.post.delete({ where: { id: postId } });
+    // Delete related records first (comments, likes, etc.)
+    await prisma.$transaction([
+      prisma.comment.deleteMany({ where: { postId } }),
+      prisma.like.deleteMany({ where: { postId } }),
+      prisma.sentiment.deleteMany({ where: { postId } }),
+      prisma.post.delete({ where: { id: postId } }),
+    ]);
 
     return NextResponse.json({ message: "Post deleted successfully" }, { status: 200 });
   } catch (err) {

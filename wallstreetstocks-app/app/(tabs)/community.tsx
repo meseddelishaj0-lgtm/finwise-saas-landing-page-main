@@ -965,6 +965,55 @@ export default function CommunityPage() {
     }
   };
 
+  // Delete post handler
+  const handleDeletePost = async (postId: number) => {
+    const userId = getUserId();
+    if (!userId) {
+      Alert.alert('Error', 'Please log in to delete posts');
+      return;
+    }
+
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(
+                `https://www.wallstreetstocks.ai/api/posts/${postId}`,
+                {
+                  method: 'DELETE',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-id': userId.toString(),
+                  },
+                }
+              );
+
+              if (response.ok) {
+                // Remove from posts list
+                setPosts(prev => prev.filter(p => p.id !== postId));
+                // Remove from profile posts if viewing profile
+                setProfilePosts(prev => prev.filter(p => p.id !== postId));
+                Alert.alert('Success', 'Post deleted successfully');
+              } else {
+                const data = await response.json();
+                Alert.alert('Error', data.error || 'Failed to delete post');
+              }
+            } catch (error) {
+              console.error('Error deleting post:', error);
+              Alert.alert('Error', 'Failed to delete post');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Sentiment voting handler (Bullish/Bearish)
   const handleVoteSentiment = async (postId: number, type: 'bullish' | 'bearish') => {
     const userId = getUserId();
@@ -2230,12 +2279,22 @@ export default function CommunityPage() {
                 <Text style={styles.actionText}>{post._count?.comments || 0}</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => handleSharePost(post)}
               >
                 <Ionicons name="share-outline" size={22} color="#8E8E93" />
               </TouchableOpacity>
+
+              {/* Delete button - only show for own posts */}
+              {post.userId === getUserId() && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => handleDeletePost(post.id)}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         ))}
@@ -2483,10 +2542,10 @@ export default function CommunityPage() {
                       <Text style={styles.profilePostTime}>{formatTimeAgo(post.createdAt)}</Text>
                       <View style={styles.profilePostStats}>
                         <View style={styles.profilePostStat}>
-                          <Ionicons 
-                            name={post.isLiked ? "heart" : "heart-outline"} 
-                            size={16} 
-                            color={post.isLiked ? "#FF3B30" : "#8E8E93"} 
+                          <Ionicons
+                            name={post.isLiked ? "heart" : "heart-outline"}
+                            size={16}
+                            color={post.isLiked ? "#FF3B30" : "#8E8E93"}
                           />
                           <Text style={[
                             styles.profilePostStatText,
@@ -2499,6 +2558,15 @@ export default function CommunityPage() {
                           <Ionicons name="chatbubble-outline" size={16} color="#8E8E93" />
                           <Text style={styles.profilePostStatText}>{post._count?.comments || 0}</Text>
                         </View>
+                        {/* Delete button - only show for own posts */}
+                        {post.userId === getUserId() && (
+                          <TouchableOpacity
+                            style={styles.profilePostStat}
+                            onPress={() => handleDeletePost(post.id)}
+                          >
+                            <Ionicons name="trash-outline" size={16} color="#FF3B30" />
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   </TouchableOpacity>
