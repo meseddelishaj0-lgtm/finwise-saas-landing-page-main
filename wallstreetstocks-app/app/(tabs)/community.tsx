@@ -717,26 +717,19 @@ export default function CommunityPage() {
       return;
     }
 
-    // For other users, fetch from API
-    setSelectedProfile({
-      id: user.id,
-      name: user.name,
-      email: user.email || '',
-      username: user.username,
-      profileImage: user.profileImage,
-      _count: { posts: 0, followers: 0, following: 0 },
-    });
+    // For other users, fetch fresh data from API (don't use passed-in data which may be stale)
+    setSelectedProfile(null); // Clear any old data
     setProfileModal(true);
     setProfileLoading(true);
 
     try {
-      // Use /api/user/:id endpoint which returns fresh data
+      // Use /api/user/:id endpoint which returns fresh data via raw SQL
       const apiUrl = `https://www.wallstreetstocks.ai/api/user/${user.id}?currentUserId=${currentUserId}&t=${Date.now()}`;
-      console.log('🔵 Fetching profile from:', apiUrl);
+      console.log('🔵 Fetching fresh profile from:', apiUrl);
 
       const response = await fetch(apiUrl, {
         headers: {
-          'Cache-Control': 'no-cache',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
         },
       });
@@ -753,7 +746,7 @@ export default function CommunityPage() {
         setSelectedProfile(profileData);
       } else {
         console.log('🔴 Profile fetch failed with status:', response.status);
-        // Fallback to the passed user data
+        // Fallback to the passed user data only if API fails
         setSelectedProfile({
           ...user,
           _count: { posts: 0, followers: 0, following: 0 },
@@ -2627,16 +2620,24 @@ export default function CommunityPage() {
             <View style={{ width: 44 }} />
           </View>
 
-          <ScrollView 
+          <ScrollView
             style={styles.profileContent}
             showsVerticalScrollIndicator={false}
           >
+            {/* Show loading state while fetching fresh profile data */}
+            {!selectedProfile && profileLoading ? (
+              <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={{ marginTop: 12, color: '#666', fontSize: 14 }}>Loading profile...</Text>
+              </View>
+            ) : (
+            <>
             {/* Profile Info Section */}
             <View style={styles.profileInfoSection}>
               <View style={styles.profileAvatarContainer}>
                 <Avatar user={selectedProfile} size={100} />
               </View>
-              
+
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={styles.profileName}>
                   {getUserDisplayName(selectedProfile)}
@@ -2864,6 +2865,8 @@ export default function CommunityPage() {
             </View>
 
             <View style={{ height: 40 }} />
+            </>
+            )}
           </ScrollView>
         </View>
       </Modal>
