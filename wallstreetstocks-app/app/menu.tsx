@@ -36,7 +36,7 @@ type MenuSection = {
 export default function MenuPage() {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
-  const { subscriptionTier } = useSubscription();
+  const { currentTier } = useSubscription();
 
   const handleSignOut = () => {
     Alert.alert(
@@ -79,9 +79,9 @@ export default function MenuPage() {
   };
 
   const getTierBadge = () => {
-    switch (subscriptionTier) {
-      case 'diamond': return { text: 'Diamond', color: '#B9F2FF' };
-      case 'platinum': return { text: 'Platinum', color: '#E5E4E2' };
+    switch (currentTier) {
+      case 'diamond': return { text: 'Diamond', color: '#5856D6' }; // Rich purple - visible on white
+      case 'platinum': return { text: 'Platinum', color: '#8E8E93' }; // Darker gray for contrast
       case 'gold': return { text: 'Gold', color: '#FFD700' };
       default: return { text: 'Free', color: '#8E8E93' };
     }
@@ -303,13 +303,13 @@ export default function MenuPage() {
           <View style={styles.profileRight}>
             <View style={[styles.tierBadge, { backgroundColor: tierBadge.color + '30' }]}>
               <Ionicons
-                name={subscriptionTier === 'free' ? 'person' : 'diamond'}
+                name={!currentTier || currentTier === 'free' ? 'person' : 'diamond'}
                 size={14}
-                color={subscriptionTier === 'free' ? '#8E8E93' : tierBadge.color === '#FFD700' ? '#B8860B' : '#333'}
+                color={!currentTier || currentTier === 'free' ? '#8E8E93' : tierBadge.color === '#FFD700' ? '#B8860B' : '#333'}
               />
               <Text style={[
                 styles.tierBadgeText,
-                { color: subscriptionTier === 'free' ? '#8E8E93' : tierBadge.color === '#FFD700' ? '#B8860B' : '#333' }
+                { color: !currentTier || currentTier === 'free' ? '#8E8E93' : tierBadge.color === '#FFD700' ? '#B8860B' : '#333' }
               ]}>
                 {tierBadge.text}
               </Text>
