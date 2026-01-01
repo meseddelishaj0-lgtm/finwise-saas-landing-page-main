@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@/generated/prisma/client/client";
+import { PrismaClient, Prisma } from "@/generated/prisma/client/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 
 export const dynamic = 'force-dynamic';
@@ -57,32 +57,39 @@ export async function GET(req: NextRequest) {
       ? [currentUserId, ...blockedIds]
       : blockedIds;
 
-    // Get active users with most followers/posts
-    const users = await prisma.user.findMany({
-      where: {
-        id: {
-          notIn: excludeIds.length > 0 ? excludeIds : undefined,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        username: true,
-        email: true,
-        profileImage: true,
-        subscriptionTier: true,
+    // Use transaction with raw SQL to force reading from primary (bypasses Neon replica lag)
+    const users = await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT 1`; // Force primary connection
+
+      // Raw SQL query to get users with follower counts
+      const rawUsers = await tx.$queryRaw<any[]>`
+        SELECT
+          u.id,
+          u.name,
+          u.username,
+          u.email,
+          u."profileImage",
+          u."subscriptionTier",
+          (SELECT COUNT(*) FROM "Follow" WHERE "followingId" = u.id) as "followerCount",
+          (SELECT COUNT(*) FROM "Post" WHERE "userId" = u.id) as "postCount"
+        FROM "User" u
+        ${excludeIds.length > 0 ? Prisma.sql`WHERE u.id NOT IN (${Prisma.join(excludeIds)})` : Prisma.empty}
+        ORDER BY "followerCount" DESC, "postCount" DESC
+        LIMIT ${limit}
+      `;
+
+      return rawUsers.map(u => ({
+        id: u.id,
+        name: u.name,
+        username: u.username,
+        email: u.email,
+        profileImage: u.profileImage,
+        subscriptionTier: u.subscriptionTier,
         _count: {
-          select: {
-            posts: true,
-            followers: true,
-          },
+          followers: Number(u.followerCount),
+          posts: Number(u.postCount),
         },
-      },
-      orderBy: [
-        { followers: { _count: 'desc' } },
-        { posts: { _count: 'desc' } },
-      ],
-      take: limit,
+      }));
     });
 
     // Add isFollowing state for each user

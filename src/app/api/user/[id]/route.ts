@@ -33,16 +33,21 @@ export async function GET(
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
-    // Use raw SQL to force reading from primary database (bypasses Neon replica lag)
-    const users = await prisma.$queryRaw<any[]>`
-      SELECT
-        id, name, email, username, bio, location, website,
-        "profileImage", "bannerImage", "profileComplete", "createdAt",
-        "subscriptionTier", "subscriptionStatus", karma, "isVerified"
-      FROM "User"
-      WHERE id = ${userId}
-      LIMIT 1
-    `;
+    // Use transaction to force reading from primary database (bypasses Neon replica lag)
+    const users = await prisma.$transaction(async (tx) => {
+      // Force a write operation first to ensure we're on the primary
+      await tx.$executeRaw`SELECT 1`;
+
+      return await tx.$queryRaw<any[]>`
+        SELECT
+          id, name, email, username, bio, location, website,
+          "profileImage", "bannerImage", "profileComplete", "createdAt",
+          "subscriptionTier", "subscriptionStatus", karma, "isVerified"
+        FROM "User"
+        WHERE id = ${userId}
+        LIMIT 1
+      `;
+    });
 
     if (!users || users.length === 0) {
       await prisma.$disconnect();

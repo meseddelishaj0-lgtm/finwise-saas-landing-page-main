@@ -68,17 +68,20 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Fetch fresh user data using raw SQL to bypass Neon replica lag
+    // Fetch fresh user data using transaction to force reading from primary
     const userIds = [...new Set(posts.map(p => p.userId))];
     const usersMap = new Map<number, any>();
 
     if (userIds.length > 0) {
-      // Use Prisma.join for proper array parameter handling in raw SQL
-      const users = await freshPrisma.$queryRaw<any[]>`
-        SELECT id, name, email, username, "profileImage", karma, "isVerified", "subscriptionTier"
-        FROM "User"
-        WHERE id IN (${Prisma.join(userIds)})
-      `;
+      // Use transaction to ensure we read from primary (bypasses Neon replica lag)
+      const users = await freshPrisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT 1`; // Force primary connection
+        return await tx.$queryRaw<any[]>`
+          SELECT id, name, email, username, "profileImage", karma, "isVerified", "subscriptionTier"
+          FROM "User"
+          WHERE id IN (${Prisma.join(userIds)})
+        `;
+      });
       console.log('📍 Posts API - Fresh user data:', users.map(u => ({ id: u.id, name: u.name })));
       users.forEach(u => usersMap.set(u.id, u));
     }
