@@ -110,7 +110,7 @@ const helpCategories: Category[] = [
       {
         id: 'sub-1',
         question: 'What are the Premium subscription tiers?',
-        answer: `WallStreetStocks offers three Premium tiers:\n\n**🥇 Gold - $9.99/month**\n• Ad-free experience\n• Extended stock screener filters\n• Basic AI analysis\n• Priority support\n\n**💎 Platinum - $19.99/month**\n• Everything in Gold\n• Advanced AI insights\n• Insider trading alerts\n• Real-time notifications\n• Exclusive community features\n\n**👑 Diamond - $29.99/month**\n• Everything in Platinum\n• Premium stock picks\n• 1-on-1 support\n• Early access to new features\n• Custom alerts & reports\n\nAll plans include a 7-day free trial for new subscribers.`,
+        answer: `WallStreetStocks offers three Premium tiers:\n\n**🥇 Gold - $9.99/month**\n• 5 Expert Stock Picks\n• Ad-free experience\n• Basic watchlists\n• Community access\n• Daily market summary\n\n**💎 Platinum - $19.99/month** ⭐ Most Popular\n• Everything in Gold\n• 8 Expert Stock Picks\n• Screener Filters & Premium Presets\n• Real-time price alerts\n• Unlimited watchlists\n• Priority support\n\n**👑 Diamond - $29.99/month**\n• Everything in Platinum\n• 15 Expert Stock Picks\n• AI Tools (Analyzer, Compare, Forecast)\n• AI Financial Assistant\n• Insider Trading Data\n• Research Reports & Portfolio Tools\n\nAll plans include a 7-day free trial for new subscribers.`,
         category: 'subscription',
         tags: ['premium', 'subscription', 'pricing', 'gold', 'platinum', 'diamond'],
       },
