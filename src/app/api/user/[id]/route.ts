@@ -33,12 +33,19 @@ export async function GET(
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
-    // Use transaction to force reading from primary database (bypasses Neon replica lag)
-    const users = await prisma.$transaction(async (tx) => {
-      // Force a write operation first to ensure we're on the primary
+    // Check if current user is following this user
+    const { searchParams } = new URL(req.url);
+    const currentUserId = searchParams.get("currentUserId");
+    const parsedCurrentUserId = currentUserId ? parseInt(currentUserId, 10) : null;
+
+    // Use a SINGLE transaction for ALL queries to ensure data consistency
+    // This prevents stale reads from different connections
+    const result = await prisma.$transaction(async (tx) => {
+      // Force primary connection
       await tx.$executeRaw`SELECT 1`;
 
-      return await tx.$queryRaw<any[]>`
+      // Get user data
+      const users = await tx.$queryRaw<any[]>`
         SELECT
           id, name, email, username, bio, location, website,
           "profileImage", "bannerImage", "profileComplete", "createdAt",
@@ -47,70 +54,71 @@ export async function GET(
         WHERE id = ${userId}
         LIMIT 1
       `;
+
+      if (!users || users.length === 0) {
+        return null;
+      }
+
+      const user = users[0];
+
+      // Get all counts in a single query for efficiency
+      const counts = await tx.$queryRaw<[{
+        postCount: bigint;
+        followerCount: bigint;
+        followingCount: bigint;
+        likeCount: bigint;
+      }]>`
+        SELECT
+          (SELECT COUNT(*) FROM "Post" WHERE "userId" = ${userId}) as "postCount",
+          (SELECT COUNT(*) FROM "Follow" WHERE "followingId" = ${userId}) as "followerCount",
+          (SELECT COUNT(*) FROM "Follow" WHERE "followerId" = ${userId}) as "followingCount",
+          (SELECT COUNT(*) FROM "Like" WHERE "userId" = ${userId}) as "likeCount"
+      `;
+
+      // Check if current user is following this user (inside same transaction)
+      let isFollowing = false;
+      if (parsedCurrentUserId) {
+        const followCheck = await tx.$queryRaw<any[]>`
+          SELECT 1 FROM "Follow"
+          WHERE "followerId" = ${parsedCurrentUserId}
+          AND "followingId" = ${userId}
+          LIMIT 1
+        `;
+        isFollowing = followCheck.length > 0;
+      }
+
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        bio: user.bio,
+        location: user.location,
+        website: user.website,
+        profileImage: user.profileImage,
+        bannerImage: user.bannerImage,
+        profileComplete: user.profileComplete,
+        createdAt: user.createdAt,
+        subscriptionTier: user.subscriptionTier,
+        subscriptionStatus: user.subscriptionStatus,
+        karma: user.karma,
+        isVerified: user.isVerified,
+        _count: {
+          posts: Number(counts[0].postCount),
+          followers: Number(counts[0].followerCount),
+          following: Number(counts[0].followingCount),
+          likes: Number(counts[0].likeCount),
+        },
+        isFollowing,
+      };
     });
 
-    if (!users || users.length === 0) {
+    if (!result) {
       await prisma.$disconnect();
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const user = users[0];
-
-    // Get counts using raw SQL for consistency
-    const postCount = await prisma.$queryRaw<[{ count: bigint }]>`
-      SELECT COUNT(*) as count FROM "Post" WHERE "userId" = ${userId}
-    `;
-    const followerCount = await prisma.$queryRaw<[{ count: bigint }]>`
-      SELECT COUNT(*) as count FROM "Follow" WHERE "followingId" = ${userId}
-    `;
-    const followingCount = await prisma.$queryRaw<[{ count: bigint }]>`
-      SELECT COUNT(*) as count FROM "Follow" WHERE "followerId" = ${userId}
-    `;
-    const likeCount = await prisma.$queryRaw<[{ count: bigint }]>`
-      SELECT COUNT(*) as count FROM "Like" WHERE "userId" = ${userId}
-    `;
-
-    // Check if current user is following this user
-    const { searchParams } = new URL(req.url);
-    const currentUserId = searchParams.get("currentUserId");
-
-    let isFollowing = false;
-    if (currentUserId) {
-      const followCheck = await prisma.$queryRaw<any[]>`
-        SELECT 1 FROM "Follow"
-        WHERE "followerId" = ${parseInt(currentUserId, 10)}
-        AND "followingId" = ${userId}
-        LIMIT 1
-      `;
-      isFollowing = followCheck.length > 0;
-    }
-
-    const result = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      username: user.username,
-      bio: user.bio,
-      location: user.location,
-      website: user.website,
-      profileImage: user.profileImage,
-      bannerImage: user.bannerImage,
-      profileComplete: user.profileComplete,
-      createdAt: user.createdAt,
-      subscriptionTier: user.subscriptionTier,
-      subscriptionStatus: user.subscriptionStatus,
-      karma: user.karma,
-      isVerified: user.isVerified,
-      _count: {
-        posts: Number(postCount[0].count),
-        followers: Number(followerCount[0].count),
-        following: Number(followingCount[0].count),
-        likes: Number(likeCount[0].count),
-      },
-      isFollowing,
-    };
-
-    console.log('📍 GET /api/user/[id] - Raw SQL fresh data:', { id: result.id, name: result.name, username: result.username });
+    console.log('📍 GET /api/user/[id] - All data in single txn:', { id: result.id, name: result.name, followers: result._count.followers, isFollowing: result.isFollowing });
 
     await prisma.$disconnect();
     return NextResponse.json(result, {

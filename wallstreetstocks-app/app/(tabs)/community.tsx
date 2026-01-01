@@ -687,7 +687,12 @@ export default function CommunityPage() {
     const currentUserId = getUserId();
     const isOwnProfile = user.id === currentUserId;
 
-    console.log('🔵 Opening profile for user:', user.id, 'passed data:', user.name, '@' + user.username, 'isOwnProfile:', isOwnProfile);
+    // Capture the passed-in user's follow state (from optimistic updates in suggestedUsers)
+    // This is more reliable than the Map which might have stale closure reference
+    const passedInFollowState = (user as any).isFollowing;
+    const passedInFollowerCount = (user as any)._count?.followers;
+
+    console.log('🔵 Opening profile for user:', user.id, 'passed data:', user.name, '@' + user.username, 'isOwnProfile:', isOwnProfile, 'passedInFollowState:', passedInFollowState);
 
     // For own profile, use UserProfileContext data (avoids replica lag)
     if (isOwnProfile && userProfile) {
@@ -755,7 +760,34 @@ export default function CommunityPage() {
           isFollowing: profileData.isFollowing,
           followers: profileData._count?.followers,
         });
-        setSelectedProfile(profileData);
+
+        // Use passed-in follow state from optimistic updates (more reliable than Map)
+        // This preserves the UI state from suggestedUsers list
+        if (passedInFollowState !== undefined && passedInFollowState !== profileData.isFollowing) {
+          console.log('🔵 Applying passed-in follow state:', passedInFollowState, 'API had:', profileData.isFollowing);
+          const followerDiff = passedInFollowState ? 1 : -1;
+          setSelectedProfile({
+            ...profileData,
+            isFollowing: passedInFollowState,
+            _count: {
+              ...profileData._count,
+              followers: Math.max(0, (profileData._count?.followers || 0) + followerDiff),
+            },
+          });
+        } else if (passedInFollowerCount !== undefined && passedInFollowerCount !== profileData._count?.followers) {
+          // Follower count was optimistically updated
+          console.log('🔵 Applying passed-in follower count:', passedInFollowerCount, 'API had:', profileData._count?.followers);
+          setSelectedProfile({
+            ...profileData,
+            isFollowing: passedInFollowState ?? profileData.isFollowing,
+            _count: {
+              ...profileData._count,
+              followers: passedInFollowerCount,
+            },
+          });
+        } else {
+          setSelectedProfile(profileData);
+        }
       } else {
         console.log('🔴 Profile fetch failed with status:', response.status);
         // Fallback to the passed user data only if API fails

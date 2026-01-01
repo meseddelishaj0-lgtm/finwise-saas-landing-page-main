@@ -23,43 +23,39 @@ export async function GET(req: NextRequest) {
 
     const currentUserId = userId ? parseInt(userId, 10) : null;
 
-    // Get blocked users to exclude
-    let blockedIds: number[] = [];
-    let followingIds: number[] = [];
-
-    if (currentUserId) {
-      // Get blocked users
-      const blocked = await prisma.block.findMany({
-        where: {
-          OR: [
-            { blockerId: currentUserId },
-            { blockedId: currentUserId },
-          ],
-        },
-        select: { blockerId: true, blockedId: true },
-      });
-
-      blocked.forEach(b => {
-        blockedIds.push(b.blockerId, b.blockedId);
-      });
-
-      // Get users being followed using raw query to bypass any caching
-      const followingRaw = await prisma.$queryRaw<{ followingId: number }[]>`
-        SELECT "followingId" FROM "Follow" WHERE "followerId" = ${currentUserId}
-      `;
-
-      followingIds = followingRaw.map(f => f.followingId);
-      console.log(`👥 User ${currentUserId} following (raw):`, followingIds);
-    }
-
-    // Exclude only self and blocked users (NOT followed users)
-    const excludeIds = currentUserId
-      ? [currentUserId, ...blockedIds]
-      : blockedIds;
-
-    // Use transaction with raw SQL to force reading from primary (bypasses Neon replica lag)
-    const users = await prisma.$transaction(async (tx) => {
+    // Use a SINGLE transaction for ALL queries to ensure data consistency
+    // This prevents stale reads from different connections
+    const usersWithFollowState = await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT 1`; // Force primary connection
+
+      // Get blocked users to exclude
+      let blockedIds: number[] = [];
+      let followingIds: number[] = [];
+
+      if (currentUserId) {
+        // Get blocked users (inside transaction)
+        const blocked = await tx.$queryRaw<{ blockerId: number; blockedId: number }[]>`
+          SELECT "blockerId", "blockedId" FROM "Block"
+          WHERE "blockerId" = ${currentUserId} OR "blockedId" = ${currentUserId}
+        `;
+
+        blocked.forEach(b => {
+          blockedIds.push(b.blockerId, b.blockedId);
+        });
+
+        // Get users being followed (inside transaction for consistency)
+        const followingRaw = await tx.$queryRaw<{ followingId: number }[]>`
+          SELECT "followingId" FROM "Follow" WHERE "followerId" = ${currentUserId}
+        `;
+
+        followingIds = followingRaw.map(f => f.followingId);
+        console.log(`👥 User ${currentUserId} following (raw, in txn):`, followingIds);
+      }
+
+      // Exclude only self and blocked users (NOT followed users)
+      const excludeIds = currentUserId
+        ? [currentUserId, ...blockedIds]
+        : blockedIds;
 
       // Raw SQL query to get users with follower counts
       const rawUsers = await tx.$queryRaw<any[]>`
@@ -78,6 +74,7 @@ export async function GET(req: NextRequest) {
         LIMIT ${limit}
       `;
 
+      // Map users with isFollowing state (all in same transaction)
       return rawUsers.map(u => ({
         id: u.id,
         name: u.name,
@@ -89,14 +86,9 @@ export async function GET(req: NextRequest) {
           followers: Number(u.followerCount),
           posts: Number(u.postCount),
         },
+        isFollowing: followingIds.includes(u.id),
       }));
     });
-
-    // Add isFollowing state for each user
-    const usersWithFollowState = users.map(user => ({
-      ...user,
-      isFollowing: followingIds.includes(user.id),
-    }));
 
     const response = NextResponse.json(usersWithFollowState, { status: 200 });
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

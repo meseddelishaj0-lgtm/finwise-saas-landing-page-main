@@ -130,7 +130,12 @@ export async function GET(req: NextRequest) {
     }));
 
     await freshPrisma.$disconnect();
-    return NextResponse.json(postsWithSentiment, { status: 200 });
+
+    const response = NextResponse.json(postsWithSentiment, { status: 200 });
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    return response;
   } catch (err) {
     console.error("❌ Error fetching posts:", err);
     await freshPrisma.$disconnect();
