@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,9 @@ import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 // FMP API Key - move to env in production
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const FILTER_ITEM_WIDTH = (SCREEN_WIDTH - 60) / 2; // 20px padding on each side + 20px gap
 
 // Types
 interface Stock {
@@ -304,6 +308,130 @@ const buildScreenerParams = (filters: Record<string, string>): ScreenerParams =>
       case 'Medium (0.8-1.2)': params.betaMoreThan = 0.8; params.betaLowerThan = 1.2; break;
       case 'High (1.2-1.5)': params.betaMoreThan = 1.2; params.betaLowerThan = 1.5; break;
       case 'Very High (>1.5)': params.betaMoreThan = 1.5; break;
+    }
+  }
+
+  // Price/Book ratio
+  if (filters.priceToBook) {
+    switch (filters.priceToBook) {
+      case 'Under 1': params.priceToBookLessThan = 1; break;
+      case '1 - 2': params.priceToBookMoreThan = 1; params.priceToBookLessThan = 2; break;
+      case '2 - 3': params.priceToBookMoreThan = 2; params.priceToBookLessThan = 3; break;
+      case '3 - 5': params.priceToBookMoreThan = 3; params.priceToBookLessThan = 5; break;
+      case 'Over 5': params.priceToBookMoreThan = 5; break;
+    }
+  }
+
+  // Price/Sales ratio
+  if (filters.priceToSales) {
+    switch (filters.priceToSales) {
+      case 'Under 1': params.priceToSalesLessThan = 1; break;
+      case '1 - 2': params.priceToSalesMoreThan = 1; params.priceToSalesLessThan = 2; break;
+      case '2 - 5': params.priceToSalesMoreThan = 2; params.priceToSalesLessThan = 5; break;
+      case '5 - 10': params.priceToSalesMoreThan = 5; params.priceToSalesLessThan = 10; break;
+      case 'Over 10': params.priceToSalesMoreThan = 10; break;
+    }
+  }
+
+  // EV/EBITDA ratio
+  if (filters.evToEbitda) {
+    switch (filters.evToEbitda) {
+      case 'Under 5': params.evToEbitdaLessThan = 5; break;
+      case '5 - 10': params.evToEbitdaMoreThan = 5; params.evToEbitdaLessThan = 10; break;
+      case '10 - 15': params.evToEbitdaMoreThan = 10; params.evToEbitdaLessThan = 15; break;
+      case '15 - 20': params.evToEbitdaMoreThan = 15; params.evToEbitdaLessThan = 20; break;
+      case 'Over 20': params.evToEbitdaMoreThan = 20; break;
+    }
+  }
+
+  // ROA (Return on Assets)
+  if (filters.roa) {
+    switch (filters.roa) {
+      case 'Over 15%': params.returnOnAssetsMoreThan = 15; break;
+      case '10% - 15%': params.returnOnAssetsMoreThan = 10; params.returnOnAssetsLessThan = 15; break;
+      case '5% - 10%': params.returnOnAssetsMoreThan = 5; params.returnOnAssetsLessThan = 10; break;
+      case '0% - 5%': params.returnOnAssetsMoreThan = 0; params.returnOnAssetsLessThan = 5; break;
+      case 'Negative': params.returnOnAssetsLessThan = 0; break;
+    }
+  }
+
+  // Gross Margin
+  if (filters.grossMargin) {
+    switch (filters.grossMargin) {
+      case 'Over 70%': params.grossMarginMoreThan = 70; break;
+      case '50% - 70%': params.grossMarginMoreThan = 50; params.grossMarginLessThan = 70; break;
+      case '30% - 50%': params.grossMarginMoreThan = 30; params.grossMarginLessThan = 50; break;
+      case '15% - 30%': params.grossMarginMoreThan = 15; params.grossMarginLessThan = 30; break;
+      case 'Under 15%': params.grossMarginLessThan = 15; break;
+    }
+  }
+
+  // Operating Margin
+  if (filters.operatingMargin) {
+    switch (filters.operatingMargin) {
+      case 'Over 30%': params.operatingMarginMoreThan = 30; break;
+      case '20% - 30%': params.operatingMarginMoreThan = 20; params.operatingMarginLessThan = 30; break;
+      case '10% - 20%': params.operatingMarginMoreThan = 10; params.operatingMarginLessThan = 20; break;
+      case '0% - 10%': params.operatingMarginMoreThan = 0; params.operatingMarginLessThan = 10; break;
+      case 'Negative': params.operatingMarginLessThan = 0; break;
+    }
+  }
+
+  // Net Margin
+  if (filters.netMargin) {
+    switch (filters.netMargin) {
+      case 'Over 25%': params.netMarginMoreThan = 25; break;
+      case '15% - 25%': params.netMarginMoreThan = 15; params.netMarginLessThan = 25; break;
+      case '10% - 15%': params.netMarginMoreThan = 10; params.netMarginLessThan = 15; break;
+      case '5% - 10%': params.netMarginMoreThan = 5; params.netMarginLessThan = 10; break;
+      case '0% - 5%': params.netMarginMoreThan = 0; params.netMarginLessThan = 5; break;
+      case 'Negative': params.netMarginLessThan = 0; break;
+    }
+  }
+
+  // Debt/Equity
+  if (filters.debtToEquity) {
+    switch (filters.debtToEquity) {
+      case 'No Debt': params.debtToEquityLessThan = 0.01; break;
+      case 'Under 0.5': params.debtToEquityLessThan = 0.5; break;
+      case '0.5 - 1': params.debtToEquityMoreThan = 0.5; params.debtToEquityLessThan = 1; break;
+      case '1 - 2': params.debtToEquityMoreThan = 1; params.debtToEquityLessThan = 2; break;
+      case 'Over 2': params.debtToEquityMoreThan = 2; break;
+    }
+  }
+
+  // Current Ratio
+  if (filters.currentRatio) {
+    switch (filters.currentRatio) {
+      case 'Over 3': params.currentRatioMoreThan = 3; break;
+      case '2 - 3': params.currentRatioMoreThan = 2; params.currentRatioLessThan = 3; break;
+      case '1.5 - 2': params.currentRatioMoreThan = 1.5; params.currentRatioLessThan = 2; break;
+      case '1 - 1.5': params.currentRatioMoreThan = 1; params.currentRatioLessThan = 1.5; break;
+      case 'Under 1': params.currentRatioLessThan = 1; break;
+    }
+  }
+
+  // Revenue Growth
+  if (filters.revenueGrowth) {
+    switch (filters.revenueGrowth) {
+      case 'Over 50%': params.revenueGrowthMoreThan = 50; break;
+      case '25% - 50%': params.revenueGrowthMoreThan = 25; params.revenueGrowthLessThan = 50; break;
+      case '15% - 25%': params.revenueGrowthMoreThan = 15; params.revenueGrowthLessThan = 25; break;
+      case '5% - 15%': params.revenueGrowthMoreThan = 5; params.revenueGrowthLessThan = 15; break;
+      case '0% - 5%': params.revenueGrowthMoreThan = 0; params.revenueGrowthLessThan = 5; break;
+      case 'Negative': params.revenueGrowthLessThan = 0; break;
+    }
+  }
+
+  // EPS Growth
+  if (filters.epsGrowth) {
+    switch (filters.epsGrowth) {
+      case 'Over 50%': params.epsGrowthMoreThan = 50; break;
+      case '25% - 50%': params.epsGrowthMoreThan = 25; params.epsGrowthLessThan = 50; break;
+      case '15% - 25%': params.epsGrowthMoreThan = 15; params.epsGrowthLessThan = 25; break;
+      case '5% - 15%': params.epsGrowthMoreThan = 5; params.epsGrowthLessThan = 15; break;
+      case '0% - 5%': params.epsGrowthMoreThan = 0; params.epsGrowthLessThan = 5; break;
+      case 'Negative': params.epsGrowthLessThan = 0; break;
     }
   }
 
@@ -1035,49 +1163,97 @@ export default function Screener() {
       </Modal>
 
       {/* All Filters Modal */}
-      <Modal visible={showAllFilters} transparent animationType="slide" onRequestClose={() => setShowAllFilters(false)}>
-        <View style={styles.fullModalContainer}>
+      <Modal visible={showAllFilters} animationType="slide" onRequestClose={() => setShowAllFilters(false)}>
+        <SafeAreaView style={styles.fullModalContainer} edges={['top', 'bottom']}>
           <View style={styles.fullModalHeader}>
-            <TouchableOpacity onPress={() => setShowAllFilters(false)}><Ionicons name="close" size={28} color="#000" /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowAllFilters(false)} style={styles.fullModalCloseBtn}>
+              <Ionicons name="close" size={28} color="#000" />
+            </TouchableOpacity>
             <Text style={styles.fullModalTitle}>All Filters</Text>
-            <TouchableOpacity onPress={() => { setFilters({}); }}><Text style={styles.resetText}>Reset</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => { setFilters({}); }} style={styles.fullModalResetBtn}>
+              <Text style={styles.resetText}>Reset</Text>
+            </TouchableOpacity>
           </View>
-          <ScrollView style={styles.fullModalContent}>
+          <ScrollView
+            style={styles.fullModalContent}
+            contentContainerStyle={styles.fullModalScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
             {Object.entries(categoryLabels).map(([category, label]) => (
               <View key={category} style={styles.filterSection}>
                 <Text style={styles.filterSectionTitle}>{label}</Text>
                 <View style={styles.filterGrid}>
                   {filterCategories.filter(f => f.category === category).map(filter => {
                     const isActive = filters[filter.id] && filters[filter.id] !== 'Any';
+                    const isLocked = filter.isPremium && !hasPlatinumAccess;
                     return (
                       <TouchableOpacity
                         key={filter.id}
                         style={[
                           styles.filterGridItem,
+                          { width: FILTER_ITEM_WIDTH },
                           isActive && styles.filterGridItemActive,
-                          filter.isPremium && styles.filterGridItemPremium
+                          isLocked && styles.filterGridItemPremium
                         ]}
-                        onPress={() => filter.isPremium ? handlePremiumPress() : setActiveFilterModal(filter)}
+                        onPress={() => isLocked ? handlePremiumPress() : setActiveFilterModal(filter)}
+                        activeOpacity={0.7}
                       >
-                        <View style={styles.filterGridHeader}>
-                          <Ionicons name={filter.icon as any} size={18} color={isActive ? '#007AFF' : filter.isPremium ? '#FFD700' : '#666'} />
-                          {filter.isPremium && <Ionicons name="lock-closed" size={12} color="#FFD700" style={{ marginLeft: 4 }} />}
+                        <View style={styles.filterGridIconRow}>
+                          <View style={[
+                            styles.filterGridIconBg,
+                            isActive && styles.filterGridIconBgActive,
+                            isLocked && styles.filterGridIconBgPremium
+                          ]}>
+                            <Ionicons
+                              name={filter.icon as any}
+                              size={20}
+                              color={isActive ? '#007AFF' : isLocked ? '#FFD700' : '#666'}
+                            />
+                          </View>
+                          {isLocked && (
+                            <View style={styles.filterLockBadge}>
+                              <Ionicons name="lock-closed" size={10} color="#FFD700" />
+                            </View>
+                          )}
                         </View>
-                        <Text style={[styles.filterGridLabel, isActive && styles.filterGridLabelActive, filter.isPremium && styles.filterGridLabelPremium]} numberOfLines={1}>{filter.label}</Text>
-                        {isActive && <Text style={styles.filterGridValue} numberOfLines={1}>{filters[filter.id]}</Text>}
+                        <Text
+                          style={[
+                            styles.filterGridLabel,
+                            isActive && styles.filterGridLabelActive,
+                            isLocked && styles.filterGridLabelPremium
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {filter.label}
+                        </Text>
+                        {isActive ? (
+                          <View style={styles.filterActiveValue}>
+                            <Text style={styles.filterGridValue} numberOfLines={1}>
+                              {filters[filter.id]}
+                            </Text>
+                            <Ionicons name="checkmark-circle" size={14} color="#007AFF" />
+                          </View>
+                        ) : (
+                          <Text style={styles.filterGridHint}>Tap to select</Text>
+                        )}
                       </TouchableOpacity>
                     );
                   })}
                 </View>
               </View>
             ))}
+            <View style={{ height: 20 }} />
           </ScrollView>
           <View style={styles.fullModalFooter}>
-            <TouchableOpacity style={styles.applyButton} onPress={() => { setShowAllFilters(false); fetchData(null, filters); }}>
+            <TouchableOpacity
+              style={[styles.applyButton, activeFilterCount === 0 && styles.applyButtonDisabled]}
+              onPress={() => { setShowAllFilters(false); fetchData(null, filters); }}
+            >
+              <Ionicons name="search" size={20} color="#fff" />
               <Text style={styles.applyButtonText}>Apply Filters ({activeFilterCount})</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </SafeAreaView>
       </Modal>
 
       {/* Heat Map Modal */}
@@ -1231,24 +1407,78 @@ const styles = StyleSheet.create({
   modalOptionSelected: { backgroundColor: '#F8F9FF', marginHorizontal: -20, paddingHorizontal: 20 },
   modalOptionText: { fontSize: 16, color: '#333' },
   modalOptionTextSelected: { color: '#007AFF', fontWeight: '600' },
-  fullModalContainer: { flex: 1, backgroundColor: '#fff' },
-  fullModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  fullModalContainer: { flex: 1, backgroundColor: '#F8F9FA' },
+  fullModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#fff',
+  },
+  fullModalCloseBtn: { padding: 4 },
+  fullModalResetBtn: { padding: 4 },
   fullModalTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
   resetText: { fontSize: 16, color: '#FF3B30', fontWeight: '600' },
-  fullModalContent: { flex: 1, paddingHorizontal: 20 },
-  filterSection: { marginTop: 24 },
+  fullModalContent: { flex: 1 },
+  fullModalScrollContent: { paddingHorizontal: 20, paddingBottom: 20 },
+  filterSection: { marginTop: 20 },
   filterSectionTitle: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 12 },
-  filterGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  filterGridItem: { width: '48%', backgroundColor: '#F8F9FA', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E5E5E5' },
+  filterGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
+  filterGridItem: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: '#E5E5E5',
+    minHeight: 100,
+  },
   filterGridItemActive: { borderColor: '#007AFF', backgroundColor: '#F0F7FF' },
   filterGridItemPremium: { borderColor: '#FFD700', backgroundColor: '#FFFEF5' },
-  filterGridHeader: { flexDirection: 'row', alignItems: 'center' },
-  filterGridLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginTop: 8 },
+  filterGridIconRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  filterGridIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#F5F5F5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterGridIconBgActive: { backgroundColor: '#E8F2FF' },
+  filterGridIconBgPremium: { backgroundColor: '#FFF9E6' },
+  filterLockBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#FFF9E6',
+    borderRadius: 8,
+    padding: 2,
+  },
+  filterGridLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 4 },
   filterGridLabelActive: { color: '#007AFF' },
   filterGridLabelPremium: { color: '#B8860B' },
-  filterGridValue: { fontSize: 12, color: '#007AFF', marginTop: 4 },
-  fullModalFooter: { padding: 20, borderTopWidth: 1, borderTopColor: '#F0F0F0' },
-  applyButton: { backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+  filterActiveValue: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  filterGridValue: { fontSize: 12, color: '#007AFF', fontWeight: '500', flex: 1 },
+  filterGridHint: { fontSize: 11, color: '#999' },
+  fullModalFooter: {
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 10 : 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+    backgroundColor: '#fff',
+  },
+  applyButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  applyButtonDisabled: { backgroundColor: '#B0B0B0' },
   applyButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   fab: { position: 'absolute', bottom: 100, left: 20, right: 20, borderRadius: 16, overflow: 'hidden', shadowColor: '#007AFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
   fabGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 8 },

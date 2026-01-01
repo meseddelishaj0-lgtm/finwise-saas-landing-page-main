@@ -135,7 +135,8 @@ export default function ChartTab() {
   const [creatingAlert, setCreatingAlert] = useState(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  // Start at 1 (visible) to prevent black screen - skeleton handles loading state
+  const fadeAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Calculate price change based on timeframe
@@ -428,12 +429,6 @@ export default function ChartTab() {
       setError('No symbol provided');
       return;
     }
-
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
 
     // Pulse animation
     Animated.loop(
