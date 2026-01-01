@@ -9,6 +9,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
+    console.log('📋 Profile GET request for userId:', userId, 'at', new Date().toISOString());
+
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
@@ -43,6 +45,13 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    console.log('📋 Profile data for user', userId, ':', {
+      name: user.name,
+      username: user.username,
+      tier: user.subscriptionTier,
+      posts: user._count?.posts
+    });
 
     // Prevent caching to ensure fresh data
     return NextResponse.json(user, {
