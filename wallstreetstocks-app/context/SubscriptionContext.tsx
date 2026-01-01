@@ -114,6 +114,34 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     }));
   }, []);
 
+  // Sync subscription tier to database
+  const syncSubscriptionToDatabase = useCallback(async (
+    userId: string,
+    tier: string,
+    productId: string | null,
+    expirationDate: string | null
+  ) => {
+    try {
+      const response = await fetch(`${API_URL}/api/subscription/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          tier,
+          productId,
+          expirationDate,
+        }),
+      });
+      if (response.ok) {
+        console.log('✅ Subscription tier synced to database:', tier);
+      } else {
+        console.warn('⚠️ Failed to sync subscription tier to database');
+      }
+    } catch (error) {
+      console.warn('⚠️ Error syncing subscription to database:', error);
+    }
+  }, []);
+
   // Initialize RevenueCat
   const initialize = useCallback(async (userId?: string) => {
     try {
@@ -139,6 +167,18 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       // status now includes activeEntitlementId for better tier detection
       const currentTier = getTierFromEntitlementOrProduct(status.activeEntitlementId || null, status.activeSubscription);
 
+      // Auto-sync subscription tier to database on initialization
+      // This ensures badges show correctly for existing subscribers
+      if (userId && status.isPremium && currentTier && currentTier !== 'free') {
+        console.log('🔄 Auto-syncing subscription tier on init:', currentTier);
+        syncSubscriptionToDatabase(
+          userId,
+          currentTier,
+          status.activeSubscription,
+          status.expirationDate
+        ).catch(err => console.warn('Init sync error (non-blocking):', err));
+      }
+
       setState(prev => ({
         ...prev,
         isInitialized: true,
@@ -158,7 +198,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         error: error.message || 'Failed to initialize',
       }));
     }
-  }, [handleCustomerInfoUpdate]);
+  }, [handleCustomerInfoUpdate, syncSubscriptionToDatabase]);
 
   // Identify user (call after login)
   const handleIdentifyUser = useCallback(async (userId: string) => {
@@ -171,7 +211,18 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const entitlement = activeEntitlementId ? activeEntitlements[activeEntitlementId] : null;
       const activeSubscription = entitlement?.productIdentifier || null;
       const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
-      
+
+      // Auto-sync subscription tier to database on login
+      if (currentTier && currentTier !== 'free' && entitlement) {
+        console.log('🔄 Auto-syncing subscription tier on login:', currentTier);
+        syncSubscriptionToDatabase(
+          userId,
+          currentTier,
+          activeSubscription,
+          entitlement.expirationDate || null
+        ).catch(err => console.warn('Login sync error (non-blocking):', err));
+      }
+
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -189,7 +240,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         error: error.message || 'Failed to identify user',
       }));
     }
-  }, []);
+  }, [syncSubscriptionToDatabase]);
 
   // Log out user
   const handleLogOut = useCallback(async () => {
@@ -277,6 +328,18 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
             currentTier = backendStatus.backendTier || 'gold';
           }
         }
+
+        // Auto-sync subscription tier to database if user has premium
+        // This ensures badges show correctly in community
+        if (isPremium && currentTier && currentTier !== 'free') {
+          console.log('🔄 Auto-syncing subscription tier to database:', currentTier);
+          await syncSubscriptionToDatabase(
+            userId,
+            currentTier,
+            status.activeSubscription,
+            status.expirationDate
+          );
+        }
       }
 
       setState(prev => ({
@@ -297,7 +360,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         error: error.message || 'Failed to refresh status',
       }));
     }
-  }, [checkBackendSubscription]);
+  }, [checkBackendSubscription, syncSubscriptionToDatabase]);
 
   // Load available offerings/packages
   const loadOfferings = useCallback(async () => {
@@ -318,34 +381,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         isLoading: false,
         error: error.message || 'Failed to load offerings',
       }));
-    }
-  }, []);
-
-  // Sync subscription tier to database
-  const syncSubscriptionToDatabase = useCallback(async (
-    userId: string,
-    tier: string,
-    productId: string | null,
-    expirationDate: string | null
-  ) => {
-    try {
-      const response = await fetch(`${API_URL}/api/subscription/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          tier,
-          productId,
-          expirationDate,
-        }),
-      });
-      if (response.ok) {
-        console.log('✅ Subscription tier synced to database:', tier);
-      } else {
-        console.warn('⚠️ Failed to sync subscription tier to database');
-      }
-    } catch (error) {
-      console.warn('⚠️ Error syncing subscription to database:', error);
     }
   }, []);
 
