@@ -19,7 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
 import { useUserProfile } from "@/context/UserProfileContext";
-import { SubscriptionBadgeProfile } from "@/components/SubscriptionBadge";
+import { SubscriptionBadgeInline } from "@/components/SubscriptionBadge";
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -297,7 +297,10 @@ export default function PersonalInfoScreen() {
 
         {/* Profile Info */}
         <View style={styles.profileInfo}>
-          <Text style={styles.userName}>{displayName}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.userName}>{displayName}</Text>
+            <SubscriptionBadgeInline tier={userProfile?.subscriptionTier as any} />
+          </View>
           <Text style={styles.userHandle}>@{displayUsername}</Text>
 
           {/* Bio */}
@@ -348,9 +351,6 @@ export default function PersonalInfoScreen() {
               <Text style={styles.statLabel}>Likes</Text>
             </TouchableOpacity>
           </View>
-
-          {/* Subscription Badge */}
-          <SubscriptionBadgeProfile tier={userProfile?.subscriptionTier as any} />
         </View>
 
         {/* Tabs */}
