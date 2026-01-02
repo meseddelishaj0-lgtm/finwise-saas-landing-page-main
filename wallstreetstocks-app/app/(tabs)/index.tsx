@@ -28,7 +28,7 @@ import { useWatchlist } from '@/context/WatchlistContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiCache } from '@/utils/performance';
 import { fetchQuotesWithCache } from '@/services/quoteService';
-import { getFromMemory, CACHE_KEYS } from '@/utils/memoryCache';
+import { priceStore } from '@/stores/priceStore';
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from '@/components/AnimatedPrice';
 
 const { width } = Dimensions.get('window');
@@ -391,13 +391,26 @@ export default function Dashboard() {
       const data = await fetchBatchQuotes(symbols);
 
       if (data && Array.isArray(data)) {
+        // Update global price store with fetched data
+        priceStore.setQuotes(data.map((item: any) => ({
+          symbol: item.symbol,
+          price: item.price || 0,
+          change: item.change || 0,
+          changePercent: item.changesPercentage || 0,
+          name: nameMap[item.symbol] || item.name || item.symbol,
+        })));
+
         const updated = symbols.map(symbol => {
           const item = data.find((d: any) => d.symbol === symbol);
+          // Check global store for potentially newer price
+          const storeQuote = priceStore.getQuote(symbol);
+          const price = storeQuote?.price || item?.price || 0;
+
           if (item) {
             return {
               symbol: item.symbol,
               name: nameMap[item.symbol] || item.symbol,
-              price: item.price || 0,
+              price: price,
               change: item.change || 0,
               changePercent: item.changesPercentage || 0,
               color: (item.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30'
@@ -406,10 +419,10 @@ export default function Dashboard() {
           return {
             symbol,
             name: nameMap[symbol] || symbol,
-            price: 0,
-            change: 0,
-            changePercent: 0,
-            color: '#34C759'
+            price: storeQuote?.price || 0,
+            change: storeQuote?.change || 0,
+            changePercent: storeQuote?.changePercent || 0,
+            color: (storeQuote?.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30'
           };
         });
         setMajorIndices(updated);
@@ -432,11 +445,20 @@ export default function Dashboard() {
       const data = await res.json();
 
       if (data && Array.isArray(data)) {
+        // Update global price store with trending data
+        priceStore.setQuotes(data.slice(0, 6).map((stock: any) => ({
+          symbol: stock.symbol,
+          price: stock.price || 0,
+          change: stock.change || 0,
+          changePercent: stock.changesPercentage || 0,
+          name: stock.name,
+        })));
+
         const trendingData = await Promise.all(
           data.slice(0, 6).map(async (stock: any, idx: number) => {
-            // Check memory cache for chart-synced price
-            const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(stock.symbol), 5 * 60 * 1000);
-            const price = cachedQuote?._chartSynced ? cachedQuote.price : (stock.price || 0);
+            // Check global price store for chart-synced price
+            const storeQuote = priceStore.getQuote(stock.symbol);
+            const price = storeQuote?.price || stock.price || 0;
 
             try {
               // Use 1-minute intervals for more real-time data

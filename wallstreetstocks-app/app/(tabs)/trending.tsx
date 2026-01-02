@@ -22,6 +22,7 @@ import { fetchWithTimeout } from "@/utils/performance";
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
 import { fetchQuotesWithCache } from "@/services/quoteService";
 import { fetchSparklines } from "@/services/sparklineService";
+import { priceStore } from "@/stores/priceStore";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
@@ -533,17 +534,27 @@ export default function Trending() {
           cleaned = json
             .filter((item: any) => item?.symbol && item.changesPercentage !== undefined)
             .map((item: any) => {
+              // Check global price store for chart-synced price
+              const storeQuote = priceStore.getQuote(item.symbol);
               const cached = cachedQuotes.find((c: any) => c.symbol === item.symbol);
               return {
                 symbol: item.symbol,
                 companyName: item.companyName || item.name || "Unknown",
-                changesPercentage: cached?.changesPercentage ?? item.changesPercentage,
-                price: cached?.price ?? item.price,
+                changesPercentage: storeQuote?.changePercent ?? cached?.changesPercentage ?? item.changesPercentage,
+                price: storeQuote?.price ?? cached?.price ?? item.price,
               };
             })
             .slice(0, 50);
         }
       }
+
+      // Update global price store with fetched data
+      priceStore.setQuotes(cleaned.map(item => ({
+        symbol: item.symbol,
+        price: typeof item.price === 'number' ? item.price : 0,
+        changePercent: typeof item.changesPercentage === 'number' ? item.changesPercentage : parseFloat(item.changesPercentage) || 0,
+        name: item.companyName,
+      })));
 
       setData(cleaned);
     } catch (err: any) {

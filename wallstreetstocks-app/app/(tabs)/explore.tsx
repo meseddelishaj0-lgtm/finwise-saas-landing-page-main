@@ -22,7 +22,7 @@ import { fetchWithTimeout } from "@/utils/performance";
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
 import { fetchQuotesWithCache } from "@/services/quoteService";
 import { fetchSparklines } from "@/services/sparklineService";
-import { getFromMemory, CACHE_KEYS } from "@/utils/memoryCache";
+import { priceStore } from "@/stores/priceStore";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
@@ -829,10 +829,19 @@ export default function Explore() {
             const quoteRes = await fetchWithTimeout(`${BASE_URL}/quote/${etfSymbols.join(",")}?apikey=${FMP_API_KEY}`, { timeout: 15000 });
             const quoteData = await quoteRes.json();
             if (Array.isArray(quoteData)) {
+              // Update global price store
+              priceStore.setQuotes(quoteData.map((item: any) => ({
+                symbol: item.symbol,
+                price: item.price || 0,
+                change: item.change || 0,
+                changePercent: item.changesPercentage || 0,
+                name: item.name,
+              })));
+
               cleaned = quoteData.map((item: any) => {
-                // Check cache for chart-synced price
-                const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(item.symbol), 5 * 60 * 1000);
-                const price = cachedQuote?._chartSynced ? cachedQuote.price : (item.price || 0);
+                // Check global price store for chart-synced price
+                const storeQuote = priceStore.getQuote(item.symbol);
+                const price = storeQuote?.price || item.price || 0;
                 return {
                   symbol: item.symbol || "N/A",
                   name: item.name || item.symbol || "Unknown",
@@ -858,14 +867,23 @@ export default function Explore() {
         }
       }
 
-      // Merge with cached chart-synced prices (5 min TTL)
+      // Merge with global price store (prioritizes chart-synced prices)
       const mergedData = cleaned.map(item => {
-        const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(item.symbol), 5 * 60 * 1000);
-        if (cachedQuote?._chartSynced && cachedQuote.price) {
-          return { ...item, price: cachedQuote.price };
+        const storeQuote = priceStore.getQuote(item.symbol);
+        if (storeQuote?.price) {
+          return { ...item, price: storeQuote.price };
         }
         return item;
       });
+
+      // Update price store with fetched data
+      priceStore.setQuotes(mergedData.map(item => ({
+        symbol: item.symbol,
+        price: item.price,
+        change: item.change,
+        changePercent: item.changePercent,
+        name: item.name,
+      })));
 
       setData(mergedData);
     } catch (err: any) {

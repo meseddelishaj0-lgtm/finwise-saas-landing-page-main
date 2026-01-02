@@ -19,6 +19,7 @@ import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFromMemory, setToMemory, CACHE_KEYS } from '../../../utils/memoryCache';
+import { priceStore } from '../../../stores/priceStore';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -218,18 +219,34 @@ export default function ChartTab() {
         setLastUpdated(new Date());
         setError(null);
 
-        // Check if we have a chart-synced price in memory cache
+        // Check if we have a chart-synced price in the global store
         // If so, preserve it and only update other quote fields
+        const storeQuote = priceStore.getQuote(cleanSymbol);
+        const priceToUse = storeQuote?.price || q.price;
+
+        // Update global price store
+        priceStore.setQuote({
+          symbol: cleanSymbol,
+          price: priceToUse,
+          change: q.change,
+          changePercent: q.changesPercentage,
+          name: q.name,
+          previousClose: q.previousClose,
+          open: q.open,
+          high: q.dayHigh,
+          low: q.dayLow,
+          volume: q.volume,
+        });
+
+        // Also update memory cache for backward compatibility
         const existingCache = getFromMemory<any>(CACHE_KEYS.quote(cleanSymbol));
         if (existingCache?._chartSynced) {
-          // Preserve chart-synced price, update other fields
           setToMemory(CACHE_KEYS.quote(cleanSymbol), {
             ...q,
-            price: existingCache.price, // Keep chart-synced price
+            price: existingCache.price,
             _chartSynced: true,
           });
         } else {
-          // No chart-synced price, use FMP quote price
           setToMemory(CACHE_KEYS.quote(cleanSymbol), q);
         }
         // Also save to AsyncStorage for persistence
@@ -265,7 +282,15 @@ export default function ChartTab() {
             symbol: cleanSymbol,
             _chartSynced: true,
           });
-          console.log(`📊 Chart synced (cached) quote price for ${cleanSymbol}: $${latestPrice}`);
+          // Update global price store (single source of truth)
+          priceStore.setQuote({
+            symbol: cleanSymbol,
+            price: latestPrice,
+            change: existingQuote.change,
+            changePercent: existingQuote.changesPercentage || existingQuote.changePercent,
+            name: existingQuote.name,
+          });
+          console.log(`📊 Chart synced price for ${cleanSymbol}: $${latestPrice}`);
         }
       }
     };
