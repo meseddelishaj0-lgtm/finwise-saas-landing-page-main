@@ -275,6 +275,7 @@ export default function Dashboard() {
     { symbol: 'TLT', name: '20+ Yr Treasury', price: 0, change: 0, changePercent: 0, color: '#34C759' },
   ]);
   const [indicesLoading, setIndicesLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Live Trending
   const [trending, setTrending] = useState<any[]>([]);
@@ -423,6 +424,7 @@ export default function Dashboard() {
           };
         });
         setMajorIndices(updated);
+        setLastUpdated(new Date());
       }
     } catch (err) {
       console.error('Market chips fetch error:', err);
@@ -1349,7 +1351,14 @@ export default function Dashboard() {
         <View style={styles.indicesSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Market Overview</Text>
-            <LiveIndicator />
+            <View style={styles.liveStatusContainer}>
+              <LiveIndicator />
+              {lastUpdated && (
+                <Text style={styles.lastUpdatedText}>
+                  {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </Text>
+              )}
+            </View>
           </View>
           
           {indicesLoading ? (
@@ -2541,6 +2550,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Platform.OS === 'android' ? 10 : 16,
+  },
+  liveStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  lastUpdatedText: {
+    fontSize: 10,
+    color: '#8E8E93',
+    fontWeight: '500',
   },
   sectionTitle: {
     fontSize: Platform.OS === 'android' ? 16 : 22,
