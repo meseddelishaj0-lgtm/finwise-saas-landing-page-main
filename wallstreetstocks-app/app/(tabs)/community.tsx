@@ -2123,10 +2123,17 @@ export default function CommunityPage() {
   };
 
   // Avatar Component - optimized with expo-image caching
+  // Uses local userProfile data for current user to ensure fresh profile image
   const Avatar = ({ user, size = 44, onPress }: { user: User | null | undefined; size?: number; onPress?: () => void }) => {
     const color = getAvatarColor(user?.id || 0);
     const initials = getUserInitials(user);
-    const avatarImage = user?.image || user?.profileImage;
+
+    // For the current user, prefer userProfile/authUser data (has fresh profileImage)
+    // This fixes the issue where API returns stale/null profileImage after login/logout
+    const isCurrentUser = user?.id && (user.id === getUserId());
+    const avatarImage = isCurrentUser
+      ? (userProfile?.profileImage || authUser?.profileImage || user?.image || user?.profileImage)
+      : (user?.image || user?.profileImage);
 
     const avatarContent = avatarImage ? (
       <Image

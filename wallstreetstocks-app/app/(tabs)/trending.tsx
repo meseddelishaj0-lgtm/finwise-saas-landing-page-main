@@ -23,6 +23,7 @@ import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/Anima
 import { fetchQuotesWithCache } from "@/services/quoteService";
 import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
+import { InlineAdBanner } from "@/components/AdBanner";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
@@ -748,6 +749,7 @@ export default function Trending() {
             <Text style={styles.emptyText}>No data available</Text>
           </View>
         }
+        ListFooterComponent={<InlineAdBanner />}
       />
     </View>
   );

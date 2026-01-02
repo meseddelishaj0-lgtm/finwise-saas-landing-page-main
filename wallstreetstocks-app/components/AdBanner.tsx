@@ -18,13 +18,16 @@ interface AdBannerProps {
   style?: any;
 }
 
+// Premium tiers that should not see ads
+const PREMIUM_TIERS = ['gold', 'platinum', 'diamond'];
+
 export function AdBanner({ size = BannerAdSize.ANCHORED_ADAPTIVE_BANNER, style }: AdBannerProps) {
-  const { isPremium } = useSubscription();
+  const { isPremium, currentTier } = useSubscription();
   const [adLoaded, setAdLoaded] = useState(false);
   const [adError, setAdError] = useState(false);
 
-  // Don't show ads to premium users
-  if (isPremium) {
+  // Don't show ads to premium users (gold, platinum, diamond)
+  if (isPremium || (currentTier && PREMIUM_TIERS.includes(currentTier.toLowerCase()))) {
     return null;
   }
 
