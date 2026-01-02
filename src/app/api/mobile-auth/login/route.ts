@@ -81,7 +81,10 @@ export async function POST(request: NextRequest) {
         name: user.name,
         username: user.username,
         bio: user.bio,
+        location: user.location,
+        website: user.website,
         profileImage: user.profileImage,
+        bannerImage: user.bannerImage,
         profileComplete: user.profileComplete,
       },
     });

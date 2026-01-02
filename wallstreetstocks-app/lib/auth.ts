@@ -120,16 +120,20 @@ export const useAuth = create<AuthState>()(
           await SecureStore.setItemAsync(TOKEN_KEY, data.token);
           await AsyncStorage.setItem('authToken', data.token);
           
-          set({ 
-            user: { 
+          set({
+            user: {
               id: data.user.id.toString(),
               email: data.user.email,
               name: data.user.name,
               username: data.user.username || undefined,
               profileImage: data.user.profileImage || undefined,
+              bannerImage: data.user.bannerImage || undefined,
+              bio: data.user.bio || undefined,
+              location: data.user.location || undefined,
+              website: data.user.website || undefined,
             },
             token: data.token,
-            loading: false 
+            loading: false
           });
 
           // Store userId for community pages
@@ -177,16 +181,20 @@ export const useAuth = create<AuthState>()(
           await SecureStore.setItemAsync(TOKEN_KEY, data.token);
           await AsyncStorage.setItem('authToken', data.token);
           
-          set({ 
-            user: { 
+          set({
+            user: {
               id: data.user.id.toString(),
               email: data.user.email,
               name: data.user.name,
               username: data.user.username || undefined,
               profileImage: data.user.profileImage || undefined,
+              bannerImage: data.user.bannerImage || undefined,
+              bio: data.user.bio || undefined,
+              location: data.user.location || undefined,
+              website: data.user.website || undefined,
             },
             token: data.token,
-            loading: false 
+            loading: false
           });
 
           // Store userId for community pages
@@ -238,14 +246,17 @@ export const useAuth = create<AuthState>()(
           // Check if this is a new user (no username set or isNewUser flag from API)
           const isNewUser = data.isNewUser || !data.user.username || !data.user.profileComplete;
           
-          set({ 
-            user: { 
+          set({
+            user: {
               id: data.user.id.toString(),
               email: data.user.email,
               name: data.user.name,
               username: data.user.username || undefined,
               profileImage: data.user.profileImage || undefined,
+              bannerImage: data.user.bannerImage || undefined,
               bio: data.user.bio || undefined,
+              location: data.user.location || undefined,
+              website: data.user.website || undefined,
               profileComplete: data.user.profileComplete || false,
             },
             token: data.token,
@@ -311,14 +322,17 @@ export const useAuth = create<AuthState>()(
           // Handle both response formats: { user: {...} } or direct user object
           const updatedUser = result.user || result;
           
-          // Update local user state
-          set({ 
-            user: { 
+          // Update local user state with all profile fields
+          set({
+            user: {
               ...user,
               name: updatedUser.name || data.name || user.name,
               username: updatedUser.username || data.username || user.username,
-              bio: updatedUser.bio || data.bio || user.bio,
-              profileImage: updatedUser.profileImage || user.profileImage,
+              bio: updatedUser.bio ?? data.bio ?? user.bio,
+              location: updatedUser.location ?? data.location ?? user.location,
+              website: updatedUser.website ?? data.website ?? user.website,
+              profileImage: updatedUser.profileImage || data.profileImage || user.profileImage,
+              bannerImage: updatedUser.bannerImage || data.bannerImage || user.bannerImage,
               profileComplete: updatedUser.profileComplete ?? data.profileComplete ?? true,
             },
             isNewUser: false,
@@ -389,16 +403,21 @@ export const useAuth = create<AuthState>()(
           // Auto-login after password reset
           await SecureStore.setItemAsync(TOKEN_KEY, data.token);
           await AsyncStorage.setItem('authToken', data.token);
-          
-          set({ 
-            user: { 
+
+          set({
+            user: {
               id: data.user.id.toString(),
               email: data.user.email,
               name: data.user.name,
+              username: data.user.username || undefined,
               profileImage: data.user.profileImage || undefined,
+              bannerImage: data.user.bannerImage || undefined,
+              bio: data.user.bio || undefined,
+              location: data.user.location || undefined,
+              website: data.user.website || undefined,
             },
             token: data.token,
-            loading: false 
+            loading: false
           });
 
           console.log('Password reset complete!');

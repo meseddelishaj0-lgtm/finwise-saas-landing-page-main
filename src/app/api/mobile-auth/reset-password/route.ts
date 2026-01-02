@@ -83,6 +83,13 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         name: user.name,
+        username: user.username,
+        bio: user.bio,
+        location: user.location,
+        website: user.website,
+        profileImage: user.profileImage,
+        bannerImage: user.bannerImage,
+        profileComplete: user.profileComplete,
       },
     });
   } catch (error) {
