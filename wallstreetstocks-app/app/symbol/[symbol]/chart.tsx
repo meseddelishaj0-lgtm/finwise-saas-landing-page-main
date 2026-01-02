@@ -241,6 +241,23 @@ export default function ChartTab() {
     const cacheKey = `${CHART_CACHE_PREFIX}${cleanSymbol}_${timeframe}`;
     const cacheTTL = CACHE_TTL[timeframe];
 
+    // Helper to update quote cache with latest chart price (for home screen sync)
+    const syncQuoteFromChartData = (chartData: ChartDataPoint[]) => {
+      if (timeframe === '1D' && chartData.length > 0) {
+        const latestPrice = chartData[chartData.length - 1]?.value;
+        if (latestPrice) {
+          const existingQuote = getFromMemory<any>(CACHE_KEYS.quote(cleanSymbol)) || {};
+          setToMemory(CACHE_KEYS.quote(cleanSymbol), {
+            ...existingQuote,
+            price: latestPrice,
+            symbol: cleanSymbol,
+            _chartSynced: true,
+          });
+          console.log(`📊 Chart synced (cached) quote price for ${cleanSymbol}: $${latestPrice}`);
+        }
+      }
+    };
+
     // Try MEMORY cache first (synchronous - instant!)
     let memCached: ChartDataPoint[] | null = null;
     try {
@@ -248,6 +265,8 @@ export default function ChartTab() {
       if (memCached && memCached.length > 0) {
         setChartData(memCached);
         setLoading(false);
+        // Sync quote cache immediately so home screen has latest price
+        syncQuoteFromChartData(memCached);
         // Continue to fetch fresh data in background
       }
     } catch (e) {
@@ -265,6 +284,8 @@ export default function ChartTab() {
         }));
         setChartData(restoredData);
         setToMemory(CACHE_KEYS.chart(cleanSymbol, timeframe), restoredData); // Populate memory cache
+        // Sync quote cache so home screen has latest price
+        syncQuoteFromChartData(restoredData);
         setLoading(false);
       } else if (showLoadingSpinner) {
         setLoading(true);
@@ -424,6 +445,8 @@ export default function ChartTab() {
         setToMemory(CACHE_KEYS.chart(cleanSymbol, timeframe), formatted);
         // Also save to AsyncStorage for persistence
         await setCachedData(cacheKey, formatted);
+        // Sync quote cache so home screen picks up same price
+        syncQuoteFromChartData(formatted);
       } else if (!memCached) {
         // Only show error if we don't have any cached data
         setError('No data available');

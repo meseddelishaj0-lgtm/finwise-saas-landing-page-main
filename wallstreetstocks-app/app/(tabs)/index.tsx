@@ -196,9 +196,10 @@ async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
 
     // Merge with memory cache - prefer cached prices from charts (they're more recent)
     const mergedQuotes = quotes.map((quote: any) => {
-      const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(quote.symbol));
+      // First check quote cache (updated by chart page)
+      const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(quote.symbol), 60000); // 60s TTL
       if (cachedQuote?.price) {
-        // Use cached price from chart page if available (more recent)
+        console.log(`📈 Using cached quote price for ${quote.symbol}: $${cachedQuote.price}`);
         return {
           ...quote,
           price: cachedQuote.price,
@@ -206,6 +207,21 @@ async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
           changesPercentage: cachedQuote.changesPercentage ?? quote.changesPercentage,
         };
       }
+
+      // Also check chart data cache - use last point as price
+      const cachedChart = getFromMemory<any[]>(CACHE_KEYS.chart(quote.symbol, '1D'), 60000);
+      if (cachedChart && Array.isArray(cachedChart) && cachedChart.length > 0) {
+        const lastPoint = cachedChart[cachedChart.length - 1];
+        const lastPrice = lastPoint?.value;
+        if (lastPrice && typeof lastPrice === 'number') {
+          console.log(`📊 Using cached chart price for ${quote.symbol}: $${lastPrice}`);
+          return {
+            ...quote,
+            price: lastPrice,
+          };
+        }
+      }
+
       return quote;
     });
 
