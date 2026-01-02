@@ -1,14 +1,17 @@
 // components/AdBanner.tsx
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { useSubscription } from '../context/SubscriptionContext';
 import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
 
-// Production ad unit ID
-const PRODUCTION_AD_UNIT_ID = 'ca-app-pub-7939235723023664/3423124622';
+// Production ad unit IDs (platform-specific)
+const IOS_AD_UNIT_ID = 'ca-app-pub-7939235723023664/3423124622';
+const ANDROID_AD_UNIT_ID = 'ca-app-pub-7939235723023664/6596082877';
 
 // Use test ads in development, production ads in release
-const adUnitId = __DEV__ ? TestIds.ADAPTIVE_BANNER : PRODUCTION_AD_UNIT_ID;
+const adUnitId = __DEV__
+  ? TestIds.ADAPTIVE_BANNER
+  : Platform.OS === 'ios' ? IOS_AD_UNIT_ID : ANDROID_AD_UNIT_ID;
 
 interface AdBannerProps {
   size?: BannerAdSize;
