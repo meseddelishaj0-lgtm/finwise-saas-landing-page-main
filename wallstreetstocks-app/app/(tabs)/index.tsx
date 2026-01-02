@@ -30,6 +30,7 @@ import { apiCache } from '@/utils/performance';
 import { fetchQuotesWithCache } from '@/services/quoteService';
 import { priceStore } from '@/stores/priceStore';
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from '@/components/AnimatedPrice';
+import { InlineAdBanner } from '@/components/AdBanner';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -1949,6 +1950,9 @@ export default function Dashboard() {
             </ScrollView>
           )}
         </View>
+
+        {/* Ad Banner - shown to non-premium users */}
+        <InlineAdBanner />
 
         <View style={{ height: 120 }} />
       </ScrollView>
