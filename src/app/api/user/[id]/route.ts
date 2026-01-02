@@ -207,27 +207,34 @@ export async function PUT(
 
     console.log('📝 Updating user profile via /api/user/[id]:', { userId, updateData });
 
-    // Use fresh connection for the update
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        username: true,
-        bio: true,
-        location: true,
-        website: true,
-        profileImage: true,
-        bannerImage: true,
-        profileComplete: true,
-        createdAt: true,
-        subscriptionTier: true,
-        subscriptionStatus: true,
-        karma: true,
-        isVerified: true,
-      },
+    // Use transaction for update + read-back to ensure consistency
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      // Force primary connection
+      await tx.$executeRaw`SELECT 1`;
+
+      const user = await tx.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          username: true,
+          bio: true,
+          location: true,
+          website: true,
+          profileImage: true,
+          bannerImage: true,
+          profileComplete: true,
+          createdAt: true,
+          subscriptionTier: true,
+          subscriptionStatus: true,
+          karma: true,
+          isVerified: true,
+        },
+      });
+
+      return user;
     });
 
     console.log('✅ User profile updated:', { id: updatedUser.id, name: updatedUser.name, tier: updatedUser.subscriptionTier });
