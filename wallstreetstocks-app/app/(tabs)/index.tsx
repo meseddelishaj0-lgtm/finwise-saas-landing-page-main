@@ -174,34 +174,28 @@ const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
-// Batch quotes helper - uses Vercel KV cached endpoint for faster response
+// Batch quotes helper - fetches directly from FMP for real-time prices
+// Previously used cached endpoint but caused stale data issues
 async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
   if (symbols.length === 0) return [];
 
   try {
     const symbolsParam = symbols.join(',');
-    console.log(`📊 Fetching batch quotes for: ${symbolsParam}`);
-    const res = await fetch(`${API_BASE_URL}/api/mobile/quotes?symbols=${encodeURIComponent(symbolsParam)}`);
+    console.log(`📊 Fetching batch quotes directly from FMP for: ${symbolsParam}`);
+
+    // Fetch directly from FMP API for real-time prices (no caching)
+    const res = await fetch(`${BASE_URL}/quote/${symbolsParam}?apikey=${FMP_API_KEY}`);
 
     if (!res.ok) {
-      throw new Error(`API returned ${res.status}`);
+      throw new Error(`FMP API returned ${res.status}`);
     }
 
     const data = await res.json();
-    console.log(`✅ Batch quotes received: ${data.quotes?.length || 0} quotes (cached: ${data.cachedCount || 0})`);
-    return data.quotes || [];
+    console.log(`✅ FMP quotes received: ${Array.isArray(data) ? data.length : 0} quotes`);
+    return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.warn('⚠️ Batch quotes fallback to FMP:', error);
-    // Fallback to direct FMP API
-    try {
-      const res = await fetch(`${BASE_URL}/quote/${symbols.join(',')}?apikey=${FMP_API_KEY}`);
-      const data = await res.json();
-      console.log(`✅ FMP fallback received: ${Array.isArray(data) ? data.length : 0} quotes`);
-      return Array.isArray(data) ? data : [];
-    } catch (fmpError) {
-      console.error('❌ FMP fallback also failed:', fmpError);
-      return [];
-    }
+    console.error('❌ FMP fetch failed:', error);
+    return [];
   }
 }
 
