@@ -1366,29 +1366,26 @@ export default function Dashboard() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.indicesScrollContent}
             >
-              {majorIndices.map((index, i) => (
-                <TouchableOpacity 
-                  key={i} 
+              {majorIndices.map((index) => (
+                <TouchableOpacity
+                  key={index.symbol}
                   style={styles.indexCard}
                   onPress={() => router.push(`/symbol/${index.symbol}/chart`)}
                 >
                   <View style={styles.indexCardHeader}>
                     <View style={[styles.indexIconContainer, { backgroundColor: index.color + '15' }]}>
-                      <Ionicons 
-                        name={getIndexIcon(index.symbol) as any} 
-                        size={16} 
-                        color={index.color} 
+                      <Ionicons
+                        name={getIndexIcon(index.symbol) as any}
+                        size={16}
+                        color={index.color}
                       />
                     </View>
                     <Text style={styles.indexSymbol}>{index.symbol}</Text>
                   </View>
                   <Text style={styles.indexName} numberOfLines={1}>{index.name}</Text>
-                  <AnimatedPrice
-                    value={index.price}
-                    style={styles.indexPrice}
-                    flashOnChange={true}
-                    decimals={2}
-                  />
+                  <Text style={styles.indexPrice}>
+                    ${index.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </Text>
                   <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
                     <Ionicons
                       name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'}
