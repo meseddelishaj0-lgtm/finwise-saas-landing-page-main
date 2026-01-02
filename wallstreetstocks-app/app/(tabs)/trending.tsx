@@ -15,10 +15,12 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
 import { fetchWithTimeout } from "@/utils/performance";
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
+import { fetchQuotesWithCache, getCachedPrice } from "@/services/quoteService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
@@ -343,15 +345,11 @@ export default function Trending() {
     }
   };
 
-  // Fetch header cards data with timeout
+  // Fetch header cards data with cache support (syncs with chart prices)
   const fetchHeaderCards = async () => {
     try {
-      const symbolsStr = HEADER_SYMBOLS.join(",");
-      const response = await fetchWithTimeout(
-        `${BASE}/quote/${symbolsStr}?apikey=${FMP_API_KEY}`,
-        { timeout: 10000 }
-      );
-      const data = await response.json();
+      // Use cache-aware quote service to get prices synced with chart
+      const data = await fetchQuotesWithCache(HEADER_SYMBOLS, { timeout: 10000 });
 
       const sparklinePromises = HEADER_SYMBOLS.map(symbol => fetchSparklineData(symbol));
       const sparklines = await Promise.all(sparklinePromises);
@@ -490,13 +488,21 @@ export default function Trending() {
 
       if (Array.isArray(json)) {
         if (activeTab === "indices") {
-          cleaned = json.map(item => ({
-            symbol: item.symbol || "N/A",
-            companyName: item.name || item.symbol || "Unknown",
-            changesPercentage: item.changesPercentage || 0,
-            price: item.price,
-            change: item.change,
-          }));
+          // Use cache-aware fetching for indices to sync with chart prices
+          const cachedIndices = await fetchQuotesWithCache(
+            json.map((item: any) => item.symbol).filter(Boolean),
+            { timeout: 10000 }
+          );
+          cleaned = json.map(item => {
+            const cached = cachedIndices.find((c: any) => c.symbol === item.symbol);
+            return {
+              symbol: item.symbol || "N/A",
+              companyName: item.name || item.symbol || "Unknown",
+              changesPercentage: cached?.changesPercentage ?? item.changesPercentage ?? 0,
+              price: cached?.price ?? item.price,
+              change: cached?.change ?? item.change,
+            };
+          });
         } else if (activeTab === "forex") {
           // Process forex data - show all pairs
           cleaned = json
@@ -527,15 +533,26 @@ export default function Trending() {
             }))
             .slice(0, 50); // Show up to 50 commodities
         } else {
-          // Trending, gainers, losers - show up to 50 items
+          // Trending, gainers, losers - show up to 50 items with cache merge
+          const symbols = json
+            .filter((item: any) => item?.symbol)
+            .map((item: any) => item.symbol)
+            .slice(0, 50);
+
+          // Fetch with cache to get chart-synced prices
+          const cachedQuotes = await fetchQuotesWithCache(symbols, { timeout: 10000 });
+
           cleaned = json
-            .filter(item => item?.symbol && item.changesPercentage !== undefined)
-            .map(item => ({
-              symbol: item.symbol,
-              companyName: item.companyName || item.name || "Unknown",
-              changesPercentage: item.changesPercentage,
-              price: item.price,
-            }))
+            .filter((item: any) => item?.symbol && item.changesPercentage !== undefined)
+            .map((item: any) => {
+              const cached = cachedQuotes.find((c: any) => c.symbol === item.symbol);
+              return {
+                symbol: item.symbol,
+                companyName: item.companyName || item.name || "Unknown",
+                changesPercentage: cached?.changesPercentage ?? item.changesPercentage,
+                price: cached?.price ?? item.price,
+              };
+            })
             .slice(0, 50);
         }
       }
@@ -558,6 +575,13 @@ export default function Trending() {
     }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchLiveData]);
+
+  // Refresh header cards when screen comes into focus (picks up chart-synced prices)
+  useFocusEffect(
+    useCallback(() => {
+      fetchHeaderCards();
+    }, [])
+  );
 
   const renderItem = useCallback(({ item, index }: { item: StockItem; index: number }) => {
     const numChange = typeof item.changesPercentage === 'string' 

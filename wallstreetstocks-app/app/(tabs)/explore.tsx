@@ -1,5 +1,5 @@
 // app/(tabs)/explore.tsx - WITH LARGER SECTION HEADER CARDS
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,9 +16,11 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { fetchWithTimeout } from "@/utils/performance";
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
+import { fetchQuotesWithCache } from "@/services/quoteService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
@@ -594,7 +596,7 @@ export default function Explore() {
     }
   };
 
-  // Fetch header cards data based on active tab with timeout
+  // Fetch header cards data based on active tab with cache support (syncs with chart prices)
   const fetchHeaderCards = async () => {
     // Use dynamic symbols for stocks tab based on region
     const symbols = activeTab === "stocks" ? getStockHeaderSymbols() : TAB_HEADER_SYMBOLS[activeTab];
@@ -604,12 +606,8 @@ export default function Explore() {
     }
 
     try {
-      const symbolsStr = symbols.join(",");
-      const response = await fetchWithTimeout(
-        `${BASE_URL}/quote/${symbolsStr}?apikey=${FMP_API_KEY}`,
-        { timeout: 10000 }
-      );
-      const data = await response.json();
+      // Use cache-aware quote service to get prices synced with chart
+      const data = await fetchQuotesWithCache(symbols, { timeout: 10000 });
 
       // Fetch sparkline data for each symbol
       const sparklinePromises = symbols.map(symbol => fetchSparklineData(symbol));
@@ -903,6 +901,13 @@ export default function Explore() {
       }
     };
   }, [activeTab, stockRegion]);
+
+  // Refresh header cards when screen comes into focus (picks up chart-synced prices)
+  useFocusEffect(
+    useCallback(() => {
+      fetchHeaderCards();
+    }, [activeTab, stockRegion])
+  );
 
   const displayData = searchQuery ? searchResults : data;
 

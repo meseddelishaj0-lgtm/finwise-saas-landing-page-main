@@ -27,7 +27,7 @@ import { useSubscription } from '@/context/SubscriptionContext';
 import { useWatchlist } from '@/context/WatchlistContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiCache } from '@/utils/performance';
-import { getFromMemory, CACHE_KEYS } from '@/utils/memoryCache';
+import { fetchQuotesWithCache } from '@/services/quoteService';
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from '@/components/AnimatedPrice';
 
 const { width } = Dimensions.get('window');
@@ -175,76 +175,10 @@ const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
-// Batch quotes helper - checks memory cache first (synced with chart), then FMP API
-// Memory cache is updated by chart page, so prices match what user sees in charts
+// Batch quotes helper - uses shared quote service with cache support
+// Prices sync with chart data for consistent display across screens
 async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
-  if (symbols.length === 0) return [];
-
-  try {
-    const symbolsParam = symbols.join(',');
-    console.log(`📊 Fetching batch quotes for: ${symbolsParam}`);
-
-    // Fetch from FMP API
-    const res = await fetch(`${BASE_URL}/quote/${symbolsParam}?apikey=${FMP_API_KEY}`);
-
-    if (!res.ok) {
-      throw new Error(`FMP API returned ${res.status}`);
-    }
-
-    const data = await res.json();
-    const quotes = Array.isArray(data) ? data : [];
-
-    // Merge with memory cache - prefer cached prices from charts (they're more recent)
-    // Use 5 minute TTL (300000ms) to ensure prices persist across multiple polling cycles
-    const CACHE_TTL = 300000; // 5 minutes
-
-    const mergedQuotes = quotes.map((quote: any) => {
-      // First check quote cache (updated by chart page)
-      const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(quote.symbol), CACHE_TTL);
-      if (cachedQuote?.price && cachedQuote?._chartSynced) {
-        // Prefer chart-synced prices (they're from actual chart data)
-        console.log(`📈 Using chart-synced price for ${quote.symbol}: $${cachedQuote.price}`);
-        return {
-          ...quote,
-          price: cachedQuote.price,
-          change: cachedQuote.change ?? quote.change,
-          changesPercentage: cachedQuote.changesPercentage ?? quote.changesPercentage,
-        };
-      }
-
-      // Also check chart data cache - use last point as price
-      const cachedChart = getFromMemory<any[]>(CACHE_KEYS.chart(quote.symbol, '1D'), CACHE_TTL);
-      if (cachedChart && Array.isArray(cachedChart) && cachedChart.length > 0) {
-        const lastPoint = cachedChart[cachedChart.length - 1];
-        const lastPrice = lastPoint?.value;
-        if (lastPrice && typeof lastPrice === 'number') {
-          console.log(`📊 Using cached chart price for ${quote.symbol}: $${lastPrice}`);
-          return {
-            ...quote,
-            price: lastPrice,
-          };
-        }
-      }
-
-      // Fall back to FMP API price (or cached quote without chart-synced flag)
-      if (cachedQuote?.price) {
-        return {
-          ...quote,
-          price: cachedQuote.price,
-          change: cachedQuote.change ?? quote.change,
-          changesPercentage: cachedQuote.changesPercentage ?? quote.changesPercentage,
-        };
-      }
-
-      return quote;
-    });
-
-    console.log(`✅ Quotes received: ${mergedQuotes.length} (with memory cache merge)`);
-    return mergedQuotes;
-  } catch (error) {
-    console.error('❌ FMP fetch failed:', error);
-    return [];
-  }
+  return fetchQuotesWithCache(symbols, { timeout: 15000 });
 }
 
 // Stock picks preview data
