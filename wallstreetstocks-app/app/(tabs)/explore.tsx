@@ -22,6 +22,7 @@ import { fetchWithTimeout } from "@/utils/performance";
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
 import { fetchQuotesWithCache } from "@/services/quoteService";
 import { fetchSparklines } from "@/services/sparklineService";
+import { getFromMemory, CACHE_KEYS } from "@/utils/memoryCache";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
@@ -828,15 +829,20 @@ export default function Explore() {
             const quoteRes = await fetchWithTimeout(`${BASE_URL}/quote/${etfSymbols.join(",")}?apikey=${FMP_API_KEY}`, { timeout: 15000 });
             const quoteData = await quoteRes.json();
             if (Array.isArray(quoteData)) {
-              cleaned = quoteData.map((item: any) => ({
-                symbol: item.symbol || "N/A",
-                name: item.name || item.symbol || "Unknown",
-                price: item.price || 0,
-                change: item.change || 0,
-                changePercent: item.changesPercentage || 0,
-                type: "etf" as any,
-                exchange: item.exchange || "N/A",
-              }));
+              cleaned = quoteData.map((item: any) => {
+                // Check cache for chart-synced price
+                const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(item.symbol), 5 * 60 * 1000);
+                const price = cachedQuote?._chartSynced ? cachedQuote.price : (item.price || 0);
+                return {
+                  symbol: item.symbol || "N/A",
+                  name: item.name || item.symbol || "Unknown",
+                  price: price,
+                  change: item.change || 0,
+                  changePercent: item.changesPercentage || 0,
+                  type: "etf" as any,
+                  exchange: item.exchange || "N/A",
+                };
+              });
             }
           }
         } else {
@@ -852,7 +858,16 @@ export default function Explore() {
         }
       }
 
-      setData(cleaned);
+      // Merge with cached chart-synced prices (5 min TTL)
+      const mergedData = cleaned.map(item => {
+        const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(item.symbol), 5 * 60 * 1000);
+        if (cachedQuote?._chartSynced && cachedQuote.price) {
+          return { ...item, price: cachedQuote.price };
+        }
+        return item;
+      });
+
+      setData(mergedData);
     } catch (err: any) {
       setError(err.message || "Network error. Check connection.");
       console.error("Fetch error:", err);
@@ -889,10 +904,11 @@ export default function Explore() {
     };
   }, [activeTab, stockRegion]);
 
-  // Refresh header cards when screen comes into focus (picks up chart-synced prices)
+  // Refresh data when screen comes into focus (picks up chart-synced prices)
   useFocusEffect(
     useCallback(() => {
       fetchHeaderCards();
+      fetchLiveData();
     }, [activeTab, stockRegion])
   );
 

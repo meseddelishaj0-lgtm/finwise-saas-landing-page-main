@@ -28,6 +28,7 @@ import { useWatchlist } from '@/context/WatchlistContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiCache } from '@/utils/performance';
 import { fetchQuotesWithCache } from '@/services/quoteService';
+import { getFromMemory, CACHE_KEYS } from '@/utils/memoryCache';
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from '@/components/AnimatedPrice';
 
 const { width } = Dimensions.get('window');
@@ -361,6 +362,7 @@ export default function Dashboard() {
       // Small delay to ensure memory cache is populated from chart page
       setTimeout(() => {
         fetchMarketChips();
+        fetchTrending();
       }, 100);
     }, [])
   );
@@ -432,6 +434,10 @@ export default function Dashboard() {
       if (data && Array.isArray(data)) {
         const trendingData = await Promise.all(
           data.slice(0, 6).map(async (stock: any, idx: number) => {
+            // Check memory cache for chart-synced price
+            const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(stock.symbol), 5 * 60 * 1000);
+            const price = cachedQuote?._chartSynced ? cachedQuote.price : (stock.price || 0);
+
             try {
               // Use 1-minute intervals for more real-time data
               const chartRes = await fetch(
@@ -442,12 +448,12 @@ export default function Dashboard() {
               // Get the most recent 40 data points for a smoother chart
               const chartValues = chartData && Array.isArray(chartData) && chartData.length > 0
                 ? cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close))
-                : [stock.price, stock.price * 0.995, stock.price * 1.005, stock.price];
+                : [price, price * 0.995, price * 1.005, price];
 
               return {
                 symbol: stock.symbol,
                 name: stock.name || stock.symbol,
-                price: stock.price || 0,
+                price: price,
                 change: stock.change || 0,
                 changePercent: stock.changesPercentage || 0,
                 color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
@@ -458,11 +464,11 @@ export default function Dashboard() {
               return {
                 symbol: stock.symbol,
                 name: stock.name || stock.symbol,
-                price: stock.price || 0,
+                price: price,
                 change: stock.change || 0,
                 changePercent: stock.changesPercentage || 0,
                 color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-                data: cleanChartData([stock.price || 0, stock.price || 0, stock.price || 0, stock.price || 0]),
+                data: cleanChartData([price || 1, price || 1, price || 1, price || 1]),
                 rank: idx + 1
               };
             }
