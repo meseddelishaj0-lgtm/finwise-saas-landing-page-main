@@ -20,7 +20,8 @@ import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
 import { fetchWithTimeout } from "@/utils/performance";
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
-import { fetchQuotesWithCache, getCachedPrice } from "@/services/quoteService";
+import { fetchQuotesWithCache } from "@/services/quoteService";
+import { fetchSparklines } from "@/services/sparklineService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
@@ -326,36 +327,23 @@ export default function Trending() {
     "AMZN": "Amazon",
   };
 
-  // Fetch sparkline data with timeout
-  const fetchSparklineData = async (symbol: string): Promise<number[]> => {
-    try {
-      const response = await fetchWithTimeout(
-        `${BASE}/historical-chart/1hour/${symbol}?apikey=${FMP_API_KEY}`,
-        { timeout: 10000 }
-      );
-      const data = await response.json();
-
-      if (Array.isArray(data) && data.length > 0) {
-        return data.slice(0, 24).map((item: any) => item.close).reverse();
-      }
-      return [];
-    } catch (err) {
-      console.error(`Sparkline fetch failed for ${symbol}:`, err);
-      return [];
-    }
-  };
-
   // Fetch header cards data with cache support (syncs with chart prices)
   const fetchHeaderCards = async () => {
     try {
       // Use cache-aware quote service to get prices synced with chart
       const data = await fetchQuotesWithCache(HEADER_SYMBOLS, { timeout: 10000 });
 
-      const sparklinePromises = HEADER_SYMBOLS.map(symbol => fetchSparklineData(symbol));
-      const sparklines = await Promise.all(sparklinePromises);
+      // Build change percents map for sparkline direction
+      const changePercents: Record<string, number> = {};
+      data.forEach((q: any) => {
+        if (q.symbol) changePercents[q.symbol] = q.changesPercentage || 0;
+      });
+
+      // Use sparkline service with caching and batching
+      const sparklineMap = await fetchSparklines(HEADER_SYMBOLS, changePercents);
 
       if (Array.isArray(data) && data.length > 0) {
-        const cards: ChipData[] = HEADER_SYMBOLS.map((symbol, index) => {
+        const cards: ChipData[] = HEADER_SYMBOLS.map((symbol) => {
           const quote = data.find((item: any) => item.symbol === symbol);
           if (quote) {
             return {
@@ -364,7 +352,7 @@ export default function Trending() {
               value: quote.price?.toFixed(2) || "0.00",
               change: quote.changesPercentage?.toFixed(2) || "0.00",
               isPositive: (quote.changesPercentage || 0) >= 0,
-              sparklineData: sparklines[index] || [],
+              sparklineData: sparklineMap[symbol] || [],
             };
           }
           return {

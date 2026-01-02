@@ -21,6 +21,7 @@ import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { fetchWithTimeout } from "@/utils/performance";
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
 import { fetchQuotesWithCache } from "@/services/quoteService";
+import { fetchSparklines } from "@/services/sparklineService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
@@ -577,25 +578,6 @@ export default function Explore() {
     return { spread, isInverted: spread < 0 };
   };
 
-  // Fetch historical data for sparklines with timeout
-  const fetchSparklineData = async (symbol: string): Promise<number[]> => {
-    try {
-      const response = await fetchWithTimeout(
-        `${BASE_URL}/historical-chart/1hour/${symbol}?apikey=${FMP_API_KEY}`,
-        { timeout: 10000 }
-      );
-      const data = await response.json();
-
-      if (Array.isArray(data) && data.length > 0) {
-        return data.slice(0, 24).map((item: any) => item.close).reverse();
-      }
-      return [];
-    } catch (err) {
-      console.error(`Sparkline fetch failed for ${symbol}:`, err);
-      return [];
-    }
-  };
-
   // Fetch header cards data based on active tab with cache support (syncs with chart prices)
   const fetchHeaderCards = async () => {
     // Use dynamic symbols for stocks tab based on region
@@ -609,12 +591,17 @@ export default function Explore() {
       // Use cache-aware quote service to get prices synced with chart
       const data = await fetchQuotesWithCache(symbols, { timeout: 10000 });
 
-      // Fetch sparkline data for each symbol
-      const sparklinePromises = symbols.map(symbol => fetchSparklineData(symbol));
-      const sparklines = await Promise.all(sparklinePromises);
+      // Build change percents map for sparkline direction
+      const changePercents: Record<string, number> = {};
+      data.forEach((q: any) => {
+        if (q.symbol) changePercents[q.symbol] = q.changesPercentage || 0;
+      });
+
+      // Use sparkline service with caching and batching
+      const sparklineMap = await fetchSparklines(symbols, changePercents);
 
       if (Array.isArray(data) && data.length > 0) {
-        const cards: ChipData[] = symbols.map((symbol, index) => {
+        const cards: ChipData[] = symbols.map((symbol) => {
           const quote = data.find((item: any) => item.symbol === symbol);
           if (quote) {
             return {
@@ -623,7 +610,7 @@ export default function Explore() {
               value: quote.price?.toFixed(2) || "0.00",
               change: quote.changesPercentage?.toFixed(2) || "0.00",
               isPositive: (quote.changesPercentage || 0) >= 0,
-              sparklineData: sparklines[index] || [],
+              sparklineData: sparklineMap[symbol] || [],
             };
           }
           return {

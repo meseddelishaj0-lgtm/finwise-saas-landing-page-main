@@ -48,6 +48,7 @@ export function clearAllMemory(): void {
 export const CACHE_KEYS = {
   quote: (symbol: string) => `mem_quote_${symbol}`,
   chart: (symbol: string, period: string) => `mem_chart_${symbol}_${period}`,
+  sparkline: (symbol: string) => `mem_sparkline_${symbol}`,
   news: (symbol: string) => `mem_news_${symbol}`,
   sentiment: (symbol: string) => `mem_sentiment_${symbol}`,
 };
