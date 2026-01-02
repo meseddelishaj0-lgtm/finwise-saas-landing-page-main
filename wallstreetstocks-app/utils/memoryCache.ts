@@ -9,8 +9,8 @@ interface CacheEntry<T> {
 // Simple in-memory storage
 const cache: Map<string, CacheEntry<any>> = new Map();
 
-// Default TTL: 2 minutes for memory cache
-const DEFAULT_TTL = 2 * 60 * 1000;
+// Default TTL: 15 seconds for memory cache (reduced from 2 min for fresher prices)
+const DEFAULT_TTL = 15 * 1000;
 
 // Get from memory cache (synchronous - instant!)
 export function getFromMemory<T>(key: string, ttl = DEFAULT_TTL): T | null {

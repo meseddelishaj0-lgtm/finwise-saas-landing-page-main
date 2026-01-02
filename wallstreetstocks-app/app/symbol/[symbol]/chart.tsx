@@ -117,7 +117,11 @@ export default function ChartTab() {
   }, [cleanSymbol]);
 
   const [chartData, setChartData] = useState<ChartDataPoint[]>(initialData.chart || []);
-  const [currentPrice, setCurrentPrice] = useState<number | null>(initialData.quote?.price ?? null);
+  // Initialize price from chart data's last point if available (more recent than cached quote)
+  const initialPrice = initialData.chart?.length
+    ? initialData.chart[initialData.chart.length - 1]?.value
+    : initialData.quote?.price ?? null;
+  const [currentPrice, setCurrentPrice] = useState<number | null>(initialPrice);
   const [previousClose, setPreviousClose] = useState<number | null>(initialData.quote?.previousClose ?? null);
   const [dayHigh, setDayHigh] = useState<number | null>(initialData.quote?.dayHigh ?? null);
   const [dayLow, setDayLow] = useState<number | null>(initialData.quote?.dayLow ?? null);
@@ -579,8 +583,9 @@ export default function ChartTab() {
     return `$${price.toFixed(4)}`;
   };
 
-  // Display values (use pointer data when available)
-  const displayPrice = pointerData?.price ?? currentPrice;
+  // Display values (use pointer data when available, then latest chart point, then currentPrice)
+  const latestChartPrice = chartData.length > 0 ? chartData[chartData.length - 1]?.value : null;
+  const displayPrice = pointerData?.price ?? latestChartPrice ?? currentPrice;
   const displayChange = pointerData ? pointerData.change : priceChange.amount;
   const displayPercent = pointerData
     ? (chartData[0]?.value ? (pointerData.change / chartData[0].value) * 100 : 0)
