@@ -390,6 +390,17 @@ export default function Dashboard() {
     }, [fetchUnreadMessagesCount])
   );
 
+  // Refresh market data when screen is focused (picks up prices from memory cache)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🏠 Home screen focused - refreshing market data');
+      // Small delay to ensure memory cache is populated from chart page
+      setTimeout(() => {
+        fetchMarketChips();
+      }, 100);
+    }, [])
+  );
+
   // Fetch live market indices data - uses batch quotes with KV caching
   const fetchMarketChips = async () => {
     setIndicesLoading(true);
