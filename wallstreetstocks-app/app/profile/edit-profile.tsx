@@ -23,6 +23,40 @@ import { useUserProfile } from '@/context/UserProfileContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
+// Upload image to server and return URL
+const uploadImage = async (imageUri: string): Promise<string | null> => {
+  try {
+    // Skip if already a remote URL
+    if (imageUri.startsWith('http://') || imageUri.startsWith('https://')) {
+      return imageUri;
+    }
+
+    const formData = new FormData();
+    const filename = imageUri.split('/').pop() || 'image.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+    formData.append('file', { uri: imageUri, name: filename, type } as any);
+
+    console.log('🔵 Uploading image:', filename);
+    const response = await fetch(`${API_BASE_URL}/api/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      console.error('❌ Upload failed:', response.status);
+      return null;
+    }
+
+    const result = await response.json();
+    console.log('✅ Upload success:', result.url);
+    return result.url;
+  } catch (error) {
+    console.error('❌ Upload error:', error);
+    return null;
+  }
+};
+
 export default function EditProfile() {
   const router = useRouter();
   const { user: authUser, setUserData } = useAuth();
@@ -201,6 +235,36 @@ export default function EditProfile() {
     setSaving(true);
 
     try {
+      // Upload images if they are local files (file://)
+      let uploadedAvatar = avatar;
+      let uploadedBanner = bannerImage;
+
+      if (avatar && avatar.startsWith('file://')) {
+        console.log('🔵 Uploading avatar...');
+        const url = await uploadImage(avatar);
+        if (url) {
+          uploadedAvatar = url;
+          setAvatar(url); // Update local state with URL
+        } else {
+          Alert.alert('Upload Failed', 'Failed to upload profile image. Please try again.');
+          setSaving(false);
+          return;
+        }
+      }
+
+      if (bannerImage && bannerImage.startsWith('file://')) {
+        console.log('🔵 Uploading banner...');
+        const url = await uploadImage(bannerImage);
+        if (url) {
+          uploadedBanner = url;
+          setBannerImage(url); // Update local state with URL
+        } else {
+          Alert.alert('Upload Failed', 'Failed to upload banner image. Please try again.');
+          setSaving(false);
+          return;
+        }
+      }
+
       if (userId) {
         // Save to API
         const payload = {
@@ -210,8 +274,8 @@ export default function EditProfile() {
           bio: bio || '',
           location: location || '',
           website: website || '',
-          profileImage: avatar,
-          bannerImage,
+          profileImage: uploadedAvatar,
+          bannerImage: uploadedBanner,
         };
 
         // Use /api/user/:id endpoint which is more reliable
