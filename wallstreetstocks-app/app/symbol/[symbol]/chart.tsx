@@ -19,7 +19,8 @@ import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFromMemory, setToMemory, CACHE_KEYS } from '../../../utils/memoryCache';
-import { priceStore } from '../../../stores/priceStore';
+import { priceStore, usePrice } from '../../../stores/priceStore';
+import { useWebSocket } from '../../../context/WebSocketContext';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -117,6 +118,18 @@ export default function ChartTab() {
     }
   }, [cleanSymbol]);
 
+  // Subscribe to real-time WebSocket updates for this symbol
+  const { subscribe, isConnected } = useWebSocket();
+  useEffect(() => {
+    if (cleanSymbol && isConnected) {
+      subscribe(cleanSymbol);
+      console.log(`📡 Subscribed to real-time updates for ${cleanSymbol}`);
+    }
+  }, [cleanSymbol, isConnected, subscribe]);
+
+  // Get real-time price from store (updates automatically via WebSocket)
+  const realtimePrice = usePrice(cleanSymbol || '');
+
   const [chartData, setChartData] = useState<ChartDataPoint[]>(initialData.chart || []);
   // Initialize price from chart data's last point if available (more recent than cached quote)
   const initialPrice = initialData.chart?.length
@@ -145,6 +158,19 @@ export default function ChartTab() {
   // Start at 1 (visible) to prevent black screen - skeleton handles loading state
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Update displayed price when WebSocket sends new data
+  useEffect(() => {
+    if (realtimePrice && realtimePrice !== currentPrice) {
+      setCurrentPrice(realtimePrice);
+      setLastUpdated(new Date());
+      // Pulse animation on price update
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.05, duration: 100, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+      ]).start();
+    }
+  }, [realtimePrice]);
 
   // Calculate price change based on timeframe
   const priceChange = useMemo(() => {

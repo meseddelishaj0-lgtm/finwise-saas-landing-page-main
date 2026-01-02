@@ -11,8 +11,12 @@ import { WatchlistProvider } from "../context/WatchlistContext";
 import { UserProfileProvider } from "../context/UserProfileContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { ReferralProvider, useReferral } from "../context/ReferralContext";
+import { WebSocketProvider } from "../context/WebSocketContext";
 import { useAuth } from "@/lib/auth";
 import { preloadAppData } from "../utils/preload";
+
+// Default symbols to stream (major indices and popular stocks)
+const DEFAULT_STREAMING_SYMBOLS = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL'];
 
 const queryClient = new QueryClient();
 
@@ -62,20 +66,25 @@ export default function RootLayout() {
                 <StockProvider>
                   <UserProfileProvider>
                     <NotificationProvider>
-                      <AppInitializer>
-                        <View style={{ flex: 1, backgroundColor: "black" }}>
-                          <StatusBar
-                            barStyle="light-content"
-                            backgroundColor="black"
-                            translucent={Platform.OS === 'android'}
-                          />
-                          <Stack
-                            screenOptions={{
-                              headerShown: false,
-                            }}
-                          />
-                        </View>
-                      </AppInitializer>
+                      <WebSocketProvider
+                        autoConnect={true}
+                        initialSymbols={DEFAULT_STREAMING_SYMBOLS}
+                      >
+                        <AppInitializer>
+                          <View style={{ flex: 1, backgroundColor: "black" }}>
+                            <StatusBar
+                              barStyle="light-content"
+                              backgroundColor="black"
+                              translucent={Platform.OS === 'android'}
+                            />
+                            <Stack
+                              screenOptions={{
+                                headerShown: false,
+                              }}
+                            />
+                          </View>
+                        </AppInitializer>
+                      </WebSocketProvider>
                     </NotificationProvider>
                   </UserProfileProvider>
                 </StockProvider>
