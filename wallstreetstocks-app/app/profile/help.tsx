@@ -64,10 +64,10 @@ export default function Help() {
       route: '/profile/report-problem',
       subtitle: 'Report bugs or issues'
     },
-    { 
-      title: 'Contact Us', 
-      icon: 'mail-outline', 
-      route: '/profile/contact-us',
+    {
+      title: 'Contact Us',
+      icon: 'mail-outline',
+      route: '/profile/contact',
       subtitle: 'Get in touch with support'
     },
   ];
