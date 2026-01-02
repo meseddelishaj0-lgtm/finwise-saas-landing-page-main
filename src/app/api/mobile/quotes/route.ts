@@ -124,10 +124,11 @@ export async function GET(req: NextRequest) {
       quotes.push(...freshQuotes);
 
       // Cache fresh quotes in KV if available (fire and forget)
+      // Reduced from 30s to 15s for more real-time prices
       if (kv && freshQuotes.length > 0) {
         Promise.all(
           freshQuotes.map((quote) =>
-            kv.set(`quote:${quote.symbol}`, quote, { ex: 30 }).catch(() => {})
+            kv.set(`quote:${quote.symbol}`, quote, { ex: 15 }).catch(() => {})
           )
         ).catch(() => {});
       }
@@ -151,9 +152,10 @@ export async function GET(req: NextRequest) {
     });
 
     // Add cache headers for Vercel Edge Network
+    // Reduced caching for more real-time prices
     response.headers.set(
       "Cache-Control",
-      "public, s-maxage=10, stale-while-revalidate=30"
+      "public, s-maxage=5, stale-while-revalidate=15"
     );
 
     return response;

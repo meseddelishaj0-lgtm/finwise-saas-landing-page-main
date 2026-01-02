@@ -1142,6 +1142,7 @@ export default function Dashboard() {
     if (isAppActive) {
       pollingIntervalRef.current = setInterval(() => {
         console.log('🔄 Smart polling - refreshing data');
+        setLastUpdated(new Date()); // Update timestamp on each refresh
         Promise.all([
           fetchMarketChips().catch(e => console.warn('Refresh market error:', e)),
           fetchTrending().catch(e => console.warn('Refresh trending error:', e)),
@@ -1149,7 +1150,7 @@ export default function Dashboard() {
           fetchWatchlist().catch(e => console.warn('Refresh watchlist error:', e)),
           fetchStockPicks().catch(e => console.warn('Refresh picks error:', e)),
         ]);
-      }, 60000);
+      }, 30000); // Reduced from 60s to 30s for more real-time prices
     } else {
       console.log('⏸️ App inactive - pausing polling to save battery');
     }
