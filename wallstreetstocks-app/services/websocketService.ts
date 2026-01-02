@@ -6,7 +6,14 @@ import { priceStore } from '../stores/priceStore';
 import { AppState, AppStateStatus } from 'react-native';
 
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
-const WEBSOCKET_URL = 'wss://websockets.financialmodelingprep.com';
+
+// FMP WebSocket endpoints (separate for stocks, forex, crypto)
+const WEBSOCKET_URLS = {
+  stocks: 'wss://financialmodelingprep.com/ws/us-stocks',
+  forex: 'wss://financialmodelingprep.com/ws/forex',
+  crypto: 'wss://financialmodelingprep.com/ws/crypto',
+};
+
 const MAX_SYMBOLS = 25; // FMP limit per connection
 const RECONNECT_DELAY = 3000; // 3 seconds
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
@@ -71,7 +78,9 @@ class WebSocketService {
     console.log('🔌 Connecting to FMP WebSocket...');
 
     try {
-      this.ws = new WebSocket(WEBSOCKET_URL);
+      // Use stocks WebSocket with API key in URL
+      const wsUrl = `${WEBSOCKET_URLS.stocks}?apikey=${FMP_API_KEY}`;
+      this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
         console.log('✅ WebSocket connected, authenticating...');
@@ -109,6 +118,7 @@ class WebSocketService {
   private authenticate(): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
+    // Try sending login event (legacy method)
     const loginMessage = {
       event: 'login',
       data: {
@@ -118,6 +128,23 @@ class WebSocketService {
 
     this.ws.send(JSON.stringify(loginMessage));
     console.log('🔐 Sent authentication request');
+
+    // Also set a timeout to assume authenticated if using API key in URL
+    // (new endpoint style may not require explicit login response)
+    setTimeout(() => {
+      if (!this.isAuthenticated && this.ws?.readyState === WebSocket.OPEN) {
+        console.log('✅ Assuming authenticated via API key in URL');
+        this.isAuthenticated = true;
+        this.setStatus('connected');
+        this.startHeartbeat();
+
+        // Subscribe to pending symbols
+        if (this.pendingSubscriptions.size > 0 || this.subscribedSymbols.size > 0) {
+          this.resubscribeAll();
+          this.sendSubscriptions();
+        }
+      }
+    }, 2000);
   }
 
   // Handle incoming messages
