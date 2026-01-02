@@ -195,11 +195,15 @@ async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
     const quotes = Array.isArray(data) ? data : [];
 
     // Merge with memory cache - prefer cached prices from charts (they're more recent)
+    // Use 5 minute TTL (300000ms) to ensure prices persist across multiple polling cycles
+    const CACHE_TTL = 300000; // 5 minutes
+
     const mergedQuotes = quotes.map((quote: any) => {
       // First check quote cache (updated by chart page)
-      const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(quote.symbol), 60000); // 60s TTL
-      if (cachedQuote?.price) {
-        console.log(`📈 Using cached quote price for ${quote.symbol}: $${cachedQuote.price}`);
+      const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(quote.symbol), CACHE_TTL);
+      if (cachedQuote?.price && cachedQuote?._chartSynced) {
+        // Prefer chart-synced prices (they're from actual chart data)
+        console.log(`📈 Using chart-synced price for ${quote.symbol}: $${cachedQuote.price}`);
         return {
           ...quote,
           price: cachedQuote.price,
@@ -209,7 +213,7 @@ async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
       }
 
       // Also check chart data cache - use last point as price
-      const cachedChart = getFromMemory<any[]>(CACHE_KEYS.chart(quote.symbol, '1D'), 60000);
+      const cachedChart = getFromMemory<any[]>(CACHE_KEYS.chart(quote.symbol, '1D'), CACHE_TTL);
       if (cachedChart && Array.isArray(cachedChart) && cachedChart.length > 0) {
         const lastPoint = cachedChart[cachedChart.length - 1];
         const lastPrice = lastPoint?.value;
@@ -220,6 +224,16 @@ async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
             price: lastPrice,
           };
         }
+      }
+
+      // Fall back to FMP API price (or cached quote without chart-synced flag)
+      if (cachedQuote?.price) {
+        return {
+          ...quote,
+          price: cachedQuote.price,
+          change: cachedQuote.change ?? quote.change,
+          changesPercentage: cachedQuote.changesPercentage ?? quote.changesPercentage,
+        };
       }
 
       return quote;

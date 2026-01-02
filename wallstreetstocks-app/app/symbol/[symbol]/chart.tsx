@@ -218,8 +218,20 @@ export default function ChartTab() {
         setLastUpdated(new Date());
         setError(null);
 
-        // Save to MEMORY cache (instant access next time)
-        setToMemory(CACHE_KEYS.quote(cleanSymbol), q);
+        // Check if we have a chart-synced price in memory cache
+        // If so, preserve it and only update other quote fields
+        const existingCache = getFromMemory<any>(CACHE_KEYS.quote(cleanSymbol));
+        if (existingCache?._chartSynced) {
+          // Preserve chart-synced price, update other fields
+          setToMemory(CACHE_KEYS.quote(cleanSymbol), {
+            ...q,
+            price: existingCache.price, // Keep chart-synced price
+            _chartSynced: true,
+          });
+        } else {
+          // No chart-synced price, use FMP quote price
+          setToMemory(CACHE_KEYS.quote(cleanSymbol), q);
+        }
         // Also save to AsyncStorage for persistence
         await setCachedData(cacheKey, { ...q, timestamp: Date.now() });
       }
