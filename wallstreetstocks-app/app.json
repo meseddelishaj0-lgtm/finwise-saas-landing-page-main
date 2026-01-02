@@ -56,7 +56,7 @@
       "softwareKeyboardLayoutMode": "pan",
       "allowBackup": true,
       "config": {
-        "googleMobileAdsAppId": "ca-app-pub-7939235723023664~6192758198"
+        "googleMobileAdsAppId": "ca-app-pub-7939235723023664~5272582285"
       }
     },
     "web": {
@@ -91,7 +91,7 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-7939235723023664~6192758198",
+          "androidAppId": "ca-app-pub-7939235723023664~5272582285",
           "iosAppId": "ca-app-pub-7939235723023664~6192758198"
         }
       ]
