@@ -1,24 +1,48 @@
 // components/AdBanner.tsx
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { BannerAd, BannerAdSize, TestIds } from 'react-native-google-mobile-ads';
+import React, { useState } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { useSubscription } from '../context/SubscriptionContext';
 
 // Production ad unit ID
 const PRODUCTION_AD_UNIT_ID = 'ca-app-pub-7939235723023664/3423124622';
 
+// Try to import AdMob - will fail in Expo Go
+let BannerAd: any = null;
+let BannerAdSize: any = null;
+let TestIds: any = null;
+let isAdMobAvailable = false;
+
+try {
+  const AdMob = require('react-native-google-mobile-ads');
+  BannerAd = AdMob.BannerAd;
+  BannerAdSize = AdMob.BannerAdSize;
+  TestIds = AdMob.TestIds;
+  isAdMobAvailable = true;
+} catch (e) {
+  // AdMob not available (likely running in Expo Go)
+  console.log('📢 AdMob not available - native module required');
+}
+
 // Use test ads in development, production ads in release
-const adUnitId = __DEV__ ? TestIds.BANNER : PRODUCTION_AD_UNIT_ID;
+const getAdUnitId = () => {
+  if (!TestIds) return PRODUCTION_AD_UNIT_ID;
+  return __DEV__ ? TestIds.BANNER : PRODUCTION_AD_UNIT_ID;
+};
 
 interface AdBannerProps {
-  size?: BannerAdSize;
+  size?: any;
   style?: any;
 }
 
-export function AdBanner({ size = BannerAdSize.ANCHORED_ADAPTIVE_BANNER, style }: AdBannerProps) {
+export function AdBanner({ size, style }: AdBannerProps) {
   const { isPremium } = useSubscription();
   const [adLoaded, setAdLoaded] = useState(false);
   const [adError, setAdError] = useState(false);
+
+  // Don't show ads if AdMob is not available (Expo Go)
+  if (!isAdMobAvailable || !BannerAd) {
+    return null;
+  }
 
   // Don't show ads to premium users
   if (isPremium) {
@@ -30,11 +54,13 @@ export function AdBanner({ size = BannerAdSize.ANCHORED_ADAPTIVE_BANNER, style }
     return null;
   }
 
+  const adSize = size || (BannerAdSize?.ANCHORED_ADAPTIVE_BANNER ?? 'BANNER');
+
   return (
     <View style={[styles.container, style, !adLoaded && styles.hidden]}>
       <BannerAd
-        unitId={adUnitId}
-        size={size}
+        unitId={getAdUnitId()}
+        size={adSize}
         requestOptions={{
           requestNonPersonalizedAdsOnly: false,
         }}
@@ -42,8 +68,8 @@ export function AdBanner({ size = BannerAdSize.ANCHORED_ADAPTIVE_BANNER, style }
           console.log('📢 Ad loaded successfully');
           setAdLoaded(true);
         }}
-        onAdFailedToLoad={(error) => {
-          console.log('📢 Ad failed to load:', error.message);
+        onAdFailedToLoad={(error: any) => {
+          console.log('📢 Ad failed to load:', error?.message);
           setAdError(true);
         }}
       />
@@ -53,9 +79,11 @@ export function AdBanner({ size = BannerAdSize.ANCHORED_ADAPTIVE_BANNER, style }
 
 // Specific banner for bottom of screens
 export function BottomAdBanner() {
+  if (!isAdMobAvailable) return null;
+
   return (
     <AdBanner
-      size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+      size={BannerAdSize?.ANCHORED_ADAPTIVE_BANNER}
       style={styles.bottomBanner}
     />
   );
@@ -63,9 +91,11 @@ export function BottomAdBanner() {
 
 // Inline banner for use within scrollable content
 export function InlineAdBanner() {
+  if (!isAdMobAvailable) return null;
+
   return (
     <AdBanner
-      size={BannerAdSize.MEDIUM_RECTANGLE}
+      size={BannerAdSize?.MEDIUM_RECTANGLE}
       style={styles.inlineBanner}
     />
   );
