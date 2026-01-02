@@ -221,8 +221,9 @@ export default function PersonalInfoScreen() {
   const displayBio = userProfile?.bio || localData?.bio || "Tap Edit Profile to add a bio";
   const displayLocation = userProfile?.location || localData?.location || "";
   const displayWebsite = userProfile?.website || localData?.website || "";
-  const displayAvatar = userProfile?.profileImage || localData?.avatar;
-  const displayBanner = userProfile?.bannerImage || localData?.bannerImage;
+  // Use userProfile first, then authUser as fallback (both have fresh data), then localData
+  const displayAvatar = userProfile?.profileImage || authUser?.profileImage || localData?.avatar;
+  const displayBanner = userProfile?.bannerImage || (authUser as any)?.bannerImage || localData?.bannerImage;
   const displayFollowing = userProfile?._count?.following ?? 0;
   const displayFollowers = userProfile?._count?.followers ?? 0;
   const displayPosts = userProfile?._count?.posts ?? posts.length ?? 0;
