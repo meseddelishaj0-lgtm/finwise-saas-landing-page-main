@@ -1095,20 +1095,27 @@ export default function CommunityPage() {
   };
 
   const handleSelectGif = (gif: any) => {
-    // Use the fixed height small version for better performance
+    // Use the fixed height version for better quality
     const gifUrl = gif.images?.fixed_height?.url || gif.images?.original?.url;
     if (gifUrl) {
       setNewPostImage(gifUrl);
       setGiphyModal(false);
       setGiphySearch('');
       setGiphyResults([]);
+      // Reopen create post modal with the selected GIF
+      setTimeout(() => {
+        setCreatePostModal(true);
+      }, 300);
     }
   };
 
   const openGiphyPicker = () => {
-    setGiphyModal(true);
-    // Load trending GIFs after modal opens
-    setTimeout(() => searchGiphy(''), 100);
+    // Close create post modal first to avoid modal conflict
+    setCreatePostModal(false);
+    setTimeout(() => {
+      setGiphyModal(true);
+      searchGiphy('');
+    }, 300);
   };
 
   // Create post with image upload
