@@ -12,6 +12,7 @@ import { UserProfileProvider } from "../context/UserProfileContext";
 import { NotificationProvider } from "../context/NotificationContext";
 import { ReferralProvider, useReferral } from "../context/ReferralContext";
 import { WebSocketProvider } from "../context/WebSocketContext";
+import { PortfolioProvider } from "../context/PortfolioContext";
 import { useAuth } from "@/lib/auth";
 import { preloadAppData } from "../utils/preload";
 
@@ -63,31 +64,33 @@ export default function RootLayout() {
           <SubscriptionProvider>
             <ReferralProvider>
               <WatchlistProvider>
-                <StockProvider>
-                  <UserProfileProvider>
-                    <NotificationProvider>
-                      <WebSocketProvider
-                        autoConnect={false}  // Disabled until FMP WebSocket access is enabled
-                        initialSymbols={DEFAULT_STREAMING_SYMBOLS}
-                      >
-                        <AppInitializer>
-                          <View style={{ flex: 1, backgroundColor: "black" }}>
-                            <StatusBar
-                              barStyle="light-content"
-                              backgroundColor="black"
-                              translucent={Platform.OS === 'android'}
-                            />
-                            <Stack
-                              screenOptions={{
-                                headerShown: false,
-                              }}
-                            />
-                          </View>
-                        </AppInitializer>
-                      </WebSocketProvider>
-                    </NotificationProvider>
-                  </UserProfileProvider>
-                </StockProvider>
+                <PortfolioProvider>
+                  <StockProvider>
+                    <UserProfileProvider>
+                      <NotificationProvider>
+                        <WebSocketProvider
+                          autoConnect={false}  // Disabled until FMP WebSocket access is enabled
+                          initialSymbols={DEFAULT_STREAMING_SYMBOLS}
+                        >
+                          <AppInitializer>
+                            <View style={{ flex: 1, backgroundColor: "black" }}>
+                              <StatusBar
+                                barStyle="light-content"
+                                backgroundColor="black"
+                                translucent={Platform.OS === 'android'}
+                              />
+                              <Stack
+                                screenOptions={{
+                                  headerShown: false,
+                                }}
+                              />
+                            </View>
+                          </AppInitializer>
+                        </WebSocketProvider>
+                      </NotificationProvider>
+                    </UserProfileProvider>
+                  </StockProvider>
+                </PortfolioProvider>
               </WatchlistProvider>
             </ReferralProvider>
           </SubscriptionProvider>

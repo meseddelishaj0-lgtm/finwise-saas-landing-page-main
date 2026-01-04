@@ -25,6 +25,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useWatchlist } from '@/context/WatchlistContext';
+import { usePortfolio } from '@/context/PortfolioContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiCache } from '@/utils/performance';
 import { fetchQuotesWithCache } from '@/services/quoteService';
@@ -193,6 +194,21 @@ const STOCK_PICKS_PREVIEW = [
 export default function Dashboard() {
   const router = useRouter();
   const { isPremium, currentTier } = useSubscription();
+  const {
+    portfolios: contextPortfolios,
+    selectedPortfolioId: contextSelectedId,
+    currentPortfolio: contextCurrentPortfolio,
+    loading: portfolioLoading,
+    refreshing: portfolioRefreshing,
+    setSelectedPortfolioId: setContextSelectedId,
+    createPortfolio: contextCreatePortfolio,
+    deletePortfolio: contextDeletePortfolio,
+    renamePortfolio: contextRenamePortfolio,
+    addHolding: contextAddHolding,
+    updateHolding: contextUpdateHolding,
+    removeHolding: contextRemoveHolding,
+    refreshPrices,
+  } = usePortfolio();
   const [refreshing, setRefreshing] = useState(false);
   const [stockPicksData, setStockPicksData] = useState<any[]>([]);
 
@@ -274,47 +290,67 @@ export default function Dashboard() {
     chartLabels: [] as string[]
   });
 
-  // User's stock holdings - persisted with AsyncStorage
-  const [userHoldings, setUserHoldings] = useState<{symbol: string; shares: number; avgCost: number}[]>([]);
-  const [holdingsInitialized, setHoldingsInitialized] = useState(false);
+  // Multiple portfolios support - using context
+  // Create aliases for context values to minimize code changes
+  const userPortfolios = contextPortfolios;
+  const selectedPortfolioId = contextSelectedId;
+  const setSelectedPortfolioId = setContextSelectedId;
+  const holdingsInitialized = !portfolioLoading;
 
-  // Load holdings from AsyncStorage on mount
-  useEffect(() => {
-    const loadHoldings = async () => {
-      try {
-        const saved = await AsyncStorage.getItem('user_portfolio_holdings');
-        if (saved) {
-          setUserHoldings(JSON.parse(saved));
-        } else {
-          // Default holdings for demo
-          const defaultHoldings = [
-            { symbol: 'AAPL', shares: 10, avgCost: 150 },
-            { symbol: 'TSLA', shares: 5, avgCost: 200 },
-            { symbol: 'MSFT', shares: 8, avgCost: 300 },
-          ];
-          setUserHoldings(defaultHoldings);
-          await AsyncStorage.setItem('user_portfolio_holdings', JSON.stringify(defaultHoldings));
-        }
-      } catch (err) {
-        console.error('Error loading holdings:', err);
-        setUserHoldings([
-          { symbol: 'AAPL', shares: 10, avgCost: 150 },
-          { symbol: 'TSLA', shares: 5, avgCost: 200 },
-          { symbol: 'MSFT', shares: 8, avgCost: 300 },
-        ]);
-      } finally {
-        setHoldingsInitialized(true);
-      }
-    };
-    loadHoldings();
-  }, []);
+  const [showPortfolioDropdown, setShowPortfolioDropdown] = useState(false);
+  const [showCreatePortfolioModal, setShowCreatePortfolioModal] = useState(false);
+  const [newPortfolioName, setNewPortfolioName] = useState('');
+  const [showPortfolioOptionsModal, setShowPortfolioOptionsModal] = useState(false);
+  const [editingPortfolioName, setEditingPortfolioName] = useState('');
 
-  // Save holdings to AsyncStorage whenever it changes
-  useEffect(() => {
-    if (holdingsInitialized) {
-      AsyncStorage.setItem('user_portfolio_holdings', JSON.stringify(userHoldings));
+  // Get current portfolio's holdings from context
+  const currentPortfolio = userPortfolios.find(p => p.id === selectedPortfolioId);
+  const userHoldings = currentPortfolio?.holdings || [];
+
+  // Refresh prices when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshPrices();
+    }, [])
+  );
+
+  // Create new portfolio using context
+  const createPortfolio = async () => {
+    if (!newPortfolioName.trim()) return;
+    await contextCreatePortfolio(newPortfolioName.trim());
+    setNewPortfolioName('');
+    setShowCreatePortfolioModal(false);
+  };
+
+  // Delete current portfolio using context
+  const deleteCurrentPortfolio = () => {
+    if (userPortfolios.length <= 1) {
+      Alert.alert('Cannot Delete', 'You must have at least one portfolio.');
+      return;
     }
-  }, [userHoldings, holdingsInitialized]);
+    Alert.alert(
+      'Delete Portfolio',
+      `Are you sure you want to delete "${currentPortfolio?.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await contextDeletePortfolio(selectedPortfolioId);
+            setShowPortfolioOptionsModal(false);
+          },
+        },
+      ]
+    );
+  };
+
+  // Rename current portfolio using context
+  const renameCurrentPortfolio = async () => {
+    if (!editingPortfolioName.trim()) return;
+    await contextRenamePortfolio(selectedPortfolioId, editingPortfolioName.trim());
+    setShowPortfolioOptionsModal(false);
+  };
 
   // Watchlist from context (single source of truth)
   const { watchlist, watchlistLoading: contextWatchlistLoading, addToWatchlist, removeFromWatchlist, isInWatchlist, refreshWatchlist } = useWatchlist();
@@ -808,14 +844,12 @@ export default function Dashboard() {
         return;
       }
 
-      const newHolding = {
-        symbol,
-        shares: parseFloat(newStockShares),
-        avgCost: parseFloat(newStockAvgCost)
-      };
+      const shares = parseFloat(newStockShares);
+      const avgCost = parseFloat(newStockAvgCost);
 
-      setUserHoldings(prev => [...prev, newHolding]);
-      
+      // Add holding using context
+      await contextAddHolding(symbol, shares, avgCost);
+
       setNewStockSymbol('');
       setNewStockShares('');
       setNewStockAvgCost('');
@@ -836,7 +870,7 @@ export default function Dashboard() {
     }
   };
 
-  // Remove stock from portfolio
+  // Remove stock from portfolio using context
   const handleRemoveStock = (symbol: string) => {
     Alert.alert(
       'Remove Stock',
@@ -846,8 +880,8 @@ export default function Dashboard() {
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => {
-            setUserHoldings(prev => prev.filter(h => h.symbol !== symbol));
+          onPress: async () => {
+            await contextRemoveHolding(symbol);
             setHoldingOptionsModal(false);
             setSelectedHolding(null);
             setTimeout(() => {
@@ -903,13 +937,8 @@ export default function Dashboard() {
     setSavingEdit(true);
 
     try {
-      setUserHoldings(prev =>
-        prev.map(h =>
-          h.symbol === editingHolding.symbol
-            ? { ...h, shares: newShares, avgCost: newAvgCost }
-            : h
-        )
-      );
+      // Update holding using context
+      await contextUpdateHolding(editingHolding.symbol, newShares, newAvgCost);
 
       setEditHoldingModal(false);
       setEditingHolding(null);
@@ -1178,12 +1207,19 @@ export default function Dashboard() {
     };
   }, [holdingsInitialized, contextWatchlistLoading, isAppActive]);
 
-  // Refetch portfolio when time range changes
+  // Refetch portfolio chart when time range changes
   useEffect(() => {
-    if (portfolio.holdings.length > 0) {
+    if (contextCurrentPortfolio && contextCurrentPortfolio.holdings.length > 0) {
       fetchPortfolio();
     }
   }, [portfolioTimeRange]);
+
+  // Refetch portfolio when selected portfolio changes
+  useEffect(() => {
+    if (holdingsInitialized && selectedPortfolioId) {
+      fetchPortfolio();
+    }
+  }, [selectedPortfolioId]);
 
   // Track if initial watchlist data was loaded to prevent duplicate fetches
   const watchlistInitialLoadDone = React.useRef(false);
@@ -1430,24 +1466,83 @@ export default function Dashboard() {
         {/* Enhanced Portfolio Section */}
         <View style={styles.portfolioSection}>
           <View style={styles.portfolioTopRow}>
-            <View style={styles.portfolioDropdown}>
-              <Text style={styles.portfolioDropdownText}>All Holdings</Text>
-              <Ionicons name="chevron-down" size={20} color="#007AFF" />
+            <View style={styles.portfolioSelectorContainer}>
+              <TouchableOpacity
+                style={styles.portfolioDropdown}
+                onPress={() => setShowPortfolioDropdown(!showPortfolioDropdown)}
+              >
+                <Text style={styles.portfolioDropdownText} numberOfLines={1}>
+                  {currentPortfolio?.name || 'Select Portfolio'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#007AFF" />
+              </TouchableOpacity>
+
+              {/* Portfolio Dropdown Menu */}
+              {showPortfolioDropdown && (
+                <View style={styles.portfolioDropdownMenu}>
+                  {userPortfolios.map((p) => (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={[
+                        styles.portfolioDropdownItem,
+                        p.id === selectedPortfolioId && styles.portfolioDropdownItemActive
+                      ]}
+                      onPress={() => {
+                        setSelectedPortfolioId(p.id);
+                        setShowPortfolioDropdown(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.portfolioDropdownItemText,
+                        p.id === selectedPortfolioId && styles.portfolioDropdownItemTextActive
+                      ]} numberOfLines={1}>
+                        {p.name}
+                      </Text>
+                      {p.id === selectedPortfolioId && (
+                        <Ionicons name="checkmark" size={18} color="#007AFF" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                  <View style={styles.portfolioDropdownDivider} />
+                  <TouchableOpacity
+                    style={styles.portfolioDropdownItem}
+                    onPress={() => {
+                      setShowPortfolioDropdown(false);
+                      setShowCreatePortfolioModal(true);
+                    }}
+                  >
+                    <Ionicons name="add-circle-outline" size={18} color="#007AFF" />
+                    <Text style={styles.portfolioDropdownAddText}>Create New Portfolio</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
-            <TouchableOpacity 
-              style={styles.addIconButton}
-              onPress={() => setAddStockModal(true)}
-            >
-              <Ionicons name="add" size={24} color="#007AFF" />
-            </TouchableOpacity>
+
+            <View style={styles.portfolioActions}>
+              <TouchableOpacity
+                style={styles.portfolioOptionsButton}
+                onPress={() => {
+                  setEditingPortfolioName(currentPortfolio?.name || '');
+                  setShowPortfolioOptionsModal(true);
+                }}
+              >
+                <Ionicons name="ellipsis-horizontal" size={20} color="#8E8E93" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.addIconButton}
+                onPress={() => setAddStockModal(true)}
+              >
+                <Ionicons name="add" size={24} color="#007AFF" />
+              </TouchableOpacity>
+            </View>
           </View>
           
           <View style={styles.portfolioValueSection}>
             <Text style={styles.portfolioValue}>
-              ${portfolio.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${(contextCurrentPortfolio?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
-            <Text style={[styles.portfolioChange, { color: portfolio.dayChange >= 0 ? "#00C853" : "#FF3B30" }]}>
-              {portfolio.dayChange >= 0 ? '+' : ''}${Math.abs(portfolio.dayChange).toFixed(2)} ({portfolio.dayChange >= 0 ? '+' : ''}{portfolio.dayChangePercent.toFixed(2)}%)
+            <Text style={[styles.portfolioChange, { color: (contextCurrentPortfolio?.dayChange || 0) >= 0 ? "#00C853" : "#FF3B30" }]}>
+              {(contextCurrentPortfolio?.dayChange || 0) >= 0 ? '+' : ''}${Math.abs(contextCurrentPortfolio?.dayChange || 0).toFixed(2)} ({(contextCurrentPortfolio?.dayChange || 0) >= 0 ? '+' : ''}{(contextCurrentPortfolio?.dayChangePercent || 0).toFixed(2)}%)
             </Text>
           </View>
 
@@ -1467,10 +1562,10 @@ export default function Dashboard() {
                 curved
                 curvature={0.15}
                 curveType={1}
-                startFillColor={portfolio.yearChange >= 0 ? '#10B981' : '#EF4444'}
+                startFillColor={(contextCurrentPortfolio?.totalGain || 0) >= 0 ? '#10B981' : '#EF4444'}
                 startOpacity={0.25}
                 endOpacity={0.01}
-                color={portfolio.yearChange >= 0 ? '#10B981' : '#EF4444'}
+                color={(contextCurrentPortfolio?.totalGain || 0) >= 0 ? '#10B981' : '#EF4444'}
                 thickness={2.5}
                 hideDataPoints
                 hideAxesAndRules
@@ -1488,7 +1583,7 @@ export default function Dashboard() {
                   pointerStripColor: 'rgba(142, 142, 147, 0.3)',
                   pointerStripWidth: 1,
                   strokeDashArray: [4, 4],
-                  pointerColor: portfolio.yearChange >= 0 ? '#10B981' : '#EF4444',
+                  pointerColor: (contextCurrentPortfolio?.totalGain || 0) >= 0 ? '#10B981' : '#EF4444',
                   radius: 6,
                   pointerLabelWidth: 120,
                   pointerLabelHeight: 50,
@@ -1542,7 +1637,7 @@ export default function Dashboard() {
           })()}
 
           {/* Holdings List */}
-          {portfolio.holdings.length > 0 && (
+          {contextCurrentPortfolio && contextCurrentPortfolio.holdings.length > 0 && (
             <View style={styles.holdingsList}>
               <View style={styles.holdingsTitleRow}>
                 <Text style={styles.holdingsTitle}>Holdings</Text>
@@ -1553,7 +1648,7 @@ export default function Dashboard() {
                   <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
                 </TouchableOpacity>
               </View>
-              {portfolio.holdings.map((holding, idx) => (
+              {contextCurrentPortfolio.holdings.map((holding, idx) => (
                 <TouchableOpacity
                   key={idx}
                   style={styles.holdingRow}
@@ -1583,7 +1678,7 @@ export default function Dashboard() {
             </View>
           )}
 
-          {portfolio.holdings.length === 0 && (
+          {(!contextCurrentPortfolio || contextCurrentPortfolio.holdings.length === 0) && (
             <View style={styles.emptyPortfolio}>
               <View style={styles.emptyIconContainer}>
                 <Ionicons name="pie-chart-outline" size={48} color="#007AFF" />
@@ -1592,6 +1687,58 @@ export default function Dashboard() {
               <Text style={styles.emptySubtext}>Tap the + button to add your first stock</Text>
             </View>
           )}
+
+          {/* Portfolio Analytics Card */}
+          {contextCurrentPortfolio && contextCurrentPortfolio.holdings.length > 0 && (() => {
+            // Use pre-calculated values from context
+            const totalValue = contextCurrentPortfolio.totalValue;
+            const totalGain = contextCurrentPortfolio.totalGain;
+            const totalGainPercent = contextCurrentPortfolio.totalGainPercent;
+            const holdingWeights = contextCurrentPortfolio.holdings.map((h: any) => h.currentValue / totalValue);
+            const herfindahlIndex = holdingWeights.reduce((sum: number, w: number) => sum + (w * w), 0);
+            const diversificationScore = Math.round((1 - herfindahlIndex) * 100);
+
+            return (
+              <TouchableOpacity
+                style={styles.analyticsPreviewCard}
+                onPress={() => router.push('/portfolio/analytics')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.analyticsPreviewHeader}>
+                  <View style={styles.analyticsPreviewIconContainer}>
+                    <Ionicons name="analytics" size={24} color="#007AFF" />
+                  </View>
+                  <View style={styles.analyticsPreviewTitleContainer}>
+                    <Text style={styles.analyticsPreviewTitle}>Portfolio Analytics</Text>
+                    <Text style={styles.analyticsPreviewSubtitle}>View detailed insights</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                </View>
+                <View style={styles.analyticsPreviewStats}>
+                  <View style={styles.analyticsPreviewStat}>
+                    <Text style={styles.analyticsPreviewStatLabel}>Total P&L</Text>
+                    <Text style={[styles.analyticsPreviewStatValue, { color: totalGain >= 0 ? '#34C759' : '#FF3B30' }]}>
+                      {totalGain >= 0 ? '+' : ''}{totalGainPercent.toFixed(2)}%
+                    </Text>
+                  </View>
+                  <View style={styles.analyticsPreviewDivider} />
+                  <View style={styles.analyticsPreviewStat}>
+                    <Text style={styles.analyticsPreviewStatLabel}>Diversification</Text>
+                    <Text style={[styles.analyticsPreviewStatValue, {
+                      color: diversificationScore >= 70 ? '#34C759' : diversificationScore >= 40 ? '#FF9500' : '#FF3B30'
+                    }]}>
+                      {diversificationScore}/100
+                    </Text>
+                  </View>
+                  <View style={styles.analyticsPreviewDivider} />
+                  <View style={styles.analyticsPreviewStat}>
+                    <Text style={styles.analyticsPreviewStatLabel}>Holdings</Text>
+                    <Text style={styles.analyticsPreviewStatValue}>{contextCurrentPortfolio.holdings.length}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          })()}
         </View>
 
         {/* Watchlist Section */}
@@ -2417,6 +2564,102 @@ export default function Dashboard() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Create Portfolio Modal */}
+      <Modal
+        visible={showCreatePortfolioModal}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowCreatePortfolioModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCreatePortfolioModal(false)}
+        >
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+              <View style={styles.createPortfolioModalContent}>
+                <Text style={styles.createPortfolioTitle}>Create New Portfolio</Text>
+                <TextInput
+                  style={styles.createPortfolioInput}
+                  placeholder="Portfolio name"
+                  placeholderTextColor="#8E8E93"
+                  value={newPortfolioName}
+                  onChangeText={setNewPortfolioName}
+                  autoFocus
+                />
+                <View style={styles.createPortfolioButtons}>
+                  <TouchableOpacity
+                    style={styles.createPortfolioCancelBtn}
+                    onPress={() => {
+                      setNewPortfolioName('');
+                      setShowCreatePortfolioModal(false);
+                    }}
+                  >
+                    <Text style={styles.createPortfolioCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.createPortfolioCreateBtn, !newPortfolioName.trim() && styles.createPortfolioCreateBtnDisabled]}
+                    onPress={createPortfolio}
+                    disabled={!newPortfolioName.trim()}
+                  >
+                    <Text style={styles.createPortfolioCreateText}>Create</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </KeyboardAvoidingView>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Portfolio Options Modal */}
+      <Modal
+        visible={showPortfolioOptionsModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowPortfolioOptionsModal(false)}
+      >
+        <View style={styles.portfolioOptionsOverlay}>
+          <View style={styles.portfolioOptionsContent}>
+            <View style={styles.portfolioOptionsHeader}>
+              <Text style={styles.portfolioOptionsTitle}>Portfolio Settings</Text>
+              <TouchableOpacity onPress={() => setShowPortfolioOptionsModal(false)}>
+                <Ionicons name="close" size={24} color="#8E8E93" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.portfolioOptionsSection}>
+              <Text style={styles.portfolioOptionsLabel}>Portfolio Name</Text>
+              <TextInput
+                style={styles.portfolioOptionsInput}
+                value={editingPortfolioName}
+                onChangeText={setEditingPortfolioName}
+                placeholder="Enter name"
+                placeholderTextColor="#8E8E93"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.portfolioOptionsSaveBtn}
+              onPress={renameCurrentPortfolio}
+            >
+              <Ionicons name="checkmark-circle" size={20} color="#fff" />
+              <Text style={styles.portfolioOptionsSaveText}>Save Name</Text>
+            </TouchableOpacity>
+
+            <View style={styles.portfolioOptionsDivider} />
+
+            <TouchableOpacity
+              style={styles.portfolioOptionsDeleteBtn}
+              onPress={deleteCurrentPortfolio}
+            >
+              <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+              <Text style={styles.portfolioOptionsDeleteText}>Delete Portfolio</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -2715,6 +2958,72 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     marginRight: 6,
     includeFontPadding: false,
+    maxWidth: 150,
+  },
+  portfolioSelectorContainer: {
+    position: 'relative',
+    zIndex: 100,
+  },
+  portfolioDropdownMenu: {
+    position: 'absolute',
+    top: 45,
+    left: 0,
+    minWidth: 200,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    zIndex: 101,
+  },
+  portfolioDropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  portfolioDropdownItemActive: {
+    backgroundColor: '#007AFF10',
+  },
+  portfolioDropdownItemText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#000',
+    flex: 1,
+    marginRight: 8,
+  },
+  portfolioDropdownItemTextActive: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  portfolioDropdownDivider: {
+    height: 1,
+    backgroundColor: '#E5E5EA',
+    marginHorizontal: 12,
+  },
+  portfolioDropdownAddText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#007AFF',
+    marginLeft: 8,
+  },
+  portfolioActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  portfolioOptionsButton: {
+    width: Platform.OS === 'android' ? 34 : 40,
+    height: Platform.OS === 'android' ? 34 : 40,
+    borderRadius: Platform.OS === 'android' ? 17 : 20,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   eyeButton: {
     width: Platform.OS === 'android' ? 34 : 40,
@@ -3693,5 +4002,211 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '700',
+  },
+
+  // Portfolio Analytics Preview Card
+  analyticsPreviewCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+    marginHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  analyticsPreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  analyticsPreviewIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#007AFF15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  analyticsPreviewTitleContainer: {
+    flex: 1,
+  },
+  analyticsPreviewTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 2,
+  },
+  analyticsPreviewSubtitle: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  analyticsPreviewStats: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F7',
+    borderRadius: 12,
+    padding: 12,
+  },
+  analyticsPreviewStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  analyticsPreviewStatLabel: {
+    fontSize: 11,
+    color: '#8E8E93',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  analyticsPreviewStatValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#000',
+  },
+  analyticsPreviewDivider: {
+    width: 1,
+    backgroundColor: '#E5E5EA',
+    marginHorizontal: 8,
+  },
+
+  // Create Portfolio Modal
+  createPortfolioModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    marginHorizontal: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  createPortfolioTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  createPortfolioInput: {
+    backgroundColor: '#F5F5F7',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#000',
+    marginBottom: 20,
+  },
+  createPortfolioButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  createPortfolioCancelBtn: {
+    flex: 1,
+    backgroundColor: '#F5F5F7',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  createPortfolioCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  createPortfolioCreateBtn: {
+    flex: 1,
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  createPortfolioCreateBtnDisabled: {
+    opacity: 0.5,
+  },
+  createPortfolioCreateText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  // Portfolio Options Modal
+  portfolioOptionsOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  portfolioOptionsContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+  },
+  portfolioOptionsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  portfolioOptionsTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+  },
+  portfolioOptionsSection: {
+    marginBottom: 16,
+  },
+  portfolioOptionsLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#8E8E93',
+    marginBottom: 8,
+  },
+  portfolioOptionsInput: {
+    backgroundColor: '#F5F5F7',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#000',
+  },
+  portfolioOptionsSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
+    borderRadius: 14,
+    gap: 8,
+    marginBottom: 16,
+  },
+  portfolioOptionsSaveText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  portfolioOptionsDivider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginVertical: 8,
+  },
+  portfolioOptionsDeleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF3B3015',
+    paddingVertical: 16,
+    borderRadius: 14,
+    gap: 8,
+  },
+  portfolioOptionsDeleteText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF3B30',
   },
 });

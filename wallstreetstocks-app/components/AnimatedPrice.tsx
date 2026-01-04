@@ -176,52 +176,104 @@ export const AnimatedChange = memo(({
 // Live indicator dot with pulse animation
 export const LiveIndicator = memo(() => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    // Main dot pulse
     const pulse = Animated.loop(
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.5,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(opacityAnim, {
-            toValue: 0.5,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
       ])
     );
+
+    // Glow ring animation
+    const glow = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    // Opacity pulse for extra effect
+    const opacity = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacityAnim, {
+          toValue: 0.6,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
     pulse.start();
-    return () => pulse.stop();
+    glow.start();
+    opacity.start();
+
+    return () => {
+      pulse.stop();
+      glow.stop();
+      opacity.stop();
+    };
   }, []);
+
+  // Interpolate glow ring scale and opacity
+  const glowScale = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 2.5],
+  });
+
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.6, 0.3, 0],
+  });
 
   return (
     <View style={styles.liveContainer}>
-      <Animated.View
-        style={[
-          styles.liveDot,
-          {
-            transform: [{ scale: pulseAnim }],
-            opacity: opacityAnim,
-          },
-        ]}
-      />
+      <View style={styles.liveDotContainer}>
+        {/* Glow ring */}
+        <Animated.View
+          style={[
+            styles.liveGlow,
+            {
+              transform: [{ scale: glowScale }],
+              opacity: glowOpacity,
+            },
+          ]}
+        />
+        {/* Main dot */}
+        <Animated.View
+          style={[
+            styles.liveDot,
+            {
+              transform: [{ scale: pulseAnim }],
+              opacity: opacityAnim,
+            },
+          ]}
+        />
+      </View>
       <Text style={styles.liveText}>LIVE</Text>
     </View>
   );
@@ -244,16 +296,29 @@ const styles = StyleSheet.create({
   liveContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+  },
+  liveDotContainer: {
+    width: 16,
+    height: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  liveGlow: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#34C759',
   },
   liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#34C759',
   },
   liveText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: '#34C759',
     letterSpacing: 0.5,
