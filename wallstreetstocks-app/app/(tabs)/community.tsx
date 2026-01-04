@@ -1059,8 +1059,8 @@ export default function CommunityPage() {
     }
   };
 
-  // Giphy API search
-  const GIPHY_API_KEY = 'lqkEoY6mUPVHVlIEQGobNQsn7GRTfj0m';
+  // Giphy API search (using public beta key until production key is approved)
+  const GIPHY_API_KEY = 'GlVGYHkr3WSBnllca54iNt0yFbjz7L65';
 
   const searchGiphy = async (query: string) => {
     if (!query.trim()) {
@@ -1107,7 +1107,8 @@ export default function CommunityPage() {
 
   const openGiphyPicker = () => {
     setGiphyModal(true);
-    searchGiphy(''); // Load trending
+    // Load trending GIFs after modal opens
+    setTimeout(() => searchGiphy(''), 100);
   };
 
   // Create post with image upload
@@ -3087,7 +3088,6 @@ export default function CommunityPage() {
               </TouchableOpacity>
               <TouchableOpacity style={styles.addImageButton} onPress={openGiphyPicker}>
                 <Text style={styles.gifButtonText}>GIF</Text>
-                <Text style={styles.addImageText}>GIF</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -3650,7 +3650,6 @@ export default function CommunityPage() {
                   <Image
                     source={{ uri: gif.images?.fixed_height_small?.url || gif.images?.preview_gif?.url }}
                     style={styles.giphyImage}
-                    resizeMode="cover"
                   />
                 </TouchableOpacity>
               ))}
