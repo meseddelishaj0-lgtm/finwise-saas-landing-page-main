@@ -478,6 +478,12 @@ export default function CommunityPage() {
   const [posting, setPosting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // Giphy State
+  const [giphyModal, setGiphyModal] = useState(false);
+  const [giphySearch, setGiphySearch] = useState('');
+  const [giphyResults, setGiphyResults] = useState<any[]>([]);
+  const [giphyLoading, setGiphyLoading] = useState(false);
+
   // Comment State
   const [newComment, setNewComment] = useState('');
   const [commenting, setCommenting] = useState(false);
@@ -1051,6 +1057,57 @@ export default function CommunityPage() {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image');
     }
+  };
+
+  // Giphy API search
+  const GIPHY_API_KEY = 'lqkEoY6mUPVHVlIEQGobNQsn7GRTfj0m';
+
+  const searchGiphy = async (query: string) => {
+    if (!query.trim()) {
+      // Load trending GIFs when no search query
+      setGiphyLoading(true);
+      try {
+        const response = await fetch(
+          `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=20&rating=pg-13`
+        );
+        const data = await response.json();
+        setGiphyResults(data.data || []);
+      } catch (error) {
+        console.error('Error fetching trending GIFs:', error);
+      } finally {
+        setGiphyLoading(false);
+      }
+      return;
+    }
+
+    setGiphyLoading(true);
+    try {
+      const response = await fetch(
+        `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(query)}&limit=20&rating=pg-13`
+      );
+      const data = await response.json();
+      setGiphyResults(data.data || []);
+    } catch (error) {
+      console.error('Error searching GIFs:', error);
+    } finally {
+      setGiphyLoading(false);
+    }
+  };
+
+  const handleSelectGif = (gif: any) => {
+    // Use the fixed height small version for better performance
+    const gifUrl = gif.images?.fixed_height?.url || gif.images?.original?.url;
+    if (gifUrl) {
+      setNewPostImage(gifUrl);
+      setGiphyModal(false);
+      setGiphySearch('');
+      setGiphyResults([]);
+    }
+  };
+
+  const openGiphyPicker = () => {
+    setGiphyModal(true);
+    searchGiphy(''); // Load trending
   };
 
   // Create post with image upload
@@ -3023,10 +3080,16 @@ export default function CommunityPage() {
               </View>
             )}
 
-            <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
-              <Ionicons name="image-outline" size={24} color="#007AFF" />
-              <Text style={styles.addImageText}>Add Image</Text>
-            </TouchableOpacity>
+            <View style={styles.mediaButtonsRow}>
+              <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
+                <Ionicons name="image-outline" size={24} color="#007AFF" />
+                <Text style={styles.addImageText}>Image</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.addImageButton} onPress={openGiphyPicker}>
+                <Text style={styles.gifButtonText}>GIF</Text>
+                <Text style={styles.addImageText}>GIF</Text>
+              </TouchableOpacity>
+            </View>
           </ScrollView>
         </View>
       </Modal>
@@ -3533,6 +3596,71 @@ export default function CommunityPage() {
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
+      </Modal>
+
+      {/* GIPHY PICKER MODAL */}
+      <Modal
+        visible={giphyModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setGiphyModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.giphyHeader}>
+            <TouchableOpacity onPress={() => setGiphyModal(false)}>
+              <Ionicons name="close" size={28} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.giphyTitle}>Choose a GIF</Text>
+            <View style={{ width: 28 }} />
+          </View>
+
+          <View style={styles.giphySearchContainer}>
+            <Ionicons name="search" size={18} color="#8E8E93" />
+            <TextInput
+              style={styles.giphySearchInput}
+              placeholder="Search GIFs..."
+              placeholderTextColor="#8E8E93"
+              value={giphySearch}
+              onChangeText={(text) => {
+                setGiphySearch(text);
+                searchGiphy(text);
+              }}
+              autoCorrect={false}
+            />
+            {giphySearch.length > 0 && (
+              <TouchableOpacity onPress={() => {
+                setGiphySearch('');
+                searchGiphy('');
+              }}>
+                <Ionicons name="close-circle" size={20} color="#8E8E93" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {giphyLoading ? (
+            <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+          ) : (
+            <ScrollView contentContainerStyle={styles.giphyGrid}>
+              {giphyResults.map((gif) => (
+                <TouchableOpacity
+                  key={gif.id}
+                  style={styles.giphyItem}
+                  onPress={() => handleSelectGif(gif)}
+                >
+                  <Image
+                    source={{ uri: gif.images?.fixed_height_small?.url || gif.images?.preview_gif?.url }}
+                    style={styles.giphyImage}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+
+          <View style={styles.giphyAttribution}>
+            <Text style={styles.giphyAttributionText}>Powered by GIPHY</Text>
+          </View>
+        </View>
       </Modal>
 
       {/* IMAGE VIEWER MODAL */}
@@ -4354,11 +4482,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addImageButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    marginTop: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#007AFF',
@@ -4369,6 +4497,74 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
+  },
+  mediaButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  gifButtonText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#007AFF',
+  },
+
+  // Giphy Picker
+  giphyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#E5E5EA',
+  },
+  giphyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  giphySearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginHorizontal: 16,
+    marginTop: 12,
+    gap: 8,
+  },
+  giphySearchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#000',
+  },
+  giphyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 8,
+    gap: 8,
+  },
+  giphyItem: {
+    width: (SCREEN_WIDTH - 40) / 2,
+    height: 120,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#F2F2F7',
+  },
+  giphyImage: {
+    width: '100%',
+    height: '100%',
+  },
+  giphyAttribution: {
+    padding: 12,
+    alignItems: 'center',
+    borderTopWidth: 0.5,
+    borderTopColor: '#E5E5EA',
+  },
+  giphyAttributionText: {
+    fontSize: 12,
+    color: '#8E8E93',
   },
 
   // Search
