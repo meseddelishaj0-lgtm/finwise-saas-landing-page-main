@@ -257,7 +257,7 @@ const fetchAllData = async () => {
 const subscribeToWebSocket = () => {
   // Get all symbols for WebSocket subscription
   const stockSymbols = ALL_STOCKS.slice(0, 20); // Top 20 stocks
-  const cryptoSymbols = ALL_CRYPTO.slice(0, 10).map(s => s.replace('/', '')); // Top 10 crypto
+  const cryptoSymbols = ALL_CRYPTO.slice(0, 10); // Top 10 crypto (keep slash format for WebSocket)
   const etfSymbols = ALL_ETFS.slice(0, 10); // Top 10 ETFs
 
   const allSymbols = [...stockSymbols, ...cryptoSymbols, ...etfSymbols];
