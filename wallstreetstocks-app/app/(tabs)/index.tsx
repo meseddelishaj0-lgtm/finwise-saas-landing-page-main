@@ -33,6 +33,7 @@ import { fetchQuotesWithCache } from '@/services/quoteService';
 import { priceStore } from '@/stores/priceStore';
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
+import { marketDataService } from '@/services/marketDataService';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -724,26 +725,76 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stockPicksData, priceUpdateTrigger]);
 
-  // Fetch live market indices data - uses FMP for initial data
+  // Fetch live market indices data - INSTANT from pre-loaded ETF data
   const fetchMarketChips = async () => {
+    const symbols = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'EFA', 'EEM', 'VXX', 'GLD', 'SLV', 'USO', 'TLT'];
+    const nameMap: { [key: string]: string } = {
+      'SPY': 'S&P 500',
+      'QQQ': 'Nasdaq 100',
+      'DIA': 'Dow Jones',
+      'IWM': 'Russell 2000',
+      'VTI': 'Total Market',
+      'EFA': 'Intl Developed',
+      'EEM': 'Emerging Mkts',
+      'VXX': 'Volatility',
+      'GLD': 'Gold',
+      'SLV': 'Silver',
+      'USO': 'Oil',
+      'TLT': '20+ Yr Treasury',
+    };
+
+    // INSTANT: Try to use pre-loaded ETF data from marketDataService
+    const localETFs = marketDataService.getLiveData('etf');
+    const symbolSet = new Set(symbols);
+    const matchedETFs = localETFs.filter(etf => symbolSet.has(etf.symbol));
+
+    if (matchedETFs.length > 0) {
+      // Instant - data already in memory
+      const results = symbols.map(symbol => {
+        const etf = matchedETFs.find(e => e.symbol === symbol);
+        if (etf) {
+          return {
+            symbol,
+            name: nameMap[symbol] || etf.name || symbol,
+            price: etf.price,
+            change: etf.change,
+            changePercent: etf.changePercent,
+            color: etf.changePercent >= 0 ? '#34C759' : '#FF3B30',
+          };
+        }
+        // Check price store as fallback
+        const storeQuote = priceStore.getQuote(symbol);
+        if (storeQuote && storeQuote.price > 0) {
+          return {
+            symbol,
+            name: nameMap[symbol] || storeQuote.name || symbol,
+            price: storeQuote.price,
+            change: storeQuote.change || 0,
+            changePercent: storeQuote.changePercent || 0,
+            color: (storeQuote.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
+          };
+        }
+        return {
+          symbol,
+          name: nameMap[symbol] || symbol,
+          price: 0,
+          change: 0,
+          changePercent: 0,
+          color: '#34C759',
+        };
+      }).filter(item => item.price > 0);
+
+      if (results.length > 0) {
+        setMajorIndices(results);
+        setLastUpdated(new Date());
+        setIndicesLoading(false);
+        return;
+      }
+    }
+
+    // Fallback: fetch from API if local data not ready
     setIndicesLoading(true);
     try {
-      const symbols = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'EFA', 'EEM', 'VXX', 'GLD', 'SLV', 'USO', 'TLT'];
-      const nameMap: { [key: string]: string } = {
-        'SPY': 'S&P 500',
-        'QQQ': 'Nasdaq 100',
-        'DIA': 'Dow Jones',
-        'IWM': 'Russell 2000',
-        'VTI': 'Total Market',
-        'EFA': 'Intl Developed',
-        'EEM': 'Emerging Mkts',
-        'VXX': 'Volatility',
-        'GLD': 'Gold',
-        'SLV': 'Silver',
-        'USO': 'Oil',
-        'TLT': '20+ Yr Treasury',
-      };
-
       // Use Twelve Data API for real-time prices (works during extended hours)
       const promises = symbols.map(async (symbol) => {
         try {
@@ -805,8 +856,34 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch trending stocks with live data
+  // Fetch trending stocks with live data - INSTANT from pre-loaded stock data
   const fetchTrending = async () => {
+    // INSTANT: Try to use pre-loaded stock data from marketDataService
+    const localStocks = marketDataService.getLiveData('stock');
+
+    if (localStocks.length > 0) {
+      // Sort by absolute change percent to get most active/trending
+      const sortedStocks = [...localStocks]
+        .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
+        .slice(0, 6);
+
+      const trendingData = sortedStocks.map((stock, idx) => ({
+        symbol: stock.symbol,
+        name: stock.name || stock.symbol,
+        price: stock.price,
+        change: stock.change,
+        changePercent: stock.changePercent,
+        color: stock.changePercent >= 0 ? '#34C759' : '#FF3B30',
+        data: cleanChartData([stock.price, stock.price * 0.998, stock.price * 1.002, stock.price]),
+        rank: idx + 1
+      }));
+
+      setTrending(trendingData);
+      setTrendingLoading(false);
+      return;
+    }
+
+    // Fallback: fetch from API if local data not ready
     setTrendingLoading(true);
     try {
       const res = await fetch(
@@ -876,7 +953,7 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch watchlist data - uses batch quotes with KV caching
+  // Fetch watchlist data - INSTANT from pre-loaded data when possible
   const fetchWatchlist = async () => {
     if (watchlist.length === 0) {
       setWatchlistData([]);
@@ -884,6 +961,66 @@ export default function Dashboard() {
       return;
     }
 
+    // INSTANT: Try to use pre-loaded data from marketDataService
+    const localStocks = marketDataService.getLiveData('stock');
+    const localCrypto = marketDataService.getLiveData('crypto');
+    const localETFs = marketDataService.getLiveData('etf');
+    const allLocalData = [...localStocks, ...localCrypto, ...localETFs];
+
+    if (allLocalData.length > 0) {
+      // Check how many watchlist items we can find in pre-loaded data
+      const watchlistFromLocal = watchlist.map(symbol => {
+        // Check local data first
+        const localItem = allLocalData.find(item =>
+          item.symbol === symbol ||
+          item.symbol === symbol.replace('/', '') ||
+          item.symbol + '/USD' === symbol
+        );
+        if (localItem) {
+          return {
+            symbol,
+            name: localItem.name || symbol,
+            price: localItem.price,
+            change: localItem.change,
+            changePercent: localItem.changePercent,
+            color: localItem.changePercent >= 0 ? '#34C759' : '#FF3B30',
+            data: cleanChartData([localItem.price, localItem.price * 0.998, localItem.price * 1.002, localItem.price]),
+          };
+        }
+        // Check price store as fallback
+        const storeQuote = priceStore.getQuote(symbol);
+        if (storeQuote && storeQuote.price > 0) {
+          return {
+            symbol,
+            name: storeQuote.name || symbol,
+            price: storeQuote.price,
+            change: storeQuote.change || 0,
+            changePercent: storeQuote.changePercent || 0,
+            color: (storeQuote.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
+            data: cleanChartData([storeQuote.price, storeQuote.price * 0.998, storeQuote.price * 1.002, storeQuote.price]),
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      // If we found most items locally, show them instantly
+      if (watchlistFromLocal.length >= watchlist.length * 0.5) {
+        setWatchlistData(watchlistFromLocal as any[]);
+        setWatchlistDataLoading(false);
+        // Fetch any missing items in background
+        if (watchlistFromLocal.length < watchlist.length) {
+          fetchWatchlistFromAPI();
+        }
+        return;
+      }
+    }
+
+    // Fallback: fetch from API
+    await fetchWatchlistFromAPI();
+  };
+
+  // Helper to fetch watchlist from API
+  const fetchWatchlistFromAPI = async () => {
     setWatchlistDataLoading(true);
     try {
       // Use batch quotes endpoint with KV caching
