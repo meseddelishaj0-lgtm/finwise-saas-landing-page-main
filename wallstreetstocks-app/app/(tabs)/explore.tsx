@@ -25,6 +25,7 @@ import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
 import { useWebSocket } from "@/context/WebSocketContext";
 import { InlineAdBanner } from "@/components/AdBanner";
+import { marketDataService } from "@/services/marketDataService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
@@ -848,7 +849,6 @@ export default function Explore() {
 
   // Fetch live data based on tab
   const fetchLiveData = async () => {
-    setLoading(true);
     setError(null);
 
     try {
@@ -856,8 +856,29 @@ export default function Explore() {
 
       switch (activeTab) {
         case "stocks":
-          // Use Twelve Data for stocks - fetch in PARALLEL batches for speed
+          // INSTANT: Use pre-loaded data from marketDataService (Robinhood-style)
           {
+            const localStocks = marketDataService.getLiveData('stock');
+
+            if (localStocks.length > 0) {
+              // Instant - data already in memory from app startup
+              const stockData: MarketItem[] = localStocks.map(item => ({
+                symbol: item.symbol,
+                name: item.name,
+                price: item.price,
+                change: item.change,
+                changePercent: item.changePercent,
+                type: "stock" as any,
+                exchange: "NYSE",
+              }));
+              stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+              setData(stockData);
+              setLoading(false);
+              return;
+            }
+
+            // Fallback: fetch from API if local data not ready
+            setLoading(true);
             const batchSize = 8;
             const allStockData: MarketItem[] = [];
 
@@ -919,8 +940,29 @@ export default function Explore() {
             return;
           }
         case "crypto":
-          // Use Twelve Data for crypto - fetch in PARALLEL batches for speed
+          // INSTANT: Use pre-loaded data from marketDataService (Robinhood-style)
           {
+            const localCrypto = marketDataService.getLiveData('crypto');
+
+            if (localCrypto.length > 0) {
+              // Instant - data already in memory from app startup
+              const cryptoData: MarketItem[] = localCrypto.map(item => ({
+                symbol: item.symbol,
+                name: item.name,
+                price: item.price,
+                change: item.change,
+                changePercent: item.changePercent,
+                type: "crypto" as any,
+                exchange: "Crypto",
+              }));
+              cryptoData.sort((a, b) => b.price - a.price);
+              setData(cryptoData);
+              setLoading(false);
+              return;
+            }
+
+            // Fallback: fetch from API if local data not ready
+            setLoading(true);
             const batchSize = 8;
             const allCryptoData: MarketItem[] = [];
             const cryptoSymbols = CRYPTO_SYMBOLS_TWELVE.slice(0, 24); // Limit to 24 for faster loading
@@ -979,8 +1021,28 @@ export default function Explore() {
             return;
           }
         case "etf":
-          // Use Twelve Data for ETFs - fetch in PARALLEL batches for speed
+          // INSTANT: Use pre-loaded data from marketDataService (Robinhood-style)
           {
+            const localETFs = marketDataService.getLiveData('etf');
+
+            if (localETFs.length > 0) {
+              // Instant - data already in memory from app startup
+              const etfData: MarketItem[] = localETFs.map(item => ({
+                symbol: item.symbol,
+                name: item.name,
+                price: item.price,
+                change: item.change,
+                changePercent: item.changePercent,
+                type: "etf" as any,
+                exchange: "NYSE",
+              }));
+              setData(etfData);
+              setLoading(false);
+              return;
+            }
+
+            // Fallback: fetch from API if local data not ready
+            setLoading(true);
             const batchSize = 8;
             const allEtfData: MarketItem[] = [];
             const etfSymbols = ETF_SYMBOLS_TWELVE.slice(0, 24); // Limit to 24 for faster loading

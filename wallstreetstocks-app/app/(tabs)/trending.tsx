@@ -23,6 +23,7 @@ import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
 import { InlineAdBanner } from "@/components/AdBanner";
 import { useWebSocket } from "@/context/WebSocketContext";
+import { marketDataService } from "@/services/marketDataService";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
@@ -446,16 +447,14 @@ export default function Trending() {
   };
 
   const fetchLiveData = useCallback(async () => {
-    setLoading(true);
     setError(null);
 
     try {
       let cleaned: StockItem[] = [];
 
       if (activeTab === "indices") {
-        // Fetch index ETFs from Twelve Data
-        const quotes = await fetchTwelveDataQuotes(INDICES_SYMBOLS);
-        // Map symbols to friendly names
+        // INSTANT: Use pre-loaded ETF data from marketDataService
+        const localETFs = marketDataService.getLiveData('etf');
         const indexNames: Record<string, string> = {
           "SPY": "S&P 500 ETF",
           "QQQ": "Nasdaq 100 ETF",
@@ -470,6 +469,28 @@ export default function Trending() {
           "XLE": "Energy ETF",
           "XLK": "Technology ETF",
         };
+
+        // Filter pre-loaded ETFs for index symbols
+        const indexSymbols = new Set(INDICES_SYMBOLS);
+        const matchedETFs = localETFs.filter(etf => indexSymbols.has(etf.symbol));
+
+        if (matchedETFs.length > 0) {
+          // Instant - data already in memory
+          cleaned = matchedETFs.map(item => ({
+            symbol: item.symbol,
+            companyName: indexNames[item.symbol] || item.name || item.symbol,
+            changesPercentage: item.changePercent,
+            price: item.price,
+            change: item.change,
+          }));
+          setData(cleaned);
+          setLoading(false);
+          return;
+        }
+
+        // Fallback: fetch from API if local data not ready
+        setLoading(true);
+        const quotes = await fetchTwelveDataQuotes(INDICES_SYMBOLS);
         cleaned = quotes.map((item: any) => ({
           symbol: item.symbol || "N/A",
           companyName: indexNames[item.symbol] || item.name || item.symbol || "Unknown",
@@ -479,6 +500,7 @@ export default function Trending() {
         }));
       } else if (activeTab === "forex") {
         // Fetch forex pairs from Twelve Data
+        setLoading(true);
         const quotes = await fetchTwelveDataQuotes(FOREX_PAIRS);
         cleaned = quotes.map((item: any) => ({
           symbol: item.symbol?.replace('/', '') || "N/A",
@@ -489,6 +511,7 @@ export default function Trending() {
         }));
       } else if (activeTab === "commodities") {
         // Fetch commodities from Twelve Data
+        setLoading(true);
         const quotes = await fetchTwelveDataQuotes(COMMODITIES_SYMBOLS);
         cleaned = quotes.map((item: any) => {
           // Map symbol to friendly name
@@ -522,6 +545,43 @@ export default function Trending() {
           };
         });
       } else {
+        // INSTANT: Use pre-loaded stock data from marketDataService (Robinhood-style)
+        const localStocks = marketDataService.getLiveData('stock');
+
+        if (localStocks.length > 0) {
+          // Instant - filter and sort pre-loaded data locally
+          let stocksWithChange = localStocks.map(item => ({
+            symbol: item.symbol,
+            companyName: item.name || item.symbol,
+            changesPercentage: item.changePercent,
+            price: item.price,
+            change: item.change,
+          }));
+
+          // Sort based on active tab
+          if (activeTab === "gainers") {
+            stocksWithChange = stocksWithChange
+              .filter(s => s.changesPercentage > 0)
+              .sort((a, b) => b.changesPercentage - a.changesPercentage);
+          } else if (activeTab === "losers") {
+            stocksWithChange = stocksWithChange
+              .filter(s => s.changesPercentage < 0)
+              .sort((a, b) => a.changesPercentage - b.changesPercentage);
+          } else {
+            // Trending - sort by absolute change (most volatile)
+            stocksWithChange = stocksWithChange
+              .sort((a, b) => Math.abs(b.changesPercentage) - Math.abs(a.changesPercentage));
+          }
+
+          cleaned = stocksWithChange.slice(0, 50);
+          setData(cleaned);
+          setLoading(false);
+          return;
+        }
+
+        // Fallback: fetch from API if local data not ready
+        setLoading(true);
+
         // Try to use market_movers endpoint first (requires Pro plan)
         let moversData: any[] = [];
 

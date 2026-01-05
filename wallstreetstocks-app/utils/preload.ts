@@ -156,7 +156,14 @@ export async function preloadTrendingStocks(): Promise<void> {
 
 // Main preload function - call this on app startup
 export async function preloadAppData(): Promise<void> {
-  // Run preloads in parallel
+  // Import market data service dynamically to avoid circular deps
+  const { marketDataService } = await import('../services/marketDataService');
+
+  // Initialize market data service first (Robinhood-style pre-loading)
+  // This loads ALL stocks, crypto, ETFs for instant tab switching
+  marketDataService.initialize();
+
+  // Run legacy preloads in parallel (for backwards compatibility)
   await Promise.all([
     preloadPopularStocks(),
     preloadTrendingStocks(),
