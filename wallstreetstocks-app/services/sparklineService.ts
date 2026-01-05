@@ -4,8 +4,8 @@
 
 import { getFromMemory, setToMemory, CACHE_KEYS } from '../utils/memoryCache';
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 // Cache TTL: 10 minutes for sparklines (they don't change as frequently)
 const SPARKLINE_CACHE_TTL = 10 * 60 * 1000;
@@ -56,8 +56,9 @@ export async function fetchSparkline(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
+    // Use Twelve Data time_series endpoint for sparkline data
     const response = await fetch(
-      `${BASE_URL}/historical-chart/1hour/${symbol}?apikey=${FMP_API_KEY}`,
+      `${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(symbol)}&interval=1h&outputsize=24&apikey=${TWELVE_DATA_API_KEY}`,
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
@@ -68,8 +69,13 @@ export async function fetchSparkline(
 
     const data = await response.json();
 
-    if (Array.isArray(data) && data.length > 0) {
-      const sparkline = data.slice(0, 24).map((item: any) => item.close).reverse();
+    // Twelve Data returns { values: [...] } with newest first
+    if (data?.values && Array.isArray(data.values) && data.values.length > 0) {
+      // Reverse to get oldest first, then map to close prices
+      const sparkline = data.values
+        .slice(0, 24)
+        .reverse()
+        .map((item: any) => parseFloat(item.close));
 
       // Cache the result
       setToMemory(CACHE_KEYS.sparkline(symbol), sparkline);
