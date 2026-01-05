@@ -544,57 +544,13 @@ export default function Trending() {
             change: parseFloat(item.change) || 0,
           };
         });
-      } else {
-        // INSTANT: Use pre-loaded stock data from marketDataService (Robinhood-style)
-        const localStocks = marketDataService.getLiveData('stock');
-
-        if (localStocks.length > 0) {
-          // Instant - filter and sort pre-loaded data locally
-          let stocksWithChange = localStocks.map(item => ({
-            symbol: item.symbol,
-            companyName: item.name || item.symbol,
-            changesPercentage: item.changePercent,
-            price: item.price,
-            change: item.change,
-          }));
-
-          // Sort based on active tab
-          if (activeTab === "gainers") {
-            stocksWithChange = stocksWithChange
-              .filter(s => s.changesPercentage > 0)
-              .sort((a, b) => b.changesPercentage - a.changesPercentage);
-          } else if (activeTab === "losers") {
-            stocksWithChange = stocksWithChange
-              .filter(s => s.changesPercentage < 0)
-              .sort((a, b) => a.changesPercentage - b.changesPercentage);
-          } else {
-            // Trending - sort by absolute change (most volatile)
-            stocksWithChange = stocksWithChange
-              .sort((a, b) => Math.abs(b.changesPercentage) - Math.abs(a.changesPercentage));
-          }
-
-          cleaned = stocksWithChange.slice(0, 50);
-          setData(cleaned);
-          setLoading(false);
-          return;
-        }
-
-        // Fallback: fetch from API if local data not ready
+      } else if (activeTab === "gainers" || activeTab === "losers") {
+        // GAINERS/LOSERS: Use Twelve Data market_movers API for real market data
         setLoading(true);
 
-        // Try to use market_movers endpoint first (requires Pro plan)
-        let moversData: any[] = [];
+        const direction = activeTab === "gainers" ? "gainers" : "losers";
+        const moversData = await fetchMarketMovers(direction);
 
-        if (activeTab === "gainers") {
-          moversData = await fetchMarketMovers('gainers');
-        } else if (activeTab === "losers") {
-          moversData = await fetchMarketMovers('losers');
-        } else {
-          // Trending - try most_active
-          moversData = await fetchMarketMovers('most_active');
-        }
-
-        // If market_movers worked, use that data
         if (moversData.length > 0) {
           cleaned = moversData.map((item: any) => ({
             symbol: item.symbol || "N/A",
@@ -617,20 +573,68 @@ export default function Trending() {
               change: parseFloat(item.change) || 0,
             }));
 
-          // Sort based on active tab
           if (activeTab === "gainers") {
             stocksWithChange = stocksWithChange
               .filter(s => s.changesPercentage > 0)
               .sort((a, b) => b.changesPercentage - a.changesPercentage);
-          } else if (activeTab === "losers") {
+          } else {
             stocksWithChange = stocksWithChange
               .filter(s => s.changesPercentage < 0)
               .sort((a, b) => a.changesPercentage - b.changesPercentage);
-          } else {
-            // Trending - sort by absolute change (most volatile)
-            stocksWithChange = stocksWithChange
-              .sort((a, b) => Math.abs(b.changesPercentage) - Math.abs(a.changesPercentage));
           }
+
+          cleaned = stocksWithChange.slice(0, 50);
+        }
+      } else {
+        // TRENDING: Use pre-loaded stock data for instant display
+        const localStocks = marketDataService.getLiveData('stock');
+
+        if (localStocks.length > 0) {
+          // Instant - sort by absolute change (most volatile)
+          let stocksWithChange = localStocks.map(item => ({
+            symbol: item.symbol,
+            companyName: item.name || item.symbol,
+            changesPercentage: item.changePercent,
+            price: item.price,
+            change: item.change,
+          }));
+
+          stocksWithChange = stocksWithChange
+            .sort((a, b) => Math.abs(b.changesPercentage) - Math.abs(a.changesPercentage));
+
+          cleaned = stocksWithChange.slice(0, 50);
+          setData(cleaned);
+          setLoading(false);
+          return;
+        }
+
+        // Fallback: fetch from API if local data not ready
+        setLoading(true);
+        const moversData = await fetchMarketMovers('most_active');
+
+        if (moversData.length > 0) {
+          cleaned = moversData.map((item: any) => ({
+            symbol: item.symbol || "N/A",
+            companyName: item.name || item.symbol || "Unknown",
+            changesPercentage: parseFloat(item.percent_change) || 0,
+            price: parseFloat(item.last) || parseFloat(item.close) || 0,
+            change: parseFloat(item.change) || 0,
+          }));
+        } else {
+          const quotes = await fetchTwelveDataQuotes(TOP_STOCKS);
+
+          let stocksWithChange = quotes
+            .filter((item: any) => item && item.symbol && item.close)
+            .map((item: any) => ({
+              symbol: item.symbol,
+              companyName: item.name || item.symbol || "Unknown",
+              changesPercentage: parseFloat(item.percent_change) || 0,
+              price: parseFloat(item.close) || 0,
+              change: parseFloat(item.change) || 0,
+            }));
+
+          stocksWithChange = stocksWithChange
+            .sort((a, b) => Math.abs(b.changesPercentage) - Math.abs(a.changesPercentage));
 
           cleaned = stocksWithChange.slice(0, 50);
         }
