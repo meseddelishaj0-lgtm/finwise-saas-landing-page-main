@@ -874,14 +874,14 @@ export default function Dashboard() {
         change: stock.change,
         changePercent: stock.changePercent,
         color: stock.changePercent >= 0 ? '#34C759' : '#FF3B30',
-        data: generatePlaceholderChart(stock.price, stock.changePercent, stock.symbol),
+        data: [], // Start empty, real chart data will load
         rank: idx + 1
       }));
 
       setTrending(trendingData);
       setTrendingLoading(false);
 
-      // Fetch real chart data in background
+      // Fetch real chart data
       fetchTrendingCharts(sortedStocks.map(s => s.symbol));
       return;
     }
@@ -993,39 +993,7 @@ export default function Dashboard() {
     }
   };
 
-  // Generate consistent placeholder chart based on price trend (deterministic - no random)
-  const generatePlaceholderChart = (price: number, changePercent: number, symbol?: string): number[] => {
-    const points = 20;
-    const data: number[] = [];
-
-    // Calculate start price based on change direction
-    // For positive change: start lower, end at current price (line goes UP)
-    // For negative change: start higher, end at current price (line goes DOWN)
-    const changeAmount = price * (changePercent / 100);
-    const startPrice = price - changeAmount;
-
-    // Create a simple seed from symbol for slight curve variation (but never flip direction)
-    const seed = symbol ? symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10 : 0;
-    const curveStrength = 0.1 + (seed * 0.02); // Slight curve variation 0.1-0.3
-
-    for (let i = 0; i < points; i++) {
-      const progress = i / (points - 1);
-      // Use easing function for natural curve (never exceeds start-to-end range)
-      const eased = progress < 0.5
-        ? 2 * progress * progress * (1 + curveStrength)
-        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-      const clampedProgress = Math.max(0, Math.min(1, eased));
-      const value = startPrice + (price - startPrice) * clampedProgress;
-      data.push(Math.max(value, 0.01));
-    }
-
-    // Ensure first and last points are exact
-    data[0] = Math.max(startPrice, 0.01);
-    data[data.length - 1] = price;
-    return cleanChartData(data);
-  };
-
-  // Fetch watchlist data - INSTANT prices, then fetch real charts
+  // Fetch watchlist data - always fetch real chart data
   const fetchWatchlist = async () => {
     if (watchlist.length === 0) {
       setWatchlistData([]);
@@ -1033,99 +1001,11 @@ export default function Dashboard() {
       return;
     }
 
-    // INSTANT: Try to use pre-loaded data for prices
-    const localStocks = marketDataService.getLiveData('stock');
-    const localCrypto = marketDataService.getLiveData('crypto');
-    const localETFs = marketDataService.getLiveData('etf');
-    const allLocalData = [...localStocks, ...localCrypto, ...localETFs];
-
-    if (allLocalData.length > 0) {
-      // Show instant prices with placeholder charts
-      const watchlistFromLocal = watchlist.map(symbol => {
-        const localItem = allLocalData.find(item =>
-          item.symbol === symbol ||
-          item.symbol === symbol.replace('/', '') ||
-          item.symbol + '/USD' === symbol
-        );
-        if (localItem) {
-          return {
-            symbol,
-            name: localItem.name || symbol,
-            price: localItem.price,
-            change: localItem.change,
-            changePercent: localItem.changePercent,
-            color: localItem.changePercent >= 0 ? '#34C759' : '#FF3B30',
-            data: generatePlaceholderChart(localItem.price, localItem.changePercent, symbol),
-          };
-        }
-        const storeQuote = priceStore.getQuote(symbol);
-        if (storeQuote && storeQuote.price > 0) {
-          return {
-            symbol,
-            name: storeQuote.name || symbol,
-            price: storeQuote.price,
-            change: storeQuote.change || 0,
-            changePercent: storeQuote.changePercent || 0,
-            color: (storeQuote.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
-            data: generatePlaceholderChart(storeQuote.price, storeQuote.changePercent || 0, symbol),
-          };
-        }
-        return null;
-      }).filter(Boolean);
-
-      if (watchlistFromLocal.length > 0) {
-        // Show instant data immediately
-        setWatchlistData(watchlistFromLocal as any[]);
-        setWatchlistDataLoading(false);
-
-        // Always fetch real chart data in background
-        fetchWatchlistCharts();
-        return;
-      }
-    }
-
-    // Fallback: fetch from API
+    // Always fetch real chart data for watchlist - no placeholders
     await fetchWatchlistFromAPI();
   };
 
-  // Fetch real chart data for watchlist (runs in background)
-  const fetchWatchlistCharts = async () => {
-    try {
-      const chartsData = await Promise.all(
-        watchlist.map(async (symbol) => {
-          try {
-            const chartRes = await fetch(
-              `${BASE_URL}/historical-chart/1min/${symbol}?apikey=${FMP_API_KEY}`
-            );
-            const chartData = await chartRes.json();
-
-            if (chartData && Array.isArray(chartData) && chartData.length > 0) {
-              return {
-                symbol,
-                data: cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close)),
-              };
-            }
-            return null;
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      // Update watchlist with real chart data
-      setWatchlistData(prev => prev.map(item => {
-        const chartInfo = chartsData.find(c => c?.symbol === item.symbol);
-        if (chartInfo) {
-          return { ...item, data: chartInfo.data };
-        }
-        return item;
-      }));
-    } catch (err) {
-      console.error('Chart fetch error:', err);
-    }
-  };
-
-  // Helper to fetch watchlist from API
+  // Helper to fetch watchlist from API with real chart data
   const fetchWatchlistFromAPI = async () => {
     setWatchlistDataLoading(true);
     try {
@@ -1140,9 +1020,10 @@ export default function Dashboard() {
               );
               const chartData = await chartRes.json();
 
+              // Only use real chart data - no placeholders
               const chartValues = chartData && Array.isArray(chartData) && chartData.length > 0
                 ? cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close))
-                : generatePlaceholderChart(stock.price || 1, stock.changesPercentage || 0, stock.symbol);
+                : []; // Empty array if no real data available
 
               return {
                 symbol: stock.symbol,
@@ -1161,7 +1042,7 @@ export default function Dashboard() {
                 change: stock.change || 0,
                 changePercent: stock.changesPercentage || 0,
                 color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-                data: generatePlaceholderChart(stock.price || 1, stock.changesPercentage || 0, stock.symbol),
+                data: [], // No placeholder on error - just empty chart
               };
             }
           })
