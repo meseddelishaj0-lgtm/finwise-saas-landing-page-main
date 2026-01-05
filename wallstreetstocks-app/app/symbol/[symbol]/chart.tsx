@@ -41,7 +41,8 @@ const CHART_HEIGHT = SCREEN_HEIGHT * 0.38;
 
 type Timeframe = '1D' | '5D' | '1M' | '3M' | '1Y' | 'ALL';
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 interface ChartDataPoint {
   value: number;
@@ -122,13 +123,60 @@ export default function ChartTab() {
   const { subscribe, isConnected } = useWebSocket();
   useEffect(() => {
     if (cleanSymbol && isConnected) {
-      subscribe(cleanSymbol);
-      console.log(`📡 Subscribed to real-time updates for ${cleanSymbol}`);
+      // Subscribe to both symbol formats for crypto (BTCUSD and BTC/USD)
+      const symbolsToSubscribe = [cleanSymbol];
+      if (cleanSymbol.endsWith('USD') && cleanSymbol.length <= 10 && !cleanSymbol.includes('/')) {
+        // Also subscribe to BTC/USD format
+        symbolsToSubscribe.push(cleanSymbol.slice(0, -3) + '/USD');
+      } else if (cleanSymbol.includes('/')) {
+        // Also subscribe to BTCUSD format (no slash)
+        symbolsToSubscribe.push(cleanSymbol.replace('/', ''));
+      }
+      subscribe(symbolsToSubscribe);
+      console.log(`📡 Subscribed to real-time updates for ${symbolsToSubscribe.join(', ')}`);
     }
   }, [cleanSymbol, isConnected, subscribe]);
 
   // Get real-time price from store (updates automatically via WebSocket)
-  const realtimePrice = usePrice(cleanSymbol || '');
+  // Check both symbol formats for crypto
+  const realtimePriceMain = usePrice(cleanSymbol || '');
+  const altSymbol = cleanSymbol?.endsWith('USD') && !cleanSymbol?.includes('/')
+    ? cleanSymbol.slice(0, -3) + '/USD'
+    : cleanSymbol?.includes('/')
+      ? cleanSymbol.replace('/', '')
+      : '';
+  const realtimePriceAlt = usePrice(altSymbol);
+
+  // Use whichever price is available (prefer main symbol)
+  const realtimePrice = realtimePriceMain ?? realtimePriceAlt;
+
+  // Trigger re-render every second to sync with WebSocket price updates
+  const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
+  const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    priceRefreshIntervalRef.current = setInterval(() => {
+      setPriceUpdateTrigger(prev => prev + 1);
+    }, 1000);
+    return () => {
+      if (priceRefreshIntervalRef.current) clearInterval(priceRefreshIntervalRef.current);
+    };
+  }, []);
+
+  // Get the most up-to-date price from the store on each tick
+  const livePrice = useMemo(() => {
+    // Check both symbol formats
+    const mainQuote = priceStore.getQuote(cleanSymbol || '');
+    const altQuote = altSymbol ? priceStore.getQuote(altSymbol) : undefined;
+
+    // Use the quote with the most recent timestamp
+    if (mainQuote && altQuote) {
+      return (mainQuote.updatedAt || 0) >= (altQuote.updatedAt || 0)
+        ? mainQuote.price
+        : altQuote.price;
+    }
+    return mainQuote?.price ?? altQuote?.price ?? realtimePrice;
+  }, [cleanSymbol, altSymbol, realtimePrice, priceUpdateTrigger]);
 
   const [chartData, setChartData] = useState<ChartDataPoint[]>(initialData.chart || []);
   // Initialize price from chart data's last point if available (more recent than cached quote)
@@ -161,8 +209,9 @@ export default function ChartTab() {
 
   // Update displayed price when WebSocket sends new data
   useEffect(() => {
-    if (realtimePrice && realtimePrice !== currentPrice) {
-      setCurrentPrice(realtimePrice);
+    const priceToUse = livePrice ?? realtimePrice;
+    if (priceToUse && priceToUse !== currentPrice) {
+      setCurrentPrice(priceToUse);
       setLastUpdated(new Date());
       // Pulse animation on price update
       Animated.sequence([
@@ -170,16 +219,17 @@ export default function ChartTab() {
         Animated.timing(pulseAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
       ]).start();
     }
-  }, [realtimePrice]);
+  }, [livePrice, realtimePrice]);
 
   // Calculate price change based on timeframe
   const priceChange = useMemo(() => {
-    if (!chartData.length || currentPrice === null) return { amount: 0, percent: 0 };
-    const startPrice = chartData[0]?.value || currentPrice;
-    const amount = currentPrice - startPrice;
+    const price = livePrice ?? currentPrice;
+    if (!chartData.length || price === null) return { amount: 0, percent: 0 };
+    const startPrice = chartData[0]?.value || price;
+    const amount = price - startPrice;
     const percent = startPrice > 0 ? (amount / startPrice) * 100 : 0;
     return { amount, percent };
-  }, [chartData, currentPrice]);
+  }, [chartData, livePrice, currentPrice]);
 
   const isPositive = priceChange.amount >= 0;
   const priceColor = isPositive ? '#00C853' : '#FF3B30';
@@ -210,7 +260,7 @@ export default function ChartTab() {
     return 'closed';
   }, []);
 
-  // Fetch quote data with caching
+  // Fetch quote data with caching - using Twelve Data API
   const fetchQuote = useCallback(async (useCache = true) => {
     if (!cleanSymbol) return;
 
@@ -228,55 +278,80 @@ export default function ChartTab() {
       }
     }
 
-    // Fetch fresh data
+    // Fetch fresh data from Twelve Data
     try {
-      const encodedSymbol = encodeURIComponent(cleanSymbol.replace(/\//g, ''));
+      // Handle crypto symbols: BTCUSD -> BTC/USD for Twelve Data
+      let apiSymbol = cleanSymbol;
+      if (cleanSymbol.endsWith('USD') && cleanSymbol.length <= 10 && !cleanSymbol.includes('/')) {
+        apiSymbol = cleanSymbol.slice(0, -3) + '/USD';
+      }
+
       const res = await fetch(
-        `https://financialmodelingprep.com/api/v3/quote/${encodedSymbol}?apikey=${FMP_API_KEY}`
+        `${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(apiSymbol)}&apikey=${TWELVE_DATA_API_KEY}`
       );
       const data = await res.json();
 
-      if (data?.[0]) {
-        const q = data[0];
-        setCurrentPrice(q.price);
-        setPreviousClose(q.previousClose);
-        setDayHigh(q.dayHigh);
-        setDayLow(q.dayLow);
+      if (data && !data.code && data.symbol) {
+        const price = parseFloat(data.close) || 0;
+        const previousClose = parseFloat(data.previous_close) || price;
+        const dayHigh = parseFloat(data.high) || price;
+        const dayLow = parseFloat(data.low) || price;
+        const change = parseFloat(data.change) || 0;
+        const changePercent = parseFloat(data.percent_change) || 0;
+
+        setCurrentPrice(price);
+        setPreviousClose(previousClose);
+        setDayHigh(dayHigh);
+        setDayLow(dayLow);
         setLastUpdated(new Date());
         setError(null);
 
         // Check if we have a chart-synced price in the global store
-        // If so, preserve it and only update other quote fields
         const storeQuote = priceStore.getQuote(cleanSymbol);
-        const priceToUse = storeQuote?.price || q.price;
+        const priceToUse = storeQuote?.price || price;
 
-        // Update global price store
-        priceStore.setQuote({
-          symbol: cleanSymbol,
+        // Update global price store with BOTH symbol formats for crypto
+        const quoteData = {
           price: priceToUse,
-          change: q.change,
-          changePercent: q.changesPercentage,
-          name: q.name,
-          previousClose: q.previousClose,
-          open: q.open,
-          high: q.dayHigh,
-          low: q.dayLow,
-          volume: q.volume,
-        });
+          change: change,
+          changePercent: changePercent,
+          name: data.name || cleanSymbol,
+          previousClose: previousClose,
+          open: parseFloat(data.open) || price,
+          high: dayHigh,
+          low: dayLow,
+          volume: parseFloat(data.volume) || 0,
+        };
+
+        priceStore.setQuote({ symbol: cleanSymbol, ...quoteData });
+        if (apiSymbol !== cleanSymbol) {
+          priceStore.setQuote({ symbol: apiSymbol, ...quoteData });
+        }
 
         // Also update memory cache for backward compatibility
+        const cacheData = {
+          price: priceToUse,
+          previousClose,
+          dayHigh,
+          dayLow,
+          change,
+          changesPercentage: changePercent,
+          name: data.name,
+          open: parseFloat(data.open),
+          volume: parseFloat(data.volume),
+        };
+
         const existingCache = getFromMemory<any>(CACHE_KEYS.quote(cleanSymbol));
         if (existingCache?._chartSynced) {
           setToMemory(CACHE_KEYS.quote(cleanSymbol), {
-            ...q,
+            ...cacheData,
             price: existingCache.price,
             _chartSynced: true,
           });
         } else {
-          setToMemory(CACHE_KEYS.quote(cleanSymbol), q);
+          setToMemory(CACHE_KEYS.quote(cleanSymbol), cacheData);
         }
-        // Also save to AsyncStorage for persistence
-        await setCachedData(cacheKey, { ...q, timestamp: Date.now() });
+        await setCachedData(cacheKey, { ...cacheData, timestamp: Date.now() });
       }
     } catch (err) {
       console.error('Quote fetch error:', err);
@@ -358,147 +433,97 @@ export default function ChartTab() {
     setError(null);
 
     try {
-      const symbolForApi = encodeURIComponent(cleanSymbol.replace(/\//g, ''));
+      // Handle symbol format for Twelve Data API
+      // For crypto: BTCUSD -> BTC/USD
+      let symbolForApi = cleanSymbol;
+      if (cleanSymbol.endsWith('USD') && cleanSymbol.length <= 10 && !cleanSymbol.includes('/')) {
+        // Check if it's likely a crypto symbol (not an ETF like SPY)
+        const etfs = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'VOO', 'XLF', 'XLE', 'XLK', 'ARKK'];
+        if (!etfs.includes(cleanSymbol)) {
+          symbolForApi = cleanSymbol.slice(0, -3) + '/USD';
+        }
+      }
+
       let formatted: ChartDataPoint[] = [];
 
-      if (timeframe === '1D') {
-        // Use 1-minute intervals for live 1D data including premarket (from 4 AM ET)
-        const res = await fetch(
-          `https://financialmodelingprep.com/api/v3/historical-chart/1min/${symbolForApi}?extended=true&apikey=${FMP_API_KEY}`
-        );
-        const data = await res.json();
+      // Twelve Data time series intervals and output sizes for each timeframe
+      const timeframeConfig: Record<Timeframe, { interval: string; outputsize: number }> = {
+        '1D': { interval: '5min', outputsize: 78 },      // ~6.5 hours of trading
+        '5D': { interval: '30min', outputsize: 65 },     // 5 days * 13 per day
+        '1M': { interval: '1h', outputsize: 160 },       // ~22 trading days * 7 hours
+        '3M': { interval: '4h', outputsize: 130 },       // ~65 trading days * 2
+        '1Y': { interval: '1day', outputsize: 252 },     // ~252 trading days
+        'ALL': { interval: '1week', outputsize: 500 },   // Years of weekly data
+      };
 
-        if (Array.isArray(data) && data.length > 0) {
-          // Get today's data including premarket (4 AM - 8 PM ET = ~960 minutes)
-          const today = new Date().toISOString().split('T')[0];
-          const todayData = data.filter((d: any) => d.date.startsWith(today));
+      const config = timeframeConfig[timeframe];
+      const url = `${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(symbolForApi)}&interval=${config.interval}&outputsize=${config.outputsize}&apikey=${TWELVE_DATA_API_KEY}`;
 
-          // If no today data, use most recent trading day's data
-          const dataToUse = todayData.length > 10 ? todayData : data.slice(0, 960);
+      const res = await fetch(url);
+      const data = await res.json();
 
-          // Sample to keep performance smooth while showing detailed chart
-          // For premarket + regular hours, we may have 600+ data points
-          const sampleRate = dataToUse.length > 300 ? 3 : dataToUse.length > 150 ? 2 : 1;
+      if (data?.values && Array.isArray(data.values) && data.values.length > 0) {
+        // Twelve Data returns newest first, we need oldest first for chart
+        const values = [...data.values].reverse();
 
-          formatted = dataToUse
-            .filter((_: any, i: number) => i % sampleRate === 0)
-            .reverse()
-            .map((d: any) => ({
-              value: d.close,
-              label: new Date(d.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-              date: new Date(d.date),
-            }));
-        }
-      } else if (timeframe === '5D') {
-        // Use 30-minute intervals for smoother 5D chart
-        const res = await fetch(
-          `https://financialmodelingprep.com/api/v3/historical-chart/30min/${symbolForApi}?apikey=${FMP_API_KEY}`
-        );
-        const data = await res.json();
+        // Format labels based on timeframe
+        // Twelve Data returns datetime in exchange timezone (Eastern for US stocks)
+        // We need to display in user's local time
+        formatted = values.map((d: any) => {
+          // Twelve Data format: "2024-01-04 14:15:00" (exchange local time)
+          // Append timezone to parse correctly - assume Eastern Time for stocks
+          const isCryptoSymbol = symbolForApi.includes('/');
+          const dateStr = d.datetime;
 
-        if (Array.isArray(data) && data.length > 0) {
-          // Get last 5 trading days worth of 30min data (~65 points)
-          const fiveDaysData = data.slice(0, 65);
+          // For stocks, the time is in Eastern Time
+          // For crypto, it's typically in UTC or exchange time
+          let date: Date;
+          if (isCryptoSymbol) {
+            // Crypto - treat as UTC
+            date = new Date(dateStr + 'Z');
+          } else {
+            // US stocks - time is Eastern Time, convert to local
+            // Check if date is in Daylight Saving Time (EDT = -04:00) or Standard Time (EST = -05:00)
+            // DST in US: 2nd Sunday of March to 1st Sunday of November
+            const tempDate = new Date(dateStr.replace(' ', 'T'));
+            const month = tempDate.getMonth(); // 0-11
 
-          formatted = fiveDaysData
-            .reverse()
-            .map((d: any) => ({
-              value: d.close,
-              label: new Date(d.date).toLocaleDateString('en-US', { weekday: 'short' }),
-              date: new Date(d.date),
-            }));
-        }
-      } else if (timeframe === '1M') {
-        // Use 1-hour intervals for 1M chart
-        const res = await fetch(
-          `https://financialmodelingprep.com/api/v3/historical-chart/1hour/${symbolForApi}?apikey=${FMP_API_KEY}`
-        );
-        const data = await res.json();
+            // Rough DST check: April-October is definitely DST
+            const isDST = month > 2 && month < 10;
+            const offset = isDST ? '-04:00' : '-05:00';
 
-        if (Array.isArray(data) && data.length > 0) {
-          // Get ~22 trading days * 7 hours = ~154 points, sample to ~80
-          const monthData = data.slice(0, 160);
-          const sampleRate = Math.max(1, Math.floor(monthData.length / 80));
-
-          formatted = monthData
-            .filter((_: any, i: number) => i % sampleRate === 0)
-            .reverse()
-            .map((d: any) => ({
-              value: d.close,
-              label: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              date: new Date(d.date),
-            }));
-        }
-      } else if (timeframe === '3M') {
-        // Use 4-hour intervals for 3M chart
-        const res = await fetch(
-          `https://financialmodelingprep.com/api/v3/historical-chart/4hour/${symbolForApi}?apikey=${FMP_API_KEY}`
-        );
-        const data = await res.json();
-
-        if (Array.isArray(data) && data.length > 0) {
-          // Get ~65 trading days * 2 = ~130 points
-          const quarterData = data.slice(0, 140);
-          const sampleRate = Math.max(1, Math.floor(quarterData.length / 90));
-
-          formatted = quarterData
-            .filter((_: any, i: number) => i % sampleRate === 0)
-            .reverse()
-            .map((d: any) => ({
-              value: d.close,
-              label: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              date: new Date(d.date),
-            }));
-        }
-
-        // Fallback to daily data if 4hour not available
-        if (formatted.length < 10) {
-          const res2 = await fetch(
-            `https://financialmodelingprep.com/api/v3/historical-price-full/${symbolForApi}?timeseries=90&apikey=${FMP_API_KEY}`
-          );
-          const data2 = await res2.json();
-
-          if (data2?.historical) {
-            formatted = data2.historical
-              .reverse()
-              .map((d: any) => ({
-                value: d.close,
-                label: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                date: new Date(d.date),
-              }));
+            date = new Date(dateStr.replace(' ', 'T') + offset);
           }
+
+          let label = '';
+
+          if (timeframe === '1D') {
+            // Show time in user's local timezone
+            label = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+          } else if (timeframe === '5D') {
+            label = date.toLocaleDateString('en-US', { weekday: 'short' });
+          } else if (timeframe === '1M' || timeframe === '3M') {
+            label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          } else if (timeframe === '1Y') {
+            label = date.toLocaleDateString('en-US', { month: 'short' });
+          } else {
+            label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          }
+
+          return {
+            value: parseFloat(d.close),
+            label,
+            date,
+          };
+        });
+
+        // Sample for ALL timeframe to keep chart smooth
+        if (timeframe === 'ALL' && formatted.length > 200) {
+          const sampleRate = Math.ceil(formatted.length / 200);
+          formatted = formatted.filter((_, i) => i % sampleRate === 0);
         }
-      } else {
-        // Use daily data for 1Y and ALL
-        const daysMap: Record<string, string> = {
-          '1Y': '365',
-          'ALL': '10000',
-        };
-
-        const endpoint = timeframe === 'ALL'
-          ? `https://financialmodelingprep.com/api/v3/historical-price-full/${symbolForApi}?from=1980-01-01&apikey=${FMP_API_KEY}`
-          : `https://financialmodelingprep.com/api/v3/historical-price-full/${symbolForApi}?timeseries=${daysMap[timeframe]}&apikey=${FMP_API_KEY}`;
-
-        const res = await fetch(endpoint);
-        const data = await res.json();
-
-        if (data?.historical) {
-          const histData = data.historical;
-          const maxPoints = timeframe === 'ALL' ? 200 : 120;
-          const sampleRate = Math.max(1, Math.ceil(histData.length / maxPoints));
-
-          formatted = histData
-            .filter((_: any, i: number) => i % sampleRate === 0)
-            .reverse()
-            .map((d: any) => ({
-              value: d.close,
-              label: new Date(d.date).toLocaleDateString('en-US', {
-                month: 'short',
-                year: timeframe === 'ALL' ? '2-digit' : undefined,
-              }),
-              date: new Date(d.date),
-            }));
-        }
+      } else if (data?.code || data?.message) {
+        console.warn(`Twelve Data chart error for ${symbolForApi}:`, data.message || data.code);
       }
 
       if (formatted.length > 0) {
@@ -587,8 +612,11 @@ export default function ChartTab() {
 
   const handleTimeframeChange = (tf: Timeframe) => {
     if (tf !== timeframe) {
-      setTimeframe(tf);
+      // Clear old data immediately for clean transition
       setPointerData(null);
+      setChartData([]);
+      setLoading(true);
+      setTimeframe(tf);
     }
   };
 
@@ -669,9 +697,10 @@ export default function ChartTab() {
     return `$${price.toFixed(4)}`;
   };
 
-  // Display values (use pointer data when available, then latest chart point, then currentPrice)
+  // Display values (use pointer data when available, then real-time price, then chart point)
   const latestChartPrice = chartData.length > 0 ? chartData[chartData.length - 1]?.value : null;
-  const displayPrice = pointerData?.price ?? latestChartPrice ?? currentPrice;
+  // Prioritize live WebSocket price over state/chart data for instant sync when lifting finger
+  const displayPrice = pointerData?.price ?? livePrice ?? currentPrice ?? latestChartPrice;
   const displayChange = pointerData ? pointerData.change : priceChange.amount;
   const displayPercent = pointerData
     ? (chartData[0]?.value ? (pointerData.change / chartData[0].value) * 100 : 0)
@@ -841,7 +870,7 @@ export default function ChartTab() {
                 autoAdjustPointerLabelPosition: true,
                 shiftPointerLabelX: -70,
                 shiftPointerLabelY: -85,
-                pointerLabelComponent: (items: any, secondaryDataItem: any) => {
+                pointerLabelComponent: (items: any) => {
                   if (!items || items.length === 0) return null;
 
                   // Get the index from the pointer - try multiple ways to get it

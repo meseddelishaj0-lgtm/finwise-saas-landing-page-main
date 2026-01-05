@@ -1,5 +1,5 @@
 // app/(tabs)/explore.tsx - WITH LARGER SECTION HEADER CARDS
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/Anima
 import { fetchQuotesWithCache } from "@/services/quoteService";
 import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
+import { useWebSocket } from "@/context/WebSocketContext";
 import { InlineAdBanner } from "@/components/AdBanner";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -385,18 +386,59 @@ export default function Explore() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const FMP_API_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
-  const BASE_URL = "https://financialmodelingprep.com/api/v3";
+  // WebSocket for real-time prices
+  const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
+  const currentSubscribedSymbolsRef = useRef<string[]>([]);
 
-  // Extended crypto list (50+ cryptocurrencies)
-  const CRYPTO_SYMBOLS = [
-    "BTCUSD", "ETHUSD", "BNBUSD", "XRPUSD", "ADAUSD", "SOLUSD", "DOGEUSD", "DOTUSD",
-    "MATICUSD", "LTCUSD", "SHIBUSD", "TRXUSD", "AVAXUSD", "LINKUSD", "ATOMUSD",
-    "UNIUSD", "XLMUSD", "XMRUSD", "ETCUSD", "BCHUSD", "ALGOUSD", "VETUSD",
-    "FILUSD", "ICPUSD", "HBARUSD", "MANAUSD", "SANDUSD", "AXSUSD", "THETAUSD",
-    "EGLDUSD", "XTZUSD", "AABORUSD", "EOSUSD", "MKRUSD", "NEOUSD", "KSMUSD",
-    "QNTUSD", "FLOWUSD", "CHZUSD", "ENJUSD", "ZECUSD", "BATUSD", "DASHUSD",
-    "COMPUSD", "YFIUSD", "SNXUSD", "SUSHIUSD", "CRVUSD", "1INCHUSD", "GRTUSD"
+  // Simple interval-based price refresh (completely decoupled from store to prevent loops)
+  const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
+  const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Refresh prices every 1 second via simple interval - no store subscription to prevent loops
+  useEffect(() => {
+    priceRefreshIntervalRef.current = setInterval(() => {
+      setPriceUpdateTrigger(prev => prev + 1);
+    }, 1000);
+
+    return () => {
+      if (priceRefreshIntervalRef.current) {
+        clearInterval(priceRefreshIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const FMP_API_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
+  const TWELVE_DATA_API_KEY = "604ed688209443c89250510872616f41";
+  const BASE_URL = "https://financialmodelingprep.com/api/v3";
+  const TWELVE_DATA_URL = "https://api.twelvedata.com";
+
+  // Popular US stocks for Twelve Data (most active/popular)
+  const US_STOCKS_TWELVE = [
+    "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK.B", "UNH", "JNJ",
+    "V", "XOM", "WMT", "JPM", "MA", "PG", "HD", "CVX", "MRK", "ABBV",
+    "LLY", "PEP", "KO", "COST", "AVGO", "TMO", "MCD", "CSCO", "ACN", "ABT",
+    "DHR", "NEE", "WFC", "LIN", "ADBE", "TXN", "CRM", "AMD", "PM", "ORCL",
+    "BMY", "UPS", "RTX", "QCOM", "HON", "UNP", "INTC", "IBM", "CAT", "BA"
+  ];
+
+  // Extended crypto list for Twelve Data (format: BTC/USD)
+  const CRYPTO_SYMBOLS_TWELVE = [
+    "BTC/USD", "ETH/USD", "BNB/USD", "XRP/USD", "ADA/USD", "SOL/USD", "DOGE/USD", "DOT/USD",
+    "MATIC/USD", "LTC/USD", "SHIB/USD", "TRX/USD", "AVAX/USD", "LINK/USD", "ATOM/USD",
+    "UNI/USD", "XLM/USD", "XMR/USD", "ETC/USD", "BCH/USD", "ALGO/USD", "VET/USD",
+    "FIL/USD", "ICP/USD", "HBAR/USD", "MANA/USD", "SAND/USD", "AXS/USD", "THETA/USD",
+    "XTZ/USD", "EOS/USD", "MKR/USD", "NEO/USD", "FLOW/USD", "CHZ/USD", "ENJ/USD",
+    "ZEC/USD", "BAT/USD", "DASH/USD", "COMP/USD", "YFI/USD", "SNX/USD", "SUSHI/USD",
+    "CRV/USD", "1INCH/USD", "GRT/USD", "AAVE/USD", "APE/USD", "ARB/USD", "OP/USD"
+  ];
+
+  // Popular ETFs for Twelve Data
+  const ETF_SYMBOLS_TWELVE = [
+    "SPY", "VOO", "VTI", "QQQ", "IVV", "VEA", "IEFA", "VWO", "VTV", "IEMG",
+    "BND", "AGG", "VUG", "IJR", "IWM", "VIG", "SCHD", "VYM", "VGT", "XLF",
+    "XLK", "XLE", "XLV", "XLI", "XLY", "XLP", "XLU", "XLB", "XLRE", "XLC",
+    "ARKK", "ARKW", "ARKG", "ARKF", "ARKQ", "DIA", "IWF", "IWD", "EFA", "EEM",
+    "GLD", "SLV", "USO", "TLT", "LQD", "HYG", "EMB", "TIP", "VCIT", "VCSH"
   ];
 
   // Extended bond ETFs list (30+ bonds)
@@ -702,25 +744,181 @@ export default function Explore() {
 
       switch (activeTab) {
         case "stocks":
-          // Fetch based on region
-          if (stockRegion === "us") {
-            url = `${BASE_URL}/stock_market/actives?apikey=${FMP_API_KEY}`;
-          } else if (stockRegion === "europe") {
-            // Fetch European stocks directly
-            url = `${BASE_URL}/quote/${EUROPE_STOCKS.join(",")}?apikey=${FMP_API_KEY}`;
-          } else if (stockRegion === "asia") {
-            // Fetch Asian stocks (ADRs and ETFs) directly
-            const asiaSymbols = [...ASIA_STOCKS.filter(s => !s.includes(".")), ...ASIA_ETFS];
-            url = `${BASE_URL}/quote/${asiaSymbols.join(",")}?apikey=${FMP_API_KEY}`;
+          // Use Twelve Data for stocks - fetch in PARALLEL batches for speed
+          {
+            const batchSize = 8;
+            const allStockData: MarketItem[] = [];
+
+            // Select symbols based on region - limit to 24 for faster loading (3 parallel batches)
+            let stockSymbols: string[];
+            if (stockRegion === "us") {
+              stockSymbols = US_STOCKS_TWELVE.slice(0, 24);
+            } else if (stockRegion === "europe") {
+              stockSymbols = EUROPE_STOCKS.slice(0, 24);
+            } else {
+              stockSymbols = [...ASIA_STOCKS.filter(s => !s.includes(".")), ...ASIA_ETFS].slice(0, 24);
+            }
+
+            // Create batch promises for parallel fetching
+            const batchPromises: Promise<any[]>[] = [];
+            for (let i = 0; i < stockSymbols.length; i += batchSize) {
+              const batch = stockSymbols.slice(i, i + batchSize);
+              const batchUrl = `${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`;
+
+              batchPromises.push(
+                fetchWithTimeout(batchUrl, { timeout: 10000 })
+                  .then(res => res.json())
+                  .then(json => batch.length === 1 ? [json] : Object.values(json))
+                  .catch(() => [])
+              );
+            }
+
+            // Fetch all batches in parallel
+            const batchResults = await Promise.all(batchPromises);
+
+            for (const quotes of batchResults) {
+              for (const item of quotes as any[]) {
+                if (item && item.symbol && !item.code) {
+                  allStockData.push({
+                    symbol: item.symbol,
+                    name: item.name || item.symbol,
+                    price: parseFloat(item.close) || 0,
+                    change: parseFloat(item.change) || 0,
+                    changePercent: parseFloat(item.percent_change) || 0,
+                    type: "stock" as any,
+                    exchange: item.exchange || "NYSE",
+                  });
+
+                  priceStore.setQuote({
+                    symbol: item.symbol,
+                    price: parseFloat(item.close) || 0,
+                    change: parseFloat(item.change) || 0,
+                    changePercent: parseFloat(item.percent_change) || 0,
+                    previousClose: parseFloat(item.previous_close) || parseFloat(item.close) || 0,
+                    name: item.name || item.symbol,
+                  });
+                }
+              }
+            }
+
+            allStockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+            setData(allStockData);
+            setLoading(false);
+            return;
           }
-          break;
         case "crypto":
-          // Fetch extended crypto list
-          url = `${BASE_URL}/quote/${CRYPTO_SYMBOLS.join(",")}?apikey=${FMP_API_KEY}`;
-          break;
+          // Use Twelve Data for crypto - fetch in PARALLEL batches for speed
+          {
+            const batchSize = 8;
+            const allCryptoData: MarketItem[] = [];
+            const cryptoSymbols = CRYPTO_SYMBOLS_TWELVE.slice(0, 24); // Limit to 24 for faster loading
+
+            // Create batch promises for parallel fetching
+            const batchPromises: Promise<any[]>[] = [];
+            for (let i = 0; i < cryptoSymbols.length; i += batchSize) {
+              const batch = cryptoSymbols.slice(i, i + batchSize);
+              const batchUrl = `${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`;
+
+              batchPromises.push(
+                fetchWithTimeout(batchUrl, { timeout: 10000 })
+                  .then(res => res.json())
+                  .then(json => batch.length === 1 ? [json] : Object.values(json))
+                  .catch(() => [])
+              );
+            }
+
+            // Fetch all batches in parallel
+            const batchResults = await Promise.all(batchPromises);
+
+            for (const quotes of batchResults) {
+              for (const item of quotes as any[]) {
+                if (item && item.symbol && !item.code) {
+                  const symbolNoSlash = item.symbol.replace("/", "");
+                  const symbolWithSlash = item.symbol;
+                  const price = parseFloat(item.close) || 0;
+                  const previousClose = parseFloat(item.previous_close) || price;
+
+                  allCryptoData.push({
+                    symbol: symbolNoSlash,
+                    name: item.name || symbolNoSlash,
+                    price: price,
+                    change: parseFloat(item.change) || 0,
+                    changePercent: parseFloat(item.percent_change) || 0,
+                    type: "crypto" as any,
+                    exchange: item.exchange || "Crypto",
+                  });
+
+                  const quoteData = {
+                    price: price,
+                    change: parseFloat(item.change) || 0,
+                    changePercent: parseFloat(item.percent_change) || 0,
+                    previousClose: previousClose,
+                    name: item.name || symbolNoSlash,
+                  };
+                  priceStore.setQuote({ symbol: symbolNoSlash, ...quoteData });
+                  priceStore.setQuote({ symbol: symbolWithSlash, ...quoteData });
+                }
+              }
+            }
+
+            allCryptoData.sort((a, b) => b.price - a.price);
+            setData(allCryptoData);
+            setLoading(false);
+            return;
+          }
         case "etf":
-          url = `${BASE_URL}/etf/list?apikey=${FMP_API_KEY}`;
-          break;
+          // Use Twelve Data for ETFs - fetch in PARALLEL batches for speed
+          {
+            const batchSize = 8;
+            const allEtfData: MarketItem[] = [];
+            const etfSymbols = ETF_SYMBOLS_TWELVE.slice(0, 24); // Limit to 24 for faster loading
+
+            // Create batch promises for parallel fetching
+            const batchPromises: Promise<any[]>[] = [];
+            for (let i = 0; i < etfSymbols.length; i += batchSize) {
+              const batch = etfSymbols.slice(i, i + batchSize);
+              const batchUrl = `${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`;
+
+              batchPromises.push(
+                fetchWithTimeout(batchUrl, { timeout: 10000 })
+                  .then(res => res.json())
+                  .then(json => batch.length === 1 ? [json] : Object.values(json))
+                  .catch(() => [])
+              );
+            }
+
+            // Fetch all batches in parallel
+            const batchResults = await Promise.all(batchPromises);
+
+            for (const quotes of batchResults) {
+              for (const item of quotes as any[]) {
+                if (item && item.symbol && !item.code) {
+                  allEtfData.push({
+                    symbol: item.symbol,
+                    name: item.name || item.symbol,
+                    price: parseFloat(item.close) || 0,
+                    change: parseFloat(item.change) || 0,
+                    changePercent: parseFloat(item.percent_change) || 0,
+                    type: "etf" as any,
+                    exchange: item.exchange || "NYSE",
+                  });
+
+                  priceStore.setQuote({
+                    symbol: item.symbol,
+                    price: parseFloat(item.close) || 0,
+                    change: parseFloat(item.change) || 0,
+                    changePercent: parseFloat(item.percent_change) || 0,
+                    previousClose: parseFloat(item.previous_close) || parseFloat(item.close) || 0,
+                    name: item.name || item.symbol,
+                  });
+                }
+              }
+            }
+
+            setData(allEtfData);
+            setLoading(false);
+            return;
+          }
         case "bonds":
           // Fetch extended bond list
           url = `${BASE_URL}/quote/${BOND_SYMBOLS.join(",")}?apikey=${FMP_API_KEY}`;
@@ -823,38 +1021,6 @@ export default function Explore() {
               type: "stock" as any,
             }))
             .slice(0, 100); // Increased from 20 to 100
-        } else if (activeTab === "etf") {
-          // For ETF, get quotes for more data
-          const etfSymbols = json.slice(0, 100).map((item: any) => item.symbol).filter(Boolean);
-          if (etfSymbols.length > 0) {
-            const quoteRes = await fetchWithTimeout(`${BASE_URL}/quote/${etfSymbols.join(",")}?apikey=${FMP_API_KEY}`, { timeout: 15000 });
-            const quoteData = await quoteRes.json();
-            if (Array.isArray(quoteData)) {
-              // Update global price store
-              priceStore.setQuotes(quoteData.map((item: any) => ({
-                symbol: item.symbol,
-                price: item.price || 0,
-                change: item.change || 0,
-                changePercent: item.changesPercentage || 0,
-                name: item.name,
-              })));
-
-              cleaned = quoteData.map((item: any) => {
-                // Check global price store for chart-synced price
-                const storeQuote = priceStore.getQuote(item.symbol);
-                const price = storeQuote?.price || item.price || 0;
-                return {
-                  symbol: item.symbol || "N/A",
-                  name: item.name || item.symbol || "Unknown",
-                  price: price,
-                  change: item.change || 0,
-                  changePercent: item.changesPercentage || 0,
-                  type: "etf" as any,
-                  exchange: item.exchange || "N/A",
-                };
-              });
-            }
-          }
         } else {
           cleaned = json.map((item: any) => ({
             symbol: item.symbol || item.ticker || "N/A",
@@ -901,6 +1067,13 @@ export default function Explore() {
   }, []);
 
   useEffect(() => {
+    // Clear old data immediately when tab changes to prevent showing stale data
+    setData([]);
+    setLoading(true);
+
+    // Reset WebSocket subscription tracking
+    lastSubscribedTabRef.current = '';
+
     fetchLiveData();
     fetchHeaderCards();
 
@@ -931,7 +1104,131 @@ export default function Explore() {
     }, [activeTab, stockRegion])
   );
 
-  const displayData = searchQuery ? searchResults : data;
+  // Track the last subscribed tab to prevent duplicate subscriptions
+  const lastSubscribedTabRef = useRef<string>('');
+
+  // Twelve Data supported symbols for WebSocket (verified to work)
+  const TWELVE_DATA_SUPPORTED_STOCKS = new Set([
+    // Major US stocks
+    "AAPL", "MSFT", "GOOGL", "GOOG", "AMZN", "NVDA", "META", "TSLA", "BRK.A", "BRK.B",
+    "UNH", "JNJ", "V", "XOM", "WMT", "JPM", "MA", "PG", "HD", "CVX",
+    "MRK", "ABBV", "LLY", "PEP", "KO", "COST", "AVGO", "TMO", "MCD", "CSCO",
+    "ACN", "ABT", "DHR", "NEE", "WFC", "LIN", "ADBE", "TXN", "CRM", "AMD",
+    "BMY", "UPS", "RTX", "QCOM", "HON", "UNP", "INTC", "IBM", "CAT", "BA",
+    "GE", "AMGN", "PFE", "LOW", "SBUX", "INTU", "DE", "SPGI", "GILD", "MDLZ",
+    "AXP", "ISRG", "ADI", "BKNG", "VRTX", "SYK", "REGN", "MMC", "ZTS", "BDX",
+    "PYPL", "SNAP", "SQ", "COIN", "ROKU", "SHOP", "UBER", "LYFT", "ABNB", "DASH",
+    // Major ETFs
+    "SPY", "QQQ", "IWM", "DIA", "VOO", "VTI", "VEA", "VWO", "EFA", "EEM",
+    "GLD", "SLV", "USO", "TLT", "AGG", "BND", "LQD", "HYG", "XLF", "XLK",
+    "XLE", "XLV", "XLI", "XLY", "XLP", "XLU", "XLB", "XLRE", "XLC", "VIG",
+    "SCHD", "VYM", "ARKK", "ARKW", "ARKG",
+    // European ADRs
+    "BP", "SHEL", "HSBC", "RIO", "GSK", "AZN", "UL", "BTI", "SAP", "NVS", "UBS", "ASML",
+    // Asian ADRs
+    "BABA", "JD", "PDD", "BIDU", "NIO", "TSM", "SONY", "TM", "INFY", "HDB",
+  ]);
+
+  const TWELVE_DATA_SUPPORTED_CRYPTO = new Set([
+    "BTC/USD", "ETH/USD", "BNB/USD", "XRP/USD", "ADA/USD", "SOL/USD", "DOGE/USD", "DOT/USD",
+    "MATIC/USD", "LTC/USD", "AVAX/USD", "LINK/USD", "ATOM/USD", "UNI/USD", "XLM/USD",
+    "ETC/USD", "BCH/USD", "ALGO/USD", "XMR/USD", "AAVE/USD", "MKR/USD", "COMP/USD",
+  ]);
+
+  // Subscribe to WebSocket for real-time updates (only supported symbols)
+  // Unsubscribe from old symbols when switching tabs to prevent hitting 50 symbol limit
+  useEffect(() => {
+    if (!wsConnected || data.length === 0) return;
+
+    // Validate that data matches the current tab before subscribing
+    const firstItem = data[0];
+    if (!firstItem) return;
+
+    let newSymbols: string[] = [];
+
+    if (activeTab === "crypto") {
+      // Verify data is actually crypto (symbols end in USD)
+      if (!firstItem.symbol?.endsWith('USD') && !firstItem.type?.includes('crypto')) {
+        console.log('⏳ Waiting for crypto data to load...');
+        return;
+      }
+      // Convert crypto symbols to Twelve Data format and filter to supported only
+      newSymbols = data
+        .map(item => {
+          const sym = item.symbol;
+          if (sym && sym.endsWith('USD')) {
+            return sym.slice(0, -3) + '/USD'; // BTCUSD -> BTC/USD
+          }
+          return sym;
+        })
+        .filter(s => s && TWELVE_DATA_SUPPORTED_CRYPTO.has(s))
+        .slice(0, 8); // Limit to 8 cryptos to stay under 50 total
+    } else if (activeTab === "etf" || activeTab === "stocks") {
+      // Verify data matches tab type - reject crypto symbols
+      if (firstItem.symbol?.endsWith('USD') && firstItem.symbol?.length <= 7) {
+        console.log(`⏳ Waiting for ${activeTab} data to load...`);
+        return;
+      }
+      // Filter to only Twelve Data supported symbols
+      newSymbols = data
+        .map(item => item.symbol)
+        .filter(s => s && TWELVE_DATA_SUPPORTED_STOCKS.has(s))
+        .slice(0, 8); // Limit to 8 symbols to stay under 50 total
+    }
+
+    // Skip if already subscribed to same symbols
+    const tabKey = `${activeTab}-${newSymbols.slice(0, 5).join(',')}`;
+    if (lastSubscribedTabRef.current === tabKey) return;
+
+    // Unsubscribe from old explore page symbols before subscribing to new ones
+    if (currentSubscribedSymbolsRef.current.length > 0) {
+      console.log(`📡 Unsubscribing from ${currentSubscribedSymbolsRef.current.length} old symbols`);
+      wsUnsubscribe(currentSubscribedSymbolsRef.current);
+    }
+
+    lastSubscribedTabRef.current = tabKey;
+    currentSubscribedSymbolsRef.current = newSymbols;
+
+    if (newSymbols.length > 0) {
+      console.log(`📡 Subscribing ${activeTab} to WebSocket (${newSymbols.length}):`, newSymbols.join(', '));
+      wsSubscribe(newSymbols);
+    }
+  }, [wsConnected, activeTab, data, wsSubscribe, wsUnsubscribe]);
+
+  // Reactive live data - updates when throttled price trigger fires
+  const liveData = useMemo(() => {
+    return data.map(item => {
+      // For crypto, try both formats and use the most recent one
+      // WebSocket stores as "BTC/USD", API fetch stores as "BTCUSD"
+      let quote = priceStore.getQuote(item.symbol);
+
+      if (item.symbol?.endsWith('USD') && item.symbol?.length <= 10) {
+        // Try slash format for crypto: BTCUSD -> BTC/USD
+        const slashSymbol = item.symbol.slice(0, -3) + '/USD';
+        const slashQuote = priceStore.getQuote(slashSymbol);
+
+        // Use the more recent quote (WebSocket updates have later timestamps)
+        if (slashQuote && slashQuote.price > 0) {
+          if (!quote || (slashQuote.updatedAt > (quote.updatedAt || 0))) {
+            quote = slashQuote;
+          }
+        }
+      }
+
+      if (quote && quote.price > 0) {
+        return {
+          ...item,
+          price: quote.price,
+          change: quote.change ?? item.change,
+          changePercent: quote.changePercent ?? item.changePercent,
+        };
+      }
+      return item;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, priceUpdateTrigger]);
+
+  const displayData = searchQuery ? searchResults : liveData;
 
   const renderItem = ({ item, index }: { item: MarketItem; index: number }) => {
     const isPositive = item.changePercent >= 0;

@@ -30,7 +30,7 @@ import { useWebSocket } from '@/context/WebSocketContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiCache } from '@/utils/performance';
 import { fetchQuotesWithCache } from '@/services/quoteService';
-import { priceStore, useAllQuotes } from '@/stores/priceStore';
+import { priceStore } from '@/stores/priceStore';
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 
@@ -491,11 +491,24 @@ export default function Dashboard() {
     }
   }, [wsConnected, wsSubscribe]);
 
-  // ============= REACTIVE PRICE DATA (No polling!) =============
-  // Get all quotes reactively - components re-render only when prices change
-  const allQuotes = useAllQuotes();
+  // ============= INTERVAL-BASED PRICE REFRESH (prevents infinite loops) =============
+  // Simple interval triggers re-render every 3 seconds to pick up WebSocket price updates
+  const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
+  const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Reactive market indices - updates automatically when WebSocket prices change
+  useEffect(() => {
+    priceRefreshIntervalRef.current = setInterval(() => {
+      setPriceUpdateTrigger(prev => prev + 1);
+    }, 1000);
+
+    return () => {
+      if (priceRefreshIntervalRef.current) {
+        clearInterval(priceRefreshIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Live market indices - updates every 3 seconds from price store
   const liveMarketIndices = useMemo(() => {
     const nameMap: { [key: string]: string } = {
       'SPY': 'S&P 500', 'QQQ': 'Nasdaq 100', 'DIA': 'Dow Jones', 'IWM': 'Russell 2000',
@@ -504,7 +517,7 @@ export default function Dashboard() {
     };
 
     return majorIndices.map(index => {
-      const quote = allQuotes[index.symbol];
+      const quote = priceStore.getQuote(index.symbol);
       if (quote && quote.price > 0) {
         return {
           ...index,
@@ -517,12 +530,13 @@ export default function Dashboard() {
       }
       return index;
     });
-  }, [majorIndices, allQuotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [majorIndices, priceUpdateTrigger]);
 
-  // Reactive watchlist - updates automatically when WebSocket prices change
+  // Live watchlist - updates every 3 seconds from price store
   const liveWatchlistData = useMemo(() => {
     return watchlistData.map(stock => {
-      const quote = allQuotes[stock.symbol];
+      const quote = priceStore.getQuote(stock.symbol);
       if (quote && quote.price > 0) {
         return {
           ...stock,
@@ -533,12 +547,13 @@ export default function Dashboard() {
       }
       return stock;
     });
-  }, [watchlistData, allQuotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchlistData, priceUpdateTrigger]);
 
-  // Reactive trending stocks - updates automatically when WebSocket prices change
+  // Live trending stocks - updates every 3 seconds from price store
   const liveTrending = useMemo(() => {
     return trending.map(stock => {
-      const quote = allQuotes[stock.symbol];
+      const quote = priceStore.getQuote(stock.symbol);
       if (quote && quote.price > 0) {
         return {
           ...stock,
@@ -549,9 +564,10 @@ export default function Dashboard() {
       }
       return stock;
     });
-  }, [trending, allQuotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trending, priceUpdateTrigger]);
 
-  // Reactive portfolio data - updates automatically when WebSocket prices change
+  // Live portfolio data - updates every 3 seconds from price store
   const livePortfolioData = useMemo(() => {
     if (!contextCurrentPortfolio?.holdings?.length) return null;
 
@@ -559,7 +575,7 @@ export default function Dashboard() {
     let totalCost = 0;
 
     const holdings = contextCurrentPortfolio.holdings.map((holding: any) => {
-      const quote = allQuotes[holding.symbol];
+      const quote = priceStore.getQuote(holding.symbol);
       const currentPrice = (quote && quote.price > 0) ? quote.price : holding.currentPrice || holding.avgCost;
       const currentValue = currentPrice * holding.shares;
       const costBasis = holding.avgCost * holding.shares;
@@ -578,12 +594,13 @@ export default function Dashboard() {
       totalGain: totalValue - totalCost,
       totalGainPercent: totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0,
     };
-  }, [contextCurrentPortfolio?.holdings, allQuotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextCurrentPortfolio?.holdings, priceUpdateTrigger]);
 
-  // Reactive stock picks - updates automatically when WebSocket prices change
+  // Live stock picks - updates every 3 seconds from price store
   const liveStockPicks = useMemo(() => {
     return stockPicksData.map(pick => {
-      const quote = allQuotes[pick.symbol];
+      const quote = priceStore.getQuote(pick.symbol);
       if (quote && quote.price > 0) {
         return {
           ...pick,
@@ -594,7 +611,8 @@ export default function Dashboard() {
       }
       return pick;
     });
-  }, [stockPicksData, allQuotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stockPicksData, priceUpdateTrigger]);
 
   // Fetch live market indices data - uses FMP for initial data
   const fetchMarketChips = async () => {

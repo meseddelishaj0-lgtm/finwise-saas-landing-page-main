@@ -179,14 +179,30 @@ class WebSocketService {
     // Get existing quote to preserve other fields
     const existingQuote = priceStore.getQuote(symbol);
 
+    // Get previous close - from message, existing quote, or use current price as fallback
+    const previousClose = message.previous_close ?? existingQuote?.previousClose ?? price;
+
+    // Calculate change and change percent if not provided
+    let change = message.day_change;
+    let changePercent = message.day_change_percent;
+
+    if ((change === undefined || changePercent === undefined) && previousClose > 0) {
+      change = price - previousClose;
+      changePercent = ((price - previousClose) / previousClose) * 100;
+    }
+
+    // Fallback to existing values if still undefined
+    change = change ?? existingQuote?.change ?? 0;
+    changePercent = changePercent ?? existingQuote?.changePercent ?? 0;
+
     // Update the price store with all available data
     priceStore.setQuote({
       ...existingQuote,
       symbol,
       price,
-      change: message.day_change ?? existingQuote?.change,
-      changePercent: message.day_change_percent ?? existingQuote?.changePercent,
-      previousClose: message.previous_close ?? existingQuote?.previousClose,
+      change,
+      changePercent,
+      previousClose,
       open: message.open ?? existingQuote?.open,
       high: message.high ?? existingQuote?.high,
       low: message.low ?? existingQuote?.low,
@@ -195,8 +211,8 @@ class WebSocketService {
       ask: message.ask ?? existingQuote?.ask,
     });
 
-    // Debug log (uncomment to see real-time updates)
-    // console.log(`💹 ${symbol}: $${price.toFixed(2)} (${message.day_change_percent?.toFixed(2)}%)`);
+    // Debug log for real-time updates (uncomment to debug)
+    // console.log(`💹 ${symbol}: $${price.toFixed(2)} (${changePercent?.toFixed(2) || '0'}%)`);
   }
 
   // Subscribe to symbols

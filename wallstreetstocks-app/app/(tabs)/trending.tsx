@@ -1,5 +1,5 @@
 // app/(tabs)/trending.tsx - WITH AUTO-SCROLLING HEADER CARDS + TAB ICONS
-import React, { useState, useEffect, useCallback, useRef, memo } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
-  Animated,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,7 +19,6 @@ import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
 import { fetchWithTimeout } from "@/utils/performance";
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
-import { fetchQuotesWithCache } from "@/services/quoteService";
 import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
 import { InlineAdBanner } from "@/components/AdBanner";
@@ -106,7 +104,7 @@ const MiniSparkline = ({
 
   const areaPath = `${pathD} L ${width} ${height} L 0 ${height} Z`;
   const color = isPositive ? "#00C853" : "#FF1744";
-  const gradientId = `gradient-${isPositive ? 'green' : 'red'}-${Math.random().toString(36).substr(2, 9)}`;
+  const gradientId = `gradient-${isPositive ? 'green' : 'red'}-${Math.random().toString(36).slice(2, 11)}`;
 
   return (
     <Svg width={width} height={height}>
@@ -211,111 +209,45 @@ export default function Trending() {
   const lastTimestamp = useRef<number>(0);
   const pauseTimeoutRef = useRef<number | null>(null);
 
-  const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
-  const BASE = "https://financialmodelingprep.com/api/v3";
+  const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+  const TWELVE_DATA_URL = "https://api.twelvedata.com";
 
-  // Extended Indices - Global Markets (50+)
+  // Indices for Twelve Data
   const INDICES_SYMBOLS = [
-    // US Indices
-    "%5EGSPC",    // S&P 500
-    "%5EDJI",     // Dow Jones
-    "%5EIXIC",    // Nasdaq Composite
-    "%5ERUT",     // Russell 2000
-    "%5EVIX",     // VIX
-    "%5ENDX",     // Nasdaq 100
-    "%5ESP400",   // S&P 400 Mid Cap
-    "%5ESP600",   // S&P 600 Small Cap
-    // Europe Indices
-    "%5EGDAXI",   // DAX (Germany)
-    "%5EFTSE",    // FTSE 100 (UK)
-    "%5EFCHI",    // CAC 40 (France)
-    "%5ESTOXX50E",// Euro Stoxx 50
-    "%5EIBEX",    // IBEX 35 (Spain)
-    "%5EFTSEMIB", // FTSE MIB (Italy)
-    "%5EAEX",     // AEX (Netherlands)
-    "%5ESSMI",    // SMI (Switzerland)
-    // Asia-Pacific Indices
-    "%5EN225",    // Nikkei 225 (Japan)
-    "%5EHSI",     // Hang Seng (Hong Kong)
-    "%5E000001.SS",// Shanghai Composite
-    "%5EAXJO",    // ASX 200 (Australia)
-    "%5EKS11",    // KOSPI (South Korea)
-    "%5ETWII",    // Taiwan Weighted
-    "%5EBSESN",   // BSE Sensex (India)
-    "%5ESTI",     // Straits Times (Singapore)
-    // Americas (Non-US)
-    "%5EGSPTSE",  // TSX (Canada)
-    "%5EBVSP",    // Bovespa (Brazil)
-    "%5EMXX",     // IPC Mexico
+    "SPX",      // S&P 500
+    "DJI",      // Dow Jones
+    "IXIC",     // Nasdaq Composite
+    "RUT",      // Russell 2000
+    "VIX",      // VIX
+    "NDX",      // Nasdaq 100
   ];
 
-  // Extended Forex Pairs (50+)
+  // Forex pairs for Twelve Data (format: XXX/YYY)
   const FOREX_PAIRS = [
-    // Major Pairs
-    "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD",
-    // Cross Pairs - EUR
-    "EURGBP", "EURJPY", "EURCHF", "EURAUD", "EURCAD", "EURNZD",
-    // Cross Pairs - GBP
-    "GBPJPY", "GBPCHF", "GBPAUD", "GBPCAD", "GBPNZD",
-    // Cross Pairs - JPY
-    "AUDJPY", "CADJPY", "NZDJPY", "CHFJPY",
-    // Cross Pairs - Other
-    "AUDCAD", "AUDCHF", "AUDNZD", "CADCHF", "NZDCAD", "NZDCHF",
-    // Exotic Pairs
-    "USDMXN", "USDZAR", "USDTRY", "USDSEK", "USDNOK", "USDDKK",
-    "USDSGD", "USDHKD", "USDCNY", "USDINR", "USDKRW", "USDTHB",
-    "EURPLN", "EURHUF", "EURCZK", "EURTRY", "EURMXN", "EURSEK",
-    "GBPMXN", "GBPZAR", "GBPSGD",
+    "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD",
+    "EUR/GBP", "EUR/JPY", "EUR/CHF", "EUR/AUD", "EUR/CAD",
+    "GBP/JPY", "GBP/CHF", "GBP/AUD",
+    "AUD/JPY", "CAD/JPY", "NZD/JPY",
+    "AUD/CAD", "AUD/CHF", "AUD/NZD",
   ];
 
-  // Extended Commodities (40+)
+  // Commodities for Twelve Data
   const COMMODITIES_SYMBOLS = [
-    // Precious Metals
-    "GCUSD",   // Gold
-    "SIUSD",   // Silver
-    "PLUSD",   // Platinum
-    "PAUSD",   // Palladium
-    // Energy
-    "CLUSD",   // Crude Oil WTI
-    "BZUSD",   // Brent Crude
-    "NGUSD",   // Natural Gas
-    "HGUSD",   // Copper (also industrial)
-    "RBUSD",   // Gasoline RBOB
-    "HOUSD",   // Heating Oil
-    // Agriculture - Grains
-    "ZCUSD",   // Corn
-    "ZWUSD",   // Wheat
-    "ZSUSD",   // Soybeans
-    "ZMUSD",   // Soybean Meal
-    "ZLUSD",   // Soybean Oil
-    "ZOUSD",   // Oats
-    "ZRUSD",   // Rice
-    // Agriculture - Softs
-    "KCUSD",   // Coffee
-    "SBUSD",   // Sugar
-    "CCUSD",   // Cocoa
-    "CTUSD",   // Cotton
-    "OJUSD",   // Orange Juice
-    "LBUSD",   // Lumber
-    // Livestock
-    "LCUSD",   // Live Cattle
-    "LHUSD",   // Lean Hogs
-    "FCUSD",   // Feeder Cattle
-    // Industrial Metals
-    "ALUSD",   // Aluminum
-    "ZNUSD",   // Zinc
-    "NIUSD",   // Nickel
-    "PBUSD",   // Lead
+    "XAU/USD",   // Gold
+    "XAG/USD",   // Silver
+    "XPT/USD",   // Platinum
+    "XPD/USD",   // Palladium
   ];
 
-  const endpoints: Record<TabType, string> = {
-    trending: `${BASE}/stock_market/actives?limit=50&apikey=${FMP_API_KEY}`,
-    gainers: `${BASE}/stock_market/gainers?limit=50&apikey=${FMP_API_KEY}`,
-    losers: `${BASE}/stock_market/losers?limit=50&apikey=${FMP_API_KEY}`,
-    indices: `${BASE}/quote/${INDICES_SYMBOLS.join(",")}?apikey=${FMP_API_KEY}`,
-    forex: `${BASE}/quotes/forex?apikey=${FMP_API_KEY}`,
-    commodities: `${BASE}/quotes/commodity?apikey=${FMP_API_KEY}`,
-  };
+  // Top stocks for market movers (used for trending/gainers/losers)
+  const TOP_STOCKS = [
+    "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK.B",
+    "JPM", "V", "JNJ", "WMT", "PG", "MA", "UNH", "HD", "DIS", "PYPL",
+    "BAC", "ADBE", "CRM", "NFLX", "INTC", "AMD", "CSCO", "PEP", "KO",
+    "NKE", "MRK", "ABT", "TMO", "COST", "AVGO", "TXN", "QCOM", "LOW",
+    "ORCL", "UPS", "MS", "GS", "IBM", "CAT", "GE", "BA", "MMM", "CVX",
+    "XOM", "PFE", "ABBV", "LLY",
+  ];
 
   const HEADER_SYMBOLS = ["SPY", "QQQ", "DIA", "IWM", "AAPL", "MSFT", "GOOGL", "AMZN"];
   const HEADER_NAMES: Record<string, string> = {
@@ -329,31 +261,33 @@ export default function Trending() {
     "AMZN": "Amazon",
   };
 
-  // Fetch header cards data with cache support (syncs with chart prices)
+  // Fetch header cards data using Twelve Data
   const fetchHeaderCards = async () => {
     try {
-      // Use cache-aware quote service to get prices synced with chart
-      const data = await fetchQuotesWithCache(HEADER_SYMBOLS, { timeout: 10000 });
+      // Fetch quotes from Twelve Data
+      const quotes = await fetchTwelveDataQuotes(HEADER_SYMBOLS);
 
       // Build change percents map for sparkline direction
       const changePercents: Record<string, number> = {};
-      data.forEach((q: any) => {
-        if (q.symbol) changePercents[q.symbol] = q.changesPercentage || 0;
+      quotes.forEach((q: any) => {
+        if (q.symbol) changePercents[q.symbol] = parseFloat(q.percent_change) || 0;
       });
 
       // Use sparkline service with caching and batching
       const sparklineMap = await fetchSparklines(HEADER_SYMBOLS, changePercents);
 
-      if (Array.isArray(data) && data.length > 0) {
+      if (quotes.length > 0) {
         const cards: ChipData[] = HEADER_SYMBOLS.map((symbol) => {
-          const quote = data.find((item: any) => item.symbol === symbol);
+          const quote = quotes.find((item: any) => item.symbol === symbol);
           if (quote) {
+            const price = parseFloat(quote.close) || 0;
+            const changePercent = parseFloat(quote.percent_change) || 0;
             return {
               name: HEADER_NAMES[symbol] || symbol,
               symbol: symbol,
-              value: quote.price?.toFixed(2) || "0.00",
-              change: quote.changesPercentage?.toFixed(2) || "0.00",
-              isPositive: (quote.changesPercentage || 0) >= 0,
+              value: price.toFixed(2),
+              change: changePercent.toFixed(2),
+              isPositive: changePercent >= 0,
               sparklineData: sparklineMap[symbol] || [],
             };
           }
@@ -462,90 +396,150 @@ export default function Trending() {
     }, 4000);
   };
 
+  // Helper to fetch quotes from Twelve Data
+  const fetchTwelveDataQuotes = async (symbols: string[]): Promise<any[]> => {
+    if (symbols.length === 0) return [];
+
+    // Twelve Data batch quote endpoint
+    const symbolsStr = symbols.join(',');
+    const url = `${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(symbolsStr)}&apikey=${TWELVE_DATA_API_KEY}`;
+
+    const res = await fetchWithTimeout(url, { timeout: 15000 });
+    const json = await res.json();
+
+    // Handle single vs multiple symbols response
+    if (symbols.length === 1) {
+      if (json && json.symbol) {
+        return [json];
+      }
+      return [];
+    }
+
+    // Multiple symbols - response is an object keyed by symbol
+    if (json && typeof json === 'object') {
+      return Object.values(json).filter((item: any) => item && item.symbol);
+    }
+
+    return [];
+  };
+
+  // Fetch market movers from Twelve Data (gainers/losers/most active)
+  const fetchMarketMovers = async (direction: 'gainers' | 'losers' | 'most_active'): Promise<any[]> => {
+    try {
+      // Twelve Data market_movers endpoint
+      const url = `${TWELVE_DATA_URL}/market_movers/stocks?direction=${direction}&outputsize=50&country=United States&apikey=${TWELVE_DATA_API_KEY}`;
+      const res = await fetchWithTimeout(url, { timeout: 15000 });
+      const json = await res.json();
+
+      if (json?.values && Array.isArray(json.values)) {
+        return json.values;
+      }
+      // If market_movers fails (requires Pro plan), return empty to fallback
+      return [];
+    } catch (err) {
+      console.warn('Market movers fetch failed, using fallback:', err);
+      return [];
+    }
+  };
+
   const fetchLiveData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetchWithTimeout(endpoints[activeTab], { timeout: 15000 });
-      const json = await res.json();
-
-      if (json.Error || json.error) {
-        throw new Error(json.Error || json.error);
-      }
-
       let cleaned: StockItem[] = [];
 
-      if (Array.isArray(json)) {
-        if (activeTab === "indices") {
-          // Use cache-aware fetching for indices to sync with chart prices
-          const cachedIndices = await fetchQuotesWithCache(
-            json.map((item: any) => item.symbol).filter(Boolean),
-            { timeout: 10000 }
-          );
-          cleaned = json.map(item => {
-            const cached = cachedIndices.find((c: any) => c.symbol === item.symbol);
-            return {
-              symbol: item.symbol || "N/A",
-              companyName: item.name || item.symbol || "Unknown",
-              changesPercentage: cached?.changesPercentage ?? item.changesPercentage ?? 0,
-              price: cached?.price ?? item.price,
-              change: cached?.change ?? item.change,
-            };
-          });
-        } else if (activeTab === "forex") {
-          // Process forex data - show all pairs
-          cleaned = json
-            .filter(item => item?.symbol || item?.ticker)
-            .map(item => {
-              const rawSymbol = item.ticker || item.symbol || "N/A";
-              const normalizedSymbol = rawSymbol.replace(/\//g, '');
-              const name = rawSymbol.includes('/') ? rawSymbol : `${rawSymbol.slice(0,3)}/${rawSymbol.slice(3)}`;
+      if (activeTab === "indices") {
+        // Fetch indices from Twelve Data
+        const quotes = await fetchTwelveDataQuotes(INDICES_SYMBOLS);
+        cleaned = quotes.map((item: any) => ({
+          symbol: item.symbol || "N/A",
+          companyName: item.name || item.symbol || "Unknown",
+          changesPercentage: parseFloat(item.percent_change) || 0,
+          price: parseFloat(item.close) || 0,
+          change: parseFloat(item.change) || 0,
+        }));
+      } else if (activeTab === "forex") {
+        // Fetch forex pairs from Twelve Data
+        const quotes = await fetchTwelveDataQuotes(FOREX_PAIRS);
+        cleaned = quotes.map((item: any) => ({
+          symbol: item.symbol?.replace('/', '') || "N/A",
+          companyName: item.symbol || "Unknown",
+          changesPercentage: parseFloat(item.percent_change) || 0,
+          price: parseFloat(item.close) || 0,
+          change: parseFloat(item.change) || 0,
+        }));
+      } else if (activeTab === "commodities") {
+        // Fetch commodities from Twelve Data
+        const quotes = await fetchTwelveDataQuotes(COMMODITIES_SYMBOLS);
+        cleaned = quotes.map((item: any) => {
+          // Map symbol to friendly name
+          const commodityNames: Record<string, string> = {
+            "XAU/USD": "Gold",
+            "XAG/USD": "Silver",
+            "XPT/USD": "Platinum",
+            "XPD/USD": "Palladium",
+          };
+          return {
+            symbol: item.symbol?.replace('/', '') || "N/A",
+            companyName: commodityNames[item.symbol] || item.name || item.symbol || "Unknown",
+            changesPercentage: parseFloat(item.percent_change) || 0,
+            price: parseFloat(item.close) || 0,
+            change: parseFloat(item.change) || 0,
+          };
+        });
+      } else {
+        // Try to use market_movers endpoint first (requires Pro plan)
+        let moversData: any[] = [];
 
-              return {
-                symbol: normalizedSymbol,
-                companyName: name,
-                changesPercentage: item.changesPercentage || item.changes || 0,
-                price: item.price || item.bid || item.ask,
-              };
-            })
-            .slice(0, 50); // Show up to 50 forex pairs
-        } else if (activeTab === "commodities") {
-          // Process commodities data - show all available
-          cleaned = json
-            .filter(item => item?.symbol)
-            .map(item => ({
-              symbol: item.symbol || "N/A",
-              companyName: item.name || item.symbol || "Unknown",
-              changesPercentage: item.changesPercentage || 0,
-              price: item.price,
-              change: item.change,
-            }))
-            .slice(0, 50); // Show up to 50 commodities
+        if (activeTab === "gainers") {
+          moversData = await fetchMarketMovers('gainers');
+        } else if (activeTab === "losers") {
+          moversData = await fetchMarketMovers('losers');
         } else {
-          // Trending, gainers, losers - show up to 50 items with cache merge
-          const symbols = json
-            .filter((item: any) => item?.symbol)
-            .map((item: any) => item.symbol)
-            .slice(0, 50);
+          // Trending - try most_active
+          moversData = await fetchMarketMovers('most_active');
+        }
 
-          // Fetch with cache to get chart-synced prices
-          const cachedQuotes = await fetchQuotesWithCache(symbols, { timeout: 10000 });
+        // If market_movers worked, use that data
+        if (moversData.length > 0) {
+          cleaned = moversData.map((item: any) => ({
+            symbol: item.symbol || "N/A",
+            companyName: item.name || item.symbol || "Unknown",
+            changesPercentage: parseFloat(item.percent_change) || 0,
+            price: parseFloat(item.last) || parseFloat(item.close) || 0,
+            change: parseFloat(item.change) || 0,
+          }));
+        } else {
+          // Fallback: fetch top stocks and sort manually
+          const quotes = await fetchTwelveDataQuotes(TOP_STOCKS);
 
-          cleaned = json
-            .filter((item: any) => item?.symbol && item.changesPercentage !== undefined)
-            .map((item: any) => {
-              // Check global price store for chart-synced price
-              const storeQuote = priceStore.getQuote(item.symbol);
-              const cached = cachedQuotes.find((c: any) => c.symbol === item.symbol);
-              return {
-                symbol: item.symbol,
-                companyName: item.companyName || item.name || "Unknown",
-                changesPercentage: storeQuote?.changePercent ?? cached?.changesPercentage ?? item.changesPercentage,
-                price: storeQuote?.price ?? cached?.price ?? item.price,
-              };
-            })
-            .slice(0, 50);
+          let stocksWithChange = quotes
+            .filter((item: any) => item && item.symbol && item.close)
+            .map((item: any) => ({
+              symbol: item.symbol,
+              companyName: item.name || item.symbol || "Unknown",
+              changesPercentage: parseFloat(item.percent_change) || 0,
+              price: parseFloat(item.close) || 0,
+              change: parseFloat(item.change) || 0,
+            }));
+
+          // Sort based on active tab
+          if (activeTab === "gainers") {
+            stocksWithChange = stocksWithChange
+              .filter(s => s.changesPercentage > 0)
+              .sort((a, b) => b.changesPercentage - a.changesPercentage);
+          } else if (activeTab === "losers") {
+            stocksWithChange = stocksWithChange
+              .filter(s => s.changesPercentage < 0)
+              .sort((a, b) => a.changesPercentage - b.changesPercentage);
+          } else {
+            // Trending - sort by absolute change (most volatile)
+            stocksWithChange = stocksWithChange
+              .sort((a, b) => Math.abs(b.changesPercentage) - Math.abs(a.changesPercentage));
+          }
+
+          cleaned = stocksWithChange.slice(0, 50);
         }
       }
 
@@ -553,7 +547,7 @@ export default function Trending() {
       priceStore.setQuotes(cleaned.map(item => ({
         symbol: item.symbol,
         price: typeof item.price === 'number' ? item.price : 0,
-        changePercent: typeof item.changesPercentage === 'number' ? item.changesPercentage : parseFloat(item.changesPercentage) || 0,
+        changePercent: typeof item.changesPercentage === 'number' ? item.changesPercentage : parseFloat(String(item.changesPercentage)) || 0,
         name: item.companyName,
       })));
 

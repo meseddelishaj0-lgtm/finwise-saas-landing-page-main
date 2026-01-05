@@ -3,7 +3,6 @@
 // Single source of truth for all stock/crypto prices across the app
 
 import { create } from 'zustand';
-import { useShallow } from 'zustand/react/shallow';
 
 export interface Quote {
   symbol: string;
@@ -102,22 +101,21 @@ export const useChangePercent = (symbol: string): number | undefined => {
 
 // Hook to get multiple quotes at once (with shallow comparison for performance)
 export const useQuotes = (symbols: string[]): Record<string, Quote> => {
-  return usePriceStore(
-    useShallow((state) => {
-      const result: Record<string, Quote> = {};
-      for (const symbol of symbols) {
-        if (state.quotes[symbol]) {
-          result[symbol] = state.quotes[symbol];
-        }
+  return usePriceStore((state) => {
+    const result: Record<string, Quote> = {};
+    for (const symbol of symbols) {
+      if (state.quotes[symbol]) {
+        result[symbol] = state.quotes[symbol];
       }
-      return result;
-    })
-  );
+    }
+    return result;
+  });
 };
 
-// Hook to get all quotes (reactive)
+// Hook to get all quotes (reactive) - returns the quotes object
+// Note: This will re-render on ANY quote change, use sparingly
 export const useAllQuotes = (): Record<string, Quote> => {
-  return usePriceStore(useShallow((state) => state.quotes));
+  return usePriceStore((state) => state.quotes);
 };
 
 // Non-hook access for use in async functions
