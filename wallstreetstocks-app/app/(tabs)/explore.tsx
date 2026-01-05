@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
   Dimensions,
   Platform,
-  InteractionManager,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -457,7 +456,7 @@ export default function Explore() {
 
   // Cache for tab data to avoid re-fetching on tab switch
   const tabDataCache = useRef<Record<string, { data: MarketItem[]; headerCards: ChipData[]; timestamp: number }>>({});
-  const CACHE_TTL = 60000; // 1 minute cache TTL
+  const CACHE_TTL = 300000; // 5 minute cache TTL for instant tab switching
 
   // WebSocket for real-time prices
   const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
@@ -1179,6 +1178,98 @@ export default function Explore() {
     fetchTreasuryRates();
   }, []);
 
+  // PRE-FETCH: Load crypto and ETF data in background on mount for instant tab switching
+  useEffect(() => {
+    const prefetchTabs = async () => {
+      // Wait a bit for stocks to load first, then prefetch others in background
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Prefetch crypto data
+      try {
+        const cryptoSymbols = CRYPTO_SYMBOLS_TWELVE.slice(0, 24);
+        const batchSize = 8;
+        const allCryptoData: MarketItem[] = [];
+
+        const cryptoBatches: Promise<any[]>[] = [];
+        for (let i = 0; i < cryptoSymbols.length; i += batchSize) {
+          const batch = cryptoSymbols.slice(i, i + batchSize);
+          cryptoBatches.push(
+            fetch(`${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`)
+              .then(res => res.json())
+              .then(json => batch.length === 1 ? [json] : Object.values(json))
+              .catch(() => [])
+          );
+        }
+
+        const cryptoResults = await Promise.all(cryptoBatches);
+        for (const quotes of cryptoResults) {
+          for (const item of quotes as any[]) {
+            if (item && item.symbol && !item.code) {
+              allCryptoData.push({
+                symbol: item.symbol.replace("/", ""),
+                name: item.name || item.symbol.replace("/", ""),
+                price: parseFloat(item.close) || 0,
+                change: parseFloat(item.change) || 0,
+                changePercent: parseFloat(item.percent_change) || 0,
+                type: "crypto" as const,
+              });
+            }
+          }
+        }
+
+        if (allCryptoData.length > 0) {
+          tabDataCache.current["crypto"] = { data: allCryptoData, headerCards: [], timestamp: Date.now() };
+          console.log("📦 Pre-fetched crypto data:", allCryptoData.length, "items");
+        }
+      } catch (err) {
+        console.log("Crypto prefetch failed (non-critical)");
+      }
+
+      // Prefetch ETF data
+      try {
+        const etfSymbols = ETF_SYMBOLS_TWELVE.slice(0, 24);
+        const batchSize = 8;
+        const allEtfData: MarketItem[] = [];
+
+        const etfBatches: Promise<any[]>[] = [];
+        for (let i = 0; i < etfSymbols.length; i += batchSize) {
+          const batch = etfSymbols.slice(i, i + batchSize);
+          etfBatches.push(
+            fetch(`${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`)
+              .then(res => res.json())
+              .then(json => batch.length === 1 ? [json] : Object.values(json))
+              .catch(() => [])
+          );
+        }
+
+        const etfResults = await Promise.all(etfBatches);
+        for (const quotes of etfResults) {
+          for (const item of quotes as any[]) {
+            if (item && item.symbol && !item.code) {
+              allEtfData.push({
+                symbol: item.symbol,
+                name: item.name || item.symbol,
+                price: parseFloat(item.close) || 0,
+                change: parseFloat(item.change) || 0,
+                changePercent: parseFloat(item.percent_change) || 0,
+                type: "etf" as const,
+              });
+            }
+          }
+        }
+
+        if (allEtfData.length > 0) {
+          tabDataCache.current["etf"] = { data: allEtfData, headerCards: [], timestamp: Date.now() };
+          console.log("📦 Pre-fetched ETF data:", allEtfData.length, "items");
+        }
+      } catch (err) {
+        console.log("ETF prefetch failed (non-critical)");
+      }
+    };
+
+    prefetchTabs();
+  }, []);
+
   // Update cache when data changes successfully
   useEffect(() => {
     if (data.length > 0 && !loading) {
@@ -1195,32 +1286,22 @@ export default function Explore() {
     // Generate cache key based on tab and region
     const cacheKey = activeTab === "stocks" ? `${activeTab}-${stockRegion}` : activeTab;
     const cached = tabDataCache.current[cacheKey];
-    const now = Date.now();
-    let task: { cancel: () => void } | null = null;
 
     // Reset WebSocket subscription tracking
     lastSubscribedTabRef.current = '';
 
-    // Check if we have fresh cached data
-    if (cached && (now - cached.timestamp) < CACHE_TTL && cached.data.length > 0) {
-      // Use cached data immediately - no loading, no network fetch
+    // Show cached data immediately if available (for instant visual feedback)
+    if (cached && cached.data.length > 0) {
       setData(cached.data);
       setHeaderCards(cached.headerCards);
       setLoading(false);
-      // Still fetch in background to refresh data
-      fetchLiveData();
-      fetchHeaderCards();
     } else {
-      // No cache or stale - show loading and fetch after animation completes
-      setData([]);
       setLoading(true);
-
-      // Defer fetch until after tab switch animation completes for smoother UX
-      task = InteractionManager.runAfterInteractions(() => {
-        fetchLiveData();
-        fetchHeaderCards();
-      });
     }
+
+    // Always fetch fresh data when tab changes
+    fetchLiveData();
+    fetchHeaderCards();
 
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -1238,7 +1319,6 @@ export default function Explore() {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-      if (task) task.cancel();
     };
   }, [activeTab, stockRegion]);
 

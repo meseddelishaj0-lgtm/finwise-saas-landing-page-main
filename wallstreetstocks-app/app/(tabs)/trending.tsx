@@ -11,7 +11,6 @@ import {
   StatusBar,
   Dimensions,
   Platform,
-  InteractionManager,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -271,7 +270,7 @@ export default function Trending() {
 
   // Cache for tab data to avoid re-fetching on tab switch
   const tabDataCache = useRef<Record<string, { data: StockItem[]; timestamp: number }>>({});
-  const CACHE_TTL = 60000; // 1 minute cache TTL
+  const CACHE_TTL = 300000; // 5 minute cache TTL for instant tab switching
 
   // WebSocket for real-time forex/commodities prices
   const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
@@ -604,31 +603,91 @@ export default function Trending() {
     }
   }, [data, loading, activeTab]);
 
-  // Main tab switching effect with caching and deferred fetching
+  // PRE-FETCH: Load gainers, losers, and indices data in background on mount for instant tab switching
+  useEffect(() => {
+    const prefetchTabs = async () => {
+      // Wait for trending (default tab) to load first
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Prefetch gainers
+      try {
+        const gainersData = await fetchMarketMovers('gainers');
+        if (gainersData.length > 0) {
+          const cleaned = gainersData.map((item: any) => ({
+            symbol: item.symbol || "N/A",
+            companyName: item.name || item.symbol || "Unknown",
+            changesPercentage: parseFloat(item.percent_change) || 0,
+            price: parseFloat(item.last) || parseFloat(item.close) || 0,
+            change: parseFloat(item.change) || 0,
+          }));
+          tabDataCache.current["gainers"] = { data: cleaned, timestamp: Date.now() };
+          console.log("📦 Pre-fetched gainers data:", cleaned.length, "items");
+        }
+      } catch (err) {
+        console.log("Gainers prefetch failed (non-critical)");
+      }
+
+      // Prefetch losers
+      try {
+        const losersData = await fetchMarketMovers('losers');
+        if (losersData.length > 0) {
+          const cleaned = losersData.map((item: any) => ({
+            symbol: item.symbol || "N/A",
+            companyName: item.name || item.symbol || "Unknown",
+            changesPercentage: parseFloat(item.percent_change) || 0,
+            price: parseFloat(item.last) || parseFloat(item.close) || 0,
+            change: parseFloat(item.change) || 0,
+          }));
+          tabDataCache.current["losers"] = { data: cleaned, timestamp: Date.now() };
+          console.log("📦 Pre-fetched losers data:", cleaned.length, "items");
+        }
+      } catch (err) {
+        console.log("Losers prefetch failed (non-critical)");
+      }
+
+      // Prefetch indices
+      try {
+        const quotes = await fetchTwelveDataQuotes(INDICES_SYMBOLS);
+        const indexNames: Record<string, string> = {
+          "SPY": "S&P 500 ETF", "QQQ": "Nasdaq 100 ETF", "DIA": "Dow Jones ETF",
+          "IWM": "Russell 2000 ETF", "VXX": "VIX Futures ETF", "EFA": "Intl Developed ETF",
+          "EEM": "Emerging Markets ETF", "GLD": "Gold ETF", "TLT": "Treasury Bond ETF",
+          "XLF": "Financials ETF", "XLE": "Energy ETF", "XLK": "Technology ETF",
+        };
+        const cleaned = quotes.map((item: any) => ({
+          symbol: item.symbol || "N/A",
+          companyName: indexNames[item.symbol] || item.name || item.symbol || "Unknown",
+          changesPercentage: parseFloat(item.percent_change) || 0,
+          price: parseFloat(item.close) || 0,
+          change: parseFloat(item.change) || 0,
+        }));
+        if (cleaned.length > 0) {
+          tabDataCache.current["indices"] = { data: cleaned, timestamp: Date.now() };
+          console.log("📦 Pre-fetched indices data:", cleaned.length, "items");
+        }
+      } catch (err) {
+        console.log("Indices prefetch failed (non-critical)");
+      }
+    };
+
+    prefetchTabs();
+  }, []);
+
+  // Main tab switching effect - always fetch fresh data on tab change
   useEffect(() => {
     const cached = tabDataCache.current[activeTab];
-    const now = Date.now();
-    let task: { cancel: () => void } | null = null;
 
-    // Check if we have fresh cached data
-    if (cached && (now - cached.timestamp) < CACHE_TTL && cached.data.length > 0) {
-      // Use cached data immediately - no loading, no network fetch
+    // Show cached data immediately if available (for instant visual feedback)
+    if (cached && cached.data.length > 0) {
       setData(cached.data);
       setLoading(false);
-      // Still fetch in background to refresh data
-      fetchLiveData();
-      fetchHeaderCards();
     } else {
-      // No cache or stale - show loading and fetch after animation completes
-      setData([]);
       setLoading(true);
-
-      // Defer fetch until after tab switch animation completes for smoother UX
-      task = InteractionManager.runAfterInteractions(() => {
-        fetchLiveData();
-        fetchHeaderCards();
-      });
     }
+
+    // Always fetch fresh data when tab changes
+    fetchLiveData();
+    fetchHeaderCards();
 
     const interval = setInterval(() => {
       fetchLiveData();
@@ -637,7 +696,6 @@ export default function Trending() {
 
     return () => {
       clearInterval(interval);
-      if (task) task.cancel();
     };
   }, [activeTab]);
 
