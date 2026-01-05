@@ -417,6 +417,7 @@ export default function ChartTab() {
   // STATE
   // ============================================================================
   const [rawChartData, setRawChartData] = useState<ChartDataPoint[]>([]);
+  const rawChartDataRef = useRef<ChartDataPoint[]>([]); // Ref to avoid infinite loops in callbacks
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [previousClose, setPreviousClose] = useState<number | null>(null);
   const [dayHigh, setDayHigh] = useState<number | null>(null);
@@ -648,8 +649,8 @@ export default function ChartTab() {
       let price = parseFloat(data?.price) || 0;
 
       // If /price returns 0 during extended hours, try to get from latest chart data
-      if (price === 0 && rawChartData.length > 0) {
-        price = rawChartData[rawChartData.length - 1]?.value || 0;
+      if (price === 0 && rawChartDataRef.current.length > 0) {
+        price = rawChartDataRef.current[rawChartDataRef.current.length - 1]?.value || 0;
       }
 
       if (price > 0) {
@@ -673,7 +674,7 @@ export default function ChartTab() {
     } catch (err) {
       console.error('Quote fetch error:', err);
     }
-  }, [cleanSymbol, apiSymbol, rawChartData, previousClose]);
+  }, [cleanSymbol, apiSymbol, previousClose]);
 
   const fetchChartData = useCallback(async (showLoading = true) => {
     if (!cleanSymbol || !apiSymbol) return;
@@ -695,7 +696,7 @@ export default function ChartTab() {
     }
 
     // Try async cache
-    if (!skipCache && rawChartData.length === 0) {
+    if (!skipCache && rawChartDataRef.current.length === 0) {
       const asyncCached = await getAsyncCache<ChartDataPoint[]>(cacheKey, ttl);
       if (asyncCached && asyncCached.length > 0) {
         const restored = asyncCached.map(d => ({ ...d, date: new Date(d.date) }));
@@ -705,7 +706,7 @@ export default function ChartTab() {
       }
     }
 
-    if (showLoading && rawChartData.length === 0) {
+    if (showLoading && rawChartDataRef.current.length === 0) {
       setLoading(true);
     }
 
@@ -770,12 +771,12 @@ export default function ChartTab() {
         // Cache the data
         setToMemory(memCacheKey, finalData);
         await setAsyncCache(cacheKey, finalData);
-      } else if (rawChartData.length === 0) {
+      } else if (rawChartDataRef.current.length === 0) {
         setError('No data available');
       }
     } catch (err) {
       console.error('Chart data error:', err);
-      if (rawChartData.length === 0) {
+      if (rawChartDataRef.current.length === 0) {
         setError('Unable to load chart');
       }
     } finally {
@@ -793,6 +794,11 @@ export default function ChartTab() {
       clearChartCache(cleanSymbol);
     }
   }, [cleanSymbol]);
+
+  // Keep ref in sync with state (to avoid infinite loops in callbacks)
+  useEffect(() => {
+    rawChartDataRef.current = rawChartData;
+  }, [rawChartData]);
 
   // Refs for intervals
   const quoteIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);

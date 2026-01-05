@@ -235,9 +235,9 @@ async function fetchRealTimePrice(symbol: string): Promise<{ price: number; chan
 // Batch fetch real-time prices for multiple symbols from Twelve Data
 async function fetchRealTimePrices(symbols: string[]): Promise<void> {
   // Fetch from Twelve Data for accurate premarket/after-hours prices
-  // Fetch all in parallel for speed (40 symbols every 3s = 800 calls/min, under 987 limit)
+  // Fetch all in parallel for speed (45 symbols every 3s = ~900 calls/min, under 987 limit)
   const uniqueSymbols = [...new Set(symbols)]; // Remove duplicates
-  const promises = uniqueSymbols.slice(0, 40).map(async (symbol) => {
+  const promises = uniqueSymbols.slice(0, 45).map(async (symbol) => {
     const data = await fetchRealTimePrice(symbol);
     if (data) {
       priceStore.setQuote({
@@ -582,23 +582,29 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Fetch real-time extended hours prices for watchlist and market indices every second
+  // Fetch real-time extended hours prices for watchlist, market indices, trending, and stock picks
   useEffect(() => {
+    // Collect all symbols from: market overview, watchlist, trending, and stock picks
+    const trendingSymbols = trending.map(s => s.symbol).filter(Boolean);
+    const stockPicksSymbols = STOCK_PICKS_PREVIEW.map(p => p.symbol);
+
     const allSymbols = [
-      ...MARKET_INDICES_SYMBOLS,
-      ...watchlist,
+      ...MARKET_INDICES_SYMBOLS,  // 12 market overview symbols
+      ...watchlist,               // User's watchlist
+      ...trendingSymbols,         // 6 trending symbols
+      ...stockPicksSymbols,       // 3 stock picks
     ];
 
     if (allSymbols.length === 0) return;
 
     // Initial fetch
     if (isExtendedHours()) {
-      console.log('📡 Fetching extended hours prices...');
+      console.log(`📡 Fetching extended hours prices for ${allSymbols.length} symbols...`);
       fetchRealTimePrices(allSymbols);
     }
 
     // Set up interval for continuous updates during extended hours
-    // 40 calls every 3 seconds = ~800 calls/min (under 987 limit)
+    // 45 symbols every 3 seconds = ~900 calls/min (under 987 limit)
     realTimePriceIntervalRef.current = setInterval(() => {
       if (isExtendedHours()) {
         fetchRealTimePrices(allSymbols);
@@ -610,7 +616,7 @@ export default function Dashboard() {
         clearInterval(realTimePriceIntervalRef.current);
       }
     };
-  }, [watchlist]);
+  }, [watchlist, trending]);
 
   // Live market indices - updates every 500ms from price store for real-time display
   const liveMarketIndices = useMemo(() => {
