@@ -1037,6 +1037,10 @@ export default function ChartTab() {
                 <Text style={styles.retryText}>Retry</Text>
               </TouchableOpacity>
             </View>
+          ) : loading && liveChartData.length <= 1 ? (
+            <View style={styles.noDataContainer}>
+              <ActivityIndicator size="small" color="#8E8E93" />
+            </View>
           ) : liveChartData.length > 1 ? (
             <View style={styles.chartInner}>
               {/* Baseline */}
