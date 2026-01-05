@@ -874,7 +874,7 @@ export default function Dashboard() {
         change: stock.change,
         changePercent: stock.changePercent,
         color: stock.changePercent >= 0 ? '#34C759' : '#FF3B30',
-        data: generatePlaceholderChart(stock.price, stock.changePercent),
+        data: generatePlaceholderChart(stock.price, stock.changePercent, stock.symbol),
         rank: idx + 1
       }));
 
@@ -993,25 +993,28 @@ export default function Dashboard() {
     }
   };
 
-  // Generate realistic placeholder chart based on price trend
-  const generatePlaceholderChart = (price: number, changePercent: number): number[] => {
+  // Generate consistent placeholder chart based on price trend (deterministic - no random)
+  const generatePlaceholderChart = (price: number, changePercent: number, symbol?: string): number[] => {
     const points = 20;
     const data: number[] = [];
-    const trend = changePercent >= 0 ? 1 : -1;
-    const volatility = Math.abs(changePercent) / 100 * 0.3; // Scale volatility to change
+    const volatility = Math.min(Math.abs(changePercent) / 100, 0.05); // Cap at 5%
 
-    // Start from a base that will end at current price
-    let current = price * (1 - trend * volatility);
+    // Create a simple seed from symbol for consistent "noise"
+    const seed = symbol ? symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : 0;
+
+    // Calculate start price based on change direction
+    const startPrice = price / (1 + (changePercent / 100));
 
     for (let i = 0; i < points; i++) {
-      // Add some random noise but trend towards final price
-      const targetPrice = price;
-      const noise = (Math.random() - 0.5) * price * 0.005;
-      current = current + (targetPrice - current) * 0.15 + noise;
-      data.push(Math.max(current, 0.01));
+      // Smooth interpolation from start to end with slight curve
+      const progress = i / (points - 1);
+      // Use sine wave for natural curve, seeded by symbol for consistency
+      const curveOffset = Math.sin(progress * Math.PI + seed * 0.1) * volatility * 0.3;
+      const value = startPrice + (price - startPrice) * progress + price * curveOffset;
+      data.push(Math.max(value, 0.01));
     }
 
-    // Ensure last point is current price
+    // Ensure last point is exactly current price
     data[data.length - 1] = price;
     return cleanChartData(data);
   };
@@ -1046,7 +1049,7 @@ export default function Dashboard() {
             change: localItem.change,
             changePercent: localItem.changePercent,
             color: localItem.changePercent >= 0 ? '#34C759' : '#FF3B30',
-            data: generatePlaceholderChart(localItem.price, localItem.changePercent),
+            data: generatePlaceholderChart(localItem.price, localItem.changePercent, symbol),
           };
         }
         const storeQuote = priceStore.getQuote(symbol);
@@ -1058,7 +1061,7 @@ export default function Dashboard() {
             change: storeQuote.change || 0,
             changePercent: storeQuote.changePercent || 0,
             color: (storeQuote.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
-            data: generatePlaceholderChart(storeQuote.price, storeQuote.changePercent || 0),
+            data: generatePlaceholderChart(storeQuote.price, storeQuote.changePercent || 0, symbol),
           };
         }
         return null;
@@ -1133,7 +1136,7 @@ export default function Dashboard() {
 
               const chartValues = chartData && Array.isArray(chartData) && chartData.length > 0
                 ? cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close))
-                : generatePlaceholderChart(stock.price || 1, stock.changesPercentage || 0);
+                : generatePlaceholderChart(stock.price || 1, stock.changesPercentage || 0, stock.symbol);
 
               return {
                 symbol: stock.symbol,
@@ -1152,7 +1155,7 @@ export default function Dashboard() {
                 change: stock.change || 0,
                 changePercent: stock.changesPercentage || 0,
                 color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-                data: generatePlaceholderChart(stock.price || 1, stock.changesPercentage || 0),
+                data: generatePlaceholderChart(stock.price || 1, stock.changesPercentage || 0, stock.symbol),
               };
             }
           })
