@@ -997,24 +997,30 @@ export default function Dashboard() {
   const generatePlaceholderChart = (price: number, changePercent: number, symbol?: string): number[] => {
     const points = 20;
     const data: number[] = [];
-    const volatility = Math.min(Math.abs(changePercent) / 100, 0.05); // Cap at 5%
-
-    // Create a simple seed from symbol for consistent "noise"
-    const seed = symbol ? symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : 0;
 
     // Calculate start price based on change direction
-    const startPrice = price / (1 + (changePercent / 100));
+    // For positive change: start lower, end at current price (line goes UP)
+    // For negative change: start higher, end at current price (line goes DOWN)
+    const changeAmount = price * (changePercent / 100);
+    const startPrice = price - changeAmount;
+
+    // Create a simple seed from symbol for slight curve variation (but never flip direction)
+    const seed = symbol ? symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10 : 0;
+    const curveStrength = 0.1 + (seed * 0.02); // Slight curve variation 0.1-0.3
 
     for (let i = 0; i < points; i++) {
-      // Smooth interpolation from start to end with slight curve
       const progress = i / (points - 1);
-      // Use sine wave for natural curve, seeded by symbol for consistency
-      const curveOffset = Math.sin(progress * Math.PI + seed * 0.1) * volatility * 0.3;
-      const value = startPrice + (price - startPrice) * progress + price * curveOffset;
+      // Use easing function for natural curve (never exceeds start-to-end range)
+      const eased = progress < 0.5
+        ? 2 * progress * progress * (1 + curveStrength)
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      const clampedProgress = Math.max(0, Math.min(1, eased));
+      const value = startPrice + (price - startPrice) * clampedProgress;
       data.push(Math.max(value, 0.01));
     }
 
-    // Ensure last point is exactly current price
+    // Ensure first and last points are exact
+    data[0] = Math.max(startPrice, 0.01);
     data[data.length - 1] = price;
     return cleanChartData(data);
   };
