@@ -874,12 +874,15 @@ export default function Dashboard() {
         change: stock.change,
         changePercent: stock.changePercent,
         color: stock.changePercent >= 0 ? '#34C759' : '#FF3B30',
-        data: cleanChartData([stock.price, stock.price * 0.998, stock.price * 1.002, stock.price]),
+        data: generatePlaceholderChart(stock.price, stock.changePercent),
         rank: idx + 1
       }));
 
       setTrending(trendingData);
       setTrendingLoading(false);
+
+      // Fetch real chart data in background
+      fetchTrendingCharts(sortedStocks.map(s => s.symbol));
       return;
     }
 
@@ -953,7 +956,67 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch watchlist data - INSTANT from pre-loaded data when possible
+  // Fetch real chart data for trending (runs in background)
+  const fetchTrendingCharts = async (symbols: string[]) => {
+    try {
+      const chartsData = await Promise.all(
+        symbols.map(async (symbol) => {
+          try {
+            const chartRes = await fetch(
+              `${BASE_URL}/historical-chart/1min/${symbol}?apikey=${FMP_API_KEY}`
+            );
+            const chartData = await chartRes.json();
+
+            if (chartData && Array.isArray(chartData) && chartData.length > 0) {
+              return {
+                symbol,
+                data: cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close)),
+              };
+            }
+            return null;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      // Update trending with real chart data
+      setTrending(prev => prev.map(item => {
+        const chartInfo = chartsData.find(c => c?.symbol === item.symbol);
+        if (chartInfo) {
+          return { ...item, data: chartInfo.data };
+        }
+        return item;
+      }));
+    } catch (err) {
+      console.error('Trending chart fetch error:', err);
+    }
+  };
+
+  // Generate realistic placeholder chart based on price trend
+  const generatePlaceholderChart = (price: number, changePercent: number): number[] => {
+    const points = 20;
+    const data: number[] = [];
+    const trend = changePercent >= 0 ? 1 : -1;
+    const volatility = Math.abs(changePercent) / 100 * 0.3; // Scale volatility to change
+
+    // Start from a base that will end at current price
+    let current = price * (1 - trend * volatility);
+
+    for (let i = 0; i < points; i++) {
+      // Add some random noise but trend towards final price
+      const targetPrice = price;
+      const noise = (Math.random() - 0.5) * price * 0.005;
+      current = current + (targetPrice - current) * 0.15 + noise;
+      data.push(Math.max(current, 0.01));
+    }
+
+    // Ensure last point is current price
+    data[data.length - 1] = price;
+    return cleanChartData(data);
+  };
+
+  // Fetch watchlist data - INSTANT prices, then fetch real charts
   const fetchWatchlist = async () => {
     if (watchlist.length === 0) {
       setWatchlistData([]);
@@ -961,16 +1024,15 @@ export default function Dashboard() {
       return;
     }
 
-    // INSTANT: Try to use pre-loaded data from marketDataService
+    // INSTANT: Try to use pre-loaded data for prices
     const localStocks = marketDataService.getLiveData('stock');
     const localCrypto = marketDataService.getLiveData('crypto');
     const localETFs = marketDataService.getLiveData('etf');
     const allLocalData = [...localStocks, ...localCrypto, ...localETFs];
 
     if (allLocalData.length > 0) {
-      // Check how many watchlist items we can find in pre-loaded data
+      // Show instant prices with placeholder charts
       const watchlistFromLocal = watchlist.map(symbol => {
-        // Check local data first
         const localItem = allLocalData.find(item =>
           item.symbol === symbol ||
           item.symbol === symbol.replace('/', '') ||
@@ -984,10 +1046,9 @@ export default function Dashboard() {
             change: localItem.change,
             changePercent: localItem.changePercent,
             color: localItem.changePercent >= 0 ? '#34C759' : '#FF3B30',
-            data: cleanChartData([localItem.price, localItem.price * 0.998, localItem.price * 1.002, localItem.price]),
+            data: generatePlaceholderChart(localItem.price, localItem.changePercent),
           };
         }
-        // Check price store as fallback
         const storeQuote = priceStore.getQuote(symbol);
         if (storeQuote && storeQuote.price > 0) {
           return {
@@ -997,20 +1058,19 @@ export default function Dashboard() {
             change: storeQuote.change || 0,
             changePercent: storeQuote.changePercent || 0,
             color: (storeQuote.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
-            data: cleanChartData([storeQuote.price, storeQuote.price * 0.998, storeQuote.price * 1.002, storeQuote.price]),
+            data: generatePlaceholderChart(storeQuote.price, storeQuote.changePercent || 0),
           };
         }
         return null;
       }).filter(Boolean);
 
-      // If we found most items locally, show them instantly
-      if (watchlistFromLocal.length >= watchlist.length * 0.5) {
+      if (watchlistFromLocal.length > 0) {
+        // Show instant data immediately
         setWatchlistData(watchlistFromLocal as any[]);
         setWatchlistDataLoading(false);
-        // Fetch any missing items in background
-        if (watchlistFromLocal.length < watchlist.length) {
-          fetchWatchlistFromAPI();
-        }
+
+        // Always fetch real chart data in background
+        fetchWatchlistCharts();
         return;
       }
     }
@@ -1019,27 +1079,61 @@ export default function Dashboard() {
     await fetchWatchlistFromAPI();
   };
 
+  // Fetch real chart data for watchlist (runs in background)
+  const fetchWatchlistCharts = async () => {
+    try {
+      const chartsData = await Promise.all(
+        watchlist.map(async (symbol) => {
+          try {
+            const chartRes = await fetch(
+              `${BASE_URL}/historical-chart/1min/${symbol}?apikey=${FMP_API_KEY}`
+            );
+            const chartData = await chartRes.json();
+
+            if (chartData && Array.isArray(chartData) && chartData.length > 0) {
+              return {
+                symbol,
+                data: cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close)),
+              };
+            }
+            return null;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      // Update watchlist with real chart data
+      setWatchlistData(prev => prev.map(item => {
+        const chartInfo = chartsData.find(c => c?.symbol === item.symbol);
+        if (chartInfo) {
+          return { ...item, data: chartInfo.data };
+        }
+        return item;
+      }));
+    } catch (err) {
+      console.error('Chart fetch error:', err);
+    }
+  };
+
   // Helper to fetch watchlist from API
   const fetchWatchlistFromAPI = async () => {
     setWatchlistDataLoading(true);
     try {
-      // Use batch quotes endpoint with KV caching
       const data = await fetchBatchQuotes(watchlist);
 
       if (data && Array.isArray(data)) {
         const watchlistWithCharts = await Promise.all(
           data.map(async (stock: any) => {
             try {
-              // Use 1-minute intervals for more real-time data
               const chartRes = await fetch(
                 `${BASE_URL}/historical-chart/1min/${stock.symbol}?apikey=${FMP_API_KEY}`
               );
               const chartData = await chartRes.json();
 
-              // Get the most recent 40 data points for a smoother chart
               const chartValues = chartData && Array.isArray(chartData) && chartData.length > 0
                 ? cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close))
-                : [stock.price, stock.price * 0.995, stock.price * 1.005, stock.price];
+                : generatePlaceholderChart(stock.price || 1, stock.changesPercentage || 0);
 
               return {
                 symbol: stock.symbol,
@@ -1058,7 +1152,7 @@ export default function Dashboard() {
                 change: stock.change || 0,
                 changePercent: stock.changesPercentage || 0,
                 color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-                data: cleanChartData([stock.price || 0, stock.price || 0, stock.price || 0, stock.price || 0]),
+                data: generatePlaceholderChart(stock.price || 1, stock.changesPercentage || 0),
               };
             }
           })
