@@ -69,7 +69,7 @@ export default function RootLayout() {
                     <UserProfileProvider>
                       <NotificationProvider>
                         <WebSocketProvider
-                          autoConnect={false}  // Disabled until FMP WebSocket access is enabled
+                          autoConnect={true}  // Twelve Data WebSocket for real-time streaming
                           initialSymbols={DEFAULT_STREAMING_SYMBOLS}
                         >
                           <AppInitializer>

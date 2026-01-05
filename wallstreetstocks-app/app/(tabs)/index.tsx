@@ -26,10 +26,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useWatchlist } from '@/context/WatchlistContext';
 import { usePortfolio } from '@/context/PortfolioContext';
+import { useWebSocket } from '@/context/WebSocketContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiCache } from '@/utils/performance';
 import { fetchQuotesWithCache } from '@/services/quoteService';
-import { priceStore } from '@/stores/priceStore';
+import { priceStore, useAllQuotes } from '@/stores/priceStore';
 import { AnimatedPrice, AnimatedChange, LiveIndicator } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 
@@ -178,10 +179,48 @@ const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
+// Polygon.io API for real-time market data
+const POLYGON_API_KEY = '60TuhIgZaowRuRZmkEJtouJbbswhZK';
+const POLYGON_BASE_URL = 'https://api.polygon.io';
+
 // Batch quotes helper - uses shared quote service with cache support
 // Prices sync with chart data for consistent display across screens
 async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
   return fetchQuotesWithCache(symbols, { timeout: 15000 });
+}
+
+// Fetch real-time quotes from Polygon.io
+async function fetchPolygonQuotes(symbols: string[]): Promise<any[]> {
+  try {
+    const tickerList = symbols.join(',');
+    const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${tickerList}&apiKey=${POLYGON_API_KEY}`;
+
+    console.log('Fetching Polygon data for:', tickerList);
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === 'OK' && data.tickers) {
+      console.log('Polygon data received:', data.tickers.length, 'tickers');
+      return data.tickers.map((ticker: any) => ({
+        symbol: ticker.ticker,
+        price: ticker.day?.c || ticker.prevDay?.c || 0,
+        change: ticker.todaysChange || 0,
+        changesPercentage: ticker.todaysChangePerc || 0,
+        open: ticker.day?.o || 0,
+        high: ticker.day?.h || 0,
+        low: ticker.day?.l || 0,
+        volume: ticker.day?.v || 0,
+        previousClose: ticker.prevDay?.c || 0,
+        updated: ticker.updated,
+      }));
+    }
+
+    console.warn('Polygon API response:', data.status, data.message || '');
+    return [];
+  } catch (error) {
+    console.error('Polygon fetch error:', error);
+    return [];
+  }
 }
 
 // Stock picks preview data
@@ -191,9 +230,13 @@ const STOCK_PICKS_PREVIEW = [
   { symbol: 'MSFT', category: 'Cloud & AI', reason: 'Azure expansion' },
 ];
 
+// Market indices symbols for WebSocket subscription
+const MARKET_INDICES_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'EFA', 'EEM', 'VXX', 'GLD', 'SLV', 'USO', 'TLT'];
+
 export default function Dashboard() {
   const router = useRouter();
   const { isPremium, currentTier } = useSubscription();
+  const { subscribe: wsSubscribe, isConnected: wsConnected } = useWebSocket();
   const {
     portfolios: contextPortfolios,
     selectedPortfolioId: contextSelectedId,
@@ -404,7 +447,156 @@ export default function Dashboard() {
     }, [])
   );
 
-  // Fetch live market indices data - uses batch quotes with KV caching
+  // Subscribe to WebSocket for real-time streaming
+  useEffect(() => {
+    if (wsConnected) {
+      // Subscribe to market indices
+      console.log('📡 Subscribing market indices to WebSocket:', MARKET_INDICES_SYMBOLS.join(', '));
+      wsSubscribe(MARKET_INDICES_SYMBOLS);
+    }
+  }, [wsConnected, wsSubscribe]);
+
+  // Subscribe portfolio holdings to WebSocket
+  useEffect(() => {
+    if (wsConnected && contextCurrentPortfolio && contextCurrentPortfolio.holdings && contextCurrentPortfolio.holdings.length > 0) {
+      const portfolioSymbols = contextCurrentPortfolio.holdings.map(h => h.symbol);
+      console.log('📡 Subscribing portfolio to WebSocket:', portfolioSymbols.join(', '));
+      wsSubscribe(portfolioSymbols);
+    }
+  }, [wsConnected, contextCurrentPortfolio?.holdings, wsSubscribe]);
+
+  // Subscribe watchlist to WebSocket
+  useEffect(() => {
+    if (wsConnected && watchlist?.length > 0) {
+      console.log('📡 Subscribing watchlist to WebSocket:', watchlist.join(', '));
+      wsSubscribe(watchlist);
+    }
+  }, [wsConnected, watchlist, wsSubscribe]);
+
+  // Subscribe trending stocks to WebSocket
+  useEffect(() => {
+    if (wsConnected && trending.length > 0) {
+      const trendingSymbols = trending.map(s => s.symbol);
+      console.log('📡 Subscribing trending to WebSocket:', trendingSymbols.join(', '));
+      wsSubscribe(trendingSymbols);
+    }
+  }, [wsConnected, trending.length, wsSubscribe]);
+
+  // Subscribe stock picks to WebSocket
+  useEffect(() => {
+    if (wsConnected) {
+      const stockPicksSymbols = STOCK_PICKS_PREVIEW.map(p => p.symbol);
+      console.log('📡 Subscribing stock picks to WebSocket:', stockPicksSymbols.join(', '));
+      wsSubscribe(stockPicksSymbols);
+    }
+  }, [wsConnected, wsSubscribe]);
+
+  // ============= REACTIVE PRICE DATA (No polling!) =============
+  // Get all quotes reactively - components re-render only when prices change
+  const allQuotes = useAllQuotes();
+
+  // Reactive market indices - updates automatically when WebSocket prices change
+  const liveMarketIndices = useMemo(() => {
+    const nameMap: { [key: string]: string } = {
+      'SPY': 'S&P 500', 'QQQ': 'Nasdaq 100', 'DIA': 'Dow Jones', 'IWM': 'Russell 2000',
+      'VTI': 'Total Market', 'EFA': 'Intl Developed', 'EEM': 'Emerging Mkts', 'VXX': 'Volatility',
+      'GLD': 'Gold', 'SLV': 'Silver', 'USO': 'Oil', 'TLT': '20+ Yr Treasury',
+    };
+
+    return majorIndices.map(index => {
+      const quote = allQuotes[index.symbol];
+      if (quote && quote.price > 0) {
+        return {
+          ...index,
+          name: nameMap[index.symbol] || index.symbol,
+          price: quote.price,
+          change: quote.change || 0,
+          changePercent: quote.changePercent || 0,
+          color: (quote.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
+        };
+      }
+      return index;
+    });
+  }, [majorIndices, allQuotes]);
+
+  // Reactive watchlist - updates automatically when WebSocket prices change
+  const liveWatchlistData = useMemo(() => {
+    return watchlistData.map(stock => {
+      const quote = allQuotes[stock.symbol];
+      if (quote && quote.price > 0) {
+        return {
+          ...stock,
+          price: quote.price,
+          change: quote.change ?? stock.change,
+          changePercent: quote.changePercent ?? stock.changePercent,
+        };
+      }
+      return stock;
+    });
+  }, [watchlistData, allQuotes]);
+
+  // Reactive trending stocks - updates automatically when WebSocket prices change
+  const liveTrending = useMemo(() => {
+    return trending.map(stock => {
+      const quote = allQuotes[stock.symbol];
+      if (quote && quote.price > 0) {
+        return {
+          ...stock,
+          price: quote.price,
+          change: quote.change ?? stock.change,
+          changesPercentage: quote.changePercent ?? stock.changesPercentage,
+        };
+      }
+      return stock;
+    });
+  }, [trending, allQuotes]);
+
+  // Reactive portfolio data - updates automatically when WebSocket prices change
+  const livePortfolioData = useMemo(() => {
+    if (!contextCurrentPortfolio?.holdings?.length) return null;
+
+    let totalValue = 0;
+    let totalCost = 0;
+
+    const holdings = contextCurrentPortfolio.holdings.map((holding: any) => {
+      const quote = allQuotes[holding.symbol];
+      const currentPrice = (quote && quote.price > 0) ? quote.price : holding.currentPrice || holding.avgCost;
+      const currentValue = currentPrice * holding.shares;
+      const costBasis = holding.avgCost * holding.shares;
+      const gain = currentValue - costBasis;
+      const gainPercent = costBasis > 0 ? ((currentValue - costBasis) / costBasis) * 100 : 0;
+
+      totalValue += currentValue;
+      totalCost += costBasis;
+
+      return { ...holding, currentPrice, currentValue, gain, gainPercent };
+    });
+
+    return {
+      holdings,
+      totalValue,
+      totalGain: totalValue - totalCost,
+      totalGainPercent: totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0,
+    };
+  }, [contextCurrentPortfolio?.holdings, allQuotes]);
+
+  // Reactive stock picks - updates automatically when WebSocket prices change
+  const liveStockPicks = useMemo(() => {
+    return stockPicksData.map(pick => {
+      const quote = allQuotes[pick.symbol];
+      if (quote && quote.price > 0) {
+        return {
+          ...pick,
+          price: quote.price,
+          change: quote.change ?? pick.change,
+          changePercent: quote.changePercent ?? pick.changePercent,
+        };
+      }
+      return pick;
+    });
+  }, [stockPicksData, allQuotes]);
+
+  // Fetch live market indices data - uses FMP for initial data
   const fetchMarketChips = async () => {
     setIndicesLoading(true);
     try {
@@ -424,10 +616,10 @@ export default function Dashboard() {
         'TLT': '20+ Yr Treasury',
       };
 
-      // Use batch quotes endpoint with KV caching
+      // Use FMP for REST API data (Twelve Data WebSocket handles real-time streaming)
       const data = await fetchBatchQuotes(symbols);
 
-      if (data && Array.isArray(data)) {
+      if (data && Array.isArray(data) && data.length > 0) {
         // Update global price store with fetched data
         priceStore.setQuotes(data.map((item: any) => ({
           symbol: item.symbol,
@@ -1195,7 +1387,7 @@ export default function Dashboard() {
           fetchWatchlist().catch(e => console.warn('Refresh watchlist error:', e)),
           fetchStockPicks().catch(e => console.warn('Refresh picks error:', e)),
         ]);
-      }, 30000); // Reduced from 60s to 30s for more real-time prices
+      }, 15000); // 15 seconds for near real-time prices
     } else {
       console.log('⏸️ App inactive - pausing polling to save battery');
     }
@@ -1239,9 +1431,9 @@ export default function Dashboard() {
     }
   }, [watchlist, contextWatchlistLoading]);
 
-  // Memoized filtered and sorted watchlist - prevents recalculation on every render
+  // Memoized filtered and sorted watchlist - uses live prices from WebSocket
   const filteredWatchlist = useMemo(() => {
-    let filtered = [...watchlistData];
+    let filtered = [...liveWatchlistData];
 
     // Apply filter
     if (watchlistFilter === 'Gainers') {
@@ -1271,7 +1463,7 @@ export default function Dashboard() {
     }
 
     return filtered;
-  }, [watchlistData, watchlistFilter, watchlistSort]);
+  }, [liveWatchlistData, watchlistFilter, watchlistSort]);
 
   // Get icon for index type
   const getIndexIcon = (symbol: string): string => {
@@ -1424,7 +1616,7 @@ export default function Dashboard() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.indicesScrollContent}
             >
-              {majorIndices.map((index) => (
+              {liveMarketIndices.map((index) => (
                 <TouchableOpacity
                   key={index.symbol}
                   style={styles.indexCard}
@@ -1539,10 +1731,10 @@ export default function Dashboard() {
           
           <View style={styles.portfolioValueSection}>
             <Text style={styles.portfolioValue}>
-              ${(contextCurrentPortfolio?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${(livePortfolioData?.totalValue || contextCurrentPortfolio?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
-            <Text style={[styles.portfolioChange, { color: (contextCurrentPortfolio?.dayChange || 0) >= 0 ? "#00C853" : "#FF3B30" }]}>
-              {(contextCurrentPortfolio?.dayChange || 0) >= 0 ? '+' : ''}${Math.abs(contextCurrentPortfolio?.dayChange || 0).toFixed(2)} ({(contextCurrentPortfolio?.dayChange || 0) >= 0 ? '+' : ''}{(contextCurrentPortfolio?.dayChangePercent || 0).toFixed(2)}%)
+            <Text style={[styles.portfolioChange, { color: (livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? "#00C853" : "#FF3B30" }]}>
+              {(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '+' : ''}${Math.abs(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0).toFixed(2)} ({(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '+' : ''}{(livePortfolioData?.totalGainPercent ?? contextCurrentPortfolio?.totalGainPercent ?? 0).toFixed(2)}%)
             </Text>
           </View>
 
@@ -1562,10 +1754,10 @@ export default function Dashboard() {
                 curved
                 curvature={0.15}
                 curveType={1}
-                startFillColor={(contextCurrentPortfolio?.totalGain || 0) >= 0 ? '#10B981' : '#EF4444'}
+                startFillColor={(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '#10B981' : '#EF4444'}
                 startOpacity={0.25}
                 endOpacity={0.01}
-                color={(contextCurrentPortfolio?.totalGain || 0) >= 0 ? '#10B981' : '#EF4444'}
+                color={(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '#10B981' : '#EF4444'}
                 thickness={2.5}
                 hideDataPoints
                 hideAxesAndRules
@@ -1583,7 +1775,7 @@ export default function Dashboard() {
                   pointerStripColor: 'rgba(142, 142, 147, 0.3)',
                   pointerStripWidth: 1,
                   strokeDashArray: [4, 4],
-                  pointerColor: (contextCurrentPortfolio?.totalGain || 0) >= 0 ? '#10B981' : '#EF4444',
+                  pointerColor: (livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '#10B981' : '#EF4444',
                   radius: 6,
                   pointerLabelWidth: 120,
                   pointerLabelHeight: 50,
@@ -1637,7 +1829,7 @@ export default function Dashboard() {
           })()}
 
           {/* Holdings List */}
-          {contextCurrentPortfolio && contextCurrentPortfolio.holdings.length > 0 && (
+          {(livePortfolioData?.holdings || contextCurrentPortfolio?.holdings || []).length > 0 && (
             <View style={styles.holdingsList}>
               <View style={styles.holdingsTitleRow}>
                 <Text style={styles.holdingsTitle}>Holdings</Text>
@@ -1648,7 +1840,7 @@ export default function Dashboard() {
                   <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
                 </TouchableOpacity>
               </View>
-              {contextCurrentPortfolio.holdings.map((holding, idx) => (
+              {(livePortfolioData?.holdings || contextCurrentPortfolio?.holdings || []).map((holding: any, idx: number) => (
                 <TouchableOpacity
                   key={idx}
                   style={styles.holdingRow}
@@ -1689,12 +1881,13 @@ export default function Dashboard() {
           )}
 
           {/* Portfolio Analytics Card */}
-          {contextCurrentPortfolio && contextCurrentPortfolio.holdings.length > 0 && (() => {
-            // Use pre-calculated values from context
-            const totalValue = contextCurrentPortfolio.totalValue;
-            const totalGain = contextCurrentPortfolio.totalGain;
-            const totalGainPercent = contextCurrentPortfolio.totalGainPercent;
-            const holdingWeights = contextCurrentPortfolio.holdings.map((h: any) => h.currentValue / totalValue);
+          {(livePortfolioData?.holdings || contextCurrentPortfolio?.holdings || []).length > 0 && (() => {
+            // Use live data with fallback to context values
+            const holdings = livePortfolioData?.holdings || contextCurrentPortfolio?.holdings || [];
+            const totalValue = livePortfolioData?.totalValue || contextCurrentPortfolio?.totalValue || 0;
+            const totalGain = livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0;
+            const totalGainPercent = livePortfolioData?.totalGainPercent ?? contextCurrentPortfolio?.totalGainPercent ?? 0;
+            const holdingWeights = holdings.map((h: any) => h.currentValue / (totalValue || 1));
             const herfindahlIndex = holdingWeights.reduce((sum: number, w: number) => sum + (w * w), 0);
             const diversificationScore = Math.round((1 - herfindahlIndex) * 100);
 
@@ -1733,7 +1926,7 @@ export default function Dashboard() {
                   <View style={styles.analyticsPreviewDivider} />
                   <View style={styles.analyticsPreviewStat}>
                     <Text style={styles.analyticsPreviewStatLabel}>Holdings</Text>
-                    <Text style={styles.analyticsPreviewStatValue}>{contextCurrentPortfolio.holdings.length}</Text>
+                    <Text style={styles.analyticsPreviewStatValue}>{holdings.length}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -1842,7 +2035,7 @@ export default function Dashboard() {
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#007AFF" />
             </View>
-          ) : watchlistData.length === 0 ? (
+          ) : liveWatchlistData.length === 0 ? (
             <View style={styles.emptyWatchlist}>
               <View style={styles.emptyWatchlistIconContainer}>
                 <Ionicons name="star-outline" size={40} color="#007AFF" />
@@ -1970,7 +2163,7 @@ export default function Dashboard() {
 
             {/* Preview Cards */}
             <View style={styles.stockPicksPreview}>
-              {(stockPicksData.length > 0 ? stockPicksData : STOCK_PICKS_PREVIEW).map((pick, idx) => (
+              {(liveStockPicks.length > 0 ? liveStockPicks : STOCK_PICKS_PREVIEW).map((pick, idx) => (
                 <View key={idx} style={styles.pickPreviewCard}>
                   <View style={styles.pickPreviewLeft}>
                     <View style={[styles.pickRankBadge, {
@@ -1984,7 +2177,7 @@ export default function Dashboard() {
                     </View>
                   </View>
                   <View style={styles.pickPreviewRight}>
-                    {isPremium && stockPicksData.length > 0 ? (
+                    {isPremium && liveStockPicks.length > 0 ? (
                       <>
                         <Text style={styles.pickPrice}>${pick.price?.toFixed(2)}</Text>
                         <View style={[styles.pickChangeContainer, {
@@ -2039,7 +2232,7 @@ export default function Dashboard() {
               showsHorizontalScrollIndicator={false} 
               contentContainerStyle={styles.trendingScroll}
             >
-              {trending.map((stock, i) => (
+              {liveTrending.map((stock, i) => (
                 <TouchableOpacity 
                   key={i} 
                   style={styles.trendingCard}

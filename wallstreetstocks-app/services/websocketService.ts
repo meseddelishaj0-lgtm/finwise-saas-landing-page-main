@@ -1,32 +1,54 @@
 // services/websocketService.ts
-// Real-time price streaming via FMP WebSocket
+// Real-time price streaming via Twelve Data WebSocket
 // Connects to Zustand price store for automatic UI updates
 
 import { priceStore } from '../stores/priceStore';
 import { AppState, AppStateStatus } from 'react-native';
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+// Twelve Data WebSocket configuration
+const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+const WEBSOCKET_URL = `wss://ws.twelvedata.com/v1/quotes/price?apikey=${TWELVE_DATA_API_KEY}`;
 
-// FMP WebSocket endpoint (legacy - documented with login event auth)
-const WEBSOCKET_URL = 'wss://websockets.financialmodelingprep.com';
-
-const MAX_SYMBOLS = 25; // FMP limit per connection
+const MAX_SYMBOLS = 50; // Twelve Data limit depends on plan
 const RECONNECT_DELAY = 3000; // 3 seconds
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
-interface WebSocketMessage {
-  s: string;      // symbol
-  t: number;      // timestamp
-  type: string;   // 'T' = trade, 'Q' = quote, 'B' = break
-  lp?: number;    // last price (trade)
-  ls?: number;    // last size/volume
-  ap?: number;    // ask price (quote)
-  bp?: number;    // bid price (quote)
-  as?: number;    // ask size
-  bs?: number;    // bid size
+// Twelve Data WebSocket message types
+interface TwelveDataPriceMessage {
+  event: 'price';
+  symbol: string;
+  currency?: string;
+  exchange?: string;
+  type?: string;
+  timestamp: number;
+  price: number;
+  day_change?: number;
+  day_change_percent?: number;
+  bid?: number;
+  ask?: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  close?: number;
+  previous_close?: number;
+  volume?: number;
 }
+
+interface TwelveDataHeartbeatMessage {
+  event: 'heartbeat';
+  status: string;
+}
+
+interface TwelveDataSubscribeConfirm {
+  event: 'subscribe-status';
+  status: string;
+  success?: { symbol: string; exchange: string; type: string }[];
+  fails?: { symbol: string; msg: string }[];
+}
+
+type TwelveDataMessage = TwelveDataPriceMessage | TwelveDataHeartbeatMessage | TwelveDataSubscribeConfirm;
 
 class WebSocketService {
   private ws: WebSocket | null = null;
@@ -37,7 +59,7 @@ class WebSocketService {
   private status: ConnectionStatus = 'disconnected';
   private listeners: Set<(status: ConnectionStatus) => void> = new Set();
   private appStateSubscription: any = null;
-  private isAuthenticated: boolean = false;
+  private isConnected: boolean = false;
 
   constructor() {
     // Listen for app state changes (background/foreground)
@@ -48,38 +70,44 @@ class WebSocketService {
     if (nextAppState === 'active') {
       // App came to foreground - reconnect if needed
       if (this.status !== 'connected' && this.subscribedSymbols.size > 0) {
-        console.log('📱 App active - reconnecting WebSocket');
+        console.log('📱 App active - reconnecting Twelve Data WebSocket');
         this.connect();
       }
     } else if (nextAppState === 'background') {
       // App went to background - disconnect to save battery
-      console.log('📱 App background - disconnecting WebSocket');
+      console.log('📱 App background - disconnecting Twelve Data WebSocket');
       this.disconnect();
     }
   };
 
-  // Connect to WebSocket
+  // Connect to Twelve Data WebSocket
   connect(): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('🔌 WebSocket already connected');
+      console.log('🔌 Twelve Data WebSocket already connected');
       return;
     }
 
     if (this.status === 'connecting') {
-      console.log('🔌 WebSocket already connecting...');
+      console.log('🔌 Twelve Data WebSocket already connecting...');
       return;
     }
 
     this.setStatus('connecting');
-    console.log('🔌 Connecting to FMP WebSocket...');
+    console.log('🔌 Connecting to Twelve Data WebSocket...');
 
     try {
-      // Use legacy WebSocket endpoint (authenticates via login event)
       this.ws = new WebSocket(WEBSOCKET_URL);
 
       this.ws.onopen = () => {
-        console.log('✅ WebSocket connected, authenticating...');
-        this.authenticate();
+        console.log('✅ Twelve Data WebSocket connected!');
+        this.isConnected = true;
+        this.setStatus('connected');
+        this.startHeartbeat();
+
+        // Subscribe to pending symbols
+        if (this.subscribedSymbols.size > 0 || this.pendingSubscriptions.size > 0) {
+          this.resubscribeAll();
+        }
       };
 
       this.ws.onmessage = (event) => {
@@ -87,13 +115,13 @@ class WebSocketService {
       };
 
       this.ws.onerror = (error) => {
-        console.error('❌ WebSocket error:', error);
+        console.error('❌ Twelve Data WebSocket error:', error);
         this.setStatus('error');
       };
 
       this.ws.onclose = (event) => {
-        console.log(`🔌 WebSocket closed: ${event.code} - ${event.reason}`);
-        this.isAuthenticated = false;
+        console.log(`🔌 Twelve Data WebSocket closed: ${event.code} - ${event.reason}`);
+        this.isConnected = false;
         this.setStatus('disconnected');
         this.stopHeartbeat();
 
@@ -103,89 +131,78 @@ class WebSocketService {
         }
       };
     } catch (error) {
-      console.error('❌ Failed to create WebSocket:', error);
+      console.error('❌ Failed to create Twelve Data WebSocket:', error);
       this.setStatus('error');
       this.scheduleReconnect();
     }
   }
 
-  // Authenticate with API key
-  private authenticate(): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-
-    const loginMessage = {
-      event: 'login',
-      data: {
-        apiKey: FMP_API_KEY,
-      },
-    };
-
-    this.ws.send(JSON.stringify(loginMessage));
-    console.log('🔐 Sent authentication request to FMP WebSocket');
-  }
-
   // Handle incoming messages
   private handleMessage(data: string): void {
     try {
-      const message = JSON.parse(data);
+      const message: TwelveDataMessage = JSON.parse(data);
 
-      // Check for auth success
-      if (message.event === 'login' && message.status === 'success') {
-        console.log('✅ WebSocket authenticated');
-        this.isAuthenticated = true;
-        this.setStatus('connected');
-        this.startHeartbeat();
+      // Handle heartbeat
+      if (message.event === 'heartbeat') {
+        console.log('💓 Twelve Data heartbeat received');
+        return;
+      }
 
-        // Resubscribe to any pending symbols
-        if (this.subscribedSymbols.size > 0) {
-          this.resubscribeAll();
+      // Handle subscription confirmation
+      if (message.event === 'subscribe-status') {
+        const subMsg = message as TwelveDataSubscribeConfirm;
+        if (subMsg.success && subMsg.success.length > 0) {
+          console.log(`📊 Subscribed to: ${subMsg.success.map(s => s.symbol).join(', ')}`);
+        }
+        if (subMsg.fails && subMsg.fails.length > 0) {
+          console.warn(`⚠️ Failed to subscribe: ${subMsg.fails.map(f => `${f.symbol}: ${f.msg}`).join(', ')}`);
         }
         return;
       }
 
-      // Check for auth error
-      if (message.event === 'login' && message.status === 'error') {
-        console.error('❌ WebSocket auth failed:', message.message);
-        this.setStatus('error');
-        return;
-      }
-
       // Handle price updates
-      if (message.s && (message.lp || message.bp)) {
-        this.handlePriceUpdate(message as WebSocketMessage);
+      if (message.event === 'price') {
+        this.handlePriceUpdate(message as TwelveDataPriceMessage);
       }
     } catch (error) {
-      // Non-JSON message or parse error
-      console.warn('⚠️ WebSocket message parse error:', error);
+      console.warn('⚠️ Twelve Data WebSocket message parse error:', error);
     }
   }
 
-  // Update price store with new price
-  private handlePriceUpdate(message: WebSocketMessage): void {
-    const symbol = message.s.toUpperCase();
+  // Handle real-time price update
+  private handlePriceUpdate(message: TwelveDataPriceMessage): void {
+    const symbol = message.symbol.toUpperCase();
+    const price = message.price;
 
-    // Get the price (last trade price or bid price)
-    const price = message.lp || message.bp;
-    if (!price) return;
+    if (!price || price <= 0) return;
 
     // Get existing quote to preserve other fields
     const existingQuote = priceStore.getQuote(symbol);
 
-    // Update the store (spread existing first, then override with new values)
+    // Update the price store with all available data
     priceStore.setQuote({
       ...existingQuote,
       symbol,
       price,
+      change: message.day_change ?? existingQuote?.change,
+      changePercent: message.day_change_percent ?? existingQuote?.changePercent,
+      previousClose: message.previous_close ?? existingQuote?.previousClose,
+      open: message.open ?? existingQuote?.open,
+      high: message.high ?? existingQuote?.high,
+      low: message.low ?? existingQuote?.low,
+      volume: message.volume ?? existingQuote?.volume,
+      bid: message.bid ?? existingQuote?.bid,
+      ask: message.ask ?? existingQuote?.ask,
     });
 
-    // Log for debugging (remove in production)
-    // console.log(`💹 ${symbol}: $${price}`);
+    // Debug log (uncomment to see real-time updates)
+    // console.log(`💹 ${symbol}: $${price.toFixed(2)} (${message.day_change_percent?.toFixed(2)}%)`);
   }
 
   // Subscribe to symbols
   subscribe(symbols: string | string[]): void {
     const symbolArray = Array.isArray(symbols) ? symbols : [symbols];
-    const normalizedSymbols = symbolArray.map(s => s.toUpperCase().trim());
+    const normalizedSymbols = symbolArray.map(s => s.toUpperCase().trim()).filter(s => s);
 
     // Add to pending/subscribed sets
     normalizedSymbols.forEach(s => {
@@ -194,8 +211,8 @@ class WebSocketService {
       }
     });
 
-    // If connected and authenticated, subscribe now
-    if (this.isAuthenticated && this.ws?.readyState === WebSocket.OPEN) {
+    // If connected, subscribe now
+    if (this.isConnected && this.ws?.readyState === WebSocket.OPEN) {
       this.sendSubscriptions();
     } else {
       // Connect if not connected
@@ -203,16 +220,15 @@ class WebSocketService {
     }
   }
 
-  // Send subscription request
+  // Send subscription request to Twelve Data
   private sendSubscriptions(): void {
     if (this.pendingSubscriptions.size === 0) return;
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.isAuthenticated) return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
     // Check symbol limit
     const totalSymbols = this.subscribedSymbols.size + this.pendingSubscriptions.size;
     if (totalSymbols > MAX_SYMBOLS) {
       console.warn(`⚠️ Symbol limit exceeded (${totalSymbols}/${MAX_SYMBOLS}). Trimming older subscriptions.`);
-      // Remove oldest subscriptions to make room
       const toRemove = totalSymbols - MAX_SYMBOLS;
       const symbolsArray = Array.from(this.subscribedSymbols);
       for (let i = 0; i < toRemove; i++) {
@@ -222,15 +238,16 @@ class WebSocketService {
 
     const newSymbols = Array.from(this.pendingSubscriptions);
 
+    // Twelve Data subscribe message format
     const subscribeMessage = {
-      event: 'subscribe',
-      data: {
-        ticker: newSymbols.map(s => s.toLowerCase()),
+      action: 'subscribe',
+      params: {
+        symbols: newSymbols.join(','),
       },
     };
 
     this.ws.send(JSON.stringify(subscribeMessage));
-    console.log(`📊 Subscribed to: ${newSymbols.join(', ')}`);
+    console.log(`📊 Subscribing to: ${newSymbols.join(', ')}`);
 
     // Move pending to subscribed
     newSymbols.forEach(s => {
@@ -241,20 +258,27 @@ class WebSocketService {
 
   // Resubscribe to all symbols (after reconnect)
   private resubscribeAll(): void {
-    if (this.subscribedSymbols.size === 0) return;
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.isAuthenticated) return;
+    const allSymbols = new Set([...this.subscribedSymbols, ...this.pendingSubscriptions]);
+    if (allSymbols.size === 0) return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-    const symbols = Array.from(this.subscribedSymbols);
+    const symbols = Array.from(allSymbols);
 
     const subscribeMessage = {
-      event: 'subscribe',
-      data: {
-        ticker: symbols.map(s => s.toLowerCase()),
+      action: 'subscribe',
+      params: {
+        symbols: symbols.join(','),
       },
     };
 
     this.ws.send(JSON.stringify(subscribeMessage));
     console.log(`📊 Resubscribed to ${symbols.length} symbols`);
+
+    // Update tracking sets
+    symbols.forEach(s => {
+      this.subscribedSymbols.add(s);
+      this.pendingSubscriptions.delete(s);
+    });
   }
 
   // Unsubscribe from symbols
@@ -263,7 +287,6 @@ class WebSocketService {
     const normalizedSymbols = symbolArray.map(s => s.toUpperCase().trim());
 
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      // Just remove from tracking
       normalizedSymbols.forEach(s => {
         this.subscribedSymbols.delete(s);
         this.pendingSubscriptions.delete(s);
@@ -272,9 +295,9 @@ class WebSocketService {
     }
 
     const unsubscribeMessage = {
-      event: 'unsubscribe',
-      data: {
-        ticker: normalizedSymbols.map(s => s.toLowerCase()),
+      action: 'unsubscribe',
+      params: {
+        symbols: normalizedSymbols.join(','),
       },
     };
 
@@ -290,7 +313,7 @@ class WebSocketService {
   disconnect(): void {
     this.cancelReconnect();
     this.stopHeartbeat();
-    this.isAuthenticated = false;
+    this.isConnected = false;
 
     if (this.ws) {
       this.ws.close();
@@ -304,7 +327,7 @@ class WebSocketService {
   private scheduleReconnect(): void {
     this.cancelReconnect();
 
-    console.log(`🔄 Reconnecting in ${RECONNECT_DELAY / 1000}s...`);
+    console.log(`🔄 Reconnecting Twelve Data in ${RECONNECT_DELAY / 1000}s...`);
     this.reconnectTimeout = setTimeout(() => {
       this.connect();
     }, RECONNECT_DELAY);
@@ -323,9 +346,8 @@ class WebSocketService {
     this.stopHeartbeat();
     this.heartbeatInterval = setInterval(() => {
       if (this.ws?.readyState === WebSocket.OPEN) {
-        // FMP might use ping/pong or we can send a subscribe refresh
-        // For now, just check connection is alive
-        console.log('💓 WebSocket heartbeat');
+        // Twelve Data sends heartbeats automatically, we just log ours
+        console.log('💓 Twelve Data WebSocket alive');
       }
     }, HEARTBEAT_INTERVAL);
   }
