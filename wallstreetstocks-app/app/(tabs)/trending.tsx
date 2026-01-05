@@ -1,5 +1,5 @@
 // app/(tabs)/trending.tsx - WITH AUTO-SCROLLING HEADER CARDS + TAB ICONS
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, memo, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   StatusBar,
   Dimensions,
   Platform,
+  InteractionManager,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -22,6 +23,7 @@ import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/Anima
 import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
 import { InlineAdBanner } from "@/components/AdBanner";
+import { useWebSocket } from "@/context/WebSocketContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
@@ -64,16 +66,16 @@ const TAB_CONFIG: { id: TabType; label: string; icon: string }[] = [
   { id: "commodities", label: "Commodities", icon: "cube" },
 ];
 
-// Mini Sparkline Component
-const MiniSparkline = ({ 
-  data, 
-  isPositive, 
-  width = 60, 
-  height = 30 
-}: { 
-  data: number[]; 
-  isPositive: boolean; 
-  width?: number; 
+// Mini Sparkline Component - Memoized for performance
+const MiniSparkline = memo(({
+  data,
+  isPositive,
+  width = 60,
+  height = 30
+}: {
+  data: number[];
+  isPositive: boolean;
+  width?: number;
   height?: number;
 }) => {
   if (!data || data.length < 2) {
@@ -125,10 +127,10 @@ const MiniSparkline = ({
       />
     </Svg>
   );
-};
+});
 
-// Header Card Component
-const HeaderCard = ({
+// Header Card Component - Memoized for performance
+const HeaderCard = memo(({
   item,
   onPress,
 }: {
@@ -191,7 +193,7 @@ const HeaderCard = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 export default function Trending() {
   const [activeTab, setActiveTab] = useState<TabType>("trending");
@@ -200,26 +202,36 @@ export default function Trending() {
   const [error, setError] = useState<string | null>(null);
   const [headerCards, setHeaderCards] = useState<ChipData[]>([]);
   const router = useRouter();
-  
-  // Auto-scroll refs
-  const scrollViewRef = useRef<ScrollView>(null);
-  const scrollPosition = useRef(0);
-  const animationFrameRef = useRef<number | null>(null);
-  const isUserScrolling = useRef(false);
-  const lastTimestamp = useRef<number>(0);
-  const pauseTimeoutRef = useRef<number | null>(null);
+
+
+  // Cache for tab data to avoid re-fetching on tab switch
+  const tabDataCache = useRef<Record<string, { data: StockItem[]; timestamp: number }>>({});
+  const CACHE_TTL = 60000; // 1 minute cache TTL
+
+  // WebSocket for real-time forex/commodities prices
+  const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
+  const wsSubscribedRef = useRef<string[]>([]);
+
+  // Price update trigger for real-time updates
+  const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
 
   const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
   const TWELVE_DATA_URL = "https://api.twelvedata.com";
 
-  // Indices for Twelve Data
+  // Index-tracking ETFs (more reliable than actual index symbols)
   const INDICES_SYMBOLS = [
-    "SPX",      // S&P 500
-    "DJI",      // Dow Jones
-    "IXIC",     // Nasdaq Composite
-    "RUT",      // Russell 2000
-    "VIX",      // VIX
-    "NDX",      // Nasdaq 100
+    "SPY",      // S&P 500 ETF
+    "QQQ",      // Nasdaq 100 ETF
+    "DIA",      // Dow Jones ETF
+    "IWM",      // Russell 2000 ETF
+    "VXX",      // VIX Short-Term Futures ETF
+    "EFA",      // International Developed Markets ETF
+    "EEM",      // Emerging Markets ETF
+    "GLD",      // Gold ETF
+    "TLT",      // 20+ Year Treasury Bond ETF
+    "XLF",      // Financial Sector ETF
+    "XLE",      // Energy Sector ETF
+    "XLK",      // Technology Sector ETF
   ];
 
   // Forex pairs for Twelve Data (format: XXX/YYY)
@@ -231,12 +243,27 @@ export default function Trending() {
     "AUD/CAD", "AUD/CHF", "AUD/NZD",
   ];
 
-  // Commodities for Twelve Data
+  // Commodities for Twelve Data (Precious Metals, Energy, Agricultural)
   const COMMODITIES_SYMBOLS = [
-    "XAU/USD",   // Gold
-    "XAG/USD",   // Silver
-    "XPT/USD",   // Platinum
-    "XPD/USD",   // Palladium
+    // Precious Metals
+    "XAU/USD",   // Gold Spot
+    "XAG/USD",   // Silver Spot
+    "XPT/USD",   // Platinum Spot
+    "XPD/USD",   // Palladium Spot
+    // Energy
+    "CL1",       // Crude Oil (WTI) Futures
+    "CO1",       // Brent Crude Futures
+    "NG1",       // Natural Gas Futures
+    // Agricultural
+    "ZC1",       // Corn Futures
+    "ZS1",       // Soybeans Futures
+    "ZW1",       // Wheat Futures
+    "KC1",       // Coffee Futures
+    "CC1",       // Cocoa Futures
+    "SB1",       // Sugar Futures
+    "CT1",       // Cotton Futures
+    // Industrial Metals
+    "HG1",       // Copper Futures
   ];
 
   // Top stocks for market movers (used for trending/gainers/losers)
@@ -308,94 +335,6 @@ export default function Trending() {
     }
   };
 
-  // Smooth auto-scroll
-  const startAutoScroll = useCallback(() => {
-    const cardTotalWidth = CARD_WIDTH + 8;
-    const totalWidth = headerCards.length * cardTotalWidth;
-    const visibleWidth = SCREEN_WIDTH - 40;
-    const maxScroll = Math.max(0, totalWidth - visibleWidth + 20);
-
-    if (maxScroll <= 0 || headerCards.length === 0) return;
-
-    const scrollSpeed = 0.5;
-    let direction = 1;
-
-    const animate = (timestamp: number) => {
-      if (isUserScrolling.current) {
-        animationFrameRef.current = requestAnimationFrame(animate);
-        return;
-      }
-
-      if (!lastTimestamp.current) lastTimestamp.current = timestamp;
-      const delta = timestamp - lastTimestamp.current;
-      lastTimestamp.current = timestamp;
-
-      scrollPosition.current += scrollSpeed * direction * (delta / 16.67);
-
-      if (scrollPosition.current >= maxScroll) {
-        scrollPosition.current = maxScroll;
-        direction = -1;
-      } else if (scrollPosition.current <= 0) {
-        scrollPosition.current = 0;
-        direction = 1;
-      }
-
-      if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({
-          x: scrollPosition.current,
-          animated: false,
-        });
-      }
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-  }, [headerCards.length]);
-
-  useEffect(() => {
-    if (headerCards.length > 0) {
-      const timer = setTimeout(() => {
-        startAutoScroll();
-      }, 1500);
-
-      return () => {
-        clearTimeout(timer);
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-      };
-    }
-  }, [headerCards.length, startAutoScroll]);
-
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (pauseTimeoutRef.current) {
-        clearTimeout(pauseTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleScrollBegin = () => {
-    isUserScrolling.current = true;
-  };
-
-  const handleScrollEnd = (event: any) => {
-    scrollPosition.current = event.nativeEvent.contentOffset.x;
-    lastTimestamp.current = 0;
-    
-    if (pauseTimeoutRef.current) {
-      clearTimeout(pauseTimeoutRef.current);
-    }
-    
-    pauseTimeoutRef.current = setTimeout(() => {
-      isUserScrolling.current = false;
-    }, 4000);
-  };
-
   // Helper to fetch quotes from Twelve Data
   const fetchTwelveDataQuotes = async (symbols: string[]): Promise<any[]> => {
     if (symbols.length === 0) return [];
@@ -450,11 +389,26 @@ export default function Trending() {
       let cleaned: StockItem[] = [];
 
       if (activeTab === "indices") {
-        // Fetch indices from Twelve Data
+        // Fetch index ETFs from Twelve Data
         const quotes = await fetchTwelveDataQuotes(INDICES_SYMBOLS);
+        // Map symbols to friendly names
+        const indexNames: Record<string, string> = {
+          "SPY": "S&P 500 ETF",
+          "QQQ": "Nasdaq 100 ETF",
+          "DIA": "Dow Jones ETF",
+          "IWM": "Russell 2000 ETF",
+          "VXX": "VIX Futures ETF",
+          "EFA": "Intl Developed ETF",
+          "EEM": "Emerging Markets ETF",
+          "GLD": "Gold ETF",
+          "TLT": "Treasury Bond ETF",
+          "XLF": "Financials ETF",
+          "XLE": "Energy ETF",
+          "XLK": "Technology ETF",
+        };
         cleaned = quotes.map((item: any) => ({
           symbol: item.symbol || "N/A",
-          companyName: item.name || item.symbol || "Unknown",
+          companyName: indexNames[item.symbol] || item.name || item.symbol || "Unknown",
           changesPercentage: parseFloat(item.percent_change) || 0,
           price: parseFloat(item.close) || 0,
           change: parseFloat(item.change) || 0,
@@ -475,10 +429,25 @@ export default function Trending() {
         cleaned = quotes.map((item: any) => {
           // Map symbol to friendly name
           const commodityNames: Record<string, string> = {
+            // Precious Metals
             "XAU/USD": "Gold",
             "XAG/USD": "Silver",
             "XPT/USD": "Platinum",
             "XPD/USD": "Palladium",
+            // Energy
+            "CL1": "Crude Oil (WTI)",
+            "CO1": "Brent Crude",
+            "NG1": "Natural Gas",
+            // Agricultural
+            "ZC1": "Corn",
+            "ZS1": "Soybeans",
+            "ZW1": "Wheat",
+            "KC1": "Coffee",
+            "CC1": "Cocoa",
+            "SB1": "Sugar",
+            "CT1": "Cotton",
+            // Industrial Metals
+            "HG1": "Copper",
           };
           return {
             symbol: item.symbol?.replace('/', '') || "N/A",
@@ -560,15 +529,52 @@ export default function Trending() {
     }
   }, [activeTab]);
 
+  // Update cache when data changes successfully
   useEffect(() => {
-    fetchLiveData();
-    fetchHeaderCards();
+    if (data.length > 0 && !loading) {
+      tabDataCache.current[activeTab] = {
+        data: data,
+        timestamp: Date.now(),
+      };
+    }
+  }, [data, loading, activeTab]);
+
+  // Main tab switching effect with caching and deferred fetching
+  useEffect(() => {
+    const cached = tabDataCache.current[activeTab];
+    const now = Date.now();
+    let task: { cancel: () => void } | null = null;
+
+    // Check if we have fresh cached data
+    if (cached && (now - cached.timestamp) < CACHE_TTL && cached.data.length > 0) {
+      // Use cached data immediately - no loading, no network fetch
+      setData(cached.data);
+      setLoading(false);
+      // Still fetch in background to refresh data
+      fetchLiveData();
+      fetchHeaderCards();
+    } else {
+      // No cache or stale - show loading and fetch after animation completes
+      setData([]);
+      setLoading(true);
+
+      // Defer fetch until after tab switch animation completes for smoother UX
+      task = InteractionManager.runAfterInteractions(() => {
+        fetchLiveData();
+        fetchHeaderCards();
+      });
+    }
+
     const interval = setInterval(() => {
       fetchLiveData();
       fetchHeaderCards();
     }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [fetchLiveData]);
+
+    return () => {
+      clearInterval(interval);
+      if (task) task.cancel();
+    };
+  }, [activeTab]);
 
   // Refresh header cards when screen comes into focus (picks up chart-synced prices)
   useFocusEffect(
@@ -576,6 +582,77 @@ export default function Trending() {
       fetchHeaderCards();
     }, [])
   );
+
+  // WebSocket subscription for forex and commodities real-time streaming
+  useEffect(() => {
+    if (!wsConnected) return;
+
+    // Only subscribe for forex and commodities tabs
+    if (activeTab === "forex" || activeTab === "commodities") {
+      const symbolsToSubscribe = activeTab === "forex" ? FOREX_PAIRS : COMMODITIES_SYMBOLS;
+
+      // Unsubscribe from previous symbols
+      if (wsSubscribedRef.current.length > 0) {
+        wsUnsubscribe(wsSubscribedRef.current);
+      }
+
+      // Subscribe to new symbols
+      wsSubscribe(symbolsToSubscribe);
+      wsSubscribedRef.current = symbolsToSubscribe;
+      console.log(`📡 Subscribed to ${activeTab} WebSocket: ${symbolsToSubscribe.length} pairs`);
+    } else {
+      // Unsubscribe when leaving forex/commodities tabs
+      if (wsSubscribedRef.current.length > 0) {
+        wsUnsubscribe(wsSubscribedRef.current);
+        wsSubscribedRef.current = [];
+      }
+    }
+
+    return () => {
+      // Cleanup on unmount
+      if (wsSubscribedRef.current.length > 0) {
+        wsUnsubscribe(wsSubscribedRef.current);
+        wsSubscribedRef.current = [];
+      }
+    };
+  }, [activeTab, wsConnected, wsSubscribe, wsUnsubscribe]);
+
+  // Real-time price update interval (every 1 second for forex/commodities)
+  useEffect(() => {
+    if (activeTab !== "forex" && activeTab !== "commodities") return;
+
+    const interval = setInterval(() => {
+      setPriceUpdateTrigger(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeTab]);
+
+  // Get live prices from store for forex/commodities
+  const liveData = useMemo(() => {
+    if (activeTab !== "forex" && activeTab !== "commodities") {
+      return data;
+    }
+
+    return data.map(item => {
+      // Try both formats: EURUSD and EUR/USD
+      const symbolWithSlash = item.symbol.length === 6
+        ? `${item.symbol.slice(0, 3)}/${item.symbol.slice(3)}`
+        : item.symbol;
+
+      const quote = priceStore.getQuote(symbolWithSlash) || priceStore.getQuote(item.symbol);
+
+      if (quote && quote.price > 0) {
+        return {
+          ...item,
+          price: quote.price,
+          change: quote.change ?? item.change,
+          changesPercentage: quote.changePercent ?? item.changesPercentage,
+        };
+      }
+      return item;
+    });
+  }, [data, activeTab, priceUpdateTrigger]);
 
   const renderItem = useCallback(({ item, index }: { item: StockItem; index: number }) => {
     const numChange = typeof item.changesPercentage === 'string' 
@@ -667,17 +744,12 @@ export default function Trending() {
           Real-time market movers & top performers
         </Text>
 
-        {/* Auto-scrolling Header Cards */}
-        <ScrollView 
-          ref={scrollViewRef}
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
+        {/* Static Header Cards */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
           style={styles.headerCardsContainer}
           contentContainerStyle={styles.headerCardsContent}
-          onScrollBeginDrag={handleScrollBegin}
-          onScrollEndDrag={handleScrollEnd}
-          onMomentumScrollEnd={handleScrollEnd}
-          scrollEventThrottle={16}
         >
           {headerCards.map((card) => (
             <HeaderCard
@@ -731,7 +803,7 @@ export default function Trending() {
       )}
 
       <FlatList
-        data={data}
+        data={liveData}
         renderItem={renderItem}
         keyExtractor={(item, index) => `${item.symbol}-${index}`}
         getItemLayout={getStockRowLayout}

@@ -1,5 +1,5 @@
 // app/(tabs)/explore.tsx - WITH LARGER SECTION HEADER CARDS
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Platform,
+  InteractionManager,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -88,16 +89,16 @@ interface TreasuryHistorical {
   monthAgo: TreasuryRate | null;
 }
 
-// Mini Sparkline Component
-const MiniSparkline = ({ 
-  data, 
-  isPositive, 
-  width = 70, 
-  height = 32 
-}: { 
-  data: number[]; 
-  isPositive: boolean; 
-  width?: number; 
+// Mini Sparkline Component - Memoized for performance
+const MiniSparkline = memo(({
+  data,
+  isPositive,
+  width = 70,
+  height = 32
+}: {
+  data: number[];
+  isPositive: boolean;
+  width?: number;
   height?: number;
 }) => {
   if (!data || data.length < 2) {
@@ -149,7 +150,7 @@ const MiniSparkline = ({
       />
     </Svg>
   );
-};
+});
 
 // Yield Curve Chart Component
 const YieldCurveChart = ({
@@ -297,8 +298,8 @@ const TreasuryRateCard = ({
   );
 };
 
-// Large Header Card Component
-const HeaderCard = ({
+// Large Header Card Component - Memoized for performance
+const HeaderCard = memo(({
   item,
   onPress,
   showSparkline = true,
@@ -365,7 +366,7 @@ const HeaderCard = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 export default function Explore() {
   const [activeTab, setActiveTab] = useState<Tab>("stocks");
@@ -386,6 +387,10 @@ export default function Explore() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Cache for tab data to avoid re-fetching on tab switch
+  const tabDataCache = useRef<Record<string, { data: MarketItem[]; headerCards: ChipData[]; timestamp: number }>>({});
+  const CACHE_TTL = 60000; // 1 minute cache TTL
+
   // WebSocket for real-time prices
   const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
   const currentSubscribedSymbolsRef = useRef<string[]>([]);
@@ -394,11 +399,11 @@ export default function Explore() {
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Refresh prices every 1 second via simple interval - no store subscription to prevent loops
+  // Refresh prices every 3 seconds via simple interval - reduced frequency for better performance
   useEffect(() => {
     priceRefreshIntervalRef.current = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 1000);
+    }, 3000);
 
     return () => {
       if (priceRefreshIntervalRef.current) {
@@ -1066,16 +1071,48 @@ export default function Explore() {
     fetchTreasuryRates();
   }, []);
 
+  // Update cache when data changes successfully
   useEffect(() => {
-    // Clear old data immediately when tab changes to prevent showing stale data
-    setData([]);
-    setLoading(true);
+    if (data.length > 0 && !loading) {
+      const cacheKey = activeTab === "stocks" ? `${activeTab}-${stockRegion}` : activeTab;
+      tabDataCache.current[cacheKey] = {
+        data: data,
+        headerCards: headerCards,
+        timestamp: Date.now(),
+      };
+    }
+  }, [data, headerCards, loading, activeTab, stockRegion]);
+
+  useEffect(() => {
+    // Generate cache key based on tab and region
+    const cacheKey = activeTab === "stocks" ? `${activeTab}-${stockRegion}` : activeTab;
+    const cached = tabDataCache.current[cacheKey];
+    const now = Date.now();
+    let task: { cancel: () => void } | null = null;
 
     // Reset WebSocket subscription tracking
     lastSubscribedTabRef.current = '';
 
-    fetchLiveData();
-    fetchHeaderCards();
+    // Check if we have fresh cached data
+    if (cached && (now - cached.timestamp) < CACHE_TTL && cached.data.length > 0) {
+      // Use cached data immediately - no loading, no network fetch
+      setData(cached.data);
+      setHeaderCards(cached.headerCards);
+      setLoading(false);
+      // Still fetch in background to refresh data
+      fetchLiveData();
+      fetchHeaderCards();
+    } else {
+      // No cache or stale - show loading and fetch after animation completes
+      setData([]);
+      setLoading(true);
+
+      // Defer fetch until after tab switch animation completes for smoother UX
+      task = InteractionManager.runAfterInteractions(() => {
+        fetchLiveData();
+        fetchHeaderCards();
+      });
+    }
 
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -1093,6 +1130,7 @@ export default function Explore() {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
+      if (task) task.cancel();
     };
   }, [activeTab, stockRegion]);
 
@@ -1230,7 +1268,8 @@ export default function Explore() {
 
   const displayData = searchQuery ? searchResults : liveData;
 
-  const renderItem = ({ item, index }: { item: MarketItem; index: number }) => {
+  // Memoized renderItem for better FlatList performance
+  const renderItem = useCallback(({ item, index }: { item: MarketItem; index: number }) => {
     const isPositive = item.changePercent >= 0;
     
     // M&A-specific layout
@@ -1449,7 +1488,7 @@ export default function Explore() {
         </View>
       </TouchableOpacity>
     );
-  };
+  }, [activeTab, router]);
 
   // Header Cards Section
   const renderHeaderCards = () => {
@@ -1857,6 +1896,12 @@ export default function Explore() {
           contentContainerStyle={styles.listContainer}
           keyboardShouldPersistTaps="handled"
           onScrollBeginDrag={() => Keyboard.dismiss()}
+          // Performance optimizations
+          windowSize={5}
+          maxToRenderPerBatch={10}
+          initialNumToRender={10}
+          removeClippedSubviews={Platform.OS === 'android'}
+          updateCellsBatchingPeriod={50}
           ListEmptyComponent={
             searchQuery ? (
               searchLoading ? (
