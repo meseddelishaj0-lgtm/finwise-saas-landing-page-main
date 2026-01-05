@@ -105,6 +105,33 @@ export default function About() {
             </TouchableOpacity>
           </View>
 
+          {/* Financial Disclaimer */}
+          <View style={styles.disclaimerContainer}>
+            <Text style={styles.disclaimerTitle}>Important Disclaimer</Text>
+            <Text style={styles.disclaimerText}>
+              Wallstreetstocks is for informational and educational purposes only.
+              The information provided does not constitute investment advice, financial advice,
+              trading advice, or any other sort of advice, and you should not treat any of the
+              app's content as such.
+            </Text>
+            <Text style={styles.disclaimerText}>
+              We do not recommend that any securities should be bought, sold, or held by you.
+              Nothing on this app should be taken as a recommendation to buy, sell, or hold any
+              particular cryptocurrency, stock, or security. Do conduct your own due diligence
+              and consult your financial advisor before making any investment decisions.
+            </Text>
+            <Text style={styles.disclaimerText}>
+              Stock prices and market data displayed may be delayed or contain inaccuracies.
+              Real-time quotes are provided "as is" without warranty of any kind. Historical
+              performance is not indicative of future results.
+            </Text>
+            <Text style={styles.disclaimerText}>
+              By using this app, you acknowledge that you are solely responsible for your own
+              investment decisions and that Wallstreetstocks shall not be liable for any losses
+              or damages arising from your use of the information provided.
+            </Text>
+          </View>
+
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.copyright}>
@@ -197,4 +224,27 @@ const styles = StyleSheet.create({
   footer: { marginTop: 50, alignItems: 'center' },
   copyright: { fontSize: 14, color: '#aaa', marginBottom: 8 },
   finalLine: { fontSize: 16, color: '#666', fontStyle: 'italic' },
+  disclaimerContainer: {
+    width: '100%',
+    marginTop: 40,
+    padding: 20,
+    backgroundColor: '#FFF9E6',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#FFE4A0',
+  },
+  disclaimerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#B8860B',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  disclaimerText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#666',
+    marginBottom: 12,
+    textAlign: 'left',
+  },
 });
