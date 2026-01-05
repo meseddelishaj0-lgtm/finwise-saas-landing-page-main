@@ -235,9 +235,9 @@ async function fetchRealTimePrice(symbol: string): Promise<{ price: number; chan
 // Batch fetch real-time prices for multiple symbols from Twelve Data
 async function fetchRealTimePrices(symbols: string[]): Promise<void> {
   // Fetch from Twelve Data for accurate premarket/after-hours prices
-  // Fetch all in parallel for speed (45 symbols every 3s = ~900 calls/min, under 987 limit)
+  // Fetch all in parallel for speed (49 symbols every 3s = ~980 calls/min, under 987 limit)
   const uniqueSymbols = [...new Set(symbols)]; // Remove duplicates
-  const promises = uniqueSymbols.slice(0, 45).map(async (symbol) => {
+  const promises = uniqueSymbols.slice(0, 49).map(async (symbol) => {
     const data = await fetchRealTimePrice(symbol);
     if (data) {
       priceStore.setQuote({
@@ -604,7 +604,7 @@ export default function Dashboard() {
     }
 
     // Set up interval for continuous updates during extended hours
-    // 45 symbols every 3 seconds = ~900 calls/min (under 987 limit)
+    // 49 symbols every 3 seconds = ~980 calls/min (under 987 limit)
     realTimePriceIntervalRef.current = setInterval(() => {
       if (isExtendedHours()) {
         fetchRealTimePrices(allSymbols);

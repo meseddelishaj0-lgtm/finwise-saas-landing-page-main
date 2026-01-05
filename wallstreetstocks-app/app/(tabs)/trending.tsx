@@ -29,6 +29,71 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
 const STOCK_ROW_HEIGHT = 76; // Fixed row height for getItemLayout optimization
 
+// Twelve Data API for real-time extended hours prices
+const TWELVE_DATA_API_KEY_REALTIME = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_URL_REALTIME = 'https://api.twelvedata.com';
+
+// Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
+function isExtendedHours(): boolean {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour: 'numeric',
+    minute: 'numeric',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(now);
+  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+  const totalMinutes = hour * 60 + minute;
+
+  const preMarketStart = 4 * 60;
+  const marketOpen = 9 * 60 + 30;
+  const marketClose = 16 * 60;
+  const afterHoursEnd = 20 * 60;
+
+  return (totalMinutes >= preMarketStart && totalMinutes < marketOpen) ||
+         (totalMinutes >= marketClose && totalMinutes < afterHoursEnd);
+}
+
+// Fetch real-time price from Twelve Data /price endpoint
+async function fetchRealTimePrice(symbol: string): Promise<{ price: number; change: number; changePercent: number } | null> {
+  try {
+    const res = await fetch(`${TWELVE_DATA_URL_REALTIME}/price?symbol=${encodeURIComponent(symbol)}&apikey=${TWELVE_DATA_API_KEY_REALTIME}`);
+    const data = await res.json();
+
+    if (data?.price) {
+      const price = parseFloat(data.price) || 0;
+      const existingQuote = priceStore.getQuote(symbol);
+      const prevClose = existingQuote?.previousClose || price;
+      const change = price - prevClose;
+      const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
+      return { price, change, changePercent };
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Batch fetch real-time prices for multiple symbols
+async function fetchRealTimePrices(symbols: string[]): Promise<void> {
+  const uniqueSymbols = [...new Set(symbols)];
+  const promises = uniqueSymbols.slice(0, 49).map(async (symbol) => {
+    const data = await fetchRealTimePrice(symbol);
+    if (data) {
+      priceStore.setQuote({
+        symbol,
+        price: data.price,
+        change: data.change,
+        changePercent: data.changePercent,
+      });
+    }
+  });
+  await Promise.all(promises);
+}
+
 // getItemLayout for FlatList optimization (enables instant scroll-to-index)
 const getStockRowLayout = (_data: any, index: number) => ({
   length: STOCK_ROW_HEIGHT,
@@ -631,6 +696,46 @@ export default function Trending() {
 
     return () => clearInterval(interval);
   }, [activeTab]);
+
+  // Real-time extended hours price refresh for stocks (trending, gainers, losers)
+  const realTimePriceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    // Only run for stock tabs (not forex/commodities which use WebSocket)
+    if (activeTab === 'forex' || activeTab === 'commodities') {
+      if (realTimePriceIntervalRef.current) {
+        clearInterval(realTimePriceIntervalRef.current);
+        realTimePriceIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Get symbols from current data
+    const symbols = data.map(item => item.symbol).filter(Boolean);
+    if (symbols.length === 0) return;
+
+    // Initial fetch during extended hours
+    if (isExtendedHours()) {
+      console.log(`📡 Fetching extended hours prices for ${activeTab}...`);
+      fetchRealTimePrices(symbols);
+    }
+
+    // Set up interval for continuous updates during extended hours
+    // 49 symbols every 3 seconds = ~980 calls/min (under 987 limit)
+    realTimePriceIntervalRef.current = setInterval(() => {
+      if (isExtendedHours()) {
+        const currentSymbols = data.map(item => item.symbol).filter(Boolean);
+        fetchRealTimePrices(currentSymbols);
+      }
+    }, 3000);
+
+    return () => {
+      if (realTimePriceIntervalRef.current) {
+        clearInterval(realTimePriceIntervalRef.current);
+        realTimePriceIntervalRef.current = null;
+      }
+    };
+  }, [activeTab, data]);
 
   // Get live prices from store for all tabs
   const liveData = useMemo(() => {
