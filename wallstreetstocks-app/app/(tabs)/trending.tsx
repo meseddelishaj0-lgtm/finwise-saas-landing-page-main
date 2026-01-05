@@ -583,29 +583,35 @@ export default function Trending() {
     }, [])
   );
 
-  // WebSocket subscription for forex and commodities real-time streaming
+  // WebSocket subscription for all tabs real-time streaming
   useEffect(() => {
     if (!wsConnected) return;
+    if (data.length === 0) return;
 
-    // Only subscribe for forex and commodities tabs
-    if (activeTab === "forex" || activeTab === "commodities") {
-      const symbolsToSubscribe = activeTab === "forex" ? FOREX_PAIRS : COMMODITIES_SYMBOLS;
+    let symbolsToSubscribe: string[] = [];
 
-      // Unsubscribe from previous symbols
-      if (wsSubscribedRef.current.length > 0) {
-        wsUnsubscribe(wsSubscribedRef.current);
-      }
+    if (activeTab === "forex") {
+      symbolsToSubscribe = FOREX_PAIRS;
+    } else if (activeTab === "commodities") {
+      symbolsToSubscribe = COMMODITIES_SYMBOLS;
+    } else if (activeTab === "indices") {
+      symbolsToSubscribe = INDICES_SYMBOLS;
+    } else {
+      // For trending/gainers/losers - subscribe to top 20 loaded stock symbols
+      // Limit to 20 to leave room for chart page and other screens (50 total limit)
+      symbolsToSubscribe = data.map(item => item.symbol).filter(Boolean).slice(0, 20);
+    }
 
-      // Subscribe to new symbols
+    // Unsubscribe from previous symbols
+    if (wsSubscribedRef.current.length > 0) {
+      wsUnsubscribe(wsSubscribedRef.current);
+    }
+
+    // Subscribe to new symbols
+    if (symbolsToSubscribe.length > 0) {
       wsSubscribe(symbolsToSubscribe);
       wsSubscribedRef.current = symbolsToSubscribe;
-      console.log(`📡 Subscribed to ${activeTab} WebSocket: ${symbolsToSubscribe.length} pairs`);
-    } else {
-      // Unsubscribe when leaving forex/commodities tabs
-      if (wsSubscribedRef.current.length > 0) {
-        wsUnsubscribe(wsSubscribedRef.current);
-        wsSubscribedRef.current = [];
-      }
+      console.log(`📡 Subscribed to ${activeTab} WebSocket: ${symbolsToSubscribe.length} symbols`);
     }
 
     return () => {
@@ -615,24 +621,20 @@ export default function Trending() {
         wsSubscribedRef.current = [];
       }
     };
-  }, [activeTab, wsConnected, wsSubscribe, wsUnsubscribe]);
+  }, [activeTab, wsConnected, data, wsSubscribe, wsUnsubscribe]);
 
-  // Real-time price update interval (every 1 second for forex/commodities)
+  // Real-time price update interval (every 500ms for near-instant updates)
   useEffect(() => {
-    if (activeTab !== "forex" && activeTab !== "commodities") return;
-
     const interval = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 1000);
+    }, 500);
 
     return () => clearInterval(interval);
   }, [activeTab]);
 
-  // Get live prices from store for forex/commodities
+  // Get live prices from store for all tabs
   const liveData = useMemo(() => {
-    if (activeTab !== "forex" && activeTab !== "commodities") {
-      return data;
-    }
+    if (data.length === 0) return data;
 
     return data.map(item => {
       // Try both formats: EURUSD and EUR/USD

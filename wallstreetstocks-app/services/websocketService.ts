@@ -241,14 +241,28 @@ class WebSocketService {
     if (this.pendingSubscriptions.size === 0) return;
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
 
-    // Check symbol limit
+    // Check symbol limit and actually unsubscribe old symbols if needed
     const totalSymbols = this.subscribedSymbols.size + this.pendingSubscriptions.size;
     if (totalSymbols > MAX_SYMBOLS) {
-      console.warn(`⚠️ Symbol limit exceeded (${totalSymbols}/${MAX_SYMBOLS}). Trimming older subscriptions.`);
       const toRemove = totalSymbols - MAX_SYMBOLS;
       const symbolsArray = Array.from(this.subscribedSymbols);
-      for (let i = 0; i < toRemove; i++) {
-        this.subscribedSymbols.delete(symbolsArray[i]);
+      const symbolsToRemove = symbolsArray.slice(0, toRemove);
+
+      console.warn(`⚠️ Symbol limit exceeded (${totalSymbols}/${MAX_SYMBOLS}). Unsubscribing ${toRemove} old symbols.`);
+
+      // Actually send unsubscribe request to Twelve Data
+      if (symbolsToRemove.length > 0) {
+        const unsubscribeMessage = {
+          action: 'unsubscribe',
+          params: {
+            symbols: symbolsToRemove.join(','),
+          },
+        };
+        this.ws.send(JSON.stringify(unsubscribeMessage));
+        console.log(`📊 Unsubscribed to make room: ${symbolsToRemove.join(', ')}`);
+
+        // Remove from tracking set
+        symbolsToRemove.forEach(s => this.subscribedSymbols.delete(s));
       }
     }
 

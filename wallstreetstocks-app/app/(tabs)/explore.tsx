@@ -395,15 +395,15 @@ export default function Explore() {
   const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
   const currentSubscribedSymbolsRef = useRef<string[]>([]);
 
-  // Simple interval-based price refresh (completely decoupled from store to prevent loops)
+  // Real-time price refresh - polls store every 500ms for near-instant updates
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Refresh prices every 3 seconds via simple interval - reduced frequency for better performance
+  // Refresh prices every 500ms for real-time display
   useEffect(() => {
     priceRefreshIntervalRef.current = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 3000);
+    }, 500);
 
     return () => {
       if (priceRefreshIntervalRef.current) {
@@ -1145,35 +1145,7 @@ export default function Explore() {
   // Track the last subscribed tab to prevent duplicate subscriptions
   const lastSubscribedTabRef = useRef<string>('');
 
-  // Twelve Data supported symbols for WebSocket (verified to work)
-  const TWELVE_DATA_SUPPORTED_STOCKS = new Set([
-    // Major US stocks
-    "AAPL", "MSFT", "GOOGL", "GOOG", "AMZN", "NVDA", "META", "TSLA", "BRK.A", "BRK.B",
-    "UNH", "JNJ", "V", "XOM", "WMT", "JPM", "MA", "PG", "HD", "CVX",
-    "MRK", "ABBV", "LLY", "PEP", "KO", "COST", "AVGO", "TMO", "MCD", "CSCO",
-    "ACN", "ABT", "DHR", "NEE", "WFC", "LIN", "ADBE", "TXN", "CRM", "AMD",
-    "BMY", "UPS", "RTX", "QCOM", "HON", "UNP", "INTC", "IBM", "CAT", "BA",
-    "GE", "AMGN", "PFE", "LOW", "SBUX", "INTU", "DE", "SPGI", "GILD", "MDLZ",
-    "AXP", "ISRG", "ADI", "BKNG", "VRTX", "SYK", "REGN", "MMC", "ZTS", "BDX",
-    "PYPL", "SNAP", "SQ", "COIN", "ROKU", "SHOP", "UBER", "LYFT", "ABNB", "DASH",
-    // Major ETFs
-    "SPY", "QQQ", "IWM", "DIA", "VOO", "VTI", "VEA", "VWO", "EFA", "EEM",
-    "GLD", "SLV", "USO", "TLT", "AGG", "BND", "LQD", "HYG", "XLF", "XLK",
-    "XLE", "XLV", "XLI", "XLY", "XLP", "XLU", "XLB", "XLRE", "XLC", "VIG",
-    "SCHD", "VYM", "ARKK", "ARKW", "ARKG",
-    // European ADRs
-    "BP", "SHEL", "HSBC", "RIO", "GSK", "AZN", "UL", "BTI", "SAP", "NVS", "UBS", "ASML",
-    // Asian ADRs
-    "BABA", "JD", "PDD", "BIDU", "NIO", "TSM", "SONY", "TM", "INFY", "HDB",
-  ]);
-
-  const TWELVE_DATA_SUPPORTED_CRYPTO = new Set([
-    "BTC/USD", "ETH/USD", "BNB/USD", "XRP/USD", "ADA/USD", "SOL/USD", "DOGE/USD", "DOT/USD",
-    "MATIC/USD", "LTC/USD", "AVAX/USD", "LINK/USD", "ATOM/USD", "UNI/USD", "XLM/USD",
-    "ETC/USD", "BCH/USD", "ALGO/USD", "XMR/USD", "AAVE/USD", "MKR/USD", "COMP/USD",
-  ]);
-
-  // Subscribe to WebSocket for real-time updates (only supported symbols)
+  // Subscribe to WebSocket for real-time updates
   // Unsubscribe from old symbols when switching tabs to prevent hitting 50 symbol limit
   useEffect(() => {
     if (!wsConnected || data.length === 0) return;
@@ -1190,7 +1162,7 @@ export default function Explore() {
         console.log('⏳ Waiting for crypto data to load...');
         return;
       }
-      // Convert crypto symbols to Twelve Data format and filter to supported only
+      // Convert crypto symbols to Twelve Data format (BTC/USD format for WebSocket)
       newSymbols = data
         .map(item => {
           const sym = item.symbol;
@@ -1199,19 +1171,19 @@ export default function Explore() {
           }
           return sym;
         })
-        .filter(s => s && TWELVE_DATA_SUPPORTED_CRYPTO.has(s))
-        .slice(0, 8); // Limit to 8 cryptos to stay under 50 total
+        .filter(Boolean)
+        .slice(0, 20); // Subscribe to top 20 cryptos for real-time updates
     } else if (activeTab === "etf" || activeTab === "stocks") {
       // Verify data matches tab type - reject crypto symbols
       if (firstItem.symbol?.endsWith('USD') && firstItem.symbol?.length <= 7) {
         console.log(`⏳ Waiting for ${activeTab} data to load...`);
         return;
       }
-      // Filter to only Twelve Data supported symbols
+      // Subscribe to all displayed symbols (no whitelist filtering - Twelve Data supports most symbols)
       newSymbols = data
         .map(item => item.symbol)
-        .filter(s => s && TWELVE_DATA_SUPPORTED_STOCKS.has(s))
-        .slice(0, 8); // Limit to 8 symbols to stay under 50 total
+        .filter(s => s && !s.includes('.WT') && !s.includes('.WS')) // Exclude warrants
+        .slice(0, 20); // Subscribe to top 20 for real-time updates
     }
 
     // Skip if already subscribed to same symbols
@@ -1233,7 +1205,7 @@ export default function Explore() {
     }
   }, [wsConnected, activeTab, data, wsSubscribe, wsUnsubscribe]);
 
-  // Reactive live data - updates when throttled price trigger fires
+  // Reactive live data - updates every 500ms for real-time price display
   const liveData = useMemo(() => {
     return data.map(item => {
       // For crypto, try both formats and use the most recent one

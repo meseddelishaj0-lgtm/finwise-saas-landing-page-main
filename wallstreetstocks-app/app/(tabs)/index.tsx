@@ -177,6 +177,79 @@ const interpolateData = (data: { value: number; label: string; dataPointText?: s
 
 const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+
+// Twelve Data API for real-time extended hours prices
+const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
+
+// Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
+function isExtendedHours(): boolean {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    hour: 'numeric',
+    minute: 'numeric',
+    weekday: 'short',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(now);
+  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+  const dayOfWeek = parts.find(p => p.type === 'weekday')?.value || '';
+
+  if (dayOfWeek === 'Sat' || dayOfWeek === 'Sun') return true;
+
+  const totalMinutes = hour * 60 + minute;
+  const preMarketStart = 4 * 60;      // 4:00 AM
+  const marketOpen = 9 * 60 + 30;     // 9:30 AM
+  const marketClose = 16 * 60;        // 4:00 PM
+  const afterHoursEnd = 20 * 60;      // 8:00 PM
+
+  return (totalMinutes >= preMarketStart && totalMinutes < marketOpen) ||
+         (totalMinutes >= marketClose && totalMinutes < afterHoursEnd);
+}
+
+// Fetch real-time price from Twelve Data /price endpoint (1 API credit vs 8 for time_series)
+async function fetchRealTimePrice(symbol: string): Promise<{ price: number; change: number; changePercent: number } | null> {
+  try {
+    // Use /price endpoint - only 1 API credit per call
+    const res = await fetch(`${TWELVE_DATA_URL}/price?symbol=${encodeURIComponent(symbol)}&apikey=${TWELVE_DATA_API_KEY}`);
+    const data = await res.json();
+
+    if (data?.price) {
+      const price = parseFloat(data.price) || 0;
+      // Get existing quote from store for previous close
+      const existingQuote = priceStore.getQuote(symbol);
+      const prevClose = existingQuote?.previousClose || price;
+      const change = price - prevClose;
+      const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
+
+      return { price, change, changePercent };
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}
+
+// Batch fetch real-time prices for multiple symbols from Twelve Data
+async function fetchRealTimePrices(symbols: string[]): Promise<void> {
+  // Fetch from Twelve Data for accurate premarket/after-hours prices
+  // Fetch all in parallel for speed (40 symbols every 3s = 800 calls/min, under 987 limit)
+  const uniqueSymbols = [...new Set(symbols)]; // Remove duplicates
+  const promises = uniqueSymbols.slice(0, 40).map(async (symbol) => {
+    const data = await fetchRealTimePrice(symbol);
+    if (data) {
+      priceStore.setQuote({
+        symbol,
+        price: data.price,
+        change: data.change,
+        changePercent: data.changePercent,
+      });
+    }
+  });
+  await Promise.all(promises);
+}
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
 // Polygon.io API for real-time market data
@@ -491,15 +564,16 @@ export default function Dashboard() {
     }
   }, [wsConnected, wsSubscribe]);
 
-  // ============= INTERVAL-BASED PRICE REFRESH (prevents infinite loops) =============
-  // Simple interval triggers re-render every 3 seconds to pick up WebSocket price updates
+  // ============= REAL-TIME PRICE REFRESH =============
+  // Interval triggers re-render every 500ms for near-instant WebSocket price updates
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const realTimePriceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     priceRefreshIntervalRef.current = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 1000);
+    }, 500);
 
     return () => {
       if (priceRefreshIntervalRef.current) {
@@ -508,7 +582,37 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Live market indices - updates every 3 seconds from price store
+  // Fetch real-time extended hours prices for watchlist and market indices every second
+  useEffect(() => {
+    const allSymbols = [
+      ...MARKET_INDICES_SYMBOLS,
+      ...watchlist,
+    ];
+
+    if (allSymbols.length === 0) return;
+
+    // Initial fetch
+    if (isExtendedHours()) {
+      console.log('📡 Fetching extended hours prices...');
+      fetchRealTimePrices(allSymbols);
+    }
+
+    // Set up interval for continuous updates during extended hours
+    // 40 calls every 3 seconds = ~800 calls/min (under 987 limit)
+    realTimePriceIntervalRef.current = setInterval(() => {
+      if (isExtendedHours()) {
+        fetchRealTimePrices(allSymbols);
+      }
+    }, 3000); // Every 3 seconds
+
+    return () => {
+      if (realTimePriceIntervalRef.current) {
+        clearInterval(realTimePriceIntervalRef.current);
+      }
+    };
+  }, [watchlist]);
+
+  // Live market indices - updates every 500ms from price store for real-time display
   const liveMarketIndices = useMemo(() => {
     const nameMap: { [key: string]: string } = {
       'SPY': 'S&P 500', 'QQQ': 'Nasdaq 100', 'DIA': 'Dow Jones', 'IWM': 'Russell 2000',
@@ -634,47 +738,60 @@ export default function Dashboard() {
         'TLT': '20+ Yr Treasury',
       };
 
-      // Use FMP for REST API data (Twelve Data WebSocket handles real-time streaming)
-      const data = await fetchBatchQuotes(symbols);
+      // Use Twelve Data API for real-time prices (works during extended hours)
+      const promises = symbols.map(async (symbol) => {
+        try {
+          const [tsRes, quoteRes] = await Promise.all([
+            fetch(`${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(symbol)}&interval=1min&outputsize=1&prepost=true&apikey=${TWELVE_DATA_API_KEY}`),
+            fetch(`${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(symbol)}&apikey=${TWELVE_DATA_API_KEY}`),
+          ]);
+          const [tsData, quoteData] = await Promise.all([tsRes.json(), quoteRes.json()]);
 
-      if (data && Array.isArray(data) && data.length > 0) {
-        // Update global price store with fetched data
-        priceStore.setQuotes(data.map((item: any) => ({
-          symbol: item.symbol,
-          price: item.price || 0,
-          change: item.change || 0,
-          changePercent: item.changesPercentage || 0,
-          name: nameMap[item.symbol] || item.name || item.symbol,
-        })));
-
-        const updated = symbols.map(symbol => {
-          const item = data.find((d: any) => d.symbol === symbol);
-          // Check global store for potentially newer price
-          const storeQuote = priceStore.getQuote(symbol);
-          const price = storeQuote?.price || item?.price || 0;
-
-          if (item) {
-            return {
-              symbol: item.symbol,
-              name: nameMap[item.symbol] || item.symbol,
-              price: price,
-              change: item.change || 0,
-              changePercent: item.changesPercentage || 0,
-              color: (item.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30'
-            };
+          let price = 0;
+          if (tsData?.values && tsData.values.length > 0) {
+            price = parseFloat(tsData.values[0].close) || 0;
           }
+          if (price === 0) {
+            price = parseFloat(quoteData?.close) || 0;
+          }
+
+          const prevClose = parseFloat(quoteData?.previous_close) || price;
+          const change = price - prevClose;
+          const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
+
+          return {
+            symbol,
+            name: nameMap[symbol] || quoteData?.name || symbol,
+            price,
+            change,
+            changePercent,
+            color: changePercent >= 0 ? '#34C759' : '#FF3B30',
+          };
+        } catch (err) {
           return {
             symbol,
             name: nameMap[symbol] || symbol,
-            price: storeQuote?.price || 0,
-            change: storeQuote?.change || 0,
-            changePercent: storeQuote?.changePercent || 0,
-            color: (storeQuote?.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30'
+            price: 0,
+            change: 0,
+            changePercent: 0,
+            color: '#34C759',
           };
-        });
-        setMajorIndices(updated);
-        setLastUpdated(new Date());
-      }
+        }
+      });
+
+      const results = await Promise.all(promises);
+
+      // Update global price store with fetched data
+      priceStore.setQuotes(results.map((item) => ({
+        symbol: item.symbol,
+        price: item.price,
+        change: item.change,
+        changePercent: item.changePercent,
+        name: item.name,
+      })));
+
+      setMajorIndices(results);
+      setLastUpdated(new Date());
     } catch (err) {
       console.error('Market chips fetch error:', err);
     } finally {
