@@ -2008,9 +2008,13 @@ export default function Dashboard() {
                     <Text style={styles.indexSymbol}>{index.symbol}</Text>
                   </View>
                   <Text style={styles.indexName} numberOfLines={1}>{index.name}</Text>
-                  <Text style={styles.indexPrice}>
-                    ${index.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </Text>
+                  <AnimatedPrice
+                    value={index.price}
+                    prefix="$"
+                    decimals={2}
+                    style={styles.indexPrice}
+                    flashOnChange={true}
+                  />
                   <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
                     <Ionicons
                       name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'}
