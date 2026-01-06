@@ -180,23 +180,45 @@ type MarketStatus = 'live' | 'premarket' | 'afterhours' | 'closed';
 const getMarketStatus = (): MarketStatus => {
   const now = new Date();
 
-  // Convert to Eastern Time
-  const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const day = etTime.getDay(); // 0 = Sunday, 6 = Saturday
-  const hours = etTime.getHours();
-  const minutes = etTime.getMinutes();
-  const timeInMinutes = hours * 60 + minutes;
+  // Get UTC time components
+  const utcHours = now.getUTCHours();
+  const utcMinutes = now.getUTCMinutes();
+  const utcDay = now.getUTCDay(); // 0 = Sunday, 6 = Saturday
+
+  // Convert UTC to Eastern Time
+  // EST = UTC - 5 hours, EDT = UTC - 4 hours
+  // Determine if we're in DST (roughly March second Sunday to November first Sunday)
+  const month = now.getUTCMonth(); // 0-11
+  const date = now.getUTCDate();
+
+  // Simple DST check: DST is roughly mid-March to early November
+  const isDST = month > 2 && month < 10; // April through October is definitely DST
+
+  const etOffset = isDST ? -4 : -5; // EDT or EST
+  let etHours = utcHours + etOffset;
+  let etDay = utcDay;
+
+  // Handle day wraparound
+  if (etHours < 0) {
+    etHours += 24;
+    etDay = (etDay + 6) % 7; // Go back one day
+  } else if (etHours >= 24) {
+    etHours -= 24;
+    etDay = (etDay + 1) % 7; // Go forward one day
+  }
+
+  const timeInMinutes = etHours * 60 + utcMinutes;
 
   // Weekend - market closed
-  if (day === 0 || day === 6) {
+  if (etDay === 0 || etDay === 6) {
     return 'closed';
   }
 
   // Market hours in minutes from midnight (Eastern Time)
-  const preMarketOpen = 7 * 60; // 7:00 AM ET
-  const marketOpen = 9 * 60 + 30; // 9:30 AM ET
-  const marketClose = 16 * 60; // 4:00 PM ET
-  const afterHoursClose = 20 * 60; // 8:00 PM ET
+  const preMarketOpen = 7 * 60; // 7:00 AM ET (420)
+  const marketOpen = 9 * 60 + 30; // 9:30 AM ET (570)
+  const marketClose = 16 * 60; // 4:00 PM ET (960)
+  const afterHoursClose = 20 * 60; // 8:00 PM ET (1200)
 
   if (timeInMinutes >= marketOpen && timeInMinutes < marketClose) {
     return 'live';
