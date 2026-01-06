@@ -34,7 +34,7 @@ if (Platform.OS === 'ios') {
 // Configure Google Sign-In for Android
 if (Platform.OS === 'android') {
   GoogleSignin.configure({
-    webClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com',
+    webClientId: '596401606956-pkevjhkph34qollqp0i73mivfuu80g46.apps.googleusercontent.com',
   });
 }
 
