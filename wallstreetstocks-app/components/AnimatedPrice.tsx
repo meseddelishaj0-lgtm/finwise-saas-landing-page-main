@@ -173,6 +173,186 @@ export const AnimatedChange = memo(({
   );
 });
 
+// Market status types
+type MarketStatus = 'live' | 'premarket' | 'afterhours' | 'closed';
+
+// Get current market status based on US Eastern Time
+const getMarketStatus = (): MarketStatus => {
+  const now = new Date();
+
+  // Convert to Eastern Time
+  const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const day = etTime.getDay(); // 0 = Sunday, 6 = Saturday
+  const hours = etTime.getHours();
+  const minutes = etTime.getMinutes();
+  const timeInMinutes = hours * 60 + minutes;
+
+  // Weekend - market closed
+  if (day === 0 || day === 6) {
+    return 'closed';
+  }
+
+  // Market hours in minutes from midnight (Eastern Time)
+  const preMarketOpen = 7 * 60; // 7:00 AM ET
+  const marketOpen = 9 * 60 + 30; // 9:30 AM ET
+  const marketClose = 16 * 60; // 4:00 PM ET
+  const afterHoursClose = 20 * 60; // 8:00 PM ET
+
+  if (timeInMinutes >= marketOpen && timeInMinutes < marketClose) {
+    return 'live';
+  } else if (timeInMinutes >= preMarketOpen && timeInMinutes < marketOpen) {
+    return 'premarket';
+  } else if (timeInMinutes >= marketClose && timeInMinutes < afterHoursClose) {
+    return 'afterhours';
+  }
+
+  return 'closed';
+};
+
+// Market Status Indicator - shows Live, Pre Market, After Hours, or Closed
+export const MarketStatusIndicator = memo(() => {
+  const [status, setStatus] = React.useState<MarketStatus>(getMarketStatus);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  // Update status every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStatus(getMarketStatus());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Pulse animation only for live status
+  useEffect(() => {
+    if (status === 'live') {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.3,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const glow = Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const opacity = Animated.loop(
+        Animated.sequence([
+          Animated.timing(opacityAnim, {
+            toValue: 0.6,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      pulse.start();
+      glow.start();
+      opacity.start();
+
+      return () => {
+        pulse.stop();
+        glow.stop();
+        opacity.stop();
+      };
+    } else {
+      // Reset animations for non-live status
+      pulseAnim.setValue(1);
+      glowAnim.setValue(0);
+      opacityAnim.setValue(1);
+    }
+  }, [status]);
+
+  const glowScale = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 2.5],
+  });
+
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.6, 0.3, 0],
+  });
+
+  // Colors based on status
+  const getStatusConfig = () => {
+    switch (status) {
+      case 'live':
+        return { color: '#34C759', label: 'LIVE', subtitle: '' };
+      case 'premarket':
+        return { color: '#FF9500', label: 'PRE MARKET', subtitle: ' - price update limited' };
+      case 'afterhours':
+        return { color: '#FF9500', label: 'AFTER HOURS', subtitle: ' - price update limited' };
+      case 'closed':
+        return { color: '#8E8E93', label: 'CLOSED', subtitle: '' };
+    }
+  };
+
+  const config = getStatusConfig();
+
+  return (
+    <View style={styles.marketStatusContainer}>
+      <View style={styles.liveDotContainer}>
+        {/* Glow ring - only for live */}
+        {status === 'live' && (
+          <Animated.View
+            style={[
+              styles.liveGlow,
+              {
+                backgroundColor: config.color,
+                transform: [{ scale: glowScale }],
+                opacity: glowOpacity,
+              },
+            ]}
+          />
+        )}
+        {/* Main dot */}
+        <Animated.View
+          style={[
+            styles.liveDot,
+            {
+              backgroundColor: config.color,
+              transform: status === 'live' ? [{ scale: pulseAnim }] : [],
+              opacity: status === 'live' ? opacityAnim : 1,
+            },
+          ]}
+        />
+      </View>
+      <Text style={[styles.liveText, { color: config.color }]}>
+        {config.label}
+      </Text>
+      {config.subtitle ? (
+        <Text style={styles.marketStatusSubtitle}>{config.subtitle}</Text>
+      ) : null}
+    </View>
+  );
+});
+
 // Live indicator dot with pulse animation
 export const LiveIndicator = memo(() => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -322,6 +502,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#34C759',
     letterSpacing: 0.5,
+  },
+  marketStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  marketStatusSubtitle: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#8E8E93',
+    marginLeft: -2,
   },
 });
 

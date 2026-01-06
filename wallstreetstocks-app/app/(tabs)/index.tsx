@@ -31,7 +31,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiCache } from '@/utils/performance';
 import { fetchQuotesWithCache } from '@/services/quoteService';
 import { priceStore } from '@/stores/priceStore';
-import { AnimatedPrice, AnimatedChange, LiveIndicator } from '@/components/AnimatedPrice';
+import { AnimatedPrice, AnimatedChange, LiveIndicator, MarketStatusIndicator } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
 
@@ -1859,7 +1859,7 @@ export default function Dashboard() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Market Overview</Text>
             <View style={styles.liveStatusContainer}>
-              <LiveIndicator />
+              <MarketStatusIndicator />
               {lastUpdated && (
                 <Text style={styles.lastUpdatedText}>
                   {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
