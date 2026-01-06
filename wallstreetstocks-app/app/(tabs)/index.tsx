@@ -13,7 +13,6 @@ import {
   Alert,
   RefreshControl,
   KeyboardAvoidingView,
-  InteractionManager,
   AppState,
   AppStateStatus,
 } from 'react-native';
@@ -34,10 +33,57 @@ import { priceStore } from '@/stores/priceStore';
 import { AnimatedPrice, AnimatedChange, LiveIndicator, MarketStatusIndicator } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
+import { IndicesSkeletonList, WatchlistSkeletonList, TrendingSkeletonList, PortfolioSkeleton } from '@/components/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
 const portfolioChartWidth = width - 80;
+
+// Fetch with timeout - fail fast if API is slow
+const fetchWithTimeout = async (url: string, timeout: number = 5000): Promise<Response> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    throw error;
+  }
+};
+
+// Generate instant placeholder chart based on price trend
+const generatePlaceholderChart = (price: number, changePercent: number, symbol?: string): number[] => {
+  const points = 20;
+  const data: number[] = [];
+
+  // Calculate direction based on change
+  const changeAmount = price * (changePercent / 100);
+  const startPrice = price - changeAmount;
+
+  // Create deterministic seed from symbol
+  const seed = symbol ? symbol.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 10 : 0;
+  const curveStrength = 0.1 + (seed * 0.02);
+
+  for (let i = 0; i < points; i++) {
+    const progress = i / (points - 1);
+    const eased = progress < 0.5
+      ? 2 * progress * progress * (1 + curveStrength)
+      : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+    const clampedProgress = Math.max(0, Math.min(1, eased));
+    const value = startPrice + (price - startPrice) * clampedProgress;
+    data.push(Math.max(value, 0.01));
+  }
+
+  data[0] = Math.max(startPrice, 0.01);
+  data[data.length - 1] = price;
+  return data;
+};
 
 // Clean and validate chart data - fill gaps and remove invalid values
 const cleanChartData = (data: number[]): number[] => {
@@ -874,14 +920,14 @@ export default function Dashboard() {
         change: stock.change,
         changePercent: stock.changePercent,
         color: stock.changePercent >= 0 ? '#34C759' : '#FF3B30',
-        data: [], // Start empty, real chart data will load
+        data: generatePlaceholderChart(stock.price, stock.changePercent, stock.symbol), // Instant placeholder
         rank: idx + 1
       }));
 
       setTrending(trendingData);
       setTrendingLoading(false);
 
-      // Fetch real chart data
+      // Fetch real chart data in background (don't await)
       fetchTrendingCharts(sortedStocks.map(s => s.symbol));
       return;
     }
@@ -993,7 +1039,7 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch watchlist data - always fetch real chart data
+  // Fetch watchlist data - INSTANT with placeholders, then real charts in background
   const fetchWatchlist = async () => {
     if (watchlist.length === 0) {
       setWatchlistData([]);
@@ -1001,58 +1047,121 @@ export default function Dashboard() {
       return;
     }
 
-    // Always fetch real chart data for watchlist - no placeholders
+    // STEP 1: Try instant data from local cache with placeholder charts
+    const localStocks = marketDataService.getLiveData('stock');
+    const localCrypto = marketDataService.getLiveData('crypto');
+    const localETFs = marketDataService.getLiveData('etf');
+    const allLocalData = [...localStocks, ...localCrypto, ...localETFs];
+
+    if (allLocalData.length > 0) {
+      // Show instant data with placeholder charts
+      const instantData = watchlist.map(symbol => {
+        const localItem = allLocalData.find(item =>
+          item.symbol === symbol ||
+          item.symbol === symbol.replace('/', '') ||
+          item.symbol + '/USD' === symbol
+        );
+
+        if (localItem) {
+          return {
+            symbol: localItem.symbol,
+            name: localItem.name || localItem.symbol,
+            price: localItem.price,
+            change: localItem.change,
+            changePercent: localItem.changePercent,
+            color: localItem.changePercent >= 0 ? '#34C759' : '#FF3B30',
+            data: generatePlaceholderChart(localItem.price, localItem.changePercent, localItem.symbol),
+          };
+        }
+
+        // Unknown symbol - show placeholder
+        return {
+          symbol,
+          name: symbol,
+          price: 0,
+          change: 0,
+          changePercent: 0,
+          color: '#8E8E93',
+          data: [1, 1, 1, 1],
+        };
+      });
+
+      setWatchlistData(instantData);
+      setWatchlistDataLoading(false);
+
+      // STEP 2: Fetch real chart data in background (don't block UI)
+      fetchWatchlistCharts();
+      return;
+    }
+
+    // Fallback: fetch from API
     await fetchWatchlistFromAPI();
   };
 
-  // Helper to fetch watchlist from API with real chart data
+  // Fetch real chart data for watchlist in background
+  const fetchWatchlistCharts = async () => {
+    try {
+      const chartsData = await Promise.all(
+        watchlist.map(async (symbol) => {
+          try {
+            const chartRes = await fetchWithTimeout(
+              `${BASE_URL}/historical-chart/1min/${symbol}?apikey=${FMP_API_KEY}`,
+              5000 // 5 second timeout
+            );
+            const chartData = await chartRes.json();
+
+            if (chartData && Array.isArray(chartData) && chartData.length > 0) {
+              return {
+                symbol,
+                data: cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close)),
+              };
+            }
+            return null;
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      // Update watchlist with real chart data
+      setWatchlistData(prev => prev.map(item => {
+        const chartInfo = chartsData.find(c => c?.symbol === item.symbol);
+        if (chartInfo) {
+          return { ...item, data: chartInfo.data };
+        }
+        return item;
+      }));
+    } catch (err) {
+      console.error('Chart fetch error:', err);
+    }
+  };
+
+  // Helper to fetch watchlist from API with placeholder charts first
   const fetchWatchlistFromAPI = async () => {
     setWatchlistDataLoading(true);
     try {
       const data = await fetchBatchQuotes(watchlist);
 
       if (data && Array.isArray(data)) {
-        const watchlistWithCharts = await Promise.all(
-          data.map(async (stock: any) => {
-            try {
-              const chartRes = await fetch(
-                `${BASE_URL}/historical-chart/1min/${stock.symbol}?apikey=${FMP_API_KEY}`
-              );
-              const chartData = await chartRes.json();
+        // Show data immediately with placeholder charts
+        const watchlistWithPlaceholders = data.map((stock: any) => ({
+          symbol: stock.symbol,
+          name: stock.name || stock.symbol,
+          price: stock.price || 0,
+          change: stock.change || 0,
+          changePercent: stock.changesPercentage || 0,
+          color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
+          data: generatePlaceholderChart(stock.price || 100, stock.changesPercentage || 0, stock.symbol),
+        }));
 
-              // Only use real chart data - no placeholders
-              const chartValues = chartData && Array.isArray(chartData) && chartData.length > 0
-                ? cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close))
-                : []; // Empty array if no real data available
+        setWatchlistData(watchlistWithPlaceholders);
+        setWatchlistDataLoading(false);
 
-              return {
-                symbol: stock.symbol,
-                name: stock.name || stock.symbol,
-                price: stock.price || 0,
-                change: stock.change || 0,
-                changePercent: stock.changesPercentage || 0,
-                color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-                data: chartValues,
-              };
-            } catch (err) {
-              return {
-                symbol: stock.symbol,
-                name: stock.name || stock.symbol,
-                price: stock.price || 0,
-                change: stock.change || 0,
-                changePercent: stock.changesPercentage || 0,
-                color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-                data: [], // No placeholder on error - just empty chart
-              };
-            }
-          })
-        );
-
-        setWatchlistData(watchlistWithCharts);
+        // Fetch real charts in background
+        fetchWatchlistCharts();
       }
     } catch (err) {
       console.error('Watchlist fetch error:', err);
-    } finally {
       setWatchlistDataLoading(false);
     }
   };
@@ -1605,25 +1714,31 @@ export default function Dashboard() {
     return () => subscription.remove();
   }, [holdingsInitialized, contextWatchlistLoading]);
 
-  // Initial fetch - only start after data is loaded from AsyncStorage
-  // Use InteractionManager to not block UI animations, then load data in parallel
+  // Initial fetch - staggered loading for better responsiveness
+  // Load visible content first, then secondary content
   useEffect(() => {
     if (!holdingsInitialized || contextWatchlistLoading) return;
 
-    // Wait for UI to settle, then load all data in parallel for speed
-    const task = InteractionManager.runAfterInteractions(() => {
-      // Load all data in parallel - faster than sequential
-      Promise.all([
-        fetchMarketChips().catch(e => console.warn('Market chips error:', e)),
-        fetchTrending().catch(e => console.warn('Trending error:', e)),
-        fetchWatchlist().catch(e => console.warn('Watchlist error:', e)),
-        fetchPortfolio().catch(e => console.warn('Portfolio error:', e)),
-        fetchStockPicks().catch(e => console.warn('Stock picks error:', e)),
-      ]);
-    });
+    // PHASE 1: Load most visible content IMMEDIATELY (no InteractionManager delay)
+    // These use cached data so they're instant
+    fetchMarketChips().catch(e => console.warn('Market chips error:', e));
+    fetchTrending().catch(e => console.warn('Trending error:', e));
+    fetchWatchlist().catch(e => console.warn('Watchlist error:', e));
+
+    // PHASE 2: Load secondary content after a brief delay (50ms)
+    // This prevents UI from freezing by spreading out the work
+    const secondaryTimer = setTimeout(() => {
+      fetchPortfolio().catch(e => console.warn('Portfolio error:', e));
+    }, 50);
+
+    // PHASE 3: Load tertiary content last (100ms delay)
+    const tertiaryTimer = setTimeout(() => {
+      fetchStockPicks().catch(e => console.warn('Stock picks error:', e));
+    }, 100);
 
     return () => {
-      task.cancel();
+      clearTimeout(secondaryTimer);
+      clearTimeout(tertiaryTimer);
     };
   }, [holdingsInitialized, contextWatchlistLoading]);
 
@@ -1869,9 +1984,7 @@ export default function Dashboard() {
           </View>
           
           {indicesLoading ? (
-            <View style={styles.indicesLoadingContainer}>
-              <ActivityIndicator size="small" color="#007AFF" />
-            </View>
+            <IndicesSkeletonList count={5} />
           ) : (
             <ScrollView
               horizontal
@@ -2294,9 +2407,7 @@ export default function Dashboard() {
           </View>
 
           {watchlistDataLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#007AFF" />
-            </View>
+            <WatchlistSkeletonList count={4} />
           ) : liveWatchlistData.length === 0 ? (
             <View style={styles.emptyWatchlist}>
               <View style={styles.emptyWatchlistIconContainer}>
@@ -2485,9 +2596,7 @@ export default function Dashboard() {
           </View>
 
           {trendingLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#007AFF" />
-            </View>
+            <TrendingSkeletonList count={4} />
           ) : (
             <ScrollView 
               horizontal 
