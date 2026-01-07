@@ -29,9 +29,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
 const STOCK_ROW_HEIGHT = 76; // Fixed row height for getItemLayout optimization
 
-// Twelve Data API for real-time extended hours prices
-const TWELVE_DATA_API_KEY_REALTIME = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL_REALTIME = 'https://api.twelvedata.com';
+// WebSocket handles all real-time prices - no API polling needed
 
 // Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
 function isExtendedHours(): boolean {
@@ -57,42 +55,8 @@ function isExtendedHours(): boolean {
          (totalMinutes >= marketClose && totalMinutes < afterHoursEnd);
 }
 
-// Fetch real-time price from Twelve Data /price endpoint
-async function fetchRealTimePrice(symbol: string): Promise<{ price: number; change: number; changePercent: number } | null> {
-  try {
-    const res = await fetch(`${TWELVE_DATA_URL_REALTIME}/price?symbol=${encodeURIComponent(symbol)}&apikey=${TWELVE_DATA_API_KEY_REALTIME}`);
-    const data = await res.json();
-
-    if (data?.price) {
-      const price = parseFloat(data.price) || 0;
-      const existingQuote = priceStore.getQuote(symbol);
-      const prevClose = existingQuote?.previousClose || price;
-      const change = price - prevClose;
-      const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
-      return { price, change, changePercent };
-    }
-    return null;
-  } catch (err) {
-    return null;
-  }
-}
-
-// Batch fetch real-time prices for multiple symbols
-async function fetchRealTimePrices(symbols: string[]): Promise<void> {
-  const uniqueSymbols = [...new Set(symbols)];
-  const promises = uniqueSymbols.slice(0, 49).map(async (symbol) => {
-    const data = await fetchRealTimePrice(symbol);
-    if (data) {
-      priceStore.setQuote({
-        symbol,
-        price: data.price,
-        change: data.change,
-        changePercent: data.changePercent,
-      });
-    }
-  });
-  await Promise.all(promises);
-}
+// API polling functions REMOVED - WebSocket handles all real-time price updates
+// This saves 100+ API credits/minute and provides instant price updates
 
 // getItemLayout for FlatList optimization (enables instant scroll-to-index)
 const getStockRowLayout = (_data: any, index: number) => ({
@@ -731,38 +695,27 @@ export default function Trending() {
     prefetchTabs();
   }, []);
 
-  // Main tab switching effect - always fetch fresh data on tab change
+  // Main tab switching effect - INSTANT tab switching with cache + WebSocket
   useEffect(() => {
     const cached = tabDataCache.current[activeTab];
 
-    // Show cached data immediately if available (for instant visual feedback)
+    // INSTANT TAB SWITCHING: Show cached data immediately
     if (cached && cached.data.length > 0) {
       setData(cached.data);
       setLoading(false);
+      // WebSocket handles real-time updates - NO API call needed!
     } else {
+      // Only fetch from API if no cache (first time visiting tab)
       setLoading(true);
-    }
-
-    // Always fetch fresh data when tab changes
-    fetchLiveData();
-    fetchHeaderCards();
-
-    const interval = setInterval(() => {
       fetchLiveData();
       fetchHeaderCards();
-    }, 5 * 60 * 1000);
+    }
 
-    return () => {
-      clearInterval(interval);
-    };
+    // NO POLLING INTERVAL - WebSocket handles all real-time updates
+    // This saves API credits and makes tab switching instant
   }, [activeTab]);
 
-  // Refresh header cards when screen comes into focus (picks up chart-synced prices)
-  useFocusEffect(
-    useCallback(() => {
-      fetchHeaderCards();
-    }, [])
-  );
+  // NO focus refresh needed - WebSocket provides real-time updates
 
   // WebSocket subscription for all tabs real-time streaming
   useEffect(() => {
@@ -816,26 +769,8 @@ export default function Trending() {
     return () => clearTimeout(startupDelay);
   }, [activeTab]);
 
-  // Extended hours price - ONE-TIME fetch only, WebSocket handles continuous updates
-  // REST API polling DISABLED to stay under 987 credits/min limit
-  useEffect(() => {
-    // Only run for stock tabs (not forex/commodities which use WebSocket)
-    if (activeTab === 'forex' || activeTab === 'commodities') {
-      return;
-    }
-
-    // Get symbols from current data
-    const symbols = data.map(item => item.symbol).filter(Boolean);
-    if (symbols.length === 0) return;
-
-    // ONE-TIME fetch during extended hours (not continuous polling)
-    // WebSocket handles real-time updates after this
-    if (isExtendedHours()) {
-      fetchRealTimePrices(symbols.slice(0, 20)); // Limit to 20 symbols
-    }
-
-    // NO INTERVAL - saves ~700+ API credits/minute
-  }, [activeTab]);
+  // NO API POLLING - WebSocket handles ALL real-time price updates
+  // This saves 700+ API credits/minute and makes tab switching instant
 
   // Get live prices from store for all tabs
   const liveData = useMemo(() => {

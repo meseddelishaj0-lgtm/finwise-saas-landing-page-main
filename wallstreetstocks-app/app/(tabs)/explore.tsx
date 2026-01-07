@@ -30,9 +30,7 @@ import { marketDataService } from "@/services/marketDataService";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
 
-// Twelve Data API for real-time extended hours prices
-const TWELVE_DATA_API_KEY_REALTIME = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL_REALTIME = 'https://api.twelvedata.com';
+// WebSocket handles all real-time prices - no API polling needed
 
 // Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
 function isExtendedHours(): boolean {
@@ -61,42 +59,8 @@ function isExtendedHours(): boolean {
          (totalMinutes >= marketClose && totalMinutes < afterHoursEnd);
 }
 
-// Fetch real-time price from Twelve Data /price endpoint (1 API credit per call)
-async function fetchRealTimePrice(symbol: string): Promise<{ price: number; change: number; changePercent: number } | null> {
-  try {
-    const res = await fetch(`${TWELVE_DATA_URL_REALTIME}/price?symbol=${encodeURIComponent(symbol)}&apikey=${TWELVE_DATA_API_KEY_REALTIME}`);
-    const data = await res.json();
-
-    if (data?.price) {
-      const price = parseFloat(data.price) || 0;
-      const existingQuote = priceStore.getQuote(symbol);
-      const prevClose = existingQuote?.previousClose || price;
-      const change = price - prevClose;
-      const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
-      return { price, change, changePercent };
-    }
-    return null;
-  } catch (err) {
-    return null;
-  }
-}
-
-// Batch fetch real-time prices for multiple symbols
-async function fetchRealTimePrices(symbols: string[]): Promise<void> {
-  const uniqueSymbols = [...new Set(symbols)];
-  const promises = uniqueSymbols.slice(0, 49).map(async (symbol) => {
-    const data = await fetchRealTimePrice(symbol);
-    if (data) {
-      priceStore.setQuote({
-        symbol,
-        price: data.price,
-        change: data.change,
-        changePercent: data.changePercent,
-      });
-    }
-  });
-  await Promise.all(promises);
-}
+// API polling functions REMOVED - WebSocket handles all real-time price updates
+// This saves 100+ API credits/minute and provides instant price updates
 
 type Tab = "stocks" | "crypto" | "etf" | "bonds" | "treasury" | "ipo" | "ma" | "dividends";
 type StockRegion = "us" | "europe" | "asia";
@@ -483,26 +447,8 @@ export default function Explore() {
     };
   }, []);
 
-  // Extended hours price - ONE-TIME fetch only, WebSocket handles continuous updates
-  // REST API polling DISABLED to stay under 987 credits/min limit
-  useEffect(() => {
-    // Only run for stocks and ETFs tabs
-    if (activeTab !== 'stocks' && activeTab !== 'etf') {
-      return;
-    }
-
-    // Get symbols from current data
-    const symbols = data.map(item => item.symbol).filter(Boolean);
-    if (symbols.length === 0) return;
-
-    // ONE-TIME fetch during extended hours (not continuous polling)
-    // WebSocket handles real-time updates after this
-    if (isExtendedHours()) {
-      fetchRealTimePrices(symbols.slice(0, 20)); // Limit to 20 symbols
-    }
-
-    // NO INTERVAL - saves ~700+ API credits/minute
-  }, [activeTab]);
+  // NO API POLLING - WebSocket handles ALL real-time price updates
+  // This saves 700+ API credits/minute and makes tab switching instant
 
   const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
   const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || "";
@@ -1327,45 +1273,30 @@ export default function Explore() {
     // Reset WebSocket subscription tracking
     lastSubscribedTabRef.current = '';
 
-    // Show cached data immediately if available (for instant visual feedback)
+    // INSTANT TAB SWITCHING: Show cached data immediately
     if (cached && cached.data.length > 0) {
       setData(cached.data);
       setHeaderCards(cached.headerCards);
       setLoading(false);
+      // WebSocket handles real-time updates - NO API call needed!
     } else {
+      // Only fetch from API if no cache (first time visiting tab)
       setLoading(true);
-    }
-
-    // Always fetch fresh data when tab changes
-    fetchLiveData();
-    fetchHeaderCards();
-
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    intervalRef.current = setInterval(() => {
       fetchLiveData();
       fetchHeaderCards();
-    }, 30000);
+    }
+
+    // NO POLLING INTERVAL - WebSocket handles all real-time updates
+    // This saves 100+ API credits/minute and makes tab switching instant
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
     };
   }, [activeTab, stockRegion]);
 
-  // Refresh data when screen comes into focus (picks up chart-synced prices)
-  useFocusEffect(
-    useCallback(() => {
-      fetchHeaderCards();
-      fetchLiveData();
-    }, [activeTab, stockRegion])
-  );
+  // NO focus refresh needed - WebSocket provides real-time updates
 
   // Track the last subscribed tab to prevent duplicate subscriptions
   const lastSubscribedTabRef = useRef<string>('');
