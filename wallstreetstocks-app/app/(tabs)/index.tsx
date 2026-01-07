@@ -231,44 +231,10 @@ const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 // No API polling needed - WebSocket provides instant updates via Twelve Data WebSocket
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
-// Polygon.io API for real-time market data
-const POLYGON_API_KEY = process.env.EXPO_PUBLIC_POLYGON_API_KEY || '';
-const POLYGON_BASE_URL = 'https://api.polygon.io';
-
 // Batch quotes helper - uses shared quote service with cache support
 // Prices sync with chart data for consistent display across screens
 async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
   return fetchQuotesWithCache(symbols, { timeout: 15000 });
-}
-
-// Fetch real-time quotes from Polygon.io
-async function fetchPolygonQuotes(symbols: string[]): Promise<any[]> {
-  try {
-    const tickerList = symbols.join(',');
-    const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${tickerList}&apiKey=${POLYGON_API_KEY}`;
-
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (data.status === 'OK' && data.tickers) {
-      return data.tickers.map((ticker: any) => ({
-        symbol: ticker.ticker,
-        price: ticker.day?.c || ticker.prevDay?.c || 0,
-        change: ticker.todaysChange || 0,
-        changesPercentage: ticker.todaysChangePerc || 0,
-        open: ticker.day?.o || 0,
-        high: ticker.day?.h || 0,
-        low: ticker.day?.l || 0,
-        volume: ticker.day?.v || 0,
-        previousClose: ticker.prevDay?.c || 0,
-        updated: ticker.updated,
-      }));
-    }
-
-    return [];
-  } catch (error) {
-    return [];
-  }
 }
 
 // Stock picks preview data
