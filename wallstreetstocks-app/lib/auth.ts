@@ -76,7 +76,62 @@ export const useAuth = create<AuthState>()(
           const token = await SecureStore.getItemAsync(TOKEN_KEY);
           if (token) {
             await AsyncStorage.setItem('authToken', token);
-            set({ token, loading: false });
+
+            // Try to validate session with backend
+            const { user: cachedUser } = get();
+
+            if (cachedUser?.id) {
+              // We have cached user data, try to refresh it
+              try {
+                const response = await fetch(`${API_URL}/api/user/${cachedUser.id}`, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                  },
+                });
+
+                if (response.ok) {
+                  const data = await response.json();
+                  const userData = data.user || data;
+                  // Session is valid, update user data
+                  set({
+                    user: {
+                      id: userData.id?.toString() || cachedUser.id,
+                      email: userData.email || cachedUser.email,
+                      name: userData.name || cachedUser.name,
+                      username: userData.username || cachedUser.username,
+                      profileImage: userData.profileImage || cachedUser.profileImage,
+                      bannerImage: userData.bannerImage || cachedUser.bannerImage,
+                      bio: userData.bio || cachedUser.bio,
+                      location: userData.location || cachedUser.location,
+                      website: userData.website || cachedUser.website,
+                      profileComplete: userData.profileComplete ?? cachedUser.profileComplete,
+                    },
+                    token,
+                    loading: false,
+                  });
+                  console.log('✅ Session restored for:', userData.email || cachedUser.email);
+                } else if (response.status === 401) {
+                  // Token is invalid, clear session
+                  console.log('⚠️ Token expired, clearing session');
+                  await SecureStore.deleteItemAsync(TOKEN_KEY);
+                  await AsyncStorage.removeItem('authToken');
+                  await AsyncStorage.removeItem('userId');
+                  set({ user: null, token: null, loading: false });
+                } else {
+                  // Other error - keep cached data
+                  console.log('⚠️ API error, using cached data');
+                  set({ token, loading: false });
+                }
+              } catch (fetchError) {
+                // Network error - keep existing state from persist
+                console.log('⚠️ Network error during init, using cached data');
+                set({ token, loading: false });
+              }
+            } else {
+              // No cached user, just set the token
+              set({ token, loading: false });
+            }
           } else {
             set({ user: null, token: null, loading: false });
           }
