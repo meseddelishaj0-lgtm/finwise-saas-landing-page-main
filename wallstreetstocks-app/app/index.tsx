@@ -1,29 +1,32 @@
 // app/index.tsx
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
-import { useRouter, useRootNavigationState } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 
 export default function Index() {
   const router = useRouter();
-  const navigationState = useRootNavigationState();
   const { user, token, loading } = useAuth();
-  const [hasNavigated, setHasNavigated] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
+  // Wait for component to be fully mounted before allowing navigation
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Check for existing session and redirect if logged in
   useEffect(() => {
-    // Wait for navigation to be ready
-    if (!navigationState?.key) return;
-
-    if (!loading && user && token && !hasNavigated) {
+    if (isReady && !loading && user && token) {
       // User is already logged in, go to main app
-      setHasNavigated(true);
       router.replace('/(tabs)');
     }
-  }, [user, token, loading, navigationState?.key, hasNavigated]);
+  }, [user, token, loading, isReady]);
 
-  // Show loading while checking auth state or waiting for navigation
-  if (loading || !navigationState?.key) {
+  // Show loading while checking auth state or waiting for mount
+  if (loading || !isReady) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <Image source={require('../assets/images/wallstreetstocks.png')} style={styles.logo} />
