@@ -21,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFromMemory, setToMemory, clearFromMemory, CACHE_KEYS } from '../../../utils/memoryCache';
 import { priceStore, usePrice } from '../../../stores/priceStore';
 import { useWebSocket } from '../../../context/WebSocketContext';
+import TechnicalIndicators from '../../../components/TechnicalIndicators';
 
 // ============================================================================
 // CONSTANTS
@@ -434,6 +435,9 @@ export default function ChartTab() {
   const [alertPrice, setAlertPrice] = useState('');
   const [alertDirection, setAlertDirection] = useState<'above' | 'below'>('above');
   const [creatingAlert, setCreatingAlert] = useState(false);
+
+  // Technical Indicators State
+  const [showIndicators, setShowIndicators] = useState(false);
 
   // Refs
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -1177,28 +1181,62 @@ export default function ChartTab() {
           </View>
         )}
 
-        {/* Timeframe Pills */}
-        <View style={styles.timeframeContainer}>
-          {(['1D', '5D', '1M', '3M', '1Y', 'ALL'] as Timeframe[]).map((tf) => (
-            <TouchableOpacity
-              key={tf}
-              onPress={() => handleTimeframeChange(tf)}
-              style={[
-                styles.timeframePill,
-                timeframe === tf && [styles.timeframePillActive, { backgroundColor: priceColor }],
-              ]}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.timeframeText, timeframe === tf && styles.timeframeTextActive]}>{tf}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Timeframe Pills - Hidden when indicators are shown */}
+        {!showIndicators && (
+          <View style={styles.timeframeContainer}>
+            {(['1D', '5D', '1M', '3M', '1Y', 'ALL'] as Timeframe[]).map((tf) => (
+              <TouchableOpacity
+                key={tf}
+                onPress={() => handleTimeframeChange(tf)}
+                style={[
+                  styles.timeframePill,
+                  timeframe === tf && [styles.timeframePillActive, { backgroundColor: priceColor }],
+                ]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.timeframeText, timeframe === tf && styles.timeframeTextActive]}>{tf}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
-        {/* Price Alert Button */}
-        <TouchableOpacity style={styles.alertButton} onPress={openAlertModal} activeOpacity={0.7}>
-          <Ionicons name="notifications-outline" size={18} color="#FFD700" />
-          <Text style={styles.alertButtonText}>Set Price Alert</Text>
+        {/* Technical Indicators Toggle */}
+        <TouchableOpacity
+          style={[styles.indicatorToggle, showIndicators && styles.indicatorToggleActive]}
+          onPress={() => setShowIndicators(!showIndicators)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={showIndicators ? 'analytics' : 'analytics-outline'}
+            size={18}
+            color={showIndicators ? priceColor : '#8E8E93'}
+          />
+          <Text style={[styles.indicatorToggleText, showIndicators && { color: priceColor }]}>
+            Technical Indicators
+          </Text>
+          <Ionicons
+            name={showIndicators ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color={showIndicators ? priceColor : '#8E8E93'}
+          />
         </TouchableOpacity>
+
+        {/* Technical Indicators Panel */}
+        {showIndicators && apiSymbol && (
+          <TechnicalIndicators
+            symbol={apiSymbol}
+            timeframe={timeframe}
+            priceColor={priceColor}
+          />
+        )}
+
+        {/* Price Alert Button - Hidden when indicators are shown */}
+        {!showIndicators && (
+          <TouchableOpacity style={styles.alertButton} onPress={openAlertModal} activeOpacity={0.7}>
+            <Ionicons name="notifications-outline" size={18} color="#FFD700" />
+            <Text style={styles.alertButtonText}>Set Price Alert</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Price Alert Modal */}
@@ -1326,8 +1364,13 @@ const styles = StyleSheet.create({
   timeframeText: { fontSize: 13, fontWeight: '600', color: '#8E8E93' },
   timeframeTextActive: { color: '#000', fontWeight: '700' },
 
+  // Indicator Toggle
+  indicatorToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1C1C1E', marginHorizontal: 16, marginTop: 8, paddingVertical: 12, borderRadius: 12, gap: 8, borderWidth: 1, borderColor: '#3C3C3E' },
+  indicatorToggleActive: { borderColor: '#00C85340' },
+  indicatorToggleText: { color: '#8E8E93', fontSize: 14, fontWeight: '600' },
+
   // Alert Button
-  alertButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1C1C1E', marginHorizontal: 16, marginBottom: Platform.OS === 'ios' ? 32 : 16, paddingVertical: 12, borderRadius: 12, gap: 8, borderWidth: 1, borderColor: '#FFD70040' },
+  alertButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1C1C1E', marginHorizontal: 16, marginTop: 8, marginBottom: Platform.OS === 'ios' ? 32 : 16, paddingVertical: 12, borderRadius: 12, gap: 8, borderWidth: 1, borderColor: '#FFD70040' },
   alertButtonText: { color: '#FFD700', fontSize: 15, fontWeight: '600' },
 
   // Modal
