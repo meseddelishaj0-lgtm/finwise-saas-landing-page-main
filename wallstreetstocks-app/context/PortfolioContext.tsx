@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 interface HoldingBase {
@@ -97,15 +97,12 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const symbols = portfolio.holdings.map(h => h.symbol.toUpperCase()).join(',');
-      console.log('Fetching prices for:', symbols);
 
       const response = await fetch(`${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`);
       const priceData = await response.json();
 
-      console.log('Price data received:', priceData);
 
       if (!Array.isArray(priceData) || priceData.length === 0) {
-        console.warn('No price data received, using avgCost as fallback');
         // Don't throw - gracefully fall back to avgCost
         const holdingsWithPrices: HoldingWithPrices[] = portfolio.holdings.map(h => ({
           symbol: h.symbol.toUpperCase(),
@@ -143,7 +140,6 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         const gainPercent = cost > 0 ? ((gain / cost) * 100) : 0;
         const dayChange = (quote?.change || 0) * h.shares;
 
-        console.log(`${h.symbol}: price=${currentPrice}, avgCost=${avgCost}, gain=${gain.toFixed(2)}, gainPercent=${gainPercent.toFixed(2)}%`);
 
         return {
           symbol: h.symbol.toUpperCase(),
@@ -164,7 +160,6 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       const dayChange = holdingsWithPrices.reduce((sum, h) => sum + h.dayChange, 0);
       const dayChangePercent = totalValue > 0 ? (dayChange / (totalValue - dayChange)) * 100 : 0;
 
-      console.log('Portfolio totals:', { totalValue, totalCost, totalGain, totalGainPercent });
 
       return {
         ...portfolio,
@@ -177,7 +172,6 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         dayChangePercent,
       };
     } catch (error) {
-      console.error('Error fetching prices:', error);
       // Return portfolio with avgCost as current price
       const holdingsWithPrices: HoldingWithPrices[] = portfolio.holdings.map(h => ({
         symbol: h.symbol.toUpperCase(),
@@ -213,11 +207,9 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     const portfolio = currentPortfolios.find(p => p.id === currentSelectedId);
 
     if (!portfolio) {
-      console.log('No portfolio found for refresh');
       return;
     }
 
-    console.log('Refreshing prices for portfolio:', portfolio.name);
     setRefreshing(true);
 
     try {
@@ -239,7 +231,6 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
           const loadedPortfolios = data.portfolios || [];
           const loadedSelectedId = data.selectedPortfolioId || loadedPortfolios[0]?.id || '';
 
-          console.log('Loaded portfolios:', loadedPortfolios.length, 'selected:', loadedSelectedId);
 
           setPortfolios(loadedPortfolios);
           setSelectedPortfolioId(loadedSelectedId);
@@ -287,7 +278,6 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
           setLastUpdated(new Date());
         }
       } catch (err) {
-        console.error('Error loading portfolios:', err);
         const defaultPortfolio: Portfolio = {
           id: generateId(),
           name: 'Main Portfolio',

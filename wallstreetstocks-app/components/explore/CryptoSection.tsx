@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
 
-const FMP_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
+const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 
 interface Crypto {
   symbol: string;
@@ -21,8 +21,6 @@ export default function CryptoSection() {
 
   const fetchCrypto = async () => {
     try {
-      console.log('Fetching crypto data...');
-      
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -38,7 +36,6 @@ export default function CryptoSection() {
       }
 
       const data = await response.json();
-      console.log('Crypto data received:', data?.length || 0);
 
       if (data && Array.isArray(data) && data.length > 0) {
         const formatted = data.map((c: any) => ({
@@ -56,8 +53,6 @@ export default function CryptoSection() {
         throw new Error('No crypto data available');
       }
     } catch (err: any) {
-      console.error('Crypto fetch error:', err);
-      
       const errorMessage = err.name === 'AbortError'
         ? 'Request timeout'
         : err.message?.includes('Network')

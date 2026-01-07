@@ -4,7 +4,7 @@
 
 import { getFromMemory, setToMemory, CACHE_KEYS } from '../utils/memoryCache';
 
-const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 // Cache TTL: 5 minutes for sparklines during extended hours, 10 minutes otherwise
@@ -248,7 +248,6 @@ export async function fetchSparkline(
   } catch (error: any) {
     // Log but don't spam console
     if (error.name !== 'AbortError') {
-      console.warn(`Sparkline fetch failed for ${symbol}, using fallback`);
     }
 
     // Return fallback sparkline

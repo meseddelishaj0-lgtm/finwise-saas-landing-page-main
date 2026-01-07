@@ -78,7 +78,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setModeState(savedMode);
       }
     } catch (error) {
-      console.error('Failed to load theme:', error);
     } finally {
       setIsLoaded(true);
     }
@@ -89,7 +88,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     try {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, newMode);
     } catch (error) {
-      console.error('Failed to save theme:', error);
     }
   };
 

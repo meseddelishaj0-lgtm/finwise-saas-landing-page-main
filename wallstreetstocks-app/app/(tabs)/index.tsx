@@ -224,11 +224,11 @@ const interpolateData = (data: { value: number; label: string; dataPointText?: s
   return result;
 };
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 // Twelve Data API for real-time extended hours prices
-const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 // Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
@@ -317,12 +317,10 @@ async function fetchPolygonQuotes(symbols: string[]): Promise<any[]> {
     const tickerList = symbols.join(',');
     const url = `${POLYGON_BASE_URL}/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${tickerList}&apiKey=${POLYGON_API_KEY}`;
 
-    console.log('Fetching Polygon data for:', tickerList);
     const response = await fetch(url);
     const data = await response.json();
 
     if (data.status === 'OK' && data.tickers) {
-      console.log('Polygon data received:', data.tickers.length, 'tickers');
       return data.tickers.map((ticker: any) => ({
         symbol: ticker.ticker,
         price: ticker.day?.c || ticker.prevDay?.c || 0,
@@ -337,10 +335,8 @@ async function fetchPolygonQuotes(symbols: string[]): Promise<any[]> {
       }));
     }
 
-    console.warn('Polygon API response:', data.status, data.message || '');
     return [];
   } catch (error) {
-    console.error('Polygon fetch error:', error);
     return [];
   }
 }
@@ -578,7 +574,6 @@ export default function Dashboard() {
       const totalUnread = conversations.reduce((sum: number, conv: any) => sum + (conv.unreadCount || 0), 0);
       setUnreadMessagesCount(totalUnread);
     } catch (error) {
-      console.error('Error fetching unread messages:', error);
     }
   }, []);
 
@@ -592,7 +587,6 @@ export default function Dashboard() {
   // Refresh market data when screen is focused (picks up prices from memory cache)
   useFocusEffect(
     useCallback(() => {
-      console.log('🏠 Home screen focused - refreshing market data');
       // Small delay to ensure memory cache is populated from chart page
       setTimeout(() => {
         fetchMarketChips();
@@ -605,7 +599,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (wsConnected) {
       // Subscribe to market indices
-      console.log('📡 Subscribing market indices to WebSocket:', MARKET_INDICES_SYMBOLS.join(', '));
       wsSubscribe(MARKET_INDICES_SYMBOLS);
     }
   }, [wsConnected, wsSubscribe]);
@@ -614,7 +607,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (wsConnected && contextCurrentPortfolio && contextCurrentPortfolio.holdings && contextCurrentPortfolio.holdings.length > 0) {
       const portfolioSymbols = contextCurrentPortfolio.holdings.map(h => h.symbol);
-      console.log('📡 Subscribing portfolio to WebSocket:', portfolioSymbols.join(', '));
       wsSubscribe(portfolioSymbols);
     }
   }, [wsConnected, contextCurrentPortfolio?.holdings, wsSubscribe]);
@@ -622,7 +614,6 @@ export default function Dashboard() {
   // Subscribe watchlist to WebSocket
   useEffect(() => {
     if (wsConnected && watchlist?.length > 0) {
-      console.log('📡 Subscribing watchlist to WebSocket:', watchlist.join(', '));
       wsSubscribe(watchlist);
     }
   }, [wsConnected, watchlist, wsSubscribe]);
@@ -631,7 +622,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (wsConnected && trending.length > 0) {
       const trendingSymbols = trending.map(s => s.symbol);
-      console.log('📡 Subscribing trending to WebSocket:', trendingSymbols.join(', '));
       wsSubscribe(trendingSymbols);
     }
   }, [wsConnected, trending.length, wsSubscribe]);
@@ -640,7 +630,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (wsConnected) {
       const stockPicksSymbols = STOCK_PICKS_PREVIEW.map(p => p.symbol);
-      console.log('📡 Subscribing stock picks to WebSocket:', stockPicksSymbols.join(', '));
       wsSubscribe(stockPicksSymbols);
     }
   }, [wsConnected, wsSubscribe]);
@@ -680,7 +669,6 @@ export default function Dashboard() {
 
     // Initial fetch
     if (isExtendedHours()) {
-      console.log(`📡 Fetching extended hours prices for ${allSymbols.length} symbols...`);
       fetchRealTimePrices(allSymbols);
     }
 
@@ -930,7 +918,6 @@ export default function Dashboard() {
       setMajorIndices(results);
       setLastUpdated(new Date());
     } catch (err) {
-      console.error('Market chips fetch error:', err);
     } finally {
       setIndicesLoading(false);
     }
@@ -1030,7 +1017,6 @@ export default function Dashboard() {
         setTrending(trendingData);
       }
     } catch (err) {
-      console.error('Trending fetch error:', err);
     } finally {
       setTrendingLoading(false);
     }
@@ -1069,7 +1055,6 @@ export default function Dashboard() {
         return item;
       }));
     } catch (err) {
-      console.error('Trending chart fetch error:', err);
     }
   };
 
@@ -1166,7 +1151,6 @@ export default function Dashboard() {
         return item;
       }));
     } catch (err) {
-      console.error('Chart fetch error:', err);
     }
   };
 
@@ -1195,7 +1179,6 @@ export default function Dashboard() {
         fetchWatchlistCharts();
       }
     } catch (err) {
-      console.error('Watchlist fetch error:', err);
       setWatchlistDataLoading(false);
     }
   };
@@ -1220,7 +1203,6 @@ export default function Dashboard() {
         setStockPicksData(enrichedPicks);
       }
     } catch (err) {
-      console.error('Stock picks fetch error:', err);
     }
   };
 
@@ -1281,7 +1263,6 @@ export default function Dashboard() {
         }));
       }
     } catch (err) {
-      console.error('Portfolio fetch error:', err);
     }
   };
 
@@ -1406,7 +1387,6 @@ export default function Dashboard() {
         }));
       }
     } catch (err) {
-      console.error('Portfolio chart fetch error:', err);
       setPortfolio(prev => ({
         ...prev,
         chartData: [
@@ -1460,7 +1440,6 @@ export default function Dashboard() {
 
       Alert.alert('Success', `${symbol} added to your portfolio!`);
     } catch (err) {
-      console.error('Add stock error:', err);
       Alert.alert('Error', 'Failed to add stock. Please try again.');
     } finally {
       setAddingStock(false);
@@ -1548,7 +1527,6 @@ export default function Dashboard() {
 
       Alert.alert('Success', `${editingHolding.symbol} updated successfully!`);
     } catch (err) {
-      console.error('Edit holding error:', err);
       Alert.alert('Error', 'Failed to update holding. Please try again.');
     } finally {
       setSavingEdit(false);
@@ -1621,7 +1599,6 @@ export default function Dashboard() {
         setShowSearchDropdown(true);
       }
     } catch (err) {
-      console.error('Search error:', err);
     }
   };
 
@@ -1644,7 +1621,6 @@ export default function Dashboard() {
         setShowWatchlistSearchDropdown(true);
       }
     } catch (err) {
-      console.error('Watchlist search error:', err);
     }
   };
 
@@ -1689,7 +1665,6 @@ export default function Dashboard() {
         setShowStockSearchDropdown(true);
       }
     } catch (err) {
-      console.error('Stock search error:', err);
     }
   };
 
@@ -1734,12 +1709,7 @@ export default function Dashboard() {
 
         // Refresh data immediately when app comes back to foreground
         if (isActive && holdingsInitialized && !contextWatchlistLoading) {
-          console.log('📱 App returned to foreground - refreshing data');
           Promise.all([
-            fetchMarketChips().catch(e => console.warn('Refresh market error:', e)),
-            fetchTrending().catch(e => console.warn('Refresh trending error:', e)),
-            fetchPortfolio().catch(e => console.warn('Refresh portfolio error:', e)),
-            fetchWatchlist().catch(e => console.warn('Refresh watchlist error:', e)),
           ]);
         }
       }
@@ -1755,19 +1725,14 @@ export default function Dashboard() {
 
     // PHASE 1: Load most visible content IMMEDIATELY (no InteractionManager delay)
     // These use cached data so they're instant
-    fetchMarketChips().catch(e => console.warn('Market chips error:', e));
-    fetchTrending().catch(e => console.warn('Trending error:', e));
-    fetchWatchlist().catch(e => console.warn('Watchlist error:', e));
 
     // PHASE 2: Load secondary content after a brief delay (50ms)
     // This prevents UI from freezing by spreading out the work
     const secondaryTimer = setTimeout(() => {
-      fetchPortfolio().catch(e => console.warn('Portfolio error:', e));
     }, 50);
 
     // PHASE 3: Load tertiary content last (100ms delay)
     const tertiaryTimer = setTimeout(() => {
-      fetchStockPicks().catch(e => console.warn('Stock picks error:', e));
     }, 100);
 
     return () => {
@@ -1789,18 +1754,11 @@ export default function Dashboard() {
     // Only start polling if app is active
     if (isAppActive) {
       pollingIntervalRef.current = setInterval(() => {
-        console.log('🔄 Smart polling - refreshing data');
         setLastUpdated(new Date()); // Update timestamp on each refresh
         Promise.all([
-          fetchMarketChips().catch(e => console.warn('Refresh market error:', e)),
-          fetchTrending().catch(e => console.warn('Refresh trending error:', e)),
-          fetchPortfolio().catch(e => console.warn('Refresh portfolio error:', e)),
-          fetchWatchlist().catch(e => console.warn('Refresh watchlist error:', e)),
-          fetchStockPicks().catch(e => console.warn('Refresh picks error:', e)),
         ]);
       }, 15000); // 15 seconds for near real-time prices
     } else {
-      console.log('⏸️ App inactive - pausing polling to save battery');
     }
 
     return () => {

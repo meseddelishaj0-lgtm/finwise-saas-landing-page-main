@@ -31,8 +31,8 @@ interface SavedPreset {
   createdAt: string;
 }
 
-// FMP API Key - move to env in production
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+// FMP API Key
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -575,7 +575,6 @@ export default function Screener() {
         setSavedPresets(data.presets || []);
       }
     } catch (err) {
-      console.error('Failed to fetch presets:', err);
     } finally {
       setLoadingPresets(false);
     }
@@ -623,7 +622,6 @@ export default function Screener() {
         Alert.alert('Error', errorData.error || 'Failed to save preset');
       }
     } catch (err) {
-      console.error('Failed to save preset:', err);
       Alert.alert('Error', 'Failed to save preset. Please try again.');
     } finally {
       setSavingPreset(false);
@@ -647,7 +645,6 @@ export default function Screener() {
         Alert.alert('Error', 'Failed to delete preset');
       }
     } catch (err) {
-      console.error('Failed to delete preset:', err);
       Alert.alert('Error', 'Failed to delete preset');
     } finally {
       setDeletingPresetId(null);
@@ -716,13 +713,11 @@ export default function Screener() {
             });
           }
         } catch (err) {
-          console.error('Failed to fetch profiles:', err);
         }
       }
 
       setHeatMapStocks(uniqueStocks);
     } catch (err) {
-      console.error('Failed to fetch heat map data:', err);
     } finally {
       setHeatMapLoading(false);
     }
@@ -847,7 +842,6 @@ export default function Screener() {
         setSearchResults([]);
       }
     } catch (err) {
-      console.error('Search error:', err);
       setSearchResults([]);
     } finally {
       setSearchLoading(false);

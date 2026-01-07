@@ -11,7 +11,7 @@ import {
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const FMP_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
+const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
 const SENTIMENT_CACHE_PREFIX = 'sentiment_cache_';
 const SENTIMENT_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 

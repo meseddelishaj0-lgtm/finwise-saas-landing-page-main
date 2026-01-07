@@ -27,7 +27,7 @@ import TechnicalIndicators from '../../../components/TechnicalIndicators';
 // CONSTANTS
 // ============================================================================
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
-const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');

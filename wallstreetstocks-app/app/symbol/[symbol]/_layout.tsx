@@ -6,7 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import SymbolHeader from "./header";
 import { setToMemory, CACHE_KEYS } from "../../../utils/memoryCache";
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const CHART_CACHE_PREFIX = 'chart_cache_';
 const QUOTE_CACHE_PREFIX = 'quote_cache_';
 

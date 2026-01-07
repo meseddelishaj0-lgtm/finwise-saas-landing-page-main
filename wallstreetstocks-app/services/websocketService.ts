@@ -6,7 +6,7 @@ import { priceStore } from '../stores/priceStore';
 import { AppState, AppStateStatus } from 'react-native';
 
 // Twelve Data WebSocket configuration
-const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const WEBSOCKET_URL = `wss://ws.twelvedata.com/v1/quotes/price?apikey=${TWELVE_DATA_API_KEY}`;
 
 const MAX_SYMBOLS = 50; // Twelve Data limit depends on plan
@@ -70,12 +70,10 @@ class WebSocketService {
     if (nextAppState === 'active') {
       // App came to foreground - reconnect if needed
       if (this.status !== 'connected' && this.subscribedSymbols.size > 0) {
-        console.log('📱 App active - reconnecting Twelve Data WebSocket');
         this.connect();
       }
     } else if (nextAppState === 'background') {
       // App went to background - disconnect to save battery
-      console.log('📱 App background - disconnecting Twelve Data WebSocket');
       this.disconnect();
     }
   };
@@ -83,23 +81,19 @@ class WebSocketService {
   // Connect to Twelve Data WebSocket
   connect(): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('🔌 Twelve Data WebSocket already connected');
       return;
     }
 
     if (this.status === 'connecting') {
-      console.log('🔌 Twelve Data WebSocket already connecting...');
       return;
     }
 
     this.setStatus('connecting');
-    console.log('🔌 Connecting to Twelve Data WebSocket...');
 
     try {
       this.ws = new WebSocket(WEBSOCKET_URL);
 
       this.ws.onopen = () => {
-        console.log('✅ Twelve Data WebSocket connected!');
         this.isConnected = true;
         this.setStatus('connected');
         this.startHeartbeat();
@@ -115,12 +109,10 @@ class WebSocketService {
       };
 
       this.ws.onerror = (error) => {
-        console.error('❌ Twelve Data WebSocket error:', error);
         this.setStatus('error');
       };
 
       this.ws.onclose = (event) => {
-        console.log(`🔌 Twelve Data WebSocket closed: ${event.code} - ${event.reason}`);
         this.isConnected = false;
         this.setStatus('disconnected');
         this.stopHeartbeat();
@@ -131,7 +123,6 @@ class WebSocketService {
         }
       };
     } catch (error) {
-      console.error('❌ Failed to create Twelve Data WebSocket:', error);
       this.setStatus('error');
       this.scheduleReconnect();
     }
@@ -144,7 +135,6 @@ class WebSocketService {
 
       // Handle heartbeat
       if (message.event === 'heartbeat') {
-        console.log('💓 Twelve Data heartbeat received');
         return;
       }
 
@@ -152,10 +142,8 @@ class WebSocketService {
       if (message.event === 'subscribe-status') {
         const subMsg = message as TwelveDataSubscribeConfirm;
         if (subMsg.success && subMsg.success.length > 0) {
-          console.log(`📊 Subscribed to: ${subMsg.success.map(s => s.symbol).join(', ')}`);
         }
         if (subMsg.fails && subMsg.fails.length > 0) {
-          console.warn(`⚠️ Failed to subscribe: ${subMsg.fails.map(f => `${f.symbol}: ${f.msg}`).join(', ')}`);
         }
         return;
       }
@@ -165,7 +153,6 @@ class WebSocketService {
         this.handlePriceUpdate(message as TwelveDataPriceMessage);
       }
     } catch (error) {
-      console.warn('⚠️ Twelve Data WebSocket message parse error:', error);
     }
   }
 
@@ -212,7 +199,6 @@ class WebSocketService {
     });
 
     // Debug log for real-time updates (uncomment to debug)
-    // console.log(`💹 ${symbol}: $${price.toFixed(2)} (${changePercent?.toFixed(2) || '0'}%)`);
   }
 
   // Subscribe to symbols
@@ -248,7 +234,6 @@ class WebSocketService {
       const symbolsArray = Array.from(this.subscribedSymbols);
       const symbolsToRemove = symbolsArray.slice(0, toRemove);
 
-      console.warn(`⚠️ Symbol limit exceeded (${totalSymbols}/${MAX_SYMBOLS}). Unsubscribing ${toRemove} old symbols.`);
 
       // Actually send unsubscribe request to Twelve Data
       if (symbolsToRemove.length > 0) {
@@ -259,7 +244,6 @@ class WebSocketService {
           },
         };
         this.ws.send(JSON.stringify(unsubscribeMessage));
-        console.log(`📊 Unsubscribed to make room: ${symbolsToRemove.join(', ')}`);
 
         // Remove from tracking set
         symbolsToRemove.forEach(s => this.subscribedSymbols.delete(s));
@@ -277,7 +261,6 @@ class WebSocketService {
     };
 
     this.ws.send(JSON.stringify(subscribeMessage));
-    console.log(`📊 Subscribing to: ${newSymbols.join(', ')}`);
 
     // Move pending to subscribed
     newSymbols.forEach(s => {
@@ -302,7 +285,6 @@ class WebSocketService {
     };
 
     this.ws.send(JSON.stringify(subscribeMessage));
-    console.log(`📊 Resubscribed to ${symbols.length} symbols`);
 
     // Update tracking sets
     symbols.forEach(s => {
@@ -332,7 +314,6 @@ class WebSocketService {
     };
 
     this.ws.send(JSON.stringify(unsubscribeMessage));
-    console.log(`📊 Unsubscribed from: ${normalizedSymbols.join(', ')}`);
 
     normalizedSymbols.forEach(s => {
       this.subscribedSymbols.delete(s);
@@ -357,7 +338,6 @@ class WebSocketService {
   private scheduleReconnect(): void {
     this.cancelReconnect();
 
-    console.log(`🔄 Reconnecting Twelve Data in ${RECONNECT_DELAY / 1000}s...`);
     this.reconnectTimeout = setTimeout(() => {
       this.connect();
     }, RECONNECT_DELAY);
@@ -377,7 +357,6 @@ class WebSocketService {
     this.heartbeatInterval = setInterval(() => {
       if (this.ws?.readyState === WebSocket.OPEN) {
         // Twelve Data sends heartbeats automatically, we just log ours
-        console.log('💓 Twelve Data WebSocket alive');
       }
     }, HEARTBEAT_INTERVAL);
   }

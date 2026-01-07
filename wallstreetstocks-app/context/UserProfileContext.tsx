@@ -46,20 +46,16 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
   const [error, setError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async () => {
-    console.log('🔵 UserProfileContext: authUser =', authUser, 'authLoading =', authLoading);
 
     if (authLoading) {
-      console.log('🔵 UserProfileContext: Auth still loading, waiting...');
       return;
     }
 
     if (!authUser?.id) {
-      console.log('🔵 UserProfileContext: No authUser.id, skipping fetch');
       setProfile(null);
       return;
     }
 
-    console.log('🔵 UserProfileContext: Fetching profile for userId:', authUser.id);
     setLoading(true);
     setError(null);
 
@@ -68,7 +64,6 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
       // The /api/user/profile endpoint was returning stale/cached data
       const timestamp = Date.now();
       const url = `${API_BASE_URL}/api/user/${authUser.id}?_t=${timestamp}`;
-      console.log('🔵 UserProfileContext: Fetching from:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -80,8 +75,6 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
 
       if (response.ok) {
         const data = await response.json();
-        console.log('🔵 UserProfileContext: API returned:', data.name, '@' + data.username);
-        console.log('🔵 UserProfileContext: Auth has:', authUser.name, '@' + authUser.username);
 
         // IMPORTANT: Use Auth context data as source of truth for profile fields
         // Auth context is persisted locally and has the freshest data after profile updates
@@ -98,10 +91,8 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
           bannerImage: (authUser as any).bannerImage || data.bannerImage,
         };
 
-        console.log('🔵 UserProfileContext: Using merged profile:', mergedProfile.name, '@' + mergedProfile.username);
         setProfile(mergedProfile);
       } else {
-        console.error('🔴 UserProfileContext: Failed to fetch profile:', response.status);
         // Fallback to Auth data if API fails
         if (authUser) {
           setProfile({
@@ -121,7 +112,6 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
         setError('Failed to load profile');
       }
     } catch (err) {
-      console.error('🔴 UserProfileContext: Error fetching profile:', err);
       // Fallback to Auth data on network error
       if (authUser) {
         setProfile({
@@ -227,7 +217,6 @@ export function UserProfileProvider({ children }: { children: React.ReactNode })
 
   // Update profile directly without re-fetching (to avoid read replica lag)
   const updateProfile = useCallback((data: Partial<UserProfileData>) => {
-    console.log('🔵 UserProfileContext: Updating profile directly:', data);
     setProfile(prev => prev ? { ...prev, ...data } : null);
   }, []);
 

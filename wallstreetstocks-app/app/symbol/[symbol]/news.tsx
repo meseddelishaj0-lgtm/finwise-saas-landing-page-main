@@ -13,7 +13,7 @@ import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-r
 import { useEffect, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const NEWS_CACHE_PREFIX = 'news_cache_';
 const NEWS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 

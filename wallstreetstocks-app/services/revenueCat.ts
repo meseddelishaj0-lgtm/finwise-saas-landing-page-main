@@ -18,19 +18,15 @@ export const ENTITLEMENT_IDS = {
 export const getActiveEntitlement = (activeEntitlements: Record<string, any>): string | null => {
   // Log all active entitlements for debugging
   const entitlementKeys = Object.keys(activeEntitlements);
-  console.log('🔍 Active entitlements:', entitlementKeys);
 
   // Check exact matches first
   if (activeEntitlements[ENTITLEMENT_IDS.DIAMOND]) {
-    console.log('✅ Found Diamond entitlement (exact match)');
     return ENTITLEMENT_IDS.DIAMOND;
   }
   if (activeEntitlements[ENTITLEMENT_IDS.PLATINUM]) {
-    console.log('✅ Found Platinum entitlement (exact match)');
     return ENTITLEMENT_IDS.PLATINUM;
   }
   if (activeEntitlements[ENTITLEMENT_IDS.GOLD]) {
-    console.log('✅ Found Gold entitlement (exact match)');
     return ENTITLEMENT_IDS.GOLD;
   }
 
@@ -39,21 +35,18 @@ export const getActiveEntitlement = (activeEntitlements: Record<string, any>): s
   for (const key of entitlementKeys) {
     const keyLower = key.toLowerCase();
     if (keyLower.includes('diamond')) {
-      console.log('✅ Found Diamond entitlement (pattern match):', key);
       return key;
     }
   }
   for (const key of entitlementKeys) {
     const keyLower = key.toLowerCase();
     if (keyLower.includes('platinum')) {
-      console.log('✅ Found Platinum entitlement (pattern match):', key);
       return key;
     }
   }
   for (const key of entitlementKeys) {
     const keyLower = key.toLowerCase();
     if (keyLower.includes('gold')) {
-      console.log('✅ Found Gold entitlement (pattern match):', key);
       return key;
     }
   }
@@ -61,11 +54,9 @@ export const getActiveEntitlement = (activeEntitlements: Record<string, any>): s
   // If we still have entitlements but couldn't match them, return the first one
   // This handles cases where RevenueCat uses completely different naming
   if (entitlementKeys.length > 0) {
-    console.log('⚠️ Using first available entitlement:', entitlementKeys[0]);
     return entitlementKeys[0];
   }
 
-  console.log('❌ No entitlements found');
   return null;
 };
 
@@ -103,10 +94,8 @@ export async function initializeRevenueCat(userId?: string): Promise<void> {
       await Purchases.configure({ apiKey });
     }
 
-    console.log('RevenueCat initialized successfully');
   } catch (error) {
     // Don't throw - let app continue without RevenueCat
-    console.warn('RevenueCat initialization failed (non-blocking):', error);
   }
 }
 
@@ -116,10 +105,8 @@ export async function initializeRevenueCat(userId?: string): Promise<void> {
 export async function identifyUser(userId: string): Promise<CustomerInfo> {
   try {
     const customerInfo = await Purchases.logIn(userId);
-    console.log('User identified with RevenueCat:', userId);
     return customerInfo.customerInfo;
   } catch (error) {
-    console.error('Failed to identify user:', error);
     throw error;
   }
 }
@@ -130,10 +117,8 @@ export async function identifyUser(userId: string): Promise<CustomerInfo> {
 export async function logOutUser(): Promise<CustomerInfo> {
   try {
     const customerInfo = await Purchases.logOut();
-    console.log('User logged out from RevenueCat');
     return customerInfo;
   } catch (error) {
-    console.error('Failed to log out user:', error);
     throw error;
   }
 }
@@ -146,7 +131,6 @@ export async function getCustomerInfo(): Promise<CustomerInfo> {
     const customerInfo = await Purchases.getCustomerInfo();
     return customerInfo;
   } catch (error) {
-    console.error('Failed to get customer info:', error);
     throw error;
   }
 }
@@ -166,9 +150,6 @@ export async function checkPremiumStatus(): Promise<{
     const entitlement = activeEntitlementId ? customerInfo.entitlements.active[activeEntitlementId] : null;
 
     if (entitlement) {
-      console.log('📱 Active entitlement ID:', activeEntitlementId);
-      console.log('📱 Product identifier:', entitlement.productIdentifier);
-      console.log('📱 Tier level:', getSubscriptionTier(entitlement.productIdentifier));
       return {
         isPremium: true,
         activeSubscription: entitlement.productIdentifier,
@@ -184,7 +165,6 @@ export async function checkPremiumStatus(): Promise<{
       expirationDate: null,
     };
   } catch (error) {
-    console.error('Failed to check premium status:', error);
     return {
       isPremium: false,
       activeSubscription: null,
@@ -205,11 +185,9 @@ export async function getOfferings(): Promise<PurchasesPackage[]> {
       return offerings.current.availablePackages;
     }
     
-    console.warn('No offerings available');
     return [];
   } catch (error) {
     // Don't throw - return empty array so app continues
-    console.warn('Failed to get offerings (non-blocking):', error);
     return [];
   }
 }
@@ -242,7 +220,6 @@ export async function purchasePackage(pkg: PurchasesPackage): Promise<{
       };
     }
     
-    console.error('Purchase failed:', error);
     return {
       success: false,
       customerInfo: null,
@@ -268,7 +245,6 @@ export async function restorePurchases(): Promise<{
       customerInfo,
     };
   } catch (error: any) {
-    console.error('Restore failed:', error);
     return {
       success: false,
       customerInfo: null,
@@ -345,7 +321,6 @@ export async function openSubscriptionManagement(): Promise<boolean> {
     }
     return false;
   } catch (error) {
-    console.error('Failed to open subscription management:', error);
     return false;
   }
 }
@@ -395,7 +370,6 @@ export async function getSubscriptionDetails(): Promise<{
       // Use entitlement ID as primary source for tier detection
       const tierName = getTierNameFromEntitlementOrProduct(activeEntitlementId, productId);
 
-      console.log('📋 Subscription details:', { activeEntitlementId, productId, tierName });
 
       // Check if subscription will renew
       const willRenew = !entitlement.willRenew ? false : entitlement.willRenew;
@@ -424,7 +398,6 @@ export async function getSubscriptionDetails(): Promise<{
       managementUrl: null,
     };
   } catch (error) {
-    console.error('Failed to get subscription details:', error);
     return {
       isActive: false,
       productId: null,

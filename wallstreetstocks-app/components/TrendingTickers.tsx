@@ -37,7 +37,7 @@ export default function TrendingTickers({ onTickerPress }: Props) {
         setTickers(data);
       }
     } catch (error) {
-      console.error('Error fetching trending:', error);
+      // Silently handle trending fetch errors
     } finally {
       setLoading(false);
     }

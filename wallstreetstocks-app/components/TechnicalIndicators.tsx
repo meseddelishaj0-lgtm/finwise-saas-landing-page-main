@@ -80,7 +80,7 @@ export default function TechnicalIndicators({
         setEma26Data(ema26);
         setBollingerData(bollinger);
       } catch (error) {
-        console.error('Failed to fetch indicators:', error);
+        // Silently handle indicator fetch errors
       } finally {
         setLoading(false);
       }

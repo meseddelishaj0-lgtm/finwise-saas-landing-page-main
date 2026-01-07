@@ -21,7 +21,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
 // FMP API Configuration
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 // OpenAI API - calls should go through backend API
@@ -381,7 +381,6 @@ Return ONLY a JSON object:
         priceTarget: aiAnalysis.priceTarget,
       });
     } catch (err) {
-      console.error('Analyzer error:', err);
       setAnalyzerError('Analysis failed. Please try again.');
     } finally {
       setAnalyzerLoading(false);
@@ -535,7 +534,6 @@ Return JSON only:
         }
       });
     } catch (err) {
-      console.error('Compare error:', err);
       setCompareError('Comparison failed. Please try again.');
     } finally {
       setCompareLoading(false);
@@ -663,7 +661,6 @@ Return ONLY a JSON object with this exact structure:
         summary: aiAnalysis.summary || `Analysis for ${symbol}`,
       });
     } catch (err) {
-      console.error('Forecast error:', err);
       setForecastError('Forecast failed. Please try again.');
     } finally {
       setForecastLoading(false);
@@ -728,7 +725,6 @@ Always remind users that this is educational information, not financial advice.`
       const assistantReply = data.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
       setMessages(prev => [...prev, { role: 'assistant', content: assistantReply }]);
     } catch (err) {
-      console.error('Assistant error:', err);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: "I'm having trouble connecting right now. Please check your connection and try again."

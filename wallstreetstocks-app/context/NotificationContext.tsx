@@ -27,7 +27,6 @@ try {
     }),
   });
 } catch (e) {
-  console.warn('expo-notifications not available - push notifications disabled');
   notificationsAvailable = false;
 }
 
@@ -75,13 +74,11 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Request notification permissions
   const requestPermissions = async (): Promise<boolean> => {
     if (!notificationsAvailable || !Notifications || !Device) {
-      console.log('Push notifications not available');
       return false;
     }
 
     try {
       if (!Device.isDevice) {
-        console.log('Push notifications only work on physical devices');
         return false;
       }
 
@@ -97,12 +94,10 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       setState(prev => ({ ...prev, isPermissionGranted: granted }));
 
       if (!granted) {
-        console.log('Push notification permission not granted');
       }
 
       return granted;
     } catch (error) {
-      console.error('Error requesting notification permissions:', error);
       return false;
     }
   };
@@ -110,13 +105,11 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Get Expo push token
   const getExpoPushToken = async (): Promise<string | null> => {
     if (!notificationsAvailable || !Notifications || !Device) {
-      console.log('Push notifications not available');
       return null;
     }
 
     try {
       if (!Device.isDevice) {
-        console.log('Push tokens only available on physical devices');
         return null;
       }
 
@@ -124,14 +117,11 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
 
       if (!projectId) {
-        console.error('No EAS project ID found in app.json');
         // Try without projectId for Expo Go compatibility
         try {
           const token = await Notifications.getExpoPushTokenAsync();
-          console.log('Expo Push Token (no projectId):', token.data);
           return token.data;
         } catch (e) {
-          console.error('Failed to get token without projectId:', e);
           return null;
         }
       }
@@ -140,20 +130,17 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         projectId,
       });
 
-      console.log('Expo Push Token:', token.data);
       return token.data;
     } catch (error: any) {
       // Handle case where native module isn't available (old build)
       if (error.message?.includes('expo push token manager') ||
           error.message?.includes('not linked') ||
           error.code === 'ERR_UNAVAILABLE') {
-        console.warn('Push notifications require a rebuild of the app. Please rebuild with: eas build --platform ios --profile development');
         setState(prev => ({
           ...prev,
           error: 'Push notifications require an app rebuild'
         }));
       } else {
-        console.error('Error getting Expo push token:', error);
       }
       return null;
     }
@@ -179,9 +166,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         throw new Error('Failed to register device token');
       }
 
-      console.log('Device token registered with backend');
     } catch (error) {
-      console.error('Error registering token with backend:', error);
     }
   };
 
@@ -251,7 +236,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
       return token;
     } catch (error: any) {
-      console.error('Error in registerForPushNotifications:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -264,7 +248,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Handle notification tap/response
   const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
     const data = response.notification.request.content.data;
-    console.log('Notification tapped:', data);
 
     // Navigate based on notification type
     if (data?.type) {
@@ -299,7 +282,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Send a test notification (for debugging)
   const sendTestNotification = async () => {
     if (!notificationsAvailable || !Notifications) {
-      console.log('Push notifications not available');
       return;
     }
 
@@ -332,13 +314,11 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Initialize listeners
   useEffect(() => {
     if (!notificationsAvailable || !Notifications) {
-      console.log('Skipping notification listeners - not available');
       return;
     }
 
     // Listen for incoming notifications while app is foregrounded
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
       setState(prev => ({ ...prev, notification }));
     });
 
@@ -351,7 +331,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         // App came to foreground - could refresh notifications here
-        console.log('App came to foreground');
       }
       appState.current = nextAppState;
     });
@@ -418,7 +397,6 @@ export function useNotifications() {
 
   // Return default value instead of throwing
   if (context === undefined) {
-    console.warn('useNotifications called outside NotificationProvider - returning defaults');
     return defaultNotificationContext;
   }
 

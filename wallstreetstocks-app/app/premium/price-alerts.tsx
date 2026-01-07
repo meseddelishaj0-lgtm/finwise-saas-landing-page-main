@@ -29,7 +29,7 @@ interface PriceAlert {
   currentPrice?: number;
 }
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 
 export default function PriceAlertsScreen() {
   const { canAccess } = usePremiumFeature();

@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const WATCHLIST_KEY = 'user_watchlist';
 const API_URL = 'https://www.wallstreetstocks.ai';
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 // Debounce delay for AsyncStorage saves (500ms)
@@ -45,7 +45,6 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         await AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(defaultWatchlist));
       }
     } catch (err) {
-      console.error('Error loading watchlist:', err);
       setWatchlist(['NVDA', 'GOOGL', 'AMZN', 'META']);
     } finally {
       setWatchlistLoading(false);
@@ -74,9 +73,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     saveTimeoutRef.current = setTimeout(async () => {
       try {
         await AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(pendingWatchlistRef.current));
-        console.log('💾 Watchlist saved (debounced)');
       } catch (err) {
-        console.error('Error saving watchlist:', err);
       }
     }, SAVE_DEBOUNCE_MS);
 
@@ -135,16 +132,13 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId, ticker: upperSymbol }),
           });
-          console.log(`✅ Synced ${upperSymbol} to backend watchlist`);
         } catch (apiErr) {
-          console.warn('Backend sync failed (offline mode):', apiErr);
         }
       }
 
       Alert.alert('Success', `${upperSymbol} added to your watchlist!`);
       return true;
     } catch (err) {
-      console.error('Error adding to watchlist:', err);
       Alert.alert('Error', 'Failed to add stock. Please try again.');
       return false;
     }
@@ -168,9 +162,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         await fetch(`${API_URL}/api/watchlist?userId=${userId}&ticker=${upperSymbol}`, {
           method: 'DELETE',
         });
-        console.log(`✅ Removed ${upperSymbol} from backend watchlist`);
       } catch (apiErr) {
-        console.warn('Backend sync failed (offline mode):', apiErr);
       }
     }
 

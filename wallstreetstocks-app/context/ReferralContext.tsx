@@ -143,7 +143,6 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
         setReferralData(data);
       }
     } catch (err) {
-      console.error('Error loading referral data:', err);
     } finally {
       setLoading(false);
     }
@@ -158,7 +157,6 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
       }));
       setReferralData(data);
     } catch (err) {
-      console.error('Error saving referral data:', err);
     }
   }, []);
 
@@ -202,12 +200,10 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ userId, referralCode: code }),
         });
       } catch (apiErr) {
-        console.warn('Backend sync failed (offline mode):', apiErr);
       }
 
       setInitialized(true);
     } catch (err) {
-      console.error('Error initializing referral:', err);
     } finally {
       setLoading(false);
     }
@@ -264,13 +260,11 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({ referralCode: upperCode }),
         });
       } catch (apiErr) {
-        console.warn('Backend notification failed:', apiErr);
       }
 
       Alert.alert('Success!', 'Referral code applied! You\'ve earned 1 week of Premium.');
       return true;
     } catch (err) {
-      console.error('Error applying referral code:', err);
       Alert.alert('Error', 'Failed to apply referral code. Please try again.');
       return false;
     }
@@ -388,7 +382,6 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
         await saveReferralData(updatedData);
       }
     } catch (err) {
-      console.warn('Failed to refresh from backend:', err);
     } finally {
       setLoading(false);
     }

@@ -17,7 +17,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { PieChart, LineChart } from 'react-native-gifted-charts';
 import { usePortfolio } from '@/context/PortfolioContext';
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const screenWidth = Dimensions.get('window').width;
 

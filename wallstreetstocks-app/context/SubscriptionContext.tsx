@@ -95,7 +95,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
   // Handle subscription changes from RevenueCat listener
   const handleCustomerInfoUpdate = useCallback((customerInfo: CustomerInfo) => {
-    console.log('📱 Subscription status updated from RevenueCat');
 
     // Safe null checks for entitlements
     const activeEntitlements = customerInfo?.entitlements?.active || {};
@@ -135,13 +134,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       });
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Subscription tier synced to database:', tier, data?.subscriptionTier);
       } else {
         const errorText = await response.text();
-        console.warn('⚠️ Failed to sync subscription tier to database:', errorText);
       }
     } catch (error) {
-      console.warn('⚠️ Error syncing subscription to database:', error);
     }
   }, []);
 
@@ -156,9 +152,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       try {
         const Purchases = require('react-native-purchases').default;
         Purchases.addCustomerInfoUpdateListener(handleCustomerInfoUpdate);
-        console.log('✅ Subscription change listener registered');
       } catch (listenerError) {
-        console.warn('Could not add subscription listener:', listenerError);
       }
 
       // Get initial subscription status and offerings in parallel
@@ -173,13 +167,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       // Auto-sync subscription tier to database on initialization
       // This ensures badges show correctly for existing subscribers
       if (userId && status.isPremium && currentTier && currentTier !== 'free') {
-        console.log('🔄 Auto-syncing subscription tier on init:', currentTier);
         syncSubscriptionToDatabase(
           userId,
           currentTier,
           status.activeSubscription,
           status.expirationDate
-        ).catch(err => console.warn('Init sync error (non-blocking):', err));
       }
 
       setState(prev => ({
@@ -193,7 +185,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         packages,
       }));
     } catch (error: any) {
-      console.error('Failed to initialize subscription:', error);
       setState(prev => ({
         ...prev,
         isInitialized: true,
@@ -217,13 +208,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
       // Auto-sync subscription tier to database on login
       if (currentTier && currentTier !== 'free' && entitlement) {
-        console.log('🔄 Auto-syncing subscription tier on login:', currentTier);
         syncSubscriptionToDatabase(
           userId,
           currentTier,
           activeSubscription,
           entitlement.expirationDate || null
-        ).catch(err => console.warn('Login sync error (non-blocking):', err));
       }
 
       setState(prev => ({
@@ -236,7 +225,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         expirationDate: entitlement?.expirationDate || null,
       }));
     } catch (error: any) {
-      console.error('Failed to identify user:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -262,7 +250,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         expirationDate: null,
       }));
     } catch (error: any) {
-      console.error('Failed to log out:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -288,7 +275,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         };
       }
     } catch (error) {
-      console.log('Backend subscription check failed (offline mode):', error);
     }
     return null;
   }, []);
@@ -303,7 +289,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         const Purchases = require('react-native-purchases').default;
         await Purchases.syncPurchases();
       } catch (e) {
-        console.log('Sync error (non-blocking):', e);
       }
 
       const status = await checkPremiumStatus();
@@ -335,7 +320,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         // Auto-sync subscription tier to database if user has premium
         // This ensures badges show correctly in community
         if (isPremium && currentTier && currentTier !== 'free') {
-          console.log('🔄 Auto-syncing subscription tier to database:', currentTier);
           await syncSubscriptionToDatabase(
             userId,
             currentTier,
@@ -356,7 +340,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         referralPremiumExpiry,
       }));
     } catch (error: any) {
-      console.error('Failed to refresh status:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -378,7 +361,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         packages,
       }));
     } catch (error: any) {
-      console.error('Failed to load offerings:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -401,7 +383,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         const activeSubscription = entitlement?.productIdentifier || null;
         const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
 
-        console.log('🛒 Purchase successful:', { activeEntitlementId, activeSubscription, currentTier });
 
         setState(prev => ({
           ...prev,
@@ -437,7 +418,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         return false;
       }
     } catch (error: any) {
-      console.error('Purchase error:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -462,7 +442,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         const activeSubscription = entitlement?.productIdentifier || null;
         const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
 
-        console.log('🔄 Restore successful:', { activeEntitlementId, activeSubscription, currentTier });
 
         setState(prev => ({
           ...prev,
@@ -498,7 +477,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         return false;
       }
     } catch (error: any) {
-      console.error('Restore error:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -527,7 +505,6 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
     // Use the already-calculated currentTier which properly detects from entitlement ID first
     const userTier = tierToNumber(state.currentTier);
-    console.log(`🔐 Access check: required=${requiredTier}, user=${userTier}, tier=${state.currentTier}`);
     return userTier >= requiredTier;
   }, [state.isPremium, state.currentTier]);
 
@@ -605,7 +582,6 @@ export function useSubscription() {
 
   // Return default value instead of throwing - prevents crash during initial render
   if (context === undefined) {
-    console.warn('useSubscription called outside SubscriptionProvider - returning defaults');
     return defaultContextValue;
   }
 

@@ -47,7 +47,6 @@ const fetchPosts = async (forumSlug?: string, currentUserId?: number): Promise<a
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('❌ fetchPosts error:', error);
     return [];
   }
 };
@@ -74,7 +73,6 @@ const searchPosts = async (query: string, ticker?: string): Promise<any[]> => {
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('❌ searchPosts error:', error);
     return [];
   }
 };
@@ -88,7 +86,6 @@ const fetchComments = async (postId: string | number, userId?: number): Promise<
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('❌ fetchComments error:', error);
     return [];
   }
 };
@@ -114,7 +111,6 @@ const likePost = async (postId: string, userId: number): Promise<{ liked: boolea
     const result = await response.json();
     return { liked: result?.liked ?? true, likesCount: result?.likesCount };
   } catch (error) {
-    console.error('❌ likePost error:', error);
     throw error;
   }
 };
@@ -130,7 +126,6 @@ const likeComment = async (commentId: string, userId: number): Promise<{ liked: 
     const result = await response.json();
     return { liked: result?.liked ?? true, likesCount: result?.likesCount };
   } catch (error) {
-    console.error('❌ likeComment error:', error);
     throw error;
   }
 };
@@ -142,7 +137,6 @@ const fetchNotifications = async (userId: number): Promise<any[]> => {
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('❌ fetchNotifications error:', error);
     return [];
   }
 };
@@ -241,7 +235,6 @@ const fetchSuggestedUsersApi = async (userId?: number): Promise<any[]> => {
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('❌ fetchSuggestedUsersApi error:', error);
     return [];
   }
 };
@@ -264,7 +257,6 @@ const followUserApi = async (followerId: number, followingId: number): Promise<{
       isFollowing: result.isFollowing ?? true,
     };
   } catch (error) {
-    console.error('❌ followUserApi error:', error);
     throw error;
   }
 };
@@ -551,10 +543,8 @@ export default function CommunityPage() {
     setSuggestedLoading(true);
     try {
       const userId = getUserId();
-      console.log('👥 Fetching suggested users for userId:', userId);
 
       const users = await fetchSuggestedUsersApi(userId || undefined);
-      console.log('👥 Suggested users:', users.map((u: any) => ({
         id: u.id,
         name: u.name,
         followers: u._count?.followers,
@@ -566,7 +556,6 @@ export default function CommunityPage() {
         const mergedUsers = users.map((user: any) => {
           const localChange = localFollowChanges.get(user.id);
           if (localChange !== undefined) {
-            console.log(`👥 Preserving local follow state for user ${user.id}: ${localChange}`);
             return { ...user, isFollowing: localChange };
           }
           return user;
@@ -585,7 +574,6 @@ export default function CommunityPage() {
         setSuggestedUsers(uniqueUsers);
       }
     } catch (error) {
-      console.error('Error fetching suggested users:', error);
       // Fallback to users from posts
       const uniqueUsers = posts
         .map(p => p.user)
@@ -617,7 +605,6 @@ export default function CommunityPage() {
     const wasFollowing = targetUser?.isFollowing || false;
     const newFollowState = !wasFollowing;
 
-    console.log('👤 Quick follow:', { userId, targetUserId, wasFollowing, newFollowState });
 
     // Track local change to preserve across re-fetches (prevents Neon replica lag issues)
     setLocalFollowChanges(prev => new Map(prev).set(targetUserId, newFollowState));
@@ -643,12 +630,10 @@ export default function CommunityPage() {
 
     try {
       const result = await followUserApi(userId, targetUserId);
-      console.log('👤 Follow response:', result);
 
       // Don't update from server response - trust local state (server may return stale data from replica)
       // The local follow change is tracked and will persist across re-fetches
     } catch (error) {
-      console.error('❌ Error following user:', error);
       // Revert local change tracking
       setLocalFollowChanges(prev => {
         const newMap = new Map(prev);
@@ -698,11 +683,9 @@ export default function CommunityPage() {
     const passedInFollowState = (user as any).isFollowing;
     const passedInFollowerCount = (user as any)._count?.followers;
 
-    console.log('🔵 Opening profile for user:', user.id, 'passed data:', user.name, '@' + user.username, 'isOwnProfile:', isOwnProfile, 'passedInFollowState:', passedInFollowState);
 
     // For own profile, use UserProfileContext data (avoids replica lag)
     if (isOwnProfile && userProfile) {
-      console.log('🔵 Using local profile data (own profile):', userProfile.name, '@' + userProfile.username);
       setSelectedProfile({
         id: userProfile.id,
         name: userProfile.name,
@@ -748,7 +731,6 @@ export default function CommunityPage() {
     try {
       // Use /api/user/:id endpoint which returns fresh data via raw SQL
       const apiUrl = `https://www.wallstreetstocks.ai/api/user/${user.id}?currentUserId=${currentUserId}&t=${Date.now()}`;
-      console.log('🔵 Fetching fresh profile from:', apiUrl);
 
       const response = await fetch(apiUrl, {
         headers: {
@@ -759,7 +741,6 @@ export default function CommunityPage() {
 
       if (response.ok) {
         const profileData = await response.json();
-        console.log('🔵 Fresh profile data received:', {
           name: profileData.name,
           username: profileData.username,
           id: profileData.id,
@@ -770,7 +751,6 @@ export default function CommunityPage() {
         // Use passed-in follow state from optimistic updates (more reliable than Map)
         // This preserves the UI state from suggestedUsers list
         if (passedInFollowState !== undefined && passedInFollowState !== profileData.isFollowing) {
-          console.log('🔵 Applying passed-in follow state:', passedInFollowState, 'API had:', profileData.isFollowing);
           const followerDiff = passedInFollowState ? 1 : -1;
           setSelectedProfile({
             ...profileData,
@@ -782,7 +762,6 @@ export default function CommunityPage() {
           });
         } else if (passedInFollowerCount !== undefined && passedInFollowerCount !== profileData._count?.followers) {
           // Follower count was optimistically updated
-          console.log('🔵 Applying passed-in follower count:', passedInFollowerCount, 'API had:', profileData._count?.followers);
           setSelectedProfile({
             ...profileData,
             isFollowing: passedInFollowState ?? profileData.isFollowing,
@@ -795,7 +774,6 @@ export default function CommunityPage() {
           setSelectedProfile(profileData);
         }
       } else {
-        console.log('🔴 Profile fetch failed with status:', response.status);
         // Fallback to the passed user data only if API fails
         setSelectedProfile({
           ...user,
@@ -817,7 +795,6 @@ export default function CommunityPage() {
         setProfilePosts(userPosts);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
       // Fallback: use passed user data
       setSelectedProfile({
         ...user,
@@ -895,7 +872,6 @@ export default function CommunityPage() {
         throw new Error('Failed to follow user');
       }
     } catch (error) {
-      console.error('Error following user:', error);
       // Revert local change tracking
       setLocalFollowChanges(prev => {
         const newMap = new Map(prev);
@@ -942,7 +918,6 @@ export default function CommunityPage() {
       const user = await getCurrentUser();
       setCurrentUser(user);
     } catch (error) {
-      console.error('Error fetching current user:', error);
     }
   };
 
@@ -955,7 +930,6 @@ export default function CommunityPage() {
       setNotifications(notifs || []);
       setUnreadCount((notifs || []).filter((n: Notification) => !n.isRead).length);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
       setNotifications([]);
     }
   }, [getUserId, fetchNotifications]);
@@ -967,7 +941,6 @@ export default function CommunityPage() {
       const fetchedPosts = await fetchPosts(undefined, userId || undefined);
       setPosts(fetchedPosts || []);
     } catch (error) {
-      console.error('Error fetching posts:', error);
       Alert.alert('Error', 'Failed to load posts');
     } finally {
       setLoading(false);
@@ -987,7 +960,6 @@ export default function CommunityPage() {
       const results = await searchPosts(query, ticker);
       setSearchResults(results || []);
     } catch (error) {
-      console.error('Error searching:', error);
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
@@ -1000,7 +972,6 @@ export default function CommunityPage() {
       const fetchedComments = await fetchComments(postId.toString());
       setComments(fetchedComments || []);
     } catch (error) {
-      console.error('Error fetching comments:', error);
       setComments([]);
     } finally {
       setCommentsLoading(false);
@@ -1013,19 +984,15 @@ export default function CommunityPage() {
 
   // Open create post modal with profile from context (no API call needed)
   const openCreatePostModal = () => {
-    console.log('🟡 Opening create post modal');
 
     // Use the profile from UserProfileContext (already has fresh data)
     // No API call needed - avoids Neon read replica lag issues
     if (userProfile) {
-      console.log('🟡 Using context profile:', userProfile.name, '@' + userProfile.username);
       setModalUserProfile(userProfile);
       // Use getContextDisplayName() which already handles all the edge cases
       const displayName = getContextDisplayName();
-      console.log('🟡 Setting modalUserName to:', displayName);
       setModalUserName(displayName);
     } else {
-      console.log('🟡 No userProfile in context, using default');
       setModalUserName('You');
     }
 
@@ -1054,13 +1021,12 @@ export default function CommunityPage() {
         setNewPostImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to pick image');
     }
   };
 
   // Giphy API search (using public beta key until production key is approved)
-  const GIPHY_API_KEY = 'GlVGYHkr3WSBnllca54iNt0yFbjz7L65';
+  const GIPHY_API_KEY = process.env.EXPO_PUBLIC_GIPHY_API_KEY || '';
 
   const searchGiphy = async (query: string) => {
     if (!query.trim()) {
@@ -1073,7 +1039,6 @@ export default function CommunityPage() {
         const data = await response.json();
         setGiphyResults(data.data || []);
       } catch (error) {
-        console.error('Error fetching trending GIFs:', error);
       } finally {
         setGiphyLoading(false);
       }
@@ -1088,7 +1053,6 @@ export default function CommunityPage() {
       const data = await response.json();
       setGiphyResults(data.data || []);
     } catch (error) {
-      console.error('Error searching GIFs:', error);
     } finally {
       setGiphyLoading(false);
     }
@@ -1120,7 +1084,6 @@ export default function CommunityPage() {
 
   // Create post with image upload
   const handleCreatePost = async () => {
-    console.log('📝 handleCreatePost called');
     
     const content = newPostContent.trim();
     if (!content) {
@@ -1129,7 +1092,6 @@ export default function CommunityPage() {
     }
 
     const userId = getUserId();
-    console.log('👤 userId:', userId);
     
     if (!userId) {
       Alert.alert('Error', 'You must be logged in to post');
@@ -1143,14 +1105,11 @@ export default function CommunityPage() {
 
       // Upload image if selected
       if (newPostImage) {
-        console.log('📷 Uploading image...');
         setUploadingImage(true);
         try {
           const uploadResult = await uploadImage(newPostImage);
-          console.log('✅ Image uploaded:', uploadResult.url);
           mediaUrl = uploadResult.url;
         } catch (uploadError: any) {
-          console.error('❌ Image upload failed:', uploadError?.message);
           Alert.alert('Upload Failed', uploadError?.message || 'Failed to upload image');
           setPosting(false);
           setUploadingImage(false);
@@ -1169,10 +1128,8 @@ export default function CommunityPage() {
         ...(mediaUrl && { mediaUrl: mediaUrl }),
       };
 
-      console.log('📤 Creating post:', JSON.stringify(postData));
 
       const newPost = await createPost(postData);
-      console.log('✅ Post created successfully');
 
       // Close modal only after successful API call
       setCreatePostModal(false);
@@ -1192,7 +1149,6 @@ export default function CommunityPage() {
       setTimeout(() => loadPosts(), 1000);
 
     } catch (error: any) {
-      console.error('❌ Error creating post:', error?.message || error);
       Alert.alert('Error', error?.message || 'Failed to create post');
     } finally {
       setPosting(false);
@@ -1246,7 +1202,6 @@ export default function CommunityPage() {
     try {
       await likePost(postId.toString(), userId);
     } catch (error: any) {
-      console.error('Error liking post:', error);
       setPosts(prev =>
         prev.map(post =>
           post.id === postId
@@ -1291,7 +1246,6 @@ export default function CommunityPage() {
     try {
       await likeComment(commentId.toString(), userId);
     } catch (error) {
-      console.error('Error liking comment:', error);
       setComments(prev =>
         prev.map(comment =>
           comment.id === commentId
@@ -1342,7 +1296,6 @@ export default function CommunityPage() {
                 Alert.alert('Error', data.error || 'Failed to delete post');
               }
             } catch (error) {
-              console.error('Error deleting post:', error);
               Alert.alert('Error', 'Failed to delete post');
             }
           },
@@ -1397,7 +1350,6 @@ export default function CommunityPage() {
         })
       );
     } catch (error) {
-      console.error('Error voting sentiment:', error);
     }
   };
 
@@ -1416,7 +1368,6 @@ export default function CommunityPage() {
       if (error?.message?.includes('already')) {
         Alert.alert('Info', `$${ticker} is already in your watchlist`);
       } else {
-        console.error('Error adding to watchlist:', error);
         Alert.alert('Error', 'Failed to add to watchlist');
       }
     }
@@ -1453,7 +1404,6 @@ export default function CommunityPage() {
         Alert.alert('User not found', `@${username} doesn't exist`);
       }
     } catch (error) {
-      console.error('Error finding user:', error);
     }
   };
 
@@ -1485,7 +1435,6 @@ export default function CommunityPage() {
 
       setNewComment('');
     } catch (error: any) {
-      console.error('Error adding comment:', error);
       Alert.alert('Error', error?.message || 'Failed to add comment');
     } finally {
       setCommenting(false);
@@ -1499,7 +1448,6 @@ export default function CommunityPage() {
         message: `${post.title || ''}\n\n${post.content}\n\nShared from WallStreetStocks`,
       });
     } catch (error) {
-      console.error('Error sharing:', error);
     }
   };
 
@@ -1526,7 +1474,6 @@ export default function CommunityPage() {
         });
       }
     } catch (error) {
-      console.error('Error tracking post view:', error);
     }
   };
 
@@ -1590,7 +1537,6 @@ export default function CommunityPage() {
           }
         }
       } catch (error) {
-        console.error('Error fetching post for notification:', error);
         // Fallback to opening profile
         if (notif.fromUser) {
           setTimeout(() => handleOpenProfile(notif.fromUser), 300);
@@ -1649,7 +1595,6 @@ export default function CommunityPage() {
         throw new Error('Failed to follow user');
       }
     } catch (error) {
-      console.error('Error following user:', error);
       Alert.alert('Error', 'Failed to follow user. Please try again.');
     } finally {
       setPostOptionsModal(false);
@@ -1686,7 +1631,6 @@ export default function CommunityPage() {
                 Alert.alert('Blocked', `${targetUserName} has been blocked`);
               }
             } catch (error) {
-              console.error('Error blocking user:', error);
               Alert.alert('Error', 'Failed to block user. Please try again.');
             }
           },
@@ -1715,7 +1659,6 @@ export default function CommunityPage() {
         Alert.alert('Muted', `${targetUserName} has been muted. You won't receive notifications from them.`);
       }
     } catch (error) {
-      console.error('Error muting user:', error);
       Alert.alert('Error', 'Failed to mute user. Please try again.');
     } finally {
       setPostOptionsModal(false);
@@ -1770,7 +1713,6 @@ export default function CommunityPage() {
       await reportUser(userId, targetUserId, reason, postId);
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
     } catch (error) {
-      console.error('Error submitting report:', error);
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
     }
   };
@@ -1788,7 +1730,6 @@ export default function CommunityPage() {
         url: postUrl,
       });
     } catch (error) {
-      console.error('Error sharing post:', error);
     }
     setPostOptionsModal(false);
   };
@@ -1803,7 +1744,6 @@ export default function CommunityPage() {
       await Clipboard.setStringAsync(postUrl);
       Alert.alert('Copied!', 'Post link copied to clipboard');
     } catch (error) {
-      console.error('Error copying link:', error);
       Alert.alert('Error', 'Failed to copy link');
     }
     setPostOptionsModal(false);
@@ -1872,7 +1812,6 @@ export default function CommunityPage() {
                 Alert.alert('Blocked', `${targetUserName} has been blocked`);
               }
             } catch (error) {
-              console.error('Error blocking user:', error);
               Alert.alert('Error', 'Failed to block user. Please try again.');
             }
           },
@@ -1901,7 +1840,6 @@ export default function CommunityPage() {
         Alert.alert('Muted', `${targetUserName} has been muted. You won't receive notifications from them.`);
       }
     } catch (error) {
-      console.error('Error muting user:', error);
       Alert.alert('Error', 'Failed to mute user. Please try again.');
     } finally {
       setCommentOptionsModal(false);
@@ -1944,7 +1882,6 @@ export default function CommunityPage() {
       await reportUser(userId, targetUserId, reason, undefined, commentId);
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
     } catch (error) {
-      console.error('Error submitting report:', error);
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
     }
   };
@@ -1979,7 +1916,6 @@ export default function CommunityPage() {
                 Alert.alert('Blocked', `${targetUserName} has been blocked`);
               }
             } catch (error) {
-              console.error('Error blocking user:', error);
               Alert.alert('Error', 'Failed to block user. Please try again.');
             }
           },
@@ -2006,7 +1942,6 @@ export default function CommunityPage() {
         Alert.alert('Muted', `${targetUserName} has been muted.`);
       }
     } catch (error) {
-      console.error('Error muting user:', error);
       Alert.alert('Error', 'Failed to mute user. Please try again.');
     }
   };
@@ -2043,7 +1978,6 @@ export default function CommunityPage() {
       await reportUser(userId, selectedProfile.id, reason);
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
     } catch (error) {
-      console.error('Error submitting report:', error);
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
     }
   };
@@ -2057,7 +1991,6 @@ export default function CommunityPage() {
       setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
       setUnreadCount(0);
     } catch (error) {
-      console.error('Error marking notifications read:', error);
     }
   };
 
@@ -2103,7 +2036,6 @@ export default function CommunityPage() {
       // Handle opening a specific post
       if (searchParams.openPostId) {
         const postId = parseInt(searchParams.openPostId, 10);
-        console.log('🔗 Deep link: Opening post', postId);
 
         // First try to find the post in already loaded posts
         const existingPost = posts.find(p => p.id === postId);
@@ -2136,7 +2068,6 @@ export default function CommunityPage() {
             handleOpenComments(post);
           }
         } catch (error) {
-          console.error('Error fetching post for deep link:', error);
         }
         // Clear the param
         navRouter.setParams({ openPostId: undefined } as any);
@@ -2145,7 +2076,6 @@ export default function CommunityPage() {
       // Handle opening a specific user profile
       if (searchParams.openUserId) {
         const userId = parseInt(searchParams.openUserId, 10);
-        console.log('🔗 Deep link: Opening user profile', userId);
 
         try {
           const response = await fetch(`https://www.wallstreetstocks.ai/api/user/${userId}`);
@@ -2154,7 +2084,6 @@ export default function CommunityPage() {
             handleOpenProfile(userData);
           }
         } catch (error) {
-          console.error('Error fetching user for deep link:', error);
         }
         // Clear the param
         navRouter.setParams({ openUserId: undefined } as any);
@@ -3696,7 +3625,6 @@ export default function CommunityPage() {
                       message: 'Check out this image from WallStreetStocks',
                     });
                   } catch (error) {
-                    console.error('Error sharing image:', error);
                   }
                 }
               }}

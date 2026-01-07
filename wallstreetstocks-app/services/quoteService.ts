@@ -4,7 +4,7 @@
 
 import { getFromMemory, setToMemory, CACHE_KEYS } from '../utils/memoryCache';
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 // Cache TTL: 5 minutes for chart-synced prices
@@ -105,7 +105,6 @@ export async function fetchQuotesWithCache(
 
     return mergedQuotes;
   } catch (error) {
-    console.error('Quote fetch error:', error);
 
     // On error, try to return cached data
     const cachedQuotes: Quote[] = [];
@@ -167,6 +166,5 @@ export async function prefetchQuotes(symbols: string[]): Promise<void> {
       }
     });
   } catch (error) {
-    console.warn('Prefetch error:', error);
   }
 }

@@ -31,7 +31,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
 
 // Twelve Data API for real-time extended hours prices
-const TWELVE_DATA_API_KEY_REALTIME = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_API_KEY_REALTIME = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL_REALTIME = 'https://api.twelvedata.com';
 
 // Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
@@ -499,7 +499,6 @@ export default function Explore() {
 
     // Initial fetch during extended hours
     if (isExtendedHours()) {
-      console.log(`📡 Fetching extended hours prices for ${activeTab}...`);
       fetchRealTimePrices(symbols);
     }
 
@@ -520,8 +519,8 @@ export default function Explore() {
     };
   }, [activeTab, data]);
 
-  const FMP_API_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
-  const TWELVE_DATA_API_KEY = "604ed688209443c89250510872616f41";
+  const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
+  const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || "";
   const BASE_URL = "https://financialmodelingprep.com/api/v3";
   const TWELVE_DATA_URL = "https://api.twelvedata.com";
 
@@ -694,7 +693,6 @@ export default function Explore() {
         setTreasuryHistory(data.slice(0, 30));
       }
     } catch (err) {
-      console.error("Treasury rates fetch failed:", err);
     } finally {
       setTreasuryLoading(false);
     }
@@ -783,7 +781,6 @@ export default function Explore() {
         setHeaderCards(cards);
       }
     } catch (err) {
-      console.error("Header cards fetch failed:", err);
     }
   };
 
@@ -828,7 +825,6 @@ export default function Explore() {
         }
       }
     } catch (err) {
-      console.error("Search error:", err);
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
@@ -1139,7 +1135,6 @@ export default function Explore() {
             }
             return null;
           } catch (err) {
-            console.error(`Failed to fetch dividend for ${symbol}:`, err);
             return null;
           }
         });
@@ -1229,7 +1224,6 @@ export default function Explore() {
       setData(mergedData);
     } catch (err: any) {
       setError(err.message || "Network error. Check connection.");
-      console.error("Fetch error:", err);
     } finally {
       setLoading(false);
     }
@@ -1281,10 +1275,8 @@ export default function Explore() {
 
         if (allCryptoData.length > 0) {
           tabDataCache.current["crypto"] = { data: allCryptoData, headerCards: [], timestamp: Date.now() };
-          console.log("📦 Pre-fetched crypto data:", allCryptoData.length, "items");
         }
       } catch (err) {
-        console.log("Crypto prefetch failed (non-critical)");
       }
 
       // Prefetch ETF data
@@ -1322,10 +1314,8 @@ export default function Explore() {
 
         if (allEtfData.length > 0) {
           tabDataCache.current["etf"] = { data: allEtfData, headerCards: [], timestamp: Date.now() };
-          console.log("📦 Pre-fetched ETF data:", allEtfData.length, "items");
         }
       } catch (err) {
-        console.log("ETF prefetch failed (non-critical)");
       }
     };
 
@@ -1409,7 +1399,6 @@ export default function Explore() {
     if (activeTab === "crypto") {
       // Verify data is actually crypto (symbols end in USD)
       if (!firstItem.symbol?.endsWith('USD') && !firstItem.type?.includes('crypto')) {
-        console.log('⏳ Waiting for crypto data to load...');
         return;
       }
       // Convert crypto symbols to Twelve Data format (BTC/USD format for WebSocket)
@@ -1426,7 +1415,6 @@ export default function Explore() {
     } else if (activeTab === "etf" || activeTab === "stocks") {
       // Verify data matches tab type - reject crypto symbols
       if (firstItem.symbol?.endsWith('USD') && firstItem.symbol?.length <= 7) {
-        console.log(`⏳ Waiting for ${activeTab} data to load...`);
         return;
       }
       // Subscribe to all displayed symbols (no whitelist filtering - Twelve Data supports most symbols)
@@ -1442,7 +1430,6 @@ export default function Explore() {
 
     // Unsubscribe from old explore page symbols before subscribing to new ones
     if (currentSubscribedSymbolsRef.current.length > 0) {
-      console.log(`📡 Unsubscribing from ${currentSubscribedSymbolsRef.current.length} old symbols`);
       wsUnsubscribe(currentSubscribedSymbolsRef.current);
     }
 
@@ -1450,7 +1437,6 @@ export default function Explore() {
     currentSubscribedSymbolsRef.current = newSymbols;
 
     if (newSymbols.length > 0) {
-      console.log(`📡 Subscribing ${activeTab} to WebSocket (${newSymbols.length}):`, newSymbols.join(', '));
       wsSubscribe(newSymbols);
     }
   }, [wsConnected, activeTab, data, wsSubscribe, wsUnsubscribe]);

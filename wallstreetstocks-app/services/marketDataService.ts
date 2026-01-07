@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { priceStore } from '../stores/priceStore';
 import { websocketService } from './websocketService';
 
-const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 // Storage keys
@@ -115,7 +115,6 @@ const fetchBatchQuotes = async (symbols: string[]): Promise<any[]> => {
 
     return allResults.filter(item => item && item.symbol && !item.code);
   } catch (err) {
-    console.error('Batch quote fetch error:', err);
     return [];
   }
 };
@@ -148,9 +147,7 @@ const saveToStorage = async () => {
       AsyncStorage.setItem(STORAGE_KEYS.ETF_DATA, JSON.stringify(marketData.etfs)),
       AsyncStorage.setItem(STORAGE_KEYS.LAST_UPDATE, Date.now().toString()),
     ]);
-    console.log('💾 Market data saved to storage');
   } catch (err) {
-    console.error('Failed to save market data:', err);
   }
 };
 
@@ -168,7 +165,6 @@ const loadFromStorage = async (): Promise<boolean> => {
     const MAX_CACHE_AGE = 30 * 60 * 1000; // 30 minutes
 
     if (cacheAge > MAX_CACHE_AGE) {
-      console.log('📦 Cache too old, will fetch fresh data');
       return false;
     }
 
@@ -190,10 +186,8 @@ const loadFromStorage = async (): Promise<boolean> => {
       });
     }
 
-    console.log(`📦 Loaded from cache: ${marketData.stocks.length} stocks, ${marketData.crypto.length} crypto, ${marketData.etfs.length} ETFs`);
     return allItems.length > 0;
   } catch (err) {
-    console.error('Failed to load from storage:', err);
     return false;
   }
 };
@@ -203,7 +197,6 @@ const loadFromStorage = async (): Promise<boolean> => {
 // ============================================================================
 
 const fetchAllData = async () => {
-  console.log('🚀 Fetching all market data...');
 
   // Fetch all in parallel
   const [stockQuotes, cryptoQuotes, etfQuotes] = await Promise.all([
@@ -245,7 +238,6 @@ const fetchAllData = async () => {
     }
   }
 
-  console.log(`✅ Loaded: ${marketData.stocks.length} stocks, ${marketData.crypto.length} crypto, ${marketData.etfs.length} ETFs`);
 
   // Save to storage for persistence
   await saveToStorage();
@@ -262,7 +254,6 @@ const subscribeToWebSocket = () => {
 
   const allSymbols = [...stockSymbols, ...cryptoSymbols, ...etfSymbols];
 
-  console.log(`📡 Subscribing ${allSymbols.length} symbols to WebSocket...`);
   websocketService.subscribe(allSymbols);
 };
 
@@ -278,7 +269,6 @@ export const marketDataService = {
    */
   async initialize(): Promise<void> {
     if (marketData.isLoaded) {
-      console.log('📊 Market data already loaded');
       return;
     }
 
@@ -305,7 +295,6 @@ export const marketDataService = {
         subscribeToWebSocket();
 
       } catch (err) {
-        console.error('Market data initialization error:', err);
       } finally {
         isInitializing = false;
       }

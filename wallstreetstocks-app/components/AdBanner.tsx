@@ -45,11 +45,9 @@ export function AdBanner({ size = BannerAdSize.ANCHORED_ADAPTIVE_BANNER, style }
           requestNonPersonalizedAdsOnly: false,
         }}
         onAdLoaded={() => {
-          console.log('📢 Ad loaded successfully');
           setAdLoaded(true);
         }}
-        onAdFailedToLoad={(error) => {
-          console.log('📢 Ad failed to load:', error.message);
+        onAdFailedToLoad={() => {
           setAdError(true);
         }}
       />

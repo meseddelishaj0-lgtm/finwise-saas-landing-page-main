@@ -13,7 +13,7 @@ import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-r
 import { Ionicons } from "@expo/vector-icons";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const FMP_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
+const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
 
 type TabType = "overview" | "income" | "balance" | "cashflow" | "ratios";
 

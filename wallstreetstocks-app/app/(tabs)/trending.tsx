@@ -30,7 +30,7 @@ const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
 const STOCK_ROW_HEIGHT = 76; // Fixed row height for getItemLayout optimization
 
 // Twelve Data API for real-time extended hours prices
-const TWELVE_DATA_API_KEY_REALTIME = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_API_KEY_REALTIME = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL_REALTIME = 'https://api.twelvedata.com';
 
 // Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
@@ -280,7 +280,7 @@ export default function Trending() {
   // Price update trigger for real-time updates
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
 
-  const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+  const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
   const TWELVE_DATA_URL = "https://api.twelvedata.com";
 
   // Index-tracking ETFs (more reliable than actual index symbols)
@@ -396,7 +396,7 @@ export default function Trending() {
         setHeaderCards(cards);
       }
     } catch (err) {
-      console.error("Header cards fetch failed:", err);
+      // Error handled silently
     }
   };
 
@@ -438,10 +438,8 @@ export default function Trending() {
       if (json?.values && Array.isArray(json.values)) {
         return json.values;
       }
-      // If market_movers fails (requires Pro plan), return empty to fallback
       return [];
     } catch (err) {
-      console.warn('Market movers fetch failed, using fallback:', err);
       return [];
     }
   };
@@ -650,7 +648,6 @@ export default function Trending() {
 
       setData(cleaned);
     } catch (err: any) {
-      console.error("Trending fetch error:", err);
       setError(err.message || "Network error. Check connection.");
     } finally {
       setLoading(false);
@@ -685,10 +682,9 @@ export default function Trending() {
             change: parseFloat(item.change) || 0,
           }));
           tabDataCache.current["gainers"] = { data: cleaned, timestamp: Date.now() };
-          console.log("📦 Pre-fetched gainers data:", cleaned.length, "items");
         }
       } catch (err) {
-        console.log("Gainers prefetch failed (non-critical)");
+        // Non-critical prefetch failure
       }
 
       // Prefetch losers
@@ -703,10 +699,9 @@ export default function Trending() {
             change: parseFloat(item.change) || 0,
           }));
           tabDataCache.current["losers"] = { data: cleaned, timestamp: Date.now() };
-          console.log("📦 Pre-fetched losers data:", cleaned.length, "items");
         }
       } catch (err) {
-        console.log("Losers prefetch failed (non-critical)");
+        // Non-critical prefetch failure
       }
 
       // Prefetch indices
@@ -727,10 +722,9 @@ export default function Trending() {
         }));
         if (cleaned.length > 0) {
           tabDataCache.current["indices"] = { data: cleaned, timestamp: Date.now() };
-          console.log("📦 Pre-fetched indices data:", cleaned.length, "items");
         }
       } catch (err) {
-        console.log("Indices prefetch failed (non-critical)");
+        // Non-critical prefetch failure
       }
     };
 
@@ -798,7 +792,6 @@ export default function Trending() {
     if (symbolsToSubscribe.length > 0) {
       wsSubscribe(symbolsToSubscribe);
       wsSubscribedRef.current = symbolsToSubscribe;
-      console.log(`📡 Subscribed to ${activeTab} WebSocket: ${symbolsToSubscribe.length} symbols`);
     }
 
     return () => {
@@ -838,7 +831,6 @@ export default function Trending() {
 
     // Initial fetch during extended hours
     if (isExtendedHours()) {
-      console.log(`📡 Fetching extended hours prices for ${activeTab}...`);
       fetchRealTimePrices(symbols);
     }
 

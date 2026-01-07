@@ -4,7 +4,7 @@ import { View, Text, ActivityIndicator } from "react-native";
 import Constants from "expo-constants";
 
 const FMP_API_KEY =
-  Constants.expoConfig?.extra?.fmpApiKey || "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
+  process.env.EXPO_PUBLIC_FMP_API_KEY || "";
 
 type MarketIndex = {
   id: string;
@@ -77,7 +77,6 @@ export default function StocksSection() {
 
         setIndices(mapped);
       } catch (err) {
-        console.warn("Error fetching indices, using fallback", err);
         setIndices(FALLBACK_INDICES);
       } finally {
         setLoading(false);

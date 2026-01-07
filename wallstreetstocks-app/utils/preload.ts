@@ -4,7 +4,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setToMemory, CACHE_KEYS } from './memoryCache';
 
-const FMP_API_KEY = 'bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const QUOTE_CACHE_PREFIX = 'quote_cache_';
 const PRELOAD_KEY = 'last_preload_time';
 const PRELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes

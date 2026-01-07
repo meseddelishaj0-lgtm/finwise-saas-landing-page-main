@@ -1,7 +1,7 @@
 // services/technicalIndicators.ts
 // Technical indicators service using Twelve Data API
 
-const TWELVE_DATA_API_KEY = '604ed688209443c89250510872616f41';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 // Types
@@ -75,7 +75,6 @@ export async function fetchRSI(
 
     return [];
   } catch (error) {
-    console.error('RSI fetch error:', error);
     return [];
   }
 }
@@ -111,7 +110,6 @@ export async function fetchMACD(
 
     return [];
   } catch (error) {
-    console.error('MACD fetch error:', error);
     return [];
   }
 }
@@ -142,7 +140,6 @@ export async function fetchSMA(
 
     return [];
   } catch (error) {
-    console.error('SMA fetch error:', error);
     return [];
   }
 }
@@ -173,7 +170,6 @@ export async function fetchEMA(
 
     return [];
   } catch (error) {
-    console.error('EMA fetch error:', error);
     return [];
   }
 }
@@ -208,7 +204,6 @@ export async function fetchBollingerBands(
 
     return [];
   } catch (error) {
-    console.error('Bollinger Bands fetch error:', error);
     return [];
   }
 }

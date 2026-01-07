@@ -25,7 +25,7 @@ export default function Trending() {
   const [error, setError] = useState<string | null>(null);
 
   // Your FMP API key (set in app.json or .env)
-  const FMP_API_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";
+  const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
   const API_URL = `https://financialmodelingprep.com/api/v3/stock_market/actives?limit=50&apikey=${FMP_API_KEY}`;
 
   useEffect(() => {
