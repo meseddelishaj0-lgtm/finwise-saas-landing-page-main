@@ -351,6 +351,25 @@ const STOCK_PICKS_PREVIEW = [
 // Market indices symbols for WebSocket subscription
 const MARKET_INDICES_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'EFA', 'EEM', 'VXX', 'GLD', 'SLV', 'USO', 'TLT'];
 
+// Popular stocks to subscribe via WebSocket for real-time prices
+// Pro plan has 1000 WS credits - maximize usage for instant price updates
+const POPULAR_STOCKS_WS = [
+  // Mega caps - most viewed
+  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'BRK.B',
+  // Tech leaders
+  'AMD', 'NFLX', 'CRM', 'ADBE', 'ORCL', 'INTC', 'CSCO', 'IBM',
+  // Finance
+  'JPM', 'BAC', 'WFC', 'GS', 'MS', 'V', 'MA', 'AXP',
+  // Healthcare
+  'UNH', 'JNJ', 'PFE', 'ABBV', 'MRK', 'LLY',
+  // Consumer
+  'WMT', 'COST', 'HD', 'MCD', 'NKE', 'SBUX', 'DIS',
+  // Energy
+  'XOM', 'CVX', 'COP',
+  // Popular ETFs
+  'ARKK', 'XLF', 'XLK', 'XLE', 'XLV',
+];
+
 export default function Dashboard() {
   const router = useRouter();
   const { isPremium, currentTier } = useSubscription();
@@ -631,6 +650,15 @@ export default function Dashboard() {
     if (wsConnected) {
       const stockPicksSymbols = STOCK_PICKS_PREVIEW.map(p => p.symbol);
       wsSubscribe(stockPicksSymbols);
+    }
+  }, [wsConnected, wsSubscribe]);
+
+  // Subscribe popular stocks to WebSocket for instant real-time prices
+  // Pro plan: 1000 WS credits - maximize usage for best UX
+  useEffect(() => {
+    if (wsConnected) {
+      // Subscribe to 50 popular stocks via WebSocket
+      wsSubscribe(POPULAR_STOCKS_WS);
     }
   }, [wsConnected, wsSubscribe]);
 

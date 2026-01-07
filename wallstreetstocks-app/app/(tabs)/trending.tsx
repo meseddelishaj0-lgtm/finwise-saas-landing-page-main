@@ -778,9 +778,9 @@ export default function Trending() {
     } else if (activeTab === "indices") {
       symbolsToSubscribe = INDICES_SYMBOLS;
     } else {
-      // For trending/gainers/losers - subscribe to top 20 loaded stock symbols
-      // Limit to 20 to leave room for chart page and other screens (50 total limit)
-      symbolsToSubscribe = data.map(item => item.symbol).filter(Boolean).slice(0, 20);
+      // For trending/gainers/losers - subscribe to loaded stock symbols
+      // Pro plan: 1000 WS credits, can handle more symbols (100 limit)
+      symbolsToSubscribe = data.map(item => item.symbol).filter(Boolean).slice(0, 50);
     }
 
     // Unsubscribe from previous symbols

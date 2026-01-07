@@ -1396,17 +1396,18 @@ export default function Explore() {
           return sym;
         })
         .filter(Boolean)
-        .slice(0, 20); // Subscribe to top 20 cryptos for real-time updates
+        .slice(0, 30); // Pro plan: subscribe to more cryptos for real-time updates
     } else if (activeTab === "etf" || activeTab === "stocks") {
       // Verify data matches tab type - reject crypto symbols
       if (firstItem.symbol?.endsWith('USD') && firstItem.symbol?.length <= 7) {
         return;
       }
       // Subscribe to all displayed symbols (no whitelist filtering - Twelve Data supports most symbols)
+      // Pro plan: 1000 WS credits, can handle more symbols
       newSymbols = data
         .map(item => item.symbol)
         .filter(s => s && !s.includes('.WT') && !s.includes('.WS')) // Exclude warrants
-        .slice(0, 20); // Subscribe to top 20 for real-time updates
+        .slice(0, 50); // Subscribe to top 50 for real-time updates
     }
 
     // Skip if already subscribed to same symbols
