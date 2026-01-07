@@ -847,21 +847,13 @@ export default function ChartTab() {
     if (chartIntervalRef.current) clearInterval(chartIntervalRef.current);
     if (intervalRef.current) clearInterval(intervalRef.current);
 
-    // NO quote polling - WebSocket provides real-time prices instantly
-    // This saves ~20 API credits/minute per symbol viewed
+    // NO API POLLING - WebSocket provides all real-time prices
+    // Chart data fetched once, live price appended from WebSocket
 
     // Market status update every 60 seconds (no API call)
     intervalRef.current = setInterval(() => {
       setMarketStatus(getMarketStatus());
     }, 60000);
-
-    // Chart data refresh - REDUCED frequency to save API credits
-    // 1D: every 60 seconds (was 30), Others: every 120 seconds (was 60)
-    // WebSocket handles real-time price, chart just needs periodic updates
-    const chartPollInterval = timeframe === '1D' ? 60000 : 120000;
-    chartIntervalRef.current = setInterval(() => {
-      fetchChartData(false);
-    }, chartPollInterval);
 
     return () => {
       if (quoteIntervalRef.current) clearInterval(quoteIntervalRef.current);
