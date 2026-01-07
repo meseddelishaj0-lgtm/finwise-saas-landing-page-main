@@ -64,33 +64,6 @@ const TAB_WS_SYMBOLS: Record<string, string[]> = {
 
 // WebSocket handles all real-time prices - no API polling needed
 
-// Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
-function isExtendedHours(): boolean {
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(now);
-  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
-  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
-  const totalMinutes = hour * 60 + minute;
-
-  const preMarketStart = 4 * 60;
-  const marketOpen = 9 * 60 + 30;
-  const marketClose = 16 * 60;
-  const afterHoursEnd = 20 * 60;
-
-  return (totalMinutes >= preMarketStart && totalMinutes < marketOpen) ||
-         (totalMinutes >= marketClose && totalMinutes < afterHoursEnd);
-}
-
-// API polling functions REMOVED - WebSocket handles all real-time price updates
-// This saves 100+ API credits/minute and provides instant price updates
-
 // getItemLayout for FlatList optimization (enables instant scroll-to-index)
 const getStockRowLayout = (_data: any, index: number) => ({
   length: STOCK_ROW_HEIGHT,
@@ -302,78 +275,45 @@ export default function Trending() {
     "AMZN": "Amazon",
   };
 
-  // Fetch header cards data using Twelve Data
+  // Fetch header cards data using WebSocket priceStore
   const fetchHeaderCards = async () => {
     try {
-      // Fetch quotes from Twelve Data
-      const quotes = await fetchTwelveDataQuotes(HEADER_SYMBOLS);
-
-      // Build change percents map for sparkline direction
+      // Build change percents map for sparkline direction from priceStore
       const changePercents: Record<string, number> = {};
-      quotes.forEach((q: any) => {
-        if (q.symbol) changePercents[q.symbol] = parseFloat(q.percent_change) || 0;
+      HEADER_SYMBOLS.forEach((symbol) => {
+        const quote = priceStore.getQuote(symbol);
+        if (quote) changePercents[symbol] = quote.changePercent || 0;
       });
 
       // Use sparkline service with caching and batching
       const sparklineMap = await fetchSparklines(HEADER_SYMBOLS, changePercents);
 
-      if (quotes.length > 0) {
-        const cards: ChipData[] = HEADER_SYMBOLS.map((symbol) => {
-          const quote = quotes.find((item: any) => item.symbol === symbol);
-          if (quote) {
-            const price = parseFloat(quote.close) || 0;
-            const changePercent = parseFloat(quote.percent_change) || 0;
-            return {
-              name: HEADER_NAMES[symbol] || symbol,
-              symbol: symbol,
-              value: price.toFixed(2),
-              change: changePercent.toFixed(2),
-              isPositive: changePercent >= 0,
-              sparklineData: sparklineMap[symbol] || [],
-            };
-          }
+      const cards: ChipData[] = HEADER_SYMBOLS.map((symbol) => {
+        const quote = priceStore.getQuote(symbol);
+        if (quote && quote.price > 0) {
           return {
             name: HEADER_NAMES[symbol] || symbol,
             symbol: symbol,
-            value: "...",
-            change: "0.00",
-            isPositive: true,
-            sparklineData: [],
+            value: quote.price.toFixed(2),
+            change: (quote.changePercent || 0).toFixed(2),
+            isPositive: (quote.changePercent || 0) >= 0,
+            sparklineData: sparklineMap[symbol] || [],
           };
-        });
+        }
+        return {
+          name: HEADER_NAMES[symbol] || symbol,
+          symbol: symbol,
+          value: "...",
+          change: "0.00",
+          isPositive: true,
+          sparklineData: [],
+        };
+      });
 
-        setHeaderCards(cards);
-      }
+      setHeaderCards(cards);
     } catch (err) {
       // Error handled silently
     }
-  };
-
-  // Helper to fetch quotes from Twelve Data
-  const fetchTwelveDataQuotes = async (symbols: string[]): Promise<any[]> => {
-    if (symbols.length === 0) return [];
-
-    // Twelve Data batch quote endpoint
-    const symbolsStr = symbols.join(',');
-    const url = `${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(symbolsStr)}&apikey=${TWELVE_DATA_API_KEY}`;
-
-    const res = await fetchWithTimeout(url, { timeout: 15000 });
-    const json = await res.json();
-
-    // Handle single vs multiple symbols response
-    if (symbols.length === 1) {
-      if (json && json.symbol) {
-        return [json];
-      }
-      return [];
-    }
-
-    // Multiple symbols - response is an object keyed by symbol
-    if (json && typeof json === 'object') {
-      return Object.values(json).filter((item: any) => item && item.symbol);
-    }
-
-    return [];
   };
 
   // Fetch market movers from Twelve Data (gainers/losers/most active)

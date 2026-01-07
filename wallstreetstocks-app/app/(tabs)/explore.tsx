@@ -32,36 +32,6 @@ const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
 
 // WebSocket handles all real-time prices - no API polling needed
 
-// Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
-function isExtendedHours(): boolean {
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
-    hour: 'numeric',
-    minute: 'numeric',
-    hour12: false,
-  });
-
-  const parts = formatter.formatToParts(now);
-  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
-  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
-  const totalMinutes = hour * 60 + minute;
-
-  // Pre-market: 4:00 AM - 9:30 AM ET (240 - 570 minutes)
-  const preMarketStart = 4 * 60; // 4:00 AM
-  const marketOpen = 9 * 60 + 30; // 9:30 AM
-
-  // After-hours: 4:00 PM - 8:00 PM ET (960 - 1200 minutes)
-  const marketClose = 16 * 60; // 4:00 PM
-  const afterHoursEnd = 20 * 60; // 8:00 PM
-
-  return (totalMinutes >= preMarketStart && totalMinutes < marketOpen) ||
-         (totalMinutes >= marketClose && totalMinutes < afterHoursEnd);
-}
-
-// API polling functions REMOVED - WebSocket handles all real-time price updates
-// This saves 100+ API credits/minute and provides instant price updates
-
 type Tab = "stocks" | "crypto" | "etf" | "bonds" | "treasury" | "ipo" | "ma" | "dividends";
 type StockRegion = "us" | "europe" | "asia";
 
@@ -451,9 +421,7 @@ export default function Explore() {
   // This saves 700+ API credits/minute and makes tab switching instant
 
   const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
-  const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || "";
   const BASE_URL = "https://financialmodelingprep.com/api/v3";
-  const TWELVE_DATA_URL = "https://api.twelvedata.com";
 
   // Popular US stocks for Twelve Data (most active/popular)
   const US_STOCKS_TWELVE = [
@@ -783,240 +751,158 @@ export default function Explore() {
 
       switch (activeTab) {
         case "stocks":
-          // INSTANT: Use pre-loaded data from marketDataService (Robinhood-style)
+          // INSTANT: Use pre-loaded data from marketDataService + WebSocket prices
           {
             const localStocks = marketDataService.getLiveData('stock');
 
             if (localStocks.length > 0) {
               // Instant - data already in memory from app startup
-              const stockData: MarketItem[] = localStocks.map(item => ({
-                symbol: item.symbol,
-                name: item.name,
-                price: item.price,
-                change: item.change,
-                changePercent: item.changePercent,
-                type: "stock" as any,
-                exchange: "NYSE",
-              }));
+              const stockData: MarketItem[] = localStocks.map(item => {
+                // Get latest price from WebSocket store
+                const wsQuote = priceStore.getQuote(item.symbol);
+                return {
+                  symbol: item.symbol,
+                  name: item.name,
+                  price: wsQuote?.price || item.price,
+                  change: wsQuote?.change || item.change,
+                  changePercent: wsQuote?.changePercent || item.changePercent,
+                  type: "stock" as any,
+                  exchange: "NYSE",
+                };
+              });
               stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
               setData(stockData);
               setLoading(false);
               return;
             }
 
-            // Fallback: fetch from API if local data not ready
-            setLoading(true);
-            const batchSize = 8;
-            const allStockData: MarketItem[] = [];
-
-            // Select symbols based on region - limit to 24 for faster loading (3 parallel batches)
+            // Fallback: Use priceStore data from WebSocket (no API calls)
             let stockSymbols: string[];
             if (stockRegion === "us") {
-              stockSymbols = US_STOCKS_TWELVE.slice(0, 24);
+              stockSymbols = US_STOCKS_TWELVE.slice(0, 50);
             } else if (stockRegion === "europe") {
-              stockSymbols = EUROPE_STOCKS.slice(0, 24);
+              stockSymbols = EUROPE_STOCKS.slice(0, 50);
             } else {
-              stockSymbols = [...ASIA_STOCKS.filter(s => !s.includes(".")), ...ASIA_ETFS].slice(0, 24);
+              stockSymbols = [...ASIA_STOCKS.filter(s => !s.includes(".")), ...ASIA_ETFS].slice(0, 50);
             }
 
-            // Create batch promises for parallel fetching
-            const batchPromises: Promise<any[]>[] = [];
-            for (let i = 0; i < stockSymbols.length; i += batchSize) {
-              const batch = stockSymbols.slice(i, i + batchSize);
-              const batchUrl = `${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`;
-
-              batchPromises.push(
-                fetchWithTimeout(batchUrl, { timeout: 10000 })
-                  .then(res => res.json())
-                  .then(json => batch.length === 1 ? [json] : Object.values(json))
-                  .catch(() => [])
-              );
-            }
-
-            // Fetch all batches in parallel
-            const batchResults = await Promise.all(batchPromises);
-
-            for (const quotes of batchResults) {
-              for (const item of quotes as any[]) {
-                if (item && item.symbol && !item.code) {
-                  allStockData.push({
-                    symbol: item.symbol,
-                    name: item.name || item.symbol,
-                    price: parseFloat(item.close) || 0,
-                    change: parseFloat(item.change) || 0,
-                    changePercent: parseFloat(item.percent_change) || 0,
+            const stockData: MarketItem[] = stockSymbols
+              .map(symbol => {
+                const quote = priceStore.getQuote(symbol);
+                if (quote && quote.price > 0) {
+                  return {
+                    symbol,
+                    name: quote.name || symbol,
+                    price: quote.price,
+                    change: quote.change || 0,
+                    changePercent: quote.changePercent || 0,
                     type: "stock" as any,
-                    exchange: item.exchange || "NYSE",
-                  });
-
-                  priceStore.setQuote({
-                    symbol: item.symbol,
-                    price: parseFloat(item.close) || 0,
-                    change: parseFloat(item.change) || 0,
-                    changePercent: parseFloat(item.percent_change) || 0,
-                    previousClose: parseFloat(item.previous_close) || parseFloat(item.close) || 0,
-                    name: item.name || item.symbol,
-                  });
+                    exchange: "NYSE",
+                  };
                 }
-              }
-            }
+                return null;
+              })
+              .filter((item): item is MarketItem => item !== null);
 
-            allStockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
-            setData(allStockData);
+            stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+            setData(stockData);
             setLoading(false);
             return;
           }
         case "crypto":
-          // INSTANT: Use pre-loaded data from marketDataService (Robinhood-style)
+          // INSTANT: Use pre-loaded data from marketDataService + WebSocket prices
           {
             const localCrypto = marketDataService.getLiveData('crypto');
 
             if (localCrypto.length > 0) {
               // Instant - data already in memory from app startup
-              const cryptoData: MarketItem[] = localCrypto.map(item => ({
-                symbol: item.symbol,
-                name: item.name,
-                price: item.price,
-                change: item.change,
-                changePercent: item.changePercent,
-                type: "crypto" as any,
-                exchange: "Crypto",
-              }));
+              const cryptoData: MarketItem[] = localCrypto.map(item => {
+                const wsQuote = priceStore.getQuote(item.symbol);
+                return {
+                  symbol: item.symbol,
+                  name: item.name,
+                  price: wsQuote?.price || item.price,
+                  change: wsQuote?.change || item.change,
+                  changePercent: wsQuote?.changePercent || item.changePercent,
+                  type: "crypto" as any,
+                  exchange: "Crypto",
+                };
+              });
               cryptoData.sort((a, b) => b.price - a.price);
               setData(cryptoData);
               setLoading(false);
               return;
             }
 
-            // Fallback: fetch from API if local data not ready
-            setLoading(true);
-            const batchSize = 8;
-            const allCryptoData: MarketItem[] = [];
-            const cryptoSymbols = CRYPTO_SYMBOLS_TWELVE.slice(0, 24); // Limit to 24 for faster loading
-
-            // Create batch promises for parallel fetching
-            const batchPromises: Promise<any[]>[] = [];
-            for (let i = 0; i < cryptoSymbols.length; i += batchSize) {
-              const batch = cryptoSymbols.slice(i, i + batchSize);
-              const batchUrl = `${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`;
-
-              batchPromises.push(
-                fetchWithTimeout(batchUrl, { timeout: 10000 })
-                  .then(res => res.json())
-                  .then(json => batch.length === 1 ? [json] : Object.values(json))
-                  .catch(() => [])
-              );
-            }
-
-            // Fetch all batches in parallel
-            const batchResults = await Promise.all(batchPromises);
-
-            for (const quotes of batchResults) {
-              for (const item of quotes as any[]) {
-                if (item && item.symbol && !item.code) {
-                  const symbolNoSlash = item.symbol.replace("/", "");
-                  const symbolWithSlash = item.symbol;
-                  const price = parseFloat(item.close) || 0;
-                  const previousClose = parseFloat(item.previous_close) || price;
-
-                  allCryptoData.push({
+            // Fallback: Use priceStore data from WebSocket (no API calls)
+            const cryptoData: MarketItem[] = CRYPTO_SYMBOLS_TWELVE.slice(0, 50)
+              .map(symbol => {
+                const symbolNoSlash = symbol.replace("/", "");
+                const quote = priceStore.getQuote(symbol) || priceStore.getQuote(symbolNoSlash);
+                if (quote && quote.price > 0) {
+                  return {
                     symbol: symbolNoSlash,
-                    name: item.name || symbolNoSlash,
-                    price: price,
-                    change: parseFloat(item.change) || 0,
-                    changePercent: parseFloat(item.percent_change) || 0,
+                    name: quote.name || symbolNoSlash,
+                    price: quote.price,
+                    change: quote.change || 0,
+                    changePercent: quote.changePercent || 0,
                     type: "crypto" as any,
-                    exchange: item.exchange || "Crypto",
-                  });
-
-                  const quoteData = {
-                    price: price,
-                    change: parseFloat(item.change) || 0,
-                    changePercent: parseFloat(item.percent_change) || 0,
-                    previousClose: previousClose,
-                    name: item.name || symbolNoSlash,
+                    exchange: "Crypto",
                   };
-                  priceStore.setQuote({ symbol: symbolNoSlash, ...quoteData });
-                  priceStore.setQuote({ symbol: symbolWithSlash, ...quoteData });
                 }
-              }
-            }
+                return null;
+              })
+              .filter((item): item is MarketItem => item !== null);
 
-            allCryptoData.sort((a, b) => b.price - a.price);
-            setData(allCryptoData);
+            cryptoData.sort((a, b) => b.price - a.price);
+            setData(cryptoData);
             setLoading(false);
             return;
           }
         case "etf":
-          // INSTANT: Use pre-loaded data from marketDataService (Robinhood-style)
+          // INSTANT: Use pre-loaded data from marketDataService + WebSocket prices
           {
             const localETFs = marketDataService.getLiveData('etf');
 
             if (localETFs.length > 0) {
               // Instant - data already in memory from app startup
-              const etfData: MarketItem[] = localETFs.map(item => ({
-                symbol: item.symbol,
-                name: item.name,
-                price: item.price,
-                change: item.change,
-                changePercent: item.changePercent,
-                type: "etf" as any,
-                exchange: "NYSE",
-              }));
+              const etfData: MarketItem[] = localETFs.map(item => {
+                const wsQuote = priceStore.getQuote(item.symbol);
+                return {
+                  symbol: item.symbol,
+                  name: item.name,
+                  price: wsQuote?.price || item.price,
+                  change: wsQuote?.change || item.change,
+                  changePercent: wsQuote?.changePercent || item.changePercent,
+                  type: "etf" as any,
+                  exchange: "NYSE",
+                };
+              });
               setData(etfData);
               setLoading(false);
               return;
             }
 
-            // Fallback: fetch from API if local data not ready
-            setLoading(true);
-            const batchSize = 8;
-            const allEtfData: MarketItem[] = [];
-            const etfSymbols = ETF_SYMBOLS_TWELVE.slice(0, 24); // Limit to 24 for faster loading
-
-            // Create batch promises for parallel fetching
-            const batchPromises: Promise<any[]>[] = [];
-            for (let i = 0; i < etfSymbols.length; i += batchSize) {
-              const batch = etfSymbols.slice(i, i + batchSize);
-              const batchUrl = `${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`;
-
-              batchPromises.push(
-                fetchWithTimeout(batchUrl, { timeout: 10000 })
-                  .then(res => res.json())
-                  .then(json => batch.length === 1 ? [json] : Object.values(json))
-                  .catch(() => [])
-              );
-            }
-
-            // Fetch all batches in parallel
-            const batchResults = await Promise.all(batchPromises);
-
-            for (const quotes of batchResults) {
-              for (const item of quotes as any[]) {
-                if (item && item.symbol && !item.code) {
-                  allEtfData.push({
-                    symbol: item.symbol,
-                    name: item.name || item.symbol,
-                    price: parseFloat(item.close) || 0,
-                    change: parseFloat(item.change) || 0,
-                    changePercent: parseFloat(item.percent_change) || 0,
+            // Fallback: Use priceStore data from WebSocket (no API calls)
+            const etfData: MarketItem[] = ETF_SYMBOLS_TWELVE.slice(0, 50)
+              .map(symbol => {
+                const quote = priceStore.getQuote(symbol);
+                if (quote && quote.price > 0) {
+                  return {
+                    symbol,
+                    name: quote.name || symbol,
+                    price: quote.price,
+                    change: quote.change || 0,
+                    changePercent: quote.changePercent || 0,
                     type: "etf" as any,
-                    exchange: item.exchange || "NYSE",
-                  });
-
-                  priceStore.setQuote({
-                    symbol: item.symbol,
-                    price: parseFloat(item.close) || 0,
-                    change: parseFloat(item.change) || 0,
-                    changePercent: parseFloat(item.percent_change) || 0,
-                    previousClose: parseFloat(item.previous_close) || parseFloat(item.close) || 0,
-                    name: item.name || item.symbol,
-                  });
+                    exchange: "NYSE",
+                  };
                 }
-              }
-            }
+                return null;
+              })
+              .filter((item): item is MarketItem => item !== null);
 
-            setData(allEtfData);
+            setData(etfData);
             setLoading(false);
             return;
           }
@@ -1165,93 +1051,7 @@ export default function Explore() {
     fetchTreasuryRates();
   }, []);
 
-  // PRE-FETCH: Load crypto and ETF data in background on mount for instant tab switching
-  useEffect(() => {
-    const prefetchTabs = async () => {
-      // Wait a bit for stocks to load first, then prefetch others in background
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Prefetch crypto data
-      try {
-        const cryptoSymbols = CRYPTO_SYMBOLS_TWELVE.slice(0, 24);
-        const batchSize = 8;
-        const allCryptoData: MarketItem[] = [];
-
-        const cryptoBatches: Promise<any[]>[] = [];
-        for (let i = 0; i < cryptoSymbols.length; i += batchSize) {
-          const batch = cryptoSymbols.slice(i, i + batchSize);
-          cryptoBatches.push(
-            fetch(`${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`)
-              .then(res => res.json())
-              .then(json => batch.length === 1 ? [json] : Object.values(json))
-              .catch(() => [])
-          );
-        }
-
-        const cryptoResults = await Promise.all(cryptoBatches);
-        for (const quotes of cryptoResults) {
-          for (const item of quotes as any[]) {
-            if (item && item.symbol && !item.code) {
-              allCryptoData.push({
-                symbol: item.symbol.replace("/", ""),
-                name: item.name || item.symbol.replace("/", ""),
-                price: parseFloat(item.close) || 0,
-                change: parseFloat(item.change) || 0,
-                changePercent: parseFloat(item.percent_change) || 0,
-                type: "crypto" as const,
-              });
-            }
-          }
-        }
-
-        if (allCryptoData.length > 0) {
-          tabDataCache.current["crypto"] = { data: allCryptoData, headerCards: [], timestamp: Date.now() };
-        }
-      } catch (err) {
-      }
-
-      // Prefetch ETF data
-      try {
-        const etfSymbols = ETF_SYMBOLS_TWELVE.slice(0, 24);
-        const batchSize = 8;
-        const allEtfData: MarketItem[] = [];
-
-        const etfBatches: Promise<any[]>[] = [];
-        for (let i = 0; i < etfSymbols.length; i += batchSize) {
-          const batch = etfSymbols.slice(i, i + batchSize);
-          etfBatches.push(
-            fetch(`${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`)
-              .then(res => res.json())
-              .then(json => batch.length === 1 ? [json] : Object.values(json))
-              .catch(() => [])
-          );
-        }
-
-        const etfResults = await Promise.all(etfBatches);
-        for (const quotes of etfResults) {
-          for (const item of quotes as any[]) {
-            if (item && item.symbol && !item.code) {
-              allEtfData.push({
-                symbol: item.symbol,
-                name: item.name || item.symbol,
-                price: parseFloat(item.close) || 0,
-                change: parseFloat(item.change) || 0,
-                changePercent: parseFloat(item.percent_change) || 0,
-                type: "etf" as const,
-              });
-            }
-          }
-        }
-
-        if (allEtfData.length > 0) {
-          tabDataCache.current["etf"] = { data: allEtfData, headerCards: [], timestamp: Date.now() };
-        }
-      } catch (err) {
-      }
-    };
-
-    prefetchTabs();
-  }, []);
+  // WebSocket handles all real-time prices - no prefetch API calls needed
 
   // Update cache when data changes successfully
   useEffect(() => {
