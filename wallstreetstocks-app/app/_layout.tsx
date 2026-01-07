@@ -83,7 +83,21 @@ export default function RootLayout() {
                                 screenOptions={{
                                   headerShown: false,
                                 }}
-                              />
+                              >
+                                {/* Disable swipe back on tabs to prevent exiting app */}
+                                <Stack.Screen
+                                  name="(tabs)"
+                                  options={{
+                                    gestureEnabled: false,
+                                  }}
+                                />
+                                <Stack.Screen
+                                  name="index"
+                                  options={{
+                                    gestureEnabled: false,
+                                  }}
+                                />
+                              </Stack>
                             </View>
                           </AppInitializer>
                         </WebSocketProvider>
