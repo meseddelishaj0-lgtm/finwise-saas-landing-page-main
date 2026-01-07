@@ -635,17 +635,23 @@ export default function Dashboard() {
   }, [wsConnected, wsSubscribe]);
 
   // ============= REAL-TIME PRICE REFRESH =============
-  // Interval triggers re-render every 500ms for near-instant WebSocket price updates
+  // Interval triggers re-render for WebSocket price updates
+  // IMPORTANT: Reduced frequency to prevent iPad from becoming unresponsive
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const realTimePriceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    priceRefreshIntervalRef.current = setInterval(() => {
-      setPriceUpdateTrigger(prev => prev + 1);
-    }, 500);
+    // Delay starting the refresh interval to let the UI fully render first
+    // This prevents the app from becoming unresponsive on iPad
+    const startupDelay = setTimeout(() => {
+      priceRefreshIntervalRef.current = setInterval(() => {
+        setPriceUpdateTrigger(prev => prev + 1);
+      }, 2000); // Reduced from 500ms to 2000ms to prevent UI freeze
+    }, 3000); // 3 second delay after mount
 
     return () => {
+      clearTimeout(startupDelay);
       if (priceRefreshIntervalRef.current) {
         clearInterval(priceRefreshIntervalRef.current);
       }
@@ -653,6 +659,7 @@ export default function Dashboard() {
   }, []);
 
   // Fetch real-time extended hours prices for watchlist, market indices, trending, and stock picks
+  // IMPORTANT: Delayed start to prevent iPad from becoming unresponsive
   useEffect(() => {
     // Collect all symbols from: market overview, watchlist, trending, and stock picks
     const trendingSymbols = trending.map(s => s.symbol).filter(Boolean);
@@ -667,27 +674,30 @@ export default function Dashboard() {
 
     if (allSymbols.length === 0) return;
 
-    // Initial fetch
-    if (isExtendedHours()) {
-      fetchRealTimePrices(allSymbols);
-    }
-
-    // Set up interval for continuous updates during extended hours
-    // 49 symbols every 3 seconds = ~980 calls/min (under 987 limit)
-    realTimePriceIntervalRef.current = setInterval(() => {
+    // Delay all API calls to let the UI render first
+    const startupDelay = setTimeout(() => {
+      // Initial fetch only during extended hours
       if (isExtendedHours()) {
         fetchRealTimePrices(allSymbols);
       }
-    }, 3000); // Every 3 seconds
+
+      // Set up interval for continuous updates during extended hours
+      realTimePriceIntervalRef.current = setInterval(() => {
+        if (isExtendedHours()) {
+          fetchRealTimePrices(allSymbols);
+        }
+      }, 5000); // Increased from 3s to 5s to reduce load
+    }, 5000); // 5 second delay after mount
 
     return () => {
+      clearTimeout(startupDelay);
       if (realTimePriceIntervalRef.current) {
         clearInterval(realTimePriceIntervalRef.current);
       }
     };
   }, [watchlist, trending]);
 
-  // Live market indices - updates every 500ms from price store for real-time display
+  // Live market indices - updates every 2s from price store for real-time display
   const liveMarketIndices = useMemo(() => {
     const nameMap: { [key: string]: string } = {
       'SPY': 'S&P 500', 'QQQ': 'Nasdaq 100', 'DIA': 'Dow Jones', 'IWM': 'Russell 2000',

@@ -803,13 +803,18 @@ export default function Trending() {
     };
   }, [activeTab, wsConnected, data, wsSubscribe, wsUnsubscribe]);
 
-  // Real-time price update interval (every 500ms for near-instant updates)
+  // Real-time price update interval
+  // IMPORTANT: Reduced from 500ms to 2000ms and added delay to prevent iPad freeze
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPriceUpdateTrigger(prev => prev + 1);
-    }, 500);
+    const startupDelay = setTimeout(() => {
+      const interval = setInterval(() => {
+        setPriceUpdateTrigger(prev => prev + 1);
+      }, 2000); // Reduced from 500ms to 2000ms
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    }, 3000); // 3 second delay after mount
+
+    return () => clearTimeout(startupDelay);
   }, [activeTab]);
 
   // Real-time extended hours price refresh for stocks (trending, gainers, losers)
