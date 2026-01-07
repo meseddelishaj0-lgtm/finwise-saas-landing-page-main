@@ -39,6 +39,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        gestureEnabled: false, // Disable swipe back gesture to prevent exiting app
         tabBarActiveTintColor: '#007AFF',
         tabBarInactiveTintColor: '#8E8E93',
         tabBarStyle: {
