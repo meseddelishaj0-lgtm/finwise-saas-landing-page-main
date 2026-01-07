@@ -172,6 +172,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           currentTier,
           status.activeSubscription,
           status.expirationDate
+        );
       }
 
       setState(prev => ({
@@ -213,6 +214,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           currentTier,
           activeSubscription,
           entitlement.expirationDate || null
+        );
       }
 
       setState(prev => ({
