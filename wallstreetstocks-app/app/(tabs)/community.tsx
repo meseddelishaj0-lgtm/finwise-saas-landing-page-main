@@ -545,6 +545,7 @@ export default function CommunityPage() {
       const userId = getUserId();
 
       const users = await fetchSuggestedUsersApi(userId || undefined);
+      setSuggestedUsers(users.map((u: any) => ({
         id: u.id,
         name: u.name,
         followers: u._count?.followers,
@@ -741,12 +742,6 @@ export default function CommunityPage() {
 
       if (response.ok) {
         const profileData = await response.json();
-          name: profileData.name,
-          username: profileData.username,
-          id: profileData.id,
-          isFollowing: profileData.isFollowing,
-          followers: profileData._count?.followers,
-        });
 
         // Use passed-in follow state from optimistic updates (more reliable than Map)
         // This preserves the UI state from suggestedUsers list
