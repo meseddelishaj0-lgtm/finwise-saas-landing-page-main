@@ -26,7 +26,6 @@ export default function ReportProblem() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [email, setEmail] = useState('');
-  const [includeScreenshot, setIncludeScreenshot] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Categories matching the API expectations
@@ -70,7 +69,6 @@ export default function ReportProblem() {
           category: selectedCategory,
           description: description.trim(),
           contactEmail: email.trim() || user?.email || null,
-          screenshotUrl: null, // TODO: Implement screenshot upload
           deviceInfo,
           appVersion: Constants.expoConfig?.version || '1.0.0',
         }),
@@ -160,23 +158,6 @@ export default function ReportProblem() {
             />
             <Text style={styles.charCount}>{description.length}/1000</Text>
           </View>
-
-          {/* Screenshot Option */}
-          <TouchableOpacity
-            style={styles.screenshotOption}
-            onPress={() => setIncludeScreenshot(!includeScreenshot)}
-          >
-            <View style={styles.screenshotLeft}>
-              <Ionicons name="camera" size={24} color="#007AFF" />
-              <View>
-                <Text style={styles.screenshotTitle}>Include Screenshot</Text>
-                <Text style={styles.screenshotSubtitle}>Attach a screenshot to help us understand</Text>
-              </View>
-            </View>
-            <View style={[styles.toggle, includeScreenshot && styles.toggleActive]}>
-              <View style={[styles.toggleKnob, includeScreenshot && styles.toggleKnobActive]} />
-            </View>
-          </TouchableOpacity>
 
           {/* Contact Email */}
           <View style={styles.section}>

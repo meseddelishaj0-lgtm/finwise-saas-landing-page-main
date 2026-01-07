@@ -13,9 +13,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/lib/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://finwise-saas-landing-page-main.vercel.app';
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
+  const { user, logout } = useAuth();
   const [confirmText, setConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -36,11 +41,25 @@ export default function DeleteAccountScreen() {
           onPress: async () => {
             setIsDeleting(true);
             try {
-              // TODO: Add API call to delete account
-              // await deleteAccount();
+              // Call API to delete account
+              const response = await fetch(`${API_BASE_URL}/api/user/delete`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId: user?.id }),
+              });
 
-              // Simulate API call
-              await new Promise(resolve => setTimeout(resolve, 2000));
+              // Clear all local data regardless of API response
+              await AsyncStorage.multiRemove([
+                'personalInfo',
+                'watchlist',
+                'portfolioData',
+                'userPreferences',
+              ]);
+
+              // Logout user
+              await logout();
 
               Alert.alert(
                 'Account Deleted',
@@ -48,6 +67,7 @@ export default function DeleteAccountScreen() {
                 [{ text: 'OK', onPress: () => router.replace('/login') }]
               );
             } catch (error) {
+              console.error('Delete account error:', error);
               Alert.alert('Error', 'Failed to delete account. Please try again.');
             } finally {
               setIsDeleting(false);

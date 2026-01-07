@@ -157,17 +157,12 @@ export default function PaywallScreen() {
   const canPurchaseSelectedTier = !!selectedPackage;
 
   const handlePurchase = async () => {
-    if (!canPurchaseSelectedTier) {
+    if (!canPurchaseSelectedTier || !selectedPackage) {
       Alert.alert(
-        'Coming Soon',
-        `The ${TIER_NAMES[selectedTier]} plan is being finalized. Please check back soon or select a different plan!`,
+        'Subscription Unavailable',
+        `The ${TIER_NAMES[selectedTier]} plan is currently unavailable. Please try again later or contact support.`,
         [{ text: 'OK' }]
       );
-      return;
-    }
-
-    if (!selectedPackage) {
-      Alert.alert('Error', 'Please select a subscription plan');
       return;
     }
 

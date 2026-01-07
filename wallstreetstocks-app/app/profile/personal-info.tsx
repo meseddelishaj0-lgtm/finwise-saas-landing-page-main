@@ -17,17 +17,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@/lib/auth';
 
 export default function PersonalInfo() {
   const router = useRouter();
-  
-  // Form State
-  const [name, setName] = useState('John Doe');
-  const [username, setUsername] = useState('johndoe');
-  const [email, setEmail] = useState('john@example.com');
-  const [phone, setPhone] = useState('+1 234 567 8900');
-  const [bio, setBio] = useState('Investor | AI Enthusiast | Building the future');
-  const [location, setLocation] = useState('San Francisco, CA');
+  const { user } = useAuth();
+
+  // Form State - Initialize empty, load from storage/user
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [bio, setBio] = useState('');
+  const [location, setLocation] = useState('');
   const [avatar, setAvatar] = useState<string | null>(null);
 
   // Load saved data on mount
@@ -36,16 +38,21 @@ export default function PersonalInfo() {
       const saved = await AsyncStorage.getItem('personalInfo');
       if (saved) {
         const data = JSON.parse(saved);
-        setName(data.name || 'John Doe');
-        setUsername(data.username || 'johndoe');
-        setEmail(data.email || 'john@example.com');
-        setPhone(data.phone || '+1 234 567 8900');
+        setName(data.name || user?.name || '');
+        setUsername(data.username || '');
+        setEmail(data.email || user?.email || '');
+        setPhone(data.phone || '');
         setBio(data.bio || '');
         setLocation(data.location || '');
-        setAvatar(data.avatar || null);
+        setAvatar(data.avatar || user?.profileImage || null);
+      } else if (user) {
+        // If no saved data, populate from user context
+        setName(user.name || '');
+        setEmail(user.email || '');
+        setAvatar(user.profileImage || null);
       }
     })();
-  }, []);
+  }, [user]);
 
   // Image Picker
   const pickImage = async () => {

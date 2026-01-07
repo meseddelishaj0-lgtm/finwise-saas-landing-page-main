@@ -11,25 +11,17 @@ import {
 } from 'react-native';
 import { LogOut, ChevronLeft, AlertCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/lib/auth';
 
-// AuthContext is not available in this repository path; use a local no-op signOut
-// until you add a proper context implementation at ../../context/AuthContext
 export default function SignOutScreen() {
   const router = useRouter();
-  const signOut = async () => {
-    // no-op: implement real signOut (clear tokens, AsyncStorage, etc.) in your AuthContext
-  };
+  const { logout } = useAuth();
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleSignOut = async () => {
     try {
-      await signOut?.(); // Optional: clear tokens, AsyncStorage, etc.
-
-      // This is the key: fully reset the navigation stack to login
+      await logout();
       router.replace('/login');
-      
-      // Or if you have a welcome/onboarding flow:
-      // router.replace('/welcome');
     } catch (error) {
       Alert.alert('Error', 'Failed to sign out. Please try again.');
     }

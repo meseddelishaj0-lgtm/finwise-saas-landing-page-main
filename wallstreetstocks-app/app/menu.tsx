@@ -71,9 +71,8 @@ export default function MenuPage() {
   };
 
   const handleRateApp = () => {
-    // Replace with your actual App Store ID
     const appStoreUrl = Platform.OS === 'ios'
-      ? 'https://apps.apple.com/app/id123456789?action=write-review'
+      ? 'https://apps.apple.com/app/id6756940110?action=write-review'
       : 'https://play.google.com/store/apps/details?id=com.wallstreetstocks.app';
     Linking.openURL(appStoreUrl);
   };
