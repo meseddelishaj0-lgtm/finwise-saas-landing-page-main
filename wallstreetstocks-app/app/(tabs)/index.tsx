@@ -227,78 +227,8 @@ const interpolateData = (data: { value: number; label: string; dataPointText?: s
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
-// Twelve Data API for real-time extended hours prices
-const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL = 'https://api.twelvedata.com';
-
-// Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
-function isExtendedHours(): boolean {
-  const now = new Date();
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
-    hour: 'numeric',
-    minute: 'numeric',
-    weekday: 'short',
-    hour12: false,
-  });
-  const parts = formatter.formatToParts(now);
-  const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
-  const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
-  const dayOfWeek = parts.find(p => p.type === 'weekday')?.value || '';
-
-  if (dayOfWeek === 'Sat' || dayOfWeek === 'Sun') return true;
-
-  const totalMinutes = hour * 60 + minute;
-  const preMarketStart = 4 * 60;      // 4:00 AM
-  const marketOpen = 9 * 60 + 30;     // 9:30 AM
-  const marketClose = 16 * 60;        // 4:00 PM
-  const afterHoursEnd = 20 * 60;      // 8:00 PM
-
-  return (totalMinutes >= preMarketStart && totalMinutes < marketOpen) ||
-         (totalMinutes >= marketClose && totalMinutes < afterHoursEnd);
-}
-
-// Fetch real-time price from Twelve Data /price endpoint (1 API credit vs 8 for time_series)
-async function fetchRealTimePrice(symbol: string): Promise<{ price: number; change: number; changePercent: number } | null> {
-  try {
-    // Use /price endpoint - only 1 API credit per call
-    const res = await fetch(`${TWELVE_DATA_URL}/price?symbol=${encodeURIComponent(symbol)}&apikey=${TWELVE_DATA_API_KEY}`);
-    const data = await res.json();
-
-    if (data?.price) {
-      const price = parseFloat(data.price) || 0;
-      // Get existing quote from store for previous close
-      const existingQuote = priceStore.getQuote(symbol);
-      const prevClose = existingQuote?.previousClose || price;
-      const change = price - prevClose;
-      const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
-
-      return { price, change, changePercent };
-    }
-    return null;
-  } catch (err) {
-    return null;
-  }
-}
-
-// Batch fetch real-time prices for multiple symbols from Twelve Data
-async function fetchRealTimePrices(symbols: string[]): Promise<void> {
-  // Fetch from Twelve Data for accurate premarket/after-hours prices
-  // Fetch all in parallel for speed (49 symbols every 3s = ~980 calls/min, under 987 limit)
-  const uniqueSymbols = [...new Set(symbols)]; // Remove duplicates
-  const promises = uniqueSymbols.slice(0, 49).map(async (symbol) => {
-    const data = await fetchRealTimePrice(symbol);
-    if (data) {
-      priceStore.setQuote({
-        symbol,
-        price: data.price,
-        change: data.change,
-        changePercent: data.changePercent,
-      });
-    }
-  });
-  await Promise.all(promises);
-}
+// Real-time prices handled by WebSocket (pre-market + after-hours included)
+// No API polling needed - WebSocket provides instant updates via Twelve Data WebSocket
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
 // Polygon.io API for real-time market data
@@ -748,40 +678,9 @@ export default function Dashboard() {
     }, [wsConnected, wsSubscribe])
   );
 
-  // Extended hours price updates - USE WEBSOCKET, NOT REST API
-  // WebSocket is already subscribed via wsSubscribe calls above
-  // REST API polling DISABLED to stay under 987 credits/min limit
-  // Only fetch ONCE on mount for initial data, then WebSocket handles updates
-  useEffect(() => {
-    // Collect all symbols for initial one-time fetch
-    const trendingSymbols = trending.map(s => s.symbol).filter(Boolean);
-    const stockPicksSymbols = STOCK_PICKS_PREVIEW.map(p => p.symbol);
-
-    const allSymbols = [
-      ...MARKET_INDICES_SYMBOLS,  // 12 market overview symbols
-      ...watchlist,               // User's watchlist
-      ...trendingSymbols,         // 6 trending symbols
-      ...stockPicksSymbols,       // 3 stock picks
-    ];
-
-    if (allSymbols.length === 0) return;
-
-    // ONE-TIME initial fetch only (not continuous polling)
-    // After this, WebSocket provides real-time updates
-    const startupDelay = setTimeout(() => {
-      if (isExtendedHours()) {
-        // Limit to 20 symbols to conserve API credits
-        fetchRealTimePrices(allSymbols.slice(0, 20));
-      }
-    }, 3000);
-
-    // NO INTERVAL - WebSocket handles continuous updates
-    // This saves ~700+ API credits/minute
-
-    return () => {
-      clearTimeout(startupDelay);
-    };
-  }, []);
+  // Extended hours price updates - WEBSOCKET ONLY
+  // WebSocket handles ALL real-time prices including pre-market and after-hours
+  // NO API POLLING - saves 700+ API credits/minute
 
   // Live market indices - updates every 2s from price store for real-time display
   const liveMarketIndices = useMemo(() => {
@@ -956,67 +855,25 @@ export default function Dashboard() {
       }
     }
 
-    // Fallback: fetch from API if local data not ready
-    setIndicesLoading(true);
-    try {
-      // Use Twelve Data API for real-time prices (works during extended hours)
-      const promises = symbols.map(async (symbol) => {
-        try {
-          const [tsRes, quoteRes] = await Promise.all([
-            fetch(`${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(symbol)}&interval=1min&outputsize=1&prepost=true&apikey=${TWELVE_DATA_API_KEY}`),
-            fetch(`${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(symbol)}&apikey=${TWELVE_DATA_API_KEY}`),
-          ]);
-          const [tsData, quoteData] = await Promise.all([tsRes.json(), quoteRes.json()]);
+    // No API fallback - WebSocket handles all real-time prices (including pre-market/after-hours)
+    // Just use priceStore data which is updated by WebSocket
+    const storeResults = symbols.map(symbol => {
+      const storeQuote = priceStore.getQuote(symbol);
+      return {
+        symbol,
+        name: nameMap[symbol] || storeQuote?.name || symbol,
+        price: storeQuote?.price || 0,
+        change: storeQuote?.change || 0,
+        changePercent: storeQuote?.changePercent || 0,
+        color: (storeQuote?.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
+      };
+    }).filter(item => item.price > 0);
 
-          let price = 0;
-          if (tsData?.values && tsData.values.length > 0) {
-            price = parseFloat(tsData.values[0].close) || 0;
-          }
-          if (price === 0) {
-            price = parseFloat(quoteData?.close) || 0;
-          }
-
-          const prevClose = parseFloat(quoteData?.previous_close) || price;
-          const change = price - prevClose;
-          const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
-
-          return {
-            symbol,
-            name: nameMap[symbol] || quoteData?.name || symbol,
-            price,
-            change,
-            changePercent,
-            color: changePercent >= 0 ? '#34C759' : '#FF3B30',
-          };
-        } catch (err) {
-          return {
-            symbol,
-            name: nameMap[symbol] || symbol,
-            price: 0,
-            change: 0,
-            changePercent: 0,
-            color: '#34C759',
-          };
-        }
-      });
-
-      const results = await Promise.all(promises);
-
-      // Update global price store with fetched data
-      priceStore.setQuotes(results.map((item) => ({
-        symbol: item.symbol,
-        price: item.price,
-        change: item.change,
-        changePercent: item.changePercent,
-        name: item.name,
-      })));
-
-      setMajorIndices(results);
+    if (storeResults.length > 0) {
+      setMajorIndices(storeResults);
       setLastUpdated(new Date());
-    } catch (err) {
-    } finally {
-      setIndicesLoading(false);
     }
+    setIndicesLoading(false);
   };
 
   // Fetch trending stocks with live data - INSTANT from pre-loaded stock data
