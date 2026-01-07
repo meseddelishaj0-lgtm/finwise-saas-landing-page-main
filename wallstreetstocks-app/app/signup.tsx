@@ -81,7 +81,7 @@ export default function Signup() {
   // Debug: Log the redirect URI being used (iOS)
   useEffect(() => {
     if (request && Platform.OS === 'ios') {
-      :', request.redirectUri);
+      // Debug logging removed
     }
   }, [request]);
 

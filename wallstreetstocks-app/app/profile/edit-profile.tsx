@@ -279,9 +279,6 @@ export default function EditProfile() {
         };
 
         // Use /api/user/:id endpoint which is more reliable
-        
-        );
-
         const response = await fetch(`${API_BASE_URL}/api/user/${userId}`, {
           method: 'PUT',
           headers: {
@@ -291,9 +288,7 @@ export default function EditProfile() {
           body: JSON.stringify(payload),
         });
 
-        
         const responseData = await response.json();
-        );
 
         if (!response.ok) {
           if (responseData.error?.includes('Username')) {
@@ -305,14 +300,8 @@ export default function EditProfile() {
           throw new Error(responseData.error || 'Failed to save');
         }
 
-        // Verify the update was successful
-        if (responseData.name !== name.trim()) {
-          , received: responseData.name });
-        }
-
         // Update BOTH contexts directly with the response data
         // This avoids read replica lag issues with re-fetching
-        
 
         // Update UserProfileContext (used by Profile tab, Community)
         updateUserProfile({

@@ -31,25 +31,18 @@ export default function NewsTab() {
   const localParams = useLocalSearchParams();
   const globalParams = useGlobalSearchParams();
   const segments = useSegments();
-  
-  
-  );
-  );
-  
-  
+
   // Try multiple methods to extract symbol
   let symbol: string | null = null;
   
   // Method 1: Local params
   if (localParams.symbol) {
     symbol = Array.isArray(localParams.symbol) ? localParams.symbol[0] : localParams.symbol;
-    :', symbol);
   }
   
   // Method 2: Global params
   if (!symbol && globalParams.symbol) {
     symbol = Array.isArray(globalParams.symbol) ? globalParams.symbol[0] : globalParams.symbol;
-    :', symbol);
   }
   
   // Method 3: From segments (e.g., ['symbol', 'AAPL', 'news'])
@@ -57,19 +50,17 @@ export default function NewsTab() {
     const symbolIndex = segments.findIndex(seg => seg === 'symbol') + 1;
     if (symbolIndex > 0 && symbolIndex < segments.length) {
       symbol = segments[symbolIndex] as string;
-      :', symbol);
     }
   }
   
   // Method 4: Check if it's in a different param key
   if (!symbol) {
     const allKeys = Object.keys(localParams);
-    
+
     // Sometimes it might be stored differently
     for (const key of allKeys) {
       if (key.includes('symbol') || key.match(/^[A-Z]{1,5}$/)) {
         symbol = String(localParams[key]);
-        :', symbol);
         break;
       }
     }

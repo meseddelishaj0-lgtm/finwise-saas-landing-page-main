@@ -109,8 +109,6 @@ export default function MessagesScreen() {
       // Check content type to ensure it's JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        );
         return;
       }
 

@@ -64,7 +64,6 @@ async function prefetchSymbolData(symbol: string) {
     }
   } catch (err) {
     // Silent fail - prefetch is best effort
-    :', err);
   }
 }
 

@@ -183,7 +183,6 @@ export default function AnalyticsScreen() {
           const sp500ChangeVal = sp500End - sp500Start;
           const sp500ChangePercent = sp500Start > 0 ? (sp500ChangeVal / sp500Start) * 100 : 0;
 
-          }%`);
           setSp500Change({ value: sp500ChangeVal, percent: sp500ChangePercent });
           return;
         }
