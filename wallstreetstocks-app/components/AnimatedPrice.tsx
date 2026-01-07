@@ -327,9 +327,9 @@ export const MarketStatusIndicator = memo(() => {
       case 'live':
         return { color: '#34C759', label: 'LIVE', subtitle: '' };
       case 'premarket':
-        return { color: '#FF9500', label: 'PRE MARKET', subtitle: ' - price update limited' };
+        return { color: '#FF9500', label: 'PRE MARKET', subtitle: 'Price update limited' };
       case 'afterhours':
-        return { color: '#FF9500', label: 'AFTER HOURS', subtitle: ' - price update limited' };
+        return { color: '#FF9500', label: 'AFTER HOURS', subtitle: 'Price update limited' };
       case 'closed':
         return { color: '#8E8E93', label: 'CLOSED', subtitle: '' };
     }
@@ -338,36 +338,38 @@ export const MarketStatusIndicator = memo(() => {
   const config = getStatusConfig();
 
   return (
-    <View style={styles.marketStatusContainer}>
-      <View style={styles.liveDotContainer}>
-        {/* Glow ring - only for live */}
-        {status === 'live' && (
+    <View style={styles.marketStatusWrapper}>
+      <View style={styles.marketStatusContainer}>
+        <View style={styles.liveDotContainer}>
+          {/* Glow ring - only for live */}
+          {status === 'live' && (
+            <Animated.View
+              style={[
+                styles.liveGlow,
+                {
+                  backgroundColor: config.color,
+                  transform: [{ scale: glowScale }],
+                  opacity: glowOpacity,
+                },
+              ]}
+            />
+          )}
+          {/* Main dot */}
           <Animated.View
             style={[
-              styles.liveGlow,
+              styles.liveDot,
               {
                 backgroundColor: config.color,
-                transform: [{ scale: glowScale }],
-                opacity: glowOpacity,
+                transform: status === 'live' ? [{ scale: pulseAnim }] : [],
+                opacity: status === 'live' ? opacityAnim : 1,
               },
             ]}
           />
-        )}
-        {/* Main dot */}
-        <Animated.View
-          style={[
-            styles.liveDot,
-            {
-              backgroundColor: config.color,
-              transform: status === 'live' ? [{ scale: pulseAnim }] : [],
-              opacity: status === 'live' ? opacityAnim : 1,
-            },
-          ]}
-        />
+        </View>
+        <Text style={[styles.liveText, { color: config.color }]}>
+          {config.label}
+        </Text>
       </View>
-      <Text style={[styles.liveText, { color: config.color }]}>
-        {config.label}
-      </Text>
       {config.subtitle ? (
         <Text style={styles.marketStatusSubtitle}>{config.subtitle}</Text>
       ) : null}
@@ -525,6 +527,9 @@ const styles = StyleSheet.create({
     color: '#34C759',
     letterSpacing: 0.5,
   },
+  marketStatusWrapper: {
+    alignItems: 'flex-start',
+  },
   marketStatusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -534,7 +539,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '500',
     color: '#8E8E93',
-    marginLeft: -2,
+    marginTop: 2,
+    marginLeft: 22, // Align with text (dot container width + gap)
   },
 });
 
