@@ -132,7 +132,12 @@ const likeComment = async (commentId: string, userId: number): Promise<{ liked: 
 
 const fetchNotifications = async (userId: number): Promise<any[]> => {
   try {
-    const response = await fetch(`${API_BASE}/api/notifications?userId=${userId}`);
+    // Add cache-busting timestamp to always get fresh data
+    const timestamp = Date.now();
+    const response = await fetch(`${API_BASE}/api/notifications?userId=${userId}&_t=${timestamp}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
     if (!response.ok) return [];
     const data = await response.json();
     return Array.isArray(data) ? data : [];
@@ -488,6 +493,7 @@ export default function CommunityPage() {
   // Notifications
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   // userProfile now comes from UserProfileContext
 
@@ -919,13 +925,16 @@ export default function CommunityPage() {
   const loadNotifications = useCallback(async () => {
     const userId = getUserId();
     if (!userId) return;
-    
+
+    setNotificationsLoading(true);
     try {
       const notifs = await fetchNotifications(userId);
       setNotifications(notifs || []);
       setUnreadCount((notifs || []).filter((n: Notification) => !n.isRead).length);
     } catch (error) {
       setNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
     }
   }, [getUserId, fetchNotifications]);
 
@@ -3121,7 +3130,12 @@ export default function CommunityPage() {
           </View>
 
           <ScrollView style={styles.notificationsList}>
-            {notifications.length > 0 ? (
+            {notificationsLoading ? (
+              <View style={styles.emptyNotifications}>
+                <ActivityIndicator size="large" color="#007AFF" />
+                <Text style={[styles.emptyTitle, { marginTop: 12 }]}>Loading...</Text>
+              </View>
+            ) : notifications.length > 0 ? (
               notifications.map((notif) => (
                 <TouchableOpacity
                   key={notif.id}
