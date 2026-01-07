@@ -657,10 +657,12 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Fetch real-time extended hours prices for watchlist, market indices, trending, and stock picks
-  // IMPORTANT: Delayed start to prevent iPad from becoming unresponsive
+  // Extended hours price updates - USE WEBSOCKET, NOT REST API
+  // WebSocket is already subscribed via wsSubscribe calls above
+  // REST API polling DISABLED to stay under 987 credits/min limit
+  // Only fetch ONCE on mount for initial data, then WebSocket handles updates
   useEffect(() => {
-    // Collect all symbols from: market overview, watchlist, trending, and stock picks
+    // Collect all symbols for initial one-time fetch
     const trendingSymbols = trending.map(s => s.symbol).filter(Boolean);
     const stockPicksSymbols = STOCK_PICKS_PREVIEW.map(p => p.symbol);
 
@@ -673,28 +675,22 @@ export default function Dashboard() {
 
     if (allSymbols.length === 0) return;
 
-    // Short delay to let UI render first
+    // ONE-TIME initial fetch only (not continuous polling)
+    // After this, WebSocket provides real-time updates
     const startupDelay = setTimeout(() => {
-      // Initial fetch only during extended hours
       if (isExtendedHours()) {
-        fetchRealTimePrices(allSymbols);
+        // Limit to 20 symbols to conserve API credits
+        fetchRealTimePrices(allSymbols.slice(0, 20));
       }
+    }, 3000);
 
-      // Set up interval for continuous updates during extended hours
-      realTimePriceIntervalRef.current = setInterval(() => {
-        if (isExtendedHours()) {
-          fetchRealTimePrices(allSymbols);
-        }
-      }, 4000); // 4s interval for API calls
-    }, 2000); // 2s delay - let UI render first
+    // NO INTERVAL - WebSocket handles continuous updates
+    // This saves ~700+ API credits/minute
 
     return () => {
       clearTimeout(startupDelay);
-      if (realTimePriceIntervalRef.current) {
-        clearInterval(realTimePriceIntervalRef.current);
-      }
     };
-  }, [watchlist, trending]);
+  }, []);
 
   // Live market indices - updates every 2s from price store for real-time display
   const liveMarketIndices = useMemo(() => {

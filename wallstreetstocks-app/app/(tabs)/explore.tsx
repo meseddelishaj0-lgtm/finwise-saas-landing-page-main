@@ -483,16 +483,11 @@ export default function Explore() {
     };
   }, []);
 
-  // Real-time extended hours price refresh for stocks/ETFs
-  const realTimePriceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
+  // Extended hours price - ONE-TIME fetch only, WebSocket handles continuous updates
+  // REST API polling DISABLED to stay under 987 credits/min limit
   useEffect(() => {
     // Only run for stocks and ETFs tabs
     if (activeTab !== 'stocks' && activeTab !== 'etf') {
-      if (realTimePriceIntervalRef.current) {
-        clearInterval(realTimePriceIntervalRef.current);
-        realTimePriceIntervalRef.current = null;
-      }
       return;
     }
 
@@ -500,27 +495,14 @@ export default function Explore() {
     const symbols = data.map(item => item.symbol).filter(Boolean);
     if (symbols.length === 0) return;
 
-    // Initial fetch during extended hours
+    // ONE-TIME fetch during extended hours (not continuous polling)
+    // WebSocket handles real-time updates after this
     if (isExtendedHours()) {
-      fetchRealTimePrices(symbols);
+      fetchRealTimePrices(symbols.slice(0, 20)); // Limit to 20 symbols
     }
 
-    // Set up interval for continuous updates during extended hours
-    // 49 symbols every 3 seconds = ~980 calls/min (under 987 limit)
-    realTimePriceIntervalRef.current = setInterval(() => {
-      if (isExtendedHours()) {
-        const currentSymbols = data.map(item => item.symbol).filter(Boolean);
-        fetchRealTimePrices(currentSymbols);
-      }
-    }, 3000);
-
-    return () => {
-      if (realTimePriceIntervalRef.current) {
-        clearInterval(realTimePriceIntervalRef.current);
-        realTimePriceIntervalRef.current = null;
-      }
-    };
-  }, [activeTab, data]);
+    // NO INTERVAL - saves ~700+ API credits/minute
+  }, [activeTab]);
 
   const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
   const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || "";
