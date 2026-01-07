@@ -663,19 +663,19 @@ export default function Dashboard() {
   }, [wsConnected, wsSubscribe]);
 
   // ============= REAL-TIME PRICE REFRESH =============
-  // Interval triggers re-render for WebSocket price updates
-  // IMPORTANT: Reduced frequency to prevent iPad from becoming unresponsive
+  // Interval triggers re-render to show WebSocket price updates
+  // Now safe to run fast since we disabled REST API polling
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const realTimePriceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    // Short delay to let UI render, then start price updates
+    // Short delay to let UI render, then start instant price updates
     const startupDelay = setTimeout(() => {
       priceRefreshIntervalRef.current = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 1500); // 1.5s - balance between responsiveness and iPad performance
-    }, 1000); // 1s delay - enough for UI to render
+      }, 250); // 250ms = 4 updates/sec for near-instant WebSocket prices
+    }, 500); // 500ms initial delay
 
     return () => {
       clearTimeout(startupDelay);

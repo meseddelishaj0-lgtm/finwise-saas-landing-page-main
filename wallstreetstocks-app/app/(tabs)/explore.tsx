@@ -467,13 +467,13 @@ export default function Explore() {
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Refresh prices for real-time display - balanced for iPad performance
+  // Refresh prices - fast refresh for instant WebSocket updates
   useEffect(() => {
     const startupDelay = setTimeout(() => {
       priceRefreshIntervalRef.current = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 1500); // 1.5s refresh
-    }, 1000); // 1s delay
+      }, 250); // 250ms = 4 updates/sec for near-instant prices
+    }, 500); // 500ms initial delay
 
     return () => {
       clearTimeout(startupDelay);
