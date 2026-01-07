@@ -1,78 +1,103 @@
 // app/profile/display.tsx
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   SafeAreaView,
   View,
   Text,
-  Switch,
   StyleSheet,
   TouchableOpacity,
-  Appearance,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useColorScheme } from 'react-native';
-
-// Key for saving preference
-const THEME_KEY = 'user-theme-preference';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function Display() {
   const router = useRouter();
-  const systemScheme = Appearance.getColorScheme(); // 'light' or 'dark'
-  const [isDarkMode, setIsDarkMode] = React.useState(systemScheme === 'dark');
+  const { mode, isDark, colors, setMode } = useTheme();
 
-  // Load saved preference on mount
-  useEffect(() => {
-    (async () => {
-      const saved = await AsyncStorage.getItem(THEME_KEY);
-      if (saved !== null) {
-        setIsDarkMode(saved === 'dark');
-      } else {
-        setIsDarkMode(systemScheme === 'dark'); // follow system if no preference
-      }
-    })();
-  }, [systemScheme]);
-
-  // Save preference when toggled
-  const toggleDarkMode = async (value: boolean) => {
-    setIsDarkMode(value);
-    await AsyncStorage.setItem(THEME_KEY, value ? 'dark' : 'light');
-  };
-
-  // Dynamic colors based on current mode
-  const theme = {
-    background: isDarkMode ? '#000' : '#fff',
-    text: isDarkMode ? '#fff' : '#000',
-    subtitle: isDarkMode ? '#aaa' : '#666',
-    border: isDarkMode ? '#333' : '#f0f0f0',
-    headerBorder: isDarkMode ? '#333' : '#f0f0f0',
-  };
+  const themeOptions = [
+    { value: 'light', label: 'Light', icon: 'sunny' },
+    { value: 'dark', label: 'Dark', icon: 'moon' },
+    { value: 'system', label: 'System', icon: 'phone-portrait' },
+  ] as const;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { borderBottomColor: theme.headerBorder }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.text }]}>Display</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Display</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.section}>
-        <View style={[styles.row, { borderBottomColor: theme.border }]}>
-          <View>
-            <Text style={[styles.rowTitle, { color: theme.text }]}>Dark mode</Text>
-            <Text style={[styles.rowSubtitle, { color: theme.subtitle }]}>
-              {isDarkMode ? 'On' : 'Off'} {isDarkMode ? '' : '(follows system)'}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          APPEARANCE
+        </Text>
+
+        {themeOptions.map((option) => (
+          <TouchableOpacity
+            key={option.value}
+            style={[styles.row, { borderBottomColor: colors.borderLight }]}
+            onPress={() => setMode(option.value)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowLeft}>
+              <View style={[
+                styles.iconContainer,
+                { backgroundColor: mode === option.value ? colors.primary + '20' : colors.surface }
+              ]}>
+                <Ionicons
+                  name={option.icon as any}
+                  size={20}
+                  color={mode === option.value ? colors.primary : colors.textSecondary}
+                />
+              </View>
+              <View>
+                <Text style={[styles.rowTitle, { color: colors.text }]}>
+                  {option.label}
+                </Text>
+                {option.value === 'system' && (
+                  <Text style={[styles.rowSubtitle, { color: colors.textTertiary }]}>
+                    Matches your device settings
+                  </Text>
+                )}
+              </View>
+            </View>
+            {mode === option.value && (
+              <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Preview */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          PREVIEW
+        </Text>
+        <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.previewHeader}>
+            <View style={[styles.previewDot, { backgroundColor: colors.primary }]} />
+            <Text style={[styles.previewTitle, { color: colors.text }]}>
+              {isDark ? 'Dark Mode' : 'Light Mode'}
             </Text>
           </View>
-          <Switch
-            value={isDarkMode}
-            onValueChange={toggleDarkMode}
-            trackColor={{ false: '#767577', true: '#1D9BF0' }}
-            thumbColor={isDarkMode ? '#1D9BF0' : '#f4f3f4'}
-          />
+          <Text style={[styles.previewText, { color: colors.textSecondary }]}>
+            This is how your app will look with the current theme setting.
+          </Text>
+          <View style={styles.previewButtons}>
+            <View style={[styles.previewButton, { backgroundColor: colors.primary }]}>
+              <Text style={styles.previewButtonText}>Primary</Text>
+            </View>
+            <View style={[styles.previewButton, { backgroundColor: colors.success }]}>
+              <Text style={styles.previewButtonText}>Success</Text>
+            </View>
+            <View style={[styles.previewButton, { backgroundColor: colors.danger }]}>
+              <Text style={styles.previewButtonText}>Danger</Text>
+            </View>
+          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -97,15 +122,76 @@ const styles = StyleSheet.create({
     right: 0,
     textAlign: 'center',
   },
-  section: { marginTop: 12 },
+  section: {
+    marginTop: 24,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    paddingHorizontal: 20,
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  rowTitle: { fontSize: 16, fontWeight: '600' },
-  rowSubtitle: { fontSize: 13, marginTop: 4 },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rowTitle: { fontSize: 16, fontWeight: '500' },
+  rowSubtitle: { fontSize: 12, marginTop: 2 },
+  previewCard: {
+    marginHorizontal: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  previewDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  previewTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  previewText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  previewButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  previewButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  previewButtonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });

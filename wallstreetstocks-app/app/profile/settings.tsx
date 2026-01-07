@@ -8,7 +8,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';   // ← THIS IS THE FIX
+import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 const settingsItems = [
   { title: 'Personal Info', icon: 'person', route: '/profile/personal-info', color: '#007AFF', bgColor: '#007AFF15' },
@@ -25,18 +26,19 @@ const dangerItems = [
 ];
 
 export default function SettingsScreen() {
-  const router = useRouter();   // ← THIS REPLACES useNavigation
+  const router = useRouter();
+  const { colors } = useTheme();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
         <View style={styles.titleContainer}>
-          <Text style={styles.titleText}>Settings</Text>
+          <Text style={[styles.titleText, { color: colors.text }]}>Settings</Text>
         </View>
 
         <View style={{ width: 24 }} />
@@ -47,7 +49,7 @@ export default function SettingsScreen() {
         {settingsItems.map((item, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.row}
+            style={[styles.row, { borderBottomColor: colors.borderLight }]}
             onPress={() => router.push(item.route as any)}
             activeOpacity={0.7}
           >
@@ -55,19 +57,19 @@ export default function SettingsScreen() {
               <View style={[styles.iconContainer, { backgroundColor: item.bgColor }]}>
                 <Ionicons name={item.icon as any} size={20} color={item.color} />
               </View>
-              <Text style={styles.rowText}>{item.title}</Text>
+              <Text style={[styles.rowText, { color: colors.text }]}>{item.title}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
         ))}
 
         {/* Danger Zone */}
-        <View style={styles.dangerSection}>
-          <Text style={styles.dangerSectionTitle}>Danger Zone</Text>
+        <View style={[styles.dangerSection, { borderTopColor: colors.danger + '20' }]}>
+          <Text style={[styles.dangerSectionTitle, { color: colors.danger }]}>Danger Zone</Text>
           {dangerItems.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.row}
+              style={[styles.row, { borderBottomColor: colors.borderLight }]}
               onPress={() => router.push(item.route as any)}
               activeOpacity={0.7}
             >
@@ -75,43 +77,19 @@ export default function SettingsScreen() {
                 <View style={[styles.iconContainer, { backgroundColor: item.bgColor }]}>
                   <Ionicons name={item.icon as any} size={20} color={item.color} />
                 </View>
-                <Text style={[styles.rowText, { color: '#FF3B30' }]}>{item.title}</Text>
+                <Text style={[styles.rowText, { color: colors.danger }]}>{item.title}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+              <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
             </TouchableOpacity>
           ))}
         </View>
-      </View>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home" size={26} color="#1D9BF0" />
-          <Text style={[styles.navLabel, { color: '#1D9BF0' }]}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="people-outline" size={26} color="#666" />
-          <Text style={styles.navLabel}>Community</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="search-outline" size={26} color="#666" />
-          <Text style={styles.navLabel}>Explore</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="trending-up-outline" size={26} color="#666" />
-          <Text style={styles.navLabel}>Trending</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="notifications-outline" size={26} color="#666" />
-          <Text style={styles.navLabel}>Notifications</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -119,10 +97,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   titleContainer: { flex: 1, alignItems: 'center' },
-  titleText: { fontSize: 18, fontWeight: '600', color: '#000' },
+  titleText: { fontSize: 18, fontWeight: '600' },
   listContainer: { flex: 1, paddingTop: 12 },
   row: {
     flexDirection: 'row',
@@ -131,7 +108,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e5e5',
   },
   rowLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconContainer: {
@@ -141,30 +117,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  rowText: { fontSize: 16, fontWeight: '500', color: '#000' },
+  rowText: { fontSize: 16, fontWeight: '500' },
   dangerSection: {
     marginTop: 32,
     borderTopWidth: 1,
-    borderTopColor: '#FF3B3020',
     paddingTop: 8,
   },
   dangerSectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#FF3B30',
     paddingHorizontal: 20,
     paddingVertical: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
-    backgroundColor: '#fff',
-  },
-  navItem: { alignItems: 'center' },
-  navLabel: { fontSize: 10, marginTop: 4, color: '#666' },
 });

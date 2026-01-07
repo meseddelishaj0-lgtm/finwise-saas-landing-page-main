@@ -13,6 +13,7 @@ import { NotificationProvider } from "../context/NotificationContext";
 import { ReferralProvider, useReferral } from "../context/ReferralContext";
 import { WebSocketProvider } from "../context/WebSocketContext";
 import { PortfolioProvider } from "../context/PortfolioContext";
+import { ThemeProvider } from "../context/ThemeContext";
 import { useAuth } from "@/lib/auth";
 import { preloadAppData } from "../utils/preload";
 
@@ -59,9 +60,10 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <SafeAreaProvider>
-          <SubscriptionProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <SafeAreaProvider>
+            <SubscriptionProvider>
             <ReferralProvider>
               <WatchlistProvider>
                 <PortfolioProvider>
@@ -108,8 +110,9 @@ export default function RootLayout() {
               </WatchlistProvider>
             </ReferralProvider>
           </SubscriptionProvider>
-        </SafeAreaProvider>
-      </QueryClientProvider>
+          </SafeAreaProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
