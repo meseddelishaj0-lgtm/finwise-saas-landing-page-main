@@ -1161,37 +1161,6 @@ export default function ChartTab() {
                 }}
               />
 
-              {/* Live Price Dot - At end of chart line (Robinhood style) */}
-              {liveChartData.length > 0 && (() => {
-                const lastValue = liveChartData[liveChartData.length - 1].value;
-                const yRange = yAxisBounds.max - yAxisBounds.min;
-                const yPercent = (lastValue - yAxisBounds.min) / yRange;
-                const dotY = CHART_HEIGHT * (1 - yPercent);
-
-                // X position: last point is at chartWidth - endSpacing
-                const dotX = SCREEN_WIDTH - 10 - 20; // chartWidth - endSpacing
-
-                return (
-                  <View style={{ position: 'absolute', left: dotX - 10, top: dotY - 10 }}>
-                    {/* Outer pulsing ring */}
-                    <Animated.View
-                      style={[
-                        styles.liveDotOuter,
-                        {
-                          backgroundColor: priceColor + '40',
-                          transform: [{ scale: pulseAnim }],
-                          opacity: pulseAnim.interpolate({
-                            inputRange: [1, 1.3],
-                            outputRange: [0.8, 0.2],
-                          }),
-                        }
-                      ]}
-                    />
-                    {/* Inner solid dot */}
-                    <View style={[styles.liveDotInner, { backgroundColor: priceColor }]} />
-                  </View>
-                );
-              })()}
             </View>
           ) : (
             <View style={styles.noDataContainer}>
@@ -1441,8 +1410,6 @@ const styles = StyleSheet.create({
   marketStatusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6, backgroundColor: '#8E8E93' },
   marketStatusText: { fontSize: 11, fontWeight: '600', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  // Live Price Dot (Robinhood style)
+  // Live indicator dot (header)
   liveDot: { position: 'absolute', width: 12, height: 12, borderRadius: 6 },
-  liveDotOuter: { position: 'absolute', width: 20, height: 20, borderRadius: 10 },
-  liveDotInner: { position: 'absolute', top: 6, left: 6, width: 8, height: 8, borderRadius: 4 },
 });
