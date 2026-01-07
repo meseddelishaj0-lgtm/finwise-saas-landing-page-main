@@ -49,11 +49,8 @@ export async function preloadPopularStocks(): Promise<void> {
     // Check if we should preload
     const shouldRun = await shouldPreload();
     if (!shouldRun) {
-      console.log('Skipping preload - too recent');
       return;
     }
-
-    console.log('Pre-loading popular stocks...');
 
     // Fetch all quotes in one batch call
     const symbolsParam = POPULAR_SYMBOLS.join(',');
@@ -62,14 +59,12 @@ export async function preloadPopularStocks(): Promise<void> {
     );
 
     if (!res.ok) {
-      console.warn('Preload fetch failed:', res.status);
       return;
     }
 
     const quotes: Quote[] = await res.json();
 
     if (!Array.isArray(quotes) || quotes.length === 0) {
-      console.warn('No quotes received for preload');
       return;
     }
 
@@ -94,10 +89,8 @@ export async function preloadPopularStocks(): Promise<void> {
 
     // Update last preload time
     await AsyncStorage.setItem(PRELOAD_KEY, Date.now().toString());
-
-    console.log(`Pre-loaded ${quotes.length} popular stocks`);
   } catch (err) {
-    console.warn('Preload error (non-critical):', err);
+    // Silently handle preload errors
   }
 }
 
@@ -148,24 +141,35 @@ export async function preloadTrendingStocks(): Promise<void> {
     );
 
     await Promise.all(cachePromises);
-    console.log(`Pre-loaded ${uniqueSymbols.length} trending stocks`);
   } catch (err) {
-    console.warn('Trending preload error (non-critical):', err);
+    // Silently handle trending preload errors
   }
 }
 
 // Main preload function - call this on app startup
+// IMPORTANT: This function now runs in the background without blocking
 export async function preloadAppData(): Promise<void> {
-  // Import market data service dynamically to avoid circular deps
-  const { marketDataService } = await import('../services/marketDataService');
+  // Delay heavy loading to let the UI render first
+  // This prevents the app from becoming unresponsive on startup
+  setTimeout(async () => {
+    try {
+      // Import market data service dynamically to avoid circular deps
+      const { marketDataService } = await import('../services/marketDataService');
 
-  // Initialize market data service first (Robinhood-style pre-loading)
-  // This loads ALL stocks, crypto, ETFs for instant tab switching
-  marketDataService.initialize();
+      // Initialize market data service (Robinhood-style pre-loading)
+      // This loads stocks, crypto, ETFs for instant tab switching
+      marketDataService.initialize();
 
-  // Run legacy preloads in parallel (for backwards compatibility)
-  await Promise.all([
-    preloadPopularStocks(),
-    preloadTrendingStocks(),
-  ]);
+      // Run legacy preloads SEQUENTIALLY to avoid overwhelming the device
+      // Wait between each to prevent network/CPU overload
+      await preloadPopularStocks();
+
+      // Small delay between API calls
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      await preloadTrendingStocks();
+    } catch (err) {
+      // Silently handle errors - preload is non-critical
+    }
+  }, 2000); // 2 second delay after app start
 }

@@ -69,13 +69,6 @@ export default function Login() {
       })
     : [null, null, async () => {}];
 
-  // Debug: Log the redirect URI being used (iOS)
-  useEffect(() => {
-    if (request && Platform.OS === 'ios') {
-      console.log('🔑 Google Auth Redirect URI:', request.redirectUri);
-    }
-  }, [request]);
-
   // Handle iOS Google Sign-In response
   useEffect(() => {
     if (response?.type === 'success' && Platform.OS === 'ios') {
@@ -89,8 +82,6 @@ export default function Login() {
     try {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
-
-      console.log('🔑 Android Google Sign-In success:', userInfo.data?.user.email);
 
       // Get user details and call socialLogin
       const user = userInfo.data?.user;

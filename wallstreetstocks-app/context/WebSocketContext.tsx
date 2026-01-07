@@ -57,14 +57,15 @@ export function WebSocketProvider({
     initializedRef.current = true;
 
     if (autoConnect) {
-      // Connect after a short delay to let app initialize
+      // Connect after a longer delay to let app fully initialize and render
+      // This prevents the app from becoming unresponsive on iPad
       const timeout = setTimeout(() => {
         if (initialSymbols.length > 0) {
           websocketService.subscribe(initialSymbols);
         } else {
           websocketService.connect();
         }
-      }, 1000);
+      }, 4000); // Increased from 1s to 4s
 
       return () => clearTimeout(timeout);
     }
@@ -120,8 +121,7 @@ export function useWebSocket() {
 
 // Hook to subscribe to symbols when component mounts
 export function useSubscribe(symbols: string | string[]) {
-  const { subscribe, unsubscribe } = useWebSocket();
-  const symbolsRef = useRef<string[]>([]);
+  const { subscribe } = useWebSocket();
 
   useEffect(() => {
     const symbolArray = Array.isArray(symbols) ? symbols : [symbols];
@@ -131,14 +131,6 @@ export function useSubscribe(symbols: string | string[]) {
 
     // Subscribe to new symbols
     subscribe(validSymbols);
-    symbolsRef.current = validSymbols;
-
-    // Unsubscribe when component unmounts
-    return () => {
-      // Don't unsubscribe - keep prices streaming
-      // Other components might still need them
-      // unsubscribe(symbolsRef.current);
-    };
   }, [Array.isArray(symbols) ? symbols.join(',') : symbols, subscribe]);
 }
 

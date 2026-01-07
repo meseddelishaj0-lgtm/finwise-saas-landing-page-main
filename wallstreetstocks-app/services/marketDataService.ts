@@ -94,23 +94,25 @@ const fetchBatchQuotes = async (symbols: string[]): Promise<any[]> => {
     const batchSize = 8;
     const allResults: any[] = [];
 
-    // Fetch in parallel batches
-    const batchPromises: Promise<any[]>[] = [];
+    // Fetch batches SEQUENTIALLY to avoid overwhelming the device
+    // This prevents the app from becoming unresponsive
     for (let i = 0; i < symbols.length; i += batchSize) {
       const batch = symbols.slice(i, i + batchSize);
       const url = `${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`;
 
-      batchPromises.push(
-        fetch(url)
-          .then(res => res.json())
-          .then(json => batch.length === 1 ? [json] : Object.values(json))
-          .catch(() => [])
-      );
-    }
+      try {
+        const res = await fetch(url);
+        const json = await res.json();
+        const results = batch.length === 1 ? [json] : Object.values(json);
+        allResults.push(...(results as any[]));
 
-    const batchResults = await Promise.all(batchPromises);
-    for (const results of batchResults) {
-      allResults.push(...(results as any[]));
+        // Small delay between batches to prevent overwhelming the device
+        if (i + batchSize < symbols.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch {
+        // Continue with next batch on error
+      }
     }
 
     return allResults.filter(item => item && item.symbol && !item.code);
@@ -197,13 +199,15 @@ const loadFromStorage = async (): Promise<boolean> => {
 // ============================================================================
 
 const fetchAllData = async () => {
+  // Fetch data SEQUENTIALLY to prevent overwhelming the device
+  // This is critical for iPad performance on startup
+  const stockQuotes = await fetchBatchQuotes(ALL_STOCKS);
+  await new Promise(resolve => setTimeout(resolve, 300)); // Brief pause
 
-  // Fetch all in parallel
-  const [stockQuotes, cryptoQuotes, etfQuotes] = await Promise.all([
-    fetchBatchQuotes(ALL_STOCKS),
-    fetchBatchQuotes(ALL_CRYPTO),
-    fetchBatchQuotes(ALL_ETFS),
-  ]);
+  const cryptoQuotes = await fetchBatchQuotes(ALL_CRYPTO);
+  await new Promise(resolve => setTimeout(resolve, 300)); // Brief pause
+
+  const etfQuotes = await fetchBatchQuotes(ALL_ETFS);
 
   // Process and store
   marketData.stocks = stockQuotes.map(q => processQuoteData(q, 'stock'));
@@ -247,14 +251,17 @@ const fetchAllData = async () => {
 };
 
 const subscribeToWebSocket = () => {
-  // Get all symbols for WebSocket subscription
-  const stockSymbols = ALL_STOCKS.slice(0, 20); // Top 20 stocks
-  const cryptoSymbols = ALL_CRYPTO.slice(0, 10); // Top 10 crypto (keep slash format for WebSocket)
-  const etfSymbols = ALL_ETFS.slice(0, 10); // Top 10 ETFs
+  // Delay WebSocket subscription to prevent overwhelming the device at startup
+  setTimeout(() => {
+    // Get symbols for WebSocket subscription - reduced count for better performance
+    const stockSymbols = ALL_STOCKS.slice(0, 10); // Top 10 stocks (reduced from 20)
+    const cryptoSymbols = ALL_CRYPTO.slice(0, 5); // Top 5 crypto (reduced from 10)
+    const etfSymbols = ALL_ETFS.slice(0, 5); // Top 5 ETFs (reduced from 10)
 
-  const allSymbols = [...stockSymbols, ...cryptoSymbols, ...etfSymbols];
+    const allSymbols = [...stockSymbols, ...cryptoSymbols, ...etfSymbols];
 
-  websocketService.subscribe(allSymbols);
+    websocketService.subscribe(allSymbols);
+  }, 3000); // 3 second delay
 };
 
 // ============================================================================
