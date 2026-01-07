@@ -1,23 +1,29 @@
 // app/index.tsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useRootNavigationState } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 
 export default function Index() {
   const router = useRouter();
+  const navigationState = useRootNavigationState();
   const { user, token, loading } = useAuth();
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   // Check for existing session and redirect if logged in
   useEffect(() => {
-    if (!loading && user && token) {
+    // Wait for navigation to be ready
+    if (!navigationState?.key) return;
+
+    if (!loading && user && token && !hasNavigated) {
       // User is already logged in, go to main app
+      setHasNavigated(true);
       router.replace('/(tabs)');
     }
-  }, [user, token, loading]);
+  }, [user, token, loading, navigationState?.key, hasNavigated]);
 
-  // Show loading while checking auth state
-  if (loading) {
+  // Show loading while checking auth state or waiting for navigation
+  if (loading || !navigationState?.key) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
         <Image source={require('../assets/images/wallstreetstocks.png')} style={styles.logo} />
