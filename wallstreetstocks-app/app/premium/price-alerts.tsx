@@ -17,6 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { priceStore } from '@/stores/priceStore';
+import { useWebSocket } from '@/context/WebSocketContext';
 
 interface PriceAlert {
   id: string;
@@ -29,16 +31,18 @@ interface PriceAlert {
   currentPrice?: number;
 }
 
-const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
+// NO API KEY NEEDED - Using WebSocket via priceStore
 
 export default function PriceAlertsScreen() {
   const { canAccess } = usePremiumFeature();
+  const { subscribe: wsSubscribe } = useWebSocket();
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newSymbol, setNewSymbol] = useState('');
   const [newPrice, setNewPrice] = useState('');
   const [newCondition, setNewCondition] = useState<'above' | 'below'>('above');
   const [loading, setLoading] = useState(true);
+  const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
 
   // Redirect to paywall if user doesn't have access
   useEffect(() => {
@@ -52,11 +56,19 @@ export default function PriceAlertsScreen() {
     loadAlerts();
   }, []);
 
-  // Periodically check prices
+  // Subscribe to WebSocket for alert symbols
+  useEffect(() => {
+    if (alerts.length === 0) return;
+    const symbols = [...new Set(alerts.map(a => a.symbol))];
+    wsSubscribe(symbols);
+  }, [alerts, wsSubscribe]);
+
+  // Check prices from WebSocket store (NO API calls)
   useEffect(() => {
     const interval = setInterval(() => {
-      updatePrices();
-    }, 30000); // Check every 30 seconds
+      setPriceUpdateTrigger(prev => prev + 1);
+      updatePricesFromStore();
+    }, 1000); // Check every 1 second (uses WebSocket data, no API)
 
     return () => clearInterval(interval);
   }, [alerts]);
@@ -68,9 +80,7 @@ export default function PriceAlertsScreen() {
         setAlerts(JSON.parse(stored));
       }
       setLoading(false);
-      updatePrices();
     } catch (err) {
-      
       setLoading(false);
     }
   };
@@ -80,60 +90,51 @@ export default function PriceAlertsScreen() {
       await AsyncStorage.setItem('priceAlerts', JSON.stringify(newAlerts));
       setAlerts(newAlerts);
     } catch (err) {
-      
+      // Save error
     }
   };
 
-  const updatePrices = async () => {
+  // Get prices from WebSocket store - NO API CALLS
+  const updatePricesFromStore = () => {
     if (alerts.length === 0) return;
 
-    const symbols = [...new Set(alerts.map(a => a.symbol))];
+    const updatedAlerts = alerts.map(alert => {
+      const quote = priceStore.getQuote(alert.symbol);
+      const currentPrice = quote?.price;
 
-    try {
-      const response = await fetch(
-        `https://financialmodelingprep.com/api/v3/quote/${symbols.join(',')}?apikey=${FMP_API_KEY}`
-      );
-      const data = await response.json();
+      if (currentPrice && currentPrice > 0) {
+        const wasTriggered = alert.triggered;
+        const isNowTriggered = alert.condition === 'above'
+          ? currentPrice >= alert.targetPrice
+          : currentPrice <= alert.targetPrice;
 
-      if (Array.isArray(data)) {
-        const priceMap: Record<string, number> = {};
-        data.forEach((quote: any) => {
-          priceMap[quote.symbol] = quote.price;
-        });
+        // Notify if newly triggered
+        if (!wasTriggered && isNowTriggered && alert.enabled) {
+          Alert.alert(
+            'Price Alert Triggered!',
+            `${alert.symbol} is now ${alert.condition === 'above' ? 'above' : 'below'} $${alert.targetPrice.toFixed(2)}\nCurrent price: $${currentPrice.toFixed(2)}`
+          );
+        }
 
-        const updatedAlerts = alerts.map(alert => {
-          const currentPrice = priceMap[alert.symbol];
-          if (currentPrice) {
-            const wasTriggered = alert.triggered;
-            const isNowTriggered = alert.condition === 'above'
-              ? currentPrice >= alert.targetPrice
-              : currentPrice <= alert.targetPrice;
-
-            // Notify if newly triggered
-            if (!wasTriggered && isNowTriggered && alert.enabled) {
-              Alert.alert(
-                'Price Alert Triggered!',
-                `${alert.symbol} is now ${alert.condition === 'above' ? 'above' : 'below'} $${alert.targetPrice.toFixed(2)}\nCurrent price: $${currentPrice.toFixed(2)}`
-              );
-            }
-
-            return {
-              ...alert,
-              currentPrice,
-              triggered: isNowTriggered,
-            };
-          }
-          return alert;
-        });
-
-        saveAlerts(updatedAlerts);
+        return {
+          ...alert,
+          currentPrice,
+          triggered: isNowTriggered,
+        };
       }
-    } catch (err) {
-      
+      return alert;
+    });
+
+    // Only save if prices actually changed
+    const hasChanges = updatedAlerts.some((alert, i) =>
+      alert.currentPrice !== alerts[i]?.currentPrice || alert.triggered !== alerts[i]?.triggered
+    );
+    if (hasChanges) {
+      saveAlerts(updatedAlerts);
     }
   };
 
-  const createAlert = async () => {
+  const createAlert = () => {
     if (!newSymbol.trim() || !newPrice.trim()) {
       Alert.alert('Error', 'Please enter a symbol and target price');
       return;
@@ -145,39 +146,31 @@ export default function PriceAlertsScreen() {
       return;
     }
 
-    // Fetch current price
-    try {
-      const response = await fetch(
-        `https://financialmodelingprep.com/api/v3/quote/${newSymbol.toUpperCase()}?apikey=${FMP_API_KEY}`
-      );
-      const data = await response.json();
+    const symbol = newSymbol.toUpperCase();
 
-      if (!data || !Array.isArray(data) || data.length === 0) {
-        Alert.alert('Error', `Symbol ${newSymbol.toUpperCase()} not found`);
-        return;
-      }
+    // Get current price from WebSocket store (if available)
+    const quote = priceStore.getQuote(symbol);
+    const currentPrice = quote?.price;
 
-      const currentPrice = data[0].price;
+    // Subscribe to WebSocket for this symbol
+    wsSubscribe([symbol]);
 
-      const newAlert: PriceAlert = {
-        id: Date.now().toString(),
-        symbol: newSymbol.toUpperCase(),
-        targetPrice,
-        condition: newCondition,
-        enabled: true,
-        createdAt: new Date().toISOString(),
-        triggered: false,
-        currentPrice,
-      };
+    const newAlert: PriceAlert = {
+      id: Date.now().toString(),
+      symbol,
+      targetPrice,
+      condition: newCondition,
+      enabled: true,
+      createdAt: new Date().toISOString(),
+      triggered: false,
+      currentPrice: currentPrice || undefined,
+    };
 
-      saveAlerts([newAlert, ...alerts]);
-      setShowCreateModal(false);
-      setNewSymbol('');
-      setNewPrice('');
-      setNewCondition('above');
-    } catch (err) {
-      Alert.alert('Error', 'Failed to create alert. Please try again.');
-    }
+    saveAlerts([newAlert, ...alerts]);
+    setShowCreateModal(false);
+    setNewSymbol('');
+    setNewPrice('');
+    setNewCondition('above');
   };
 
   const toggleAlert = (id: string) => {

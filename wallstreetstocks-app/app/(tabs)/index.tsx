@@ -1837,7 +1837,8 @@ export default function Dashboard() {
     };
   }, [holdingsInitialized, contextWatchlistLoading]);
 
-  // Smart polling - only poll when app is active (saves battery)
+  // NO API POLLING - WebSocket handles all real-time price updates
+  // This interval only updates the timestamp display, no API calls
   useEffect(() => {
     if (!holdingsInitialized || contextWatchlistLoading) return;
 
@@ -1847,14 +1848,11 @@ export default function Dashboard() {
       pollingIntervalRef.current = null;
     }
 
-    // Only start polling if app is active
+    // Only update timestamp when app is active (no API calls)
     if (isAppActive) {
       pollingIntervalRef.current = setInterval(() => {
-        setLastUpdated(new Date()); // Update timestamp on each refresh
-        Promise.all([
-        ]);
-      }, 15000); // 15 seconds for near real-time prices
-    } else {
+        setLastUpdated(new Date()); // Just update timestamp display
+      }, 30000); // Every 30 seconds
     }
 
     return () => {

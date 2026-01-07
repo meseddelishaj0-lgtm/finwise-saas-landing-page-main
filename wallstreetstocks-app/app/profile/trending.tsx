@@ -58,11 +58,11 @@ export default function Trending() {
     };
 
     fetchTrending();
-    const interval = setInterval(fetchTrending, 5 * 60 * 1000); // every 5 mins
+    // NO POLLING - fetch once on mount only
+    // Pull-to-refresh can be added if needed
 
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
   }, [FMP_API_KEY]);
 
