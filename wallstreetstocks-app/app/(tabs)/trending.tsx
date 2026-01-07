@@ -725,20 +725,22 @@ export default function Trending() {
     }
   }, [data, activeTab, wsConnected, wsSubscribe, wsUnsubscribe]);
 
-  // Main tab switching - INSTANT with cache, NO clearing
+  // Main tab switching - ALWAYS fetch fresh data (gainers/losers change frequently)
   useEffect(() => {
     const cached = tabDataCache.current[activeTab];
 
-    // INSTANT: Show cached data without clearing first (prevents flash)
+    // CLEAR old data first to prevent showing wrong tab's data
+    setData([]);
+
+    // Show cached data temporarily while fetching (prevents empty screen)
     if (cached && cached.data.length > 0) {
       setData(cached.data);
       setLoading(false);
-      return;
+    } else {
+      setLoading(true);
     }
 
-    // No cache - fetch fresh data
-    setLoading(true);
-    setData([]); // Only clear if no cache
+    // ALWAYS fetch fresh data - gainers/losers/trending change frequently
     fetchLiveData();
     fetchHeaderCards();
   }, [activeTab]);
