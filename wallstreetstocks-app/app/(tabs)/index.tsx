@@ -669,21 +669,33 @@ export default function Dashboard() {
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const realTimePriceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    // Short delay to let UI render, then start instant price updates
-    const startupDelay = setTimeout(() => {
-      priceRefreshIntervalRef.current = setInterval(() => {
-        setPriceUpdateTrigger(prev => prev + 1);
-      }, 250); // 250ms = 4 updates/sec for near-instant WebSocket prices
-    }, 500); // 500ms initial delay
-
-    return () => {
-      clearTimeout(startupDelay);
+  // Use useFocusEffect to restart price updates when tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      // Clear any existing interval first
       if (priceRefreshIntervalRef.current) {
         clearInterval(priceRefreshIntervalRef.current);
       }
-    };
-  }, []);
+
+      // Start instant price updates
+      priceRefreshIntervalRef.current = setInterval(() => {
+        setPriceUpdateTrigger(prev => prev + 1);
+      }, 250); // 250ms = 4 updates/sec for near-instant WebSocket prices
+
+      // Also re-subscribe to WebSocket when tab is focused
+      if (wsConnected) {
+        wsSubscribe(MARKET_INDICES_SYMBOLS);
+        wsSubscribe(POPULAR_STOCKS_WS);
+      }
+
+      return () => {
+        if (priceRefreshIntervalRef.current) {
+          clearInterval(priceRefreshIntervalRef.current);
+          priceRefreshIntervalRef.current = null;
+        }
+      };
+    }, [wsConnected, wsSubscribe])
+  );
 
   // Extended hours price updates - USE WEBSOCKET, NOT REST API
   // WebSocket is already subscribed via wsSubscribe calls above
