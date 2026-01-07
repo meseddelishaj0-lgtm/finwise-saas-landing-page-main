@@ -699,17 +699,43 @@ export default function Trending() {
   useEffect(() => {
     const cached = tabDataCache.current[activeTab];
 
-    // INSTANT TAB SWITCHING: Show cached data immediately
+    // CLEAR stale data immediately to prevent showing wrong tab's data
+    setData([]);
+
+    // INSTANT TAB SWITCHING: Show cached data immediately if available
     if (cached && cached.data.length > 0) {
-      setData(cached.data);
-      setLoading(false);
-      // WebSocket handles real-time updates - NO API call needed!
-    } else {
-      // Only fetch from API if no cache (first time visiting tab)
-      setLoading(true);
-      fetchLiveData();
-      fetchHeaderCards();
+      // Validate cache matches current tab type
+      const firstItem = cached.data[0];
+      let isValidCache = true;
+
+      if (activeTab === "forex") {
+        // Forex pairs contain / like EUR/USD
+        isValidCache = firstItem.symbol?.includes('/') && firstItem.symbol?.length === 7;
+      } else if (activeTab === "commodities") {
+        // Commodities have specific symbols like XAU/USD or CL1
+        isValidCache = COMMODITIES_SYMBOLS.includes(firstItem.symbol);
+      } else if (activeTab === "indices") {
+        // Indices have specific ETF symbols like SPY, QQQ
+        isValidCache = INDICES_SYMBOLS.includes(firstItem.symbol);
+      } else {
+        // Stock tabs (trending/gainers/losers) - shouldn't be forex/commodities/indices
+        isValidCache = !firstItem.symbol?.includes('/') &&
+                       !COMMODITIES_SYMBOLS.includes(firstItem.symbol) &&
+                       !INDICES_SYMBOLS.includes(firstItem.symbol);
+      }
+
+      if (isValidCache) {
+        setData(cached.data);
+        setLoading(false);
+        // WebSocket handles real-time updates - NO API call needed!
+        return;
+      }
     }
+
+    // Only fetch from API if no valid cache (first time visiting tab)
+    setLoading(true);
+    fetchLiveData();
+    fetchHeaderCards();
 
     // NO POLLING INTERVAL - WebSocket handles all real-time updates
     // This saves API credits and makes tab switching instant

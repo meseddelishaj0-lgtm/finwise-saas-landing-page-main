@@ -1273,18 +1273,40 @@ export default function Explore() {
     // Reset WebSocket subscription tracking
     lastSubscribedTabRef.current = '';
 
-    // INSTANT TAB SWITCHING: Show cached data immediately
+    // CLEAR stale data immediately to prevent showing wrong tab's data
+    setData([]);
+    setHeaderCards([]);
+
+    // INSTANT TAB SWITCHING: Show cached data immediately if available
     if (cached && cached.data.length > 0) {
-      setData(cached.data);
-      setHeaderCards(cached.headerCards);
-      setLoading(false);
-      // WebSocket handles real-time updates - NO API call needed!
-    } else {
-      // Only fetch from API if no cache (first time visiting tab)
-      setLoading(true);
-      fetchLiveData();
-      fetchHeaderCards();
+      // Validate cache matches current tab type
+      const firstItem = cached.data[0];
+      let isValidCache = true;
+
+      if (activeTab === "crypto") {
+        // Crypto symbols should end in USD or contain /
+        isValidCache = firstItem.symbol?.endsWith('USD') || firstItem.symbol?.includes('/') || firstItem.type === 'crypto';
+      } else if (activeTab === "etf") {
+        // ETFs shouldn't be crypto
+        isValidCache = !firstItem.symbol?.endsWith('USD') || firstItem.symbol?.length > 7;
+      } else if (activeTab === "stocks") {
+        // Stocks shouldn't be crypto
+        isValidCache = !firstItem.symbol?.endsWith('USD') || firstItem.symbol?.length > 7;
+      }
+
+      if (isValidCache) {
+        setData(cached.data);
+        setHeaderCards(cached.headerCards);
+        setLoading(false);
+        // WebSocket handles real-time updates - NO API call needed!
+        return;
+      }
     }
+
+    // Only fetch from API if no valid cache (first time visiting tab)
+    setLoading(true);
+    fetchLiveData();
+    fetchHeaderCards();
 
     // NO POLLING INTERVAL - WebSocket handles all real-time updates
     // This saves 100+ API credits/minute and makes tab switching instant
