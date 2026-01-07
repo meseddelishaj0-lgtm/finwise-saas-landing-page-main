@@ -29,6 +29,39 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
 const STOCK_ROW_HEIGHT = 76; // Fixed row height for getItemLayout optimization
 
+// ============================================================================
+// CONSTANTS - Moved outside component for performance
+// ============================================================================
+
+// Index-tracking ETFs (more reliable than actual index symbols)
+const INDICES_SYMBOLS = [
+  "SPY", "QQQ", "DIA", "IWM", "VXX", "EFA", "EEM", "GLD", "TLT", "XLF", "XLE", "XLK",
+];
+
+// Forex pairs for Twelve Data (format: XXX/YYY)
+const FOREX_PAIRS = [
+  "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD",
+  "EUR/GBP", "EUR/JPY", "EUR/CHF", "EUR/AUD", "EUR/CAD",
+  "GBP/JPY", "GBP/CHF", "GBP/AUD",
+  "AUD/JPY", "CAD/JPY", "NZD/JPY",
+  "AUD/CAD", "AUD/CHF", "AUD/NZD",
+];
+
+// Commodities for Twelve Data
+const COMMODITIES_SYMBOLS = [
+  "XAU/USD", "XAG/USD", "XPT/USD", "XPD/USD",
+  "CL1", "CO1", "NG1",
+  "ZC1", "ZS1", "ZW1", "KC1", "CC1", "SB1", "CT1",
+  "HG1",
+];
+
+// Map tab to WebSocket symbols for INSTANT subscription
+const TAB_WS_SYMBOLS: Record<string, string[]> = {
+  indices: INDICES_SYMBOLS,
+  forex: FOREX_PAIRS,
+  commodities: COMMODITIES_SYMBOLS,
+};
+
 // WebSocket handles all real-time prices - no API polling needed
 
 // Check if currently in extended hours (premarket 4AM-9:30AM or after-hours 4PM-8PM ET)
@@ -246,54 +279,6 @@ export default function Trending() {
 
   const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
   const TWELVE_DATA_URL = "https://api.twelvedata.com";
-
-  // Index-tracking ETFs (more reliable than actual index symbols)
-  const INDICES_SYMBOLS = [
-    "SPY",      // S&P 500 ETF
-    "QQQ",      // Nasdaq 100 ETF
-    "DIA",      // Dow Jones ETF
-    "IWM",      // Russell 2000 ETF
-    "VXX",      // VIX Short-Term Futures ETF
-    "EFA",      // International Developed Markets ETF
-    "EEM",      // Emerging Markets ETF
-    "GLD",      // Gold ETF
-    "TLT",      // 20+ Year Treasury Bond ETF
-    "XLF",      // Financial Sector ETF
-    "XLE",      // Energy Sector ETF
-    "XLK",      // Technology Sector ETF
-  ];
-
-  // Forex pairs for Twelve Data (format: XXX/YYY)
-  const FOREX_PAIRS = [
-    "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD",
-    "EUR/GBP", "EUR/JPY", "EUR/CHF", "EUR/AUD", "EUR/CAD",
-    "GBP/JPY", "GBP/CHF", "GBP/AUD",
-    "AUD/JPY", "CAD/JPY", "NZD/JPY",
-    "AUD/CAD", "AUD/CHF", "AUD/NZD",
-  ];
-
-  // Commodities for Twelve Data (Precious Metals, Energy, Agricultural)
-  const COMMODITIES_SYMBOLS = [
-    // Precious Metals
-    "XAU/USD",   // Gold Spot
-    "XAG/USD",   // Silver Spot
-    "XPT/USD",   // Platinum Spot
-    "XPD/USD",   // Palladium Spot
-    // Energy
-    "CL1",       // Crude Oil (WTI) Futures
-    "CO1",       // Brent Crude Futures
-    "NG1",       // Natural Gas Futures
-    // Agricultural
-    "ZC1",       // Corn Futures
-    "ZS1",       // Soybeans Futures
-    "ZW1",       // Wheat Futures
-    "KC1",       // Coffee Futures
-    "CC1",       // Cocoa Futures
-    "SB1",       // Sugar Futures
-    "CT1",       // Cotton Futures
-    // Industrial Metals
-    "HG1",       // Copper Futures
-  ];
 
   // Top stocks for market movers (used for trending/gainers/losers)
   const TOP_STOCKS = [
@@ -695,120 +680,145 @@ export default function Trending() {
     prefetchTabs();
   }, []);
 
-  // Main tab switching effect - INSTANT tab switching with cache + WebSocket
+  // ============================================================================
+  // OPTIMIZED TAB SWITCHING - Instant + Smooth
+  // ============================================================================
+
+  // Subscribe to WebSocket IMMEDIATELY on tab switch (don't wait for data)
   useEffect(() => {
-    const cached = tabDataCache.current[activeTab];
+    if (!wsConnected) return;
 
-    // CLEAR stale data immediately to prevent showing wrong tab's data
-    setData([]);
+    // Get symbols for this tab - for known tabs use predefined list
+    const predefinedSymbols = TAB_WS_SYMBOLS[activeTab];
 
-    // INSTANT TAB SWITCHING: Show cached data immediately if available
-    if (cached && cached.data.length > 0) {
-      // Validate cache matches current tab type
-      const firstItem = cached.data[0];
-      let isValidCache = true;
-
-      if (activeTab === "forex") {
-        // Forex pairs contain / like EUR/USD
-        isValidCache = firstItem.symbol?.includes('/') && firstItem.symbol?.length === 7;
-      } else if (activeTab === "commodities") {
-        // Commodities have specific symbols like XAU/USD or CL1
-        isValidCache = COMMODITIES_SYMBOLS.includes(firstItem.symbol);
-      } else if (activeTab === "indices") {
-        // Indices have specific ETF symbols like SPY, QQQ
-        isValidCache = INDICES_SYMBOLS.includes(firstItem.symbol);
-      } else {
-        // Stock tabs (trending/gainers/losers) - shouldn't be forex/commodities/indices
-        isValidCache = !firstItem.symbol?.includes('/') &&
-                       !COMMODITIES_SYMBOLS.includes(firstItem.symbol) &&
-                       !INDICES_SYMBOLS.includes(firstItem.symbol);
-      }
-
-      if (isValidCache) {
-        setData(cached.data);
-        setLoading(false);
-        // WebSocket handles real-time updates - NO API call needed!
-        return;
-      }
+    // Unsubscribe from previous symbols first
+    if (wsSubscribedRef.current.length > 0) {
+      wsUnsubscribe(wsSubscribedRef.current);
+      wsSubscribedRef.current = [];
     }
 
-    // Only fetch from API if no valid cache (first time visiting tab)
-    setLoading(true);
-    fetchLiveData();
-    fetchHeaderCards();
+    // Subscribe to predefined symbols immediately (forex, commodities, indices)
+    if (predefinedSymbols && predefinedSymbols.length > 0) {
+      wsSubscribe(predefinedSymbols);
+      wsSubscribedRef.current = predefinedSymbols;
+    }
+  }, [activeTab, wsConnected, wsSubscribe, wsUnsubscribe]);
 
-    // NO POLLING INTERVAL - WebSocket handles all real-time updates
-    // This saves API credits and makes tab switching instant
-  }, [activeTab]);
-
-  // NO focus refresh needed - WebSocket provides real-time updates
-
-  // WebSocket subscription for all tabs real-time streaming
+  // Subscribe to stock symbols when data loads (for trending/gainers/losers)
   useEffect(() => {
     if (!wsConnected) return;
     if (data.length === 0) return;
 
-    let symbolsToSubscribe: string[] = [];
+    // Only for stock tabs - predefined tabs already subscribed above
+    if (TAB_WS_SYMBOLS[activeTab]) return;
 
-    if (activeTab === "forex") {
-      symbolsToSubscribe = FOREX_PAIRS;
-    } else if (activeTab === "commodities") {
-      symbolsToSubscribe = COMMODITIES_SYMBOLS;
-    } else if (activeTab === "indices") {
-      symbolsToSubscribe = INDICES_SYMBOLS;
-    } else {
-      // For trending/gainers/losers - subscribe to ALL loaded stock symbols
-      // Pro plan: 1000 WS credits - MAX_SYMBOLS=800, plenty of room!
-      symbolsToSubscribe = data.map(item => item.symbol).filter(Boolean).slice(0, 200);
-    }
+    const stockSymbols = data.map(item => item.symbol).filter(Boolean).slice(0, 200);
 
-    // Unsubscribe from previous symbols
+    // Unsubscribe from old and subscribe to new
     if (wsSubscribedRef.current.length > 0) {
       wsUnsubscribe(wsSubscribedRef.current);
     }
 
-    // Subscribe to new symbols
-    if (symbolsToSubscribe.length > 0) {
-      wsSubscribe(symbolsToSubscribe);
-      wsSubscribedRef.current = symbolsToSubscribe;
+    if (stockSymbols.length > 0) {
+      wsSubscribe(stockSymbols);
+      wsSubscribedRef.current = stockSymbols;
+    }
+  }, [data, activeTab, wsConnected, wsSubscribe, wsUnsubscribe]);
+
+  // Main tab switching - INSTANT with cache, NO clearing
+  useEffect(() => {
+    const cached = tabDataCache.current[activeTab];
+
+    // INSTANT: Show cached data without clearing first (prevents flash)
+    if (cached && cached.data.length > 0) {
+      setData(cached.data);
+      setLoading(false);
+      return;
     }
 
+    // No cache - fetch fresh data
+    setLoading(true);
+    setData([]); // Only clear if no cache
+    fetchLiveData();
+    fetchHeaderCards();
+  }, [activeTab]);
+
+  // Re-subscribe when returning to screen
+  useFocusEffect(
+    useCallback(() => {
+      if (!wsConnected) return;
+
+      // Re-subscribe to current tab's symbols
+      const predefinedSymbols = TAB_WS_SYMBOLS[activeTab];
+      if (predefinedSymbols && predefinedSymbols.length > 0) {
+        wsSubscribe(predefinedSymbols);
+        wsSubscribedRef.current = predefinedSymbols;
+      } else if (data.length > 0) {
+        const stockSymbols = data.map(item => item.symbol).filter(Boolean).slice(0, 200);
+        if (stockSymbols.length > 0) {
+          wsSubscribe(stockSymbols);
+          wsSubscribedRef.current = stockSymbols;
+        }
+      }
+    }, [activeTab, wsConnected, data, wsSubscribe])
+  );
+
+  // Real-time price update trigger - runs continuously for live prices
+  const priceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    // Clear any existing interval
+    if (priceIntervalRef.current) {
+      clearInterval(priceIntervalRef.current);
+    }
+
+    // Start price update interval after brief delay
+    const startupDelay = setTimeout(() => {
+      priceIntervalRef.current = setInterval(() => {
+        setPriceUpdateTrigger(prev => prev + 1);
+      }, 100); // 100ms = 10 updates/sec for ultra-fast prices
+    }, 200); // 200ms initial delay
+
     return () => {
-      // Cleanup on unmount
+      clearTimeout(startupDelay);
+      if (priceIntervalRef.current) {
+        clearInterval(priceIntervalRef.current);
+        priceIntervalRef.current = null;
+      }
+    };
+  }, []);
+
+  // Cleanup WebSocket on unmount
+  useEffect(() => {
+    return () => {
       if (wsSubscribedRef.current.length > 0) {
         wsUnsubscribe(wsSubscribedRef.current);
         wsSubscribedRef.current = [];
       }
     };
-  }, [activeTab, wsConnected, data, wsSubscribe, wsUnsubscribe]);
+  }, [wsUnsubscribe]);
 
-  // Real-time price update - MAXIMUM SPEED for instant WebSocket updates
-  useEffect(() => {
-    const startupDelay = setTimeout(() => {
-      const interval = setInterval(() => {
-        setPriceUpdateTrigger(prev => prev + 1);
-      }, 100); // 100ms = 10 updates/sec for ultra-fast prices
-
-      return () => clearInterval(interval);
-    }, 300); // 300ms initial delay
-
-    return () => clearTimeout(startupDelay);
-  }, [activeTab]);
-
-  // NO API POLLING - WebSocket handles ALL real-time price updates
-  // This saves 700+ API credits/minute and makes tab switching instant
-
-  // Get live prices from store for all tabs
+  // ============================================================================
+  // LIVE DATA - Real-time prices from WebSocket
+  // ============================================================================
   const liveData = useMemo(() => {
     if (data.length === 0) return data;
 
     return data.map(item => {
-      // Try both formats: EURUSD and EUR/USD
-      const symbolWithSlash = item.symbol.length === 6
-        ? `${item.symbol.slice(0, 3)}/${item.symbol.slice(3)}`
-        : item.symbol;
+      // Try multiple symbol formats for WebSocket data
+      let quote = priceStore.getQuote(item.symbol);
 
-      const quote = priceStore.getQuote(symbolWithSlash) || priceStore.getQuote(item.symbol);
+      // For forex: try with slash (EUR/USD)
+      if (!quote && item.symbol?.length === 6) {
+        const symbolWithSlash = `${item.symbol.slice(0, 3)}/${item.symbol.slice(3)}`;
+        quote = priceStore.getQuote(symbolWithSlash);
+      }
+
+      // For commodities stored with slash
+      if (!quote && item.companyName) {
+        // Try the companyName which might be the original symbol like "EUR/USD"
+        quote = priceStore.getQuote(item.companyName);
+      }
 
       if (quote && quote.price > 0) {
         return {
@@ -820,7 +830,7 @@ export default function Trending() {
       }
       return item;
     });
-  }, [data, activeTab, priceUpdateTrigger]);
+  }, [data, priceUpdateTrigger]);
 
   const renderItem = useCallback(({ item, index }: { item: StockItem; index: number }) => {
     const numChange = typeof item.changesPercentage === 'string' 
