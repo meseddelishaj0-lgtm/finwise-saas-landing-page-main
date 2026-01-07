@@ -15,6 +15,8 @@ import {
   KeyboardAvoidingView,
   AppState,
   AppStateStatus,
+  BackHandler,
+  ToastAndroid,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -469,6 +471,38 @@ export default function Dashboard() {
   // Get current portfolio's holdings from context
   const currentPortfolio = userPortfolios.find(p => p.id === selectedPortfolioId);
   const userHoldings = currentPortfolio?.holdings || [];
+
+  // Track back press for "press again to exit" behavior
+  const backPressedOnce = useRef(false);
+
+  // Handle Android back button - prevent accidental exit
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== 'android') return;
+
+      const onBackPress = () => {
+        if (backPressedOnce.current) {
+          // Second press - exit app
+          BackHandler.exitApp();
+          return true;
+        }
+
+        // First press - show toast and wait for second press
+        backPressedOnce.current = true;
+        ToastAndroid.show('Press back again to exit', ToastAndroid.SHORT);
+
+        // Reset after 2 seconds
+        setTimeout(() => {
+          backPressedOnce.current = false;
+        }, 2000);
+
+        return true; // Prevent default back behavior
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+    }, [])
+  );
 
   // Refresh prices when screen comes into focus
   useFocusEffect(
