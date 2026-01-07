@@ -463,11 +463,11 @@ export default function ChartTab() {
     }
   }, [cleanSymbol, apiSymbol, isConnected, subscribe]);
 
-  // Fast re-render interval for instant WebSocket price display
+  // Fast re-render interval for instant WebSocket price display - MAXIMUM SPEED
   useEffect(() => {
     priceRefreshIntervalRef.current = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 250); // 250ms = 4 updates/sec for near-instant WebSocket prices
+    }, 100); // 100ms = 10 updates/sec for ultra-fast WebSocket prices
 
     return () => {
       if (priceRefreshIntervalRef.current) {

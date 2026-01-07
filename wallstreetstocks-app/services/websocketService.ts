@@ -9,7 +9,7 @@ import { AppState, AppStateStatus } from 'react-native';
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const WEBSOCKET_URL = `wss://ws.twelvedata.com/v1/quotes/price?apikey=${TWELVE_DATA_API_KEY}`;
 
-const MAX_SYMBOLS = 100; // Pro plan: 1000 WS credits, can handle 100+ symbols
+const MAX_SYMBOLS = 800; // Pro plan: 1000 WS credits - maximize usage!
 const RECONNECT_DELAY = 3000; // 3 seconds
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 

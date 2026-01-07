@@ -467,13 +467,13 @@ export default function Explore() {
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Refresh prices - fast refresh for instant WebSocket updates
+  // Refresh prices - MAXIMUM SPEED for instant WebSocket updates
   useEffect(() => {
     const startupDelay = setTimeout(() => {
       priceRefreshIntervalRef.current = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 250); // 250ms = 4 updates/sec for near-instant prices
-    }, 500); // 500ms initial delay
+      }, 100); // 100ms = 10 updates/sec for ultra-fast prices
+    }, 300); // 300ms initial delay
 
     return () => {
       clearTimeout(startupDelay);
@@ -1396,18 +1396,18 @@ export default function Explore() {
           return sym;
         })
         .filter(Boolean)
-        .slice(0, 30); // Pro plan: subscribe to more cryptos for real-time updates
+        .slice(0, 100); // Pro plan: MAX_SYMBOLS=800, plenty of room for cryptos!
     } else if (activeTab === "etf" || activeTab === "stocks") {
       // Verify data matches tab type - reject crypto symbols
       if (firstItem.symbol?.endsWith('USD') && firstItem.symbol?.length <= 7) {
         return;
       }
-      // Subscribe to all displayed symbols (no whitelist filtering - Twelve Data supports most symbols)
-      // Pro plan: 1000 WS credits, can handle more symbols
+      // Subscribe to ALL displayed symbols - Pro plan has 1000 WS credits!
+      // MAX_SYMBOLS=800, plenty of room for real-time updates
       newSymbols = data
         .map(item => item.symbol)
         .filter(s => s && !s.includes('.WT') && !s.includes('.WS')) // Exclude warrants
-        .slice(0, 50); // Subscribe to top 50 for real-time updates
+        .slice(0, 200); // Subscribe to top 200 for real-time updates
     }
 
     // Skip if already subscribed to same symbols

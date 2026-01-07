@@ -778,9 +778,9 @@ export default function Trending() {
     } else if (activeTab === "indices") {
       symbolsToSubscribe = INDICES_SYMBOLS;
     } else {
-      // For trending/gainers/losers - subscribe to loaded stock symbols
-      // Pro plan: 1000 WS credits, can handle more symbols (100 limit)
-      symbolsToSubscribe = data.map(item => item.symbol).filter(Boolean).slice(0, 50);
+      // For trending/gainers/losers - subscribe to ALL loaded stock symbols
+      // Pro plan: 1000 WS credits - MAX_SYMBOLS=800, plenty of room!
+      symbolsToSubscribe = data.map(item => item.symbol).filter(Boolean).slice(0, 200);
     }
 
     // Unsubscribe from previous symbols
@@ -803,15 +803,15 @@ export default function Trending() {
     };
   }, [activeTab, wsConnected, data, wsSubscribe, wsUnsubscribe]);
 
-  // Real-time price update - fast refresh for instant WebSocket updates
+  // Real-time price update - MAXIMUM SPEED for instant WebSocket updates
   useEffect(() => {
     const startupDelay = setTimeout(() => {
       const interval = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 250); // 250ms = 4 updates/sec for near-instant prices
+      }, 100); // 100ms = 10 updates/sec for ultra-fast prices
 
       return () => clearInterval(interval);
-    }, 500); // 500ms initial delay
+    }, 300); // 300ms initial delay
 
     return () => clearTimeout(startupDelay);
   }, [activeTab]);

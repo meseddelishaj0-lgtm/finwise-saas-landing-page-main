@@ -352,22 +352,73 @@ const STOCK_PICKS_PREVIEW = [
 const MARKET_INDICES_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'EFA', 'EEM', 'VXX', 'GLD', 'SLV', 'USO', 'TLT'];
 
 // Popular stocks to subscribe via WebSocket for real-time prices
-// Pro plan has 1000 WS credits - maximize usage for instant price updates
+// Pro plan has 1000 WS credits - MAXIMIZE usage for instant price updates
+// Using ~300 stocks to leave room for watchlist/trending/chart symbols
 const POPULAR_STOCKS_WS = [
-  // Mega caps - most viewed
-  'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'BRK.B',
-  // Tech leaders
-  'AMD', 'NFLX', 'CRM', 'ADBE', 'ORCL', 'INTC', 'CSCO', 'IBM',
-  // Finance
-  'JPM', 'BAC', 'WFC', 'GS', 'MS', 'V', 'MA', 'AXP',
-  // Healthcare
-  'UNH', 'JNJ', 'PFE', 'ABBV', 'MRK', 'LLY',
-  // Consumer
-  'WMT', 'COST', 'HD', 'MCD', 'NKE', 'SBUX', 'DIS',
-  // Energy
-  'XOM', 'CVX', 'COP',
-  // Popular ETFs
-  'ARKK', 'XLF', 'XLK', 'XLE', 'XLV',
+  // ========== MEGA CAPS (Top 20) ==========
+  'AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA', 'BRK.A', 'BRK.B',
+  'LLY', 'V', 'UNH', 'TSM', 'WMT', 'JPM', 'XOM', 'MA', 'JNJ', 'PG',
+
+  // ========== TECH (50 stocks) ==========
+  'AVGO', 'ORCL', 'ADBE', 'CRM', 'AMD', 'CSCO', 'ACN', 'NFLX', 'INTC', 'IBM',
+  'QCOM', 'TXN', 'NOW', 'INTU', 'AMAT', 'PANW', 'LRCX', 'ADI', 'MU', 'KLAC',
+  'SNPS', 'CDNS', 'MRVL', 'CRWD', 'FTNT', 'WDAY', 'TEAM', 'DDOG', 'ZS', 'NET',
+  'SNOW', 'SPLK', 'OKTA', 'MDB', 'HUBS', 'TWLO', 'PLTR', 'U', 'DOCN', 'PATH',
+  'SHOP', 'SQ', 'PYPL', 'COIN', 'HOOD', 'AFRM', 'UPST', 'SOFI', 'RBLX', 'ROKU',
+
+  // ========== FINANCE (40 stocks) ==========
+  'BAC', 'WFC', 'GS', 'MS', 'C', 'SCHW', 'BLK', 'AXP', 'SPGI', 'CME',
+  'ICE', 'MCO', 'CB', 'PGR', 'MMC', 'AON', 'MET', 'AIG', 'TRV', 'ALL',
+  'AFL', 'PRU', 'HIG', 'TROW', 'BK', 'STT', 'NTRS', 'FRC', 'USB', 'PNC',
+  'TFC', 'COF', 'DFS', 'SYF', 'AMP', 'RJF', 'ALLY', 'FITB', 'CFG', 'KEY',
+
+  // ========== HEALTHCARE (40 stocks) ==========
+  'PFE', 'ABBV', 'MRK', 'TMO', 'ABT', 'DHR', 'BMY', 'AMGN', 'GILD', 'VRTX',
+  'REGN', 'ISRG', 'SYK', 'BSX', 'MDT', 'ZTS', 'ELV', 'CI', 'HUM', 'CVS',
+  'MCK', 'CAH', 'ABC', 'MRNA', 'BIIB', 'ILMN', 'DXCM', 'IDXX', 'IQV', 'A',
+  'ALGN', 'HOLX', 'MTD', 'WAT', 'BIO', 'TECH', 'CRL', 'PKI', 'DGX', 'LH',
+
+  // ========== CONSUMER (40 stocks) ==========
+  'COST', 'HD', 'MCD', 'NKE', 'SBUX', 'DIS', 'LOW', 'TJX', 'TGT', 'BKNG',
+  'MAR', 'HLT', 'ABNB', 'CMG', 'YUM', 'DPZ', 'DARDEN', 'QSR', 'WEN', 'JACK',
+  'LULU', 'ULTA', 'ETSY', 'EBAY', 'W', 'CHWY', 'RVLV', 'GPS', 'ANF', 'AEO',
+  'KMX', 'AAP', 'ORLY', 'AZO', 'BBY', 'DG', 'DLTR', 'FIVE', 'OLLI', 'ROSS',
+
+  // ========== INDUSTRIALS (30 stocks) ==========
+  'CAT', 'DE', 'UNP', 'UPS', 'HON', 'RTX', 'LMT', 'BA', 'GE', 'MMM',
+  'EMR', 'ETN', 'ITW', 'PH', 'ROK', 'CMI', 'PCAR', 'FAST', 'GWW', 'IR',
+  'FTV', 'DOV', 'AME', 'SWK', 'XYL', 'IEX', 'GGG', 'NDSN', 'ROP', 'IDEX',
+
+  // ========== ENERGY (20 stocks) ==========
+  'CVX', 'COP', 'SLB', 'EOG', 'PXD', 'MPC', 'PSX', 'VLO', 'OXY', 'HES',
+  'DVN', 'FANG', 'HAL', 'BKR', 'OKE', 'WMB', 'KMI', 'ET', 'MPLX', 'EPD',
+
+  // ========== MATERIALS (15 stocks) ==========
+  'LIN', 'APD', 'SHW', 'ECL', 'DD', 'NEM', 'FCX', 'NUE', 'VMC', 'MLM',
+  'PPG', 'ALB', 'IFF', 'FMC', 'CE',
+
+  // ========== REAL ESTATE (15 stocks) ==========
+  'AMT', 'PLD', 'CCI', 'EQIX', 'PSA', 'O', 'SPG', 'WELL', 'DLR', 'AVB',
+  'EQR', 'VTR', 'ARE', 'UDR', 'PEAK',
+
+  // ========== COMMUNICATION (15 stocks) ==========
+  'GOOG', 'T', 'VZ', 'TMUS', 'CMCSA', 'CHTR', 'NFLX', 'DIS', 'WBD', 'PARA',
+  'FOX', 'FOXA', 'NWSA', 'OMC', 'IPG',
+
+  // ========== UTILITIES (10 stocks) ==========
+  'NEE', 'DUK', 'SO', 'D', 'AEP', 'EXC', 'SRE', 'XEL', 'PEG', 'ED',
+
+  // ========== POPULAR ETFs (30) ==========
+  'SPY', 'QQQ', 'IWM', 'DIA', 'VTI', 'VOO', 'VEA', 'VWO', 'EEM', 'EFA',
+  'ARKK', 'ARKG', 'ARKW', 'ARKF', 'XLF', 'XLK', 'XLE', 'XLV', 'XLI', 'XLY',
+  'XLP', 'XLU', 'XLB', 'XLRE', 'GLD', 'SLV', 'USO', 'TLT', 'HYG', 'LQD',
+
+  // ========== MEME/POPULAR (20) ==========
+  'GME', 'AMC', 'BB', 'BBBY', 'WISH', 'CLOV', 'SPCE', 'LCID', 'RIVN', 'NIO',
+  'XPEV', 'LI', 'FSR', 'NKLA', 'WKHS', 'GOEV', 'RIDE', 'MULN', 'FFIE', 'HYLN',
+
+  // ========== CRYPTO-RELATED (10) ==========
+  'MSTR', 'MARA', 'RIOT', 'CLSK', 'HUT', 'BITF', 'COIN', 'SI', 'GBTC', 'ETHE',
 ];
 
 export default function Dashboard() {
@@ -677,10 +728,10 @@ export default function Dashboard() {
         clearInterval(priceRefreshIntervalRef.current);
       }
 
-      // Start instant price updates
+      // Start instant price updates - MAXIMUM SPEED
       priceRefreshIntervalRef.current = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 250); // 250ms = 4 updates/sec for near-instant WebSocket prices
+      }, 100); // 100ms = 10 updates/sec for ultra-fast WebSocket prices
 
       // Also re-subscribe to WebSocket when tab is focused
       if (wsConnected) {
