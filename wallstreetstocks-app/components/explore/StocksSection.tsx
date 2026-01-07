@@ -136,27 +136,6 @@ export default function StocksSection() {
           })}
       </View>
 
-      {/* Chart + time-frame selector (placeholder box for now) */}
-      <View className="mt-4 mx-4">
-        <View className="bg-[#020617] rounded-2xl h-44 items-center justify-center">
-          <Text className="text-gray-500 text-xs">
-            📈 Multi-index chart will go here
-          </Text>
-        </View>
-
-        <View className="flex-row justify-between mt-3 px-2">
-          {["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"].map((label, idx) => (
-            <Text
-              key={label}
-              className={`text-xs ${
-                idx === 0 ? "text-white font-semibold" : "text-gray-500"
-              }`}
-            >
-              {label}
-            </Text>
-          ))}
-        </View>
-      </View>
 
       {/* Live headline bar */}
       <View className="bg-[#111827] mx-4 mt-4 rounded-2xl px-4 py-3">
