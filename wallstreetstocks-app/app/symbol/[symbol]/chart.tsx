@@ -19,7 +19,7 @@ import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFromMemory, setToMemory, clearFromMemory, CACHE_KEYS } from '../../../utils/memoryCache';
-import { priceStore, usePrice } from '../../../stores/priceStore';
+import { priceStore, usePrice, useQuote } from '../../../stores/priceStore';
 import { useWebSocket } from '../../../context/WebSocketContext';
 import TechnicalIndicators from '../../../components/TechnicalIndicators';
 
@@ -444,9 +444,13 @@ export default function ChartTab() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // ============================================================================
-  // WEBSOCKET & REAL-TIME PRICE
+  // WEBSOCKET & REAL-TIME PRICE (INSTANT UPDATES)
   // ============================================================================
   const { subscribe, isConnected } = useWebSocket();
+
+  // Re-render trigger for instant WebSocket price updates (250ms = 4 updates/sec)
+  const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
+  const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Subscribe to WebSocket updates
   useEffect(() => {
@@ -459,12 +463,30 @@ export default function ChartTab() {
     }
   }, [cleanSymbol, apiSymbol, isConnected, subscribe]);
 
-  // Get real-time price from store - these hooks trigger re-renders instantly when WebSocket updates
-  const realtimePriceMain = usePrice(cleanSymbol || '');
-  const realtimePriceAlt = usePrice(apiSymbol || '');
+  // Fast re-render interval for instant WebSocket price display
+  useEffect(() => {
+    priceRefreshIntervalRef.current = setInterval(() => {
+      setPriceUpdateTrigger(prev => prev + 1);
+    }, 250); // 250ms = 4 updates/sec for near-instant WebSocket prices
 
-  // Live price is directly derived from reactive hooks - updates instantly when WebSocket sends new data
-  const livePrice = realtimePriceMain ?? realtimePriceAlt;
+    return () => {
+      if (priceRefreshIntervalRef.current) {
+        clearInterval(priceRefreshIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // Get FULL quote from store - includes price, change, changePercent from WebSocket
+  const realtimeQuoteMain = useQuote(cleanSymbol || '');
+  const realtimeQuoteAlt = useQuote(apiSymbol || '');
+
+  // Use quote with data, prefer main symbol
+  const liveQuote = realtimeQuoteMain ?? realtimeQuoteAlt;
+  const livePrice = liveQuote?.price;
+
+  // WebSocket-provided change values (instant, no recalculation needed)
+  const wsChange = liveQuote?.change;
+  const wsChangePercent = liveQuote?.changePercent;
 
   // Update currentPrice state and trigger animation when WebSocket sends new data
   useEffect(() => {
@@ -478,7 +500,7 @@ export default function ChartTab() {
         Animated.timing(pulseAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
       ]).start();
     }
-  }, [livePrice]);
+  }, [livePrice, priceUpdateTrigger]);
 
   // ============================================================================
   // PROCESSED CHART DATA
@@ -587,9 +609,15 @@ export default function ChartTab() {
   }, [chartData, livePrice, currentPrice, timeframe, marketStatus]);
 
   // ============================================================================
-  // PRICE CHANGE CALCULATION
+  // PRICE CHANGE CALCULATION (WebSocket values preferred for instant updates)
   // ============================================================================
   const priceChange = useMemo(() => {
+    // Use WebSocket-provided change values if available (instant, no calculation)
+    if (wsChange !== undefined && wsChangePercent !== undefined) {
+      return { amount: wsChange, percent: wsChangePercent };
+    }
+
+    // Fallback: calculate from chart data
     const price = livePrice ?? currentPrice;
     if (!liveChartData.length || price === null) return { amount: 0, percent: 0 };
 
@@ -598,7 +626,7 @@ export default function ChartTab() {
     const percent = startPrice > 0 ? (amount / startPrice) * 100 : 0;
 
     return { amount, percent };
-  }, [liveChartData, livePrice, currentPrice]);
+  }, [liveChartData, livePrice, currentPrice, wsChange, wsChangePercent]);
 
   const isPositive = priceChange.amount >= 0;
   const priceColor = isPositive ? '#00C853' : '#FF3B30';
