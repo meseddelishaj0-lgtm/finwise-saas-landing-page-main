@@ -2016,6 +2016,16 @@ export default function CommunityPage() {
     }
   }, [authUser?.id, currentUser?.id, getUserId, loadNotifications]);
 
+  // Refresh notifications when community tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      const userId = getUserId();
+      if (userId) {
+        loadNotifications();
+      }
+    }, [getUserId, loadNotifications])
+  );
+
   useEffect(() => {
     if (searchQuery) {
       const debounce = setTimeout(() => handleSearch(searchQuery), 300);

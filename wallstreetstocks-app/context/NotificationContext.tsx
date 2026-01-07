@@ -257,12 +257,20 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         case 'mention':
         case 'reply':
           if (data.postId) {
-            router.push(`/community/post/${data.postId}` as any);
+            // Navigate to community tab with openPostId param
+            router.push({
+              pathname: '/(tabs)/community',
+              params: { openPostId: data.postId.toString() },
+            } as any);
           }
           break;
         case 'follow':
           if (data.userId) {
-            router.push(`/community/profile/${data.userId}` as any);
+            // Navigate to community tab with openUserId param
+            router.push({
+              pathname: '/(tabs)/community',
+              params: { openUserId: data.userId.toString() },
+            } as any);
           }
           break;
         case 'price_alert':
