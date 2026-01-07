@@ -642,13 +642,12 @@ export default function Dashboard() {
   const realTimePriceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    // Delay starting the refresh interval to let the UI fully render first
-    // This prevents the app from becoming unresponsive on iPad
+    // Short delay to let UI render, then start price updates
     const startupDelay = setTimeout(() => {
       priceRefreshIntervalRef.current = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 2000); // Reduced from 500ms to 2000ms to prevent UI freeze
-    }, 3000); // 3 second delay after mount
+      }, 1500); // 1.5s - balance between responsiveness and iPad performance
+    }, 1000); // 1s delay - enough for UI to render
 
     return () => {
       clearTimeout(startupDelay);
@@ -674,7 +673,7 @@ export default function Dashboard() {
 
     if (allSymbols.length === 0) return;
 
-    // Delay all API calls to let the UI render first
+    // Short delay to let UI render first
     const startupDelay = setTimeout(() => {
       // Initial fetch only during extended hours
       if (isExtendedHours()) {
@@ -686,8 +685,8 @@ export default function Dashboard() {
         if (isExtendedHours()) {
           fetchRealTimePrices(allSymbols);
         }
-      }, 5000); // Increased from 3s to 5s to reduce load
-    }, 5000); // 5 second delay after mount
+      }, 4000); // 4s interval for API calls
+    }, 2000); // 2s delay - let UI render first
 
     return () => {
       clearTimeout(startupDelay);

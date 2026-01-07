@@ -467,14 +467,13 @@ export default function Explore() {
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Refresh prices for real-time display
-  // IMPORTANT: Reduced from 500ms to 2000ms and added delay to prevent iPad freeze
+  // Refresh prices for real-time display - balanced for iPad performance
   useEffect(() => {
     const startupDelay = setTimeout(() => {
       priceRefreshIntervalRef.current = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 2000); // Reduced from 500ms to 2000ms
-    }, 3000); // 3 second delay after mount
+      }, 1500); // 1.5s refresh
+    }, 1000); // 1s delay
 
     return () => {
       clearTimeout(startupDelay);

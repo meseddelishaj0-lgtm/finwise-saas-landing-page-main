@@ -803,16 +803,15 @@ export default function Trending() {
     };
   }, [activeTab, wsConnected, data, wsSubscribe, wsUnsubscribe]);
 
-  // Real-time price update interval
-  // IMPORTANT: Reduced from 500ms to 2000ms and added delay to prevent iPad freeze
+  // Real-time price update interval - balanced for iPad performance
   useEffect(() => {
     const startupDelay = setTimeout(() => {
       const interval = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 2000); // Reduced from 500ms to 2000ms
+      }, 1500); // 1.5s refresh
 
       return () => clearInterval(interval);
-    }, 3000); // 3 second delay after mount
+    }, 1000); // 1s delay
 
     return () => clearTimeout(startupDelay);
   }, [activeTab]);
