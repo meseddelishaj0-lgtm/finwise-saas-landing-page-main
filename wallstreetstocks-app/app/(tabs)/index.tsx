@@ -302,7 +302,7 @@ async function fetchRealTimePrices(symbols: string[]): Promise<void> {
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
 // Polygon.io API for real-time market data
-const POLYGON_API_KEY = '60TuhIgZaowRuRZmkEJtouJbbswhZK';
+const POLYGON_API_KEY = process.env.EXPO_PUBLIC_POLYGON_API_KEY || '';
 const POLYGON_BASE_URL = 'https://api.polygon.io';
 
 // Batch quotes helper - uses shared quote service with cache support
