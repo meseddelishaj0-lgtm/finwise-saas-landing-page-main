@@ -2500,7 +2500,6 @@ export default function Dashboard() {
         <View style={styles.trendingSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Trending Now</Text>
-            <LiveIndicator />
           </View>
 
           {trendingLoading ? (
