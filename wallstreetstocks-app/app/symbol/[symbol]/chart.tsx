@@ -361,12 +361,14 @@ function formatTooltipDate(date: Date, timeframe: Timeframe): string {
 // API CONFIGURATION
 // ============================================================================
 
+// Twelve Data WebSocket covers: 4:00 AM - 8:00 PM ET (16 hours)
+// Chart intervals sized to fit full extended hours trading day
 const TIMEFRAME_CONFIG: Record<Timeframe, { interval: string; outputsize: number }> = {
-  '1D': { interval: '5min', outputsize: 200 },
-  '5D': { interval: '30min', outputsize: 160 },
-  '1M': { interval: '1h', outputsize: 160 },
-  '3M': { interval: '4h', outputsize: 130 },
-  '1Y': { interval: '1day', outputsize: 252 },
+  '1D': { interval: '1min', outputsize: 960 },  // 16 hours * 60 min = 960 points (full day with pre/after)
+  '5D': { interval: '5min', outputsize: 480 },  // 5 days * 16 hours * 12 points/hour
+  '1M': { interval: '15min', outputsize: 640 }, // ~22 trading days * ~7 hours * 4 points/hour
+  '3M': { interval: '1h', outputsize: 520 },    // ~65 trading days * 8 hours
+  '1Y': { interval: '1day', outputsize: 252 },  // 252 trading days
   'ALL': { interval: '1week', outputsize: 500 },
 };
 
@@ -737,13 +739,9 @@ export default function ChartTab() {
     }
 
     try {
-      let config = TIMEFRAME_CONFIG[timeframe];
+      const config = TIMEFRAME_CONFIG[timeframe];
 
-      // During extended hours for 1D, use 1min interval to get more premarket/after-hours data points
-      if (timeframe === '1D' && isExtendedHours()) {
-        config = { interval: '1min', outputsize: 300 }; // 300 x 1min = 5 hours of data
-      }
-
+      // prepost=true gets pre-market (4AM) and after-hours (8PM) data
       const prepostParam = (timeframe === '1D' || timeframe === '5D') ? '&prepost=true' : '';
       const url = `${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(apiSymbol)}&interval=${config.interval}&outputsize=${config.outputsize}${prepostParam}&apikey=${TWELVE_DATA_API_KEY}`;
 
@@ -1162,6 +1160,38 @@ export default function ChartTab() {
                   },
                 }}
               />
+
+              {/* Live Price Dot - At end of chart line (Robinhood style) */}
+              {liveChartData.length > 0 && (() => {
+                const lastValue = liveChartData[liveChartData.length - 1].value;
+                const yRange = yAxisBounds.max - yAxisBounds.min;
+                const yPercent = (lastValue - yAxisBounds.min) / yRange;
+                const dotY = CHART_HEIGHT * (1 - yPercent);
+
+                // X position: last point is at chartWidth - endSpacing
+                const dotX = SCREEN_WIDTH - 10 - 20; // chartWidth - endSpacing
+
+                return (
+                  <View style={{ position: 'absolute', left: dotX - 10, top: dotY - 10 }}>
+                    {/* Outer pulsing ring */}
+                    <Animated.View
+                      style={[
+                        styles.liveDotOuter,
+                        {
+                          backgroundColor: priceColor + '40',
+                          transform: [{ scale: pulseAnim }],
+                          opacity: pulseAnim.interpolate({
+                            inputRange: [1, 1.3],
+                            outputRange: [0.8, 0.2],
+                          }),
+                        }
+                      ]}
+                    />
+                    {/* Inner solid dot */}
+                    <View style={[styles.liveDotInner, { backgroundColor: priceColor }]} />
+                  </View>
+                );
+              })()}
             </View>
           ) : (
             <View style={styles.noDataContainer}>
@@ -1410,4 +1440,9 @@ const styles = StyleSheet.create({
   marketStatusClosed: { backgroundColor: '#8E8E9315' },
   marketStatusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6, backgroundColor: '#8E8E93' },
   marketStatusText: { fontSize: 11, fontWeight: '600', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  // Live Price Dot (Robinhood style)
+  liveDot: { position: 'absolute', width: 12, height: 12, borderRadius: 6 },
+  liveDotOuter: { position: 'absolute', width: 20, height: 20, borderRadius: 10 },
+  liveDotInner: { position: 'absolute', top: 6, left: 6, width: 8, height: 8, borderRadius: 4 },
 });
