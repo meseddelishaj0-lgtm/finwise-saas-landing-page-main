@@ -1,4 +1,4 @@
-// app/symbol/[symbol]/chart.tsx - Stock Chart (Rebuilt for proper premarket/after-hours)
+// app/symbol/[symbol]/chart.tsx - Stock Chart with WebSocket Real-Time Prices
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
@@ -19,7 +19,7 @@ import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFromMemory, setToMemory, clearFromMemory, CACHE_KEYS } from '../../../utils/memoryCache';
-import { priceStore, usePrice, useQuote } from '../../../stores/priceStore';
+import { priceStore, useQuote } from '../../../stores/priceStore';
 import { useWebSocket } from '../../../context/WebSocketContext';
 import TechnicalIndicators from '../../../components/TechnicalIndicators';
 
@@ -34,14 +34,26 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CHART_HEIGHT = SCREEN_HEIGHT * 0.38;
 
 type Timeframe = '1D' | '5D' | '1M' | '3M' | '1Y' | 'ALL';
+type MarketStatus = 'pre-market' | 'open' | 'after-hours' | 'closed';
+
+// WebSocket covers: 4:00 AM - 8:00 PM ET (16 hours)
+// Chart intervals sized to show full trading day
+const TIMEFRAME_CONFIG: Record<Timeframe, { interval: string; outputsize: number }> = {
+  '1D': { interval: '1min', outputsize: 960 },   // 16 hours * 60 = 960 points
+  '5D': { interval: '5min', outputsize: 480 },   // 5 days of trading
+  '1M': { interval: '15min', outputsize: 640 },  // ~22 trading days
+  '3M': { interval: '1h', outputsize: 520 },     // ~65 trading days
+  '1Y': { interval: '1day', outputsize: 252 },   // 252 trading days
+  'ALL': { interval: '1week', outputsize: 500 }, // ~10 years
+};
 
 const CACHE_TTL: Record<Timeframe, number> = {
-  '1D': 60 * 1000,      // 1 minute for intraday
-  '5D': 5 * 60 * 1000,  // 5 minutes
-  '1M': 15 * 60 * 1000, // 15 minutes
-  '3M': 30 * 60 * 1000, // 30 minutes
-  '1Y': 60 * 60 * 1000, // 1 hour
-  'ALL': 60 * 60 * 1000 // 1 hour
+  '1D': 60 * 1000,
+  '5D': 5 * 60 * 1000,
+  '1M': 15 * 60 * 1000,
+  '3M': 30 * 60 * 1000,
+  '1Y': 60 * 60 * 1000,
+  'ALL': 60 * 60 * 1000
 };
 
 // ============================================================================
@@ -53,33 +65,19 @@ interface ChartDataPoint {
   date: Date;
 }
 
-type MarketStatus = 'pre-market' | 'open' | 'after-hours' | 'closed';
-
 // ============================================================================
-// TIMEZONE UTILITIES
+// TIME UTILITIES
 // ============================================================================
 
 /**
- * Get the current time in Eastern timezone
- * Returns { hour, minute, day, month, year, dayOfWeek }
+ * Get current Eastern Time info
  */
-function getEasternTime(): {
-  hour: number;
-  minute: number;
-  day: number;
-  month: number;
-  year: number;
-  dayOfWeek: string;
-  totalMinutes: number;
-} {
+function getEasternTime() {
   const now = new Date();
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
     hour: 'numeric',
     minute: 'numeric',
-    day: 'numeric',
-    month: 'numeric',
-    year: 'numeric',
     weekday: 'short',
     hour12: false,
   });
@@ -93,64 +91,33 @@ function getEasternTime(): {
   return {
     hour,
     minute,
-    day: parseInt(get('day')) || 1,
-    month: parseInt(get('month')) || 1,
-    year: parseInt(get('year')) || 2025,
     dayOfWeek: get('weekday'),
     totalMinutes: hour * 60 + minute,
   };
 }
 
 /**
- * Get today's trading session start (4 AM ET) as a Date object
- */
-function getTodaySessionStart(): Date {
-  const et = getEasternTime();
-
-  let { year, month, day } = et;
-
-  // If before 4 AM ET, use yesterday's date
-  if (et.hour < 4) {
-    const yesterday = new Date(year, month - 1, day - 1);
-    year = yesterday.getFullYear();
-    month = yesterday.getMonth() + 1;
-    day = yesterday.getDate();
-  }
-
-  // Create 4:00 AM ET as ISO string
-  const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T04:00:00`;
-
-  // Determine DST (rough approximation: March-November)
-  const isDST = month >= 3 && month <= 10;
-  const offset = isDST ? '-04:00' : '-05:00';
-
-  return new Date(dateStr + offset);
-}
-
-/**
- * Get current market status
+ * Get market status based on Eastern Time
  */
 function getMarketStatus(): MarketStatus {
-  const et = getEasternTime();
-  const { totalMinutes, dayOfWeek } = et;
+  const { totalMinutes, dayOfWeek } = getEasternTime();
 
-  // Weekend = closed
   if (dayOfWeek === 'Sat' || dayOfWeek === 'Sun') return 'closed';
 
-  const preMarketStart = 4 * 60;      // 4:00 AM
-  const marketOpen = 9 * 60 + 30;     // 9:30 AM
-  const marketClose = 16 * 60;        // 4:00 PM
-  const afterHoursEnd = 20 * 60;      // 8:00 PM
+  const PRE_MARKET_START = 4 * 60;    // 4:00 AM
+  const MARKET_OPEN = 9 * 60 + 30;    // 9:30 AM
+  const MARKET_CLOSE = 16 * 60;       // 4:00 PM
+  const AFTER_HOURS_END = 20 * 60;    // 8:00 PM
 
-  if (totalMinutes >= preMarketStart && totalMinutes < marketOpen) return 'pre-market';
-  if (totalMinutes >= marketOpen && totalMinutes < marketClose) return 'open';
-  if (totalMinutes >= marketClose && totalMinutes < afterHoursEnd) return 'after-hours';
+  if (totalMinutes >= PRE_MARKET_START && totalMinutes < MARKET_OPEN) return 'pre-market';
+  if (totalMinutes >= MARKET_OPEN && totalMinutes < MARKET_CLOSE) return 'open';
+  if (totalMinutes >= MARKET_CLOSE && totalMinutes < AFTER_HOURS_END) return 'after-hours';
 
   return 'closed';
 }
 
 /**
- * Check if currently in extended hours (premarket or after-hours)
+ * Check if in extended hours
  */
 function isExtendedHours(): boolean {
   const status = getMarketStatus();
@@ -158,24 +125,67 @@ function isExtendedHours(): boolean {
 }
 
 /**
- * Parse a Twelve Data datetime string to a Date object
- * Twelve Data returns times in exchange timezone (Eastern for US stocks)
+ * Parse Twelve Data datetime string to Date
+ * Twelve Data returns times in exchange timezone (ET for US stocks)
  */
 function parseTwelveDataTime(datetime: string, isCrypto: boolean = false): Date {
   if (isCrypto) {
-    // Crypto times are in UTC
     return new Date(datetime + 'Z');
   }
 
   // US stocks - time is in Eastern Time
+  // Format: "2024-01-15 09:30:00" or "2024-01-15"
   const tempDate = new Date(datetime.replace(' ', 'T'));
-  const month = tempDate.getMonth(); // 0-11
+  const month = tempDate.getMonth();
 
-  // DST check: April-October is definitely DST
-  const isDST = month > 2 && month < 10;
+  // DST: roughly March-November
+  const isDST = month >= 2 && month <= 10;
   const offset = isDST ? '-04:00' : '-05:00';
 
   return new Date(datetime.replace(' ', 'T') + offset);
+}
+
+/**
+ * Format date for tooltip display
+ */
+function formatTooltipDate(date: Date, timeframe: Timeframe): string {
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    return '';
+  }
+
+  if (timeframe === '1D') {
+    // Show time in user's local timezone
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  } else if (timeframe === '5D') {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } else {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: timeframe === '1M' ? undefined : 'numeric',
+    });
+  }
+}
+
+/**
+ * Convert symbol to Twelve Data format
+ */
+function formatSymbolForApi(symbol: string): string {
+  const etfs = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'VOO', 'XLF', 'XLE', 'XLK', 'ARKK'];
+
+  if (symbol.endsWith('USD') && symbol.length <= 10 && !symbol.includes('/') && !etfs.includes(symbol)) {
+    return symbol.slice(0, -3) + '/USD';
+  }
+
+  return symbol;
 }
 
 // ============================================================================
@@ -191,18 +201,14 @@ async function getAsyncCache<T>(key: string, ttl: number): Promise<T | null> {
         return data;
       }
     }
-  } catch (e) {
-    // Cache miss
-  }
+  } catch (e) {}
   return null;
 }
 
 async function setAsyncCache<T>(key: string, data: T): Promise<void> {
   try {
     await AsyncStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
-  } catch (e) {
-    // Ignore cache write errors
-  }
+  } catch (e) {}
 }
 
 async function clearChartCache(symbol: string): Promise<void> {
@@ -211,178 +217,7 @@ async function clearChartCache(symbol: string): Promise<void> {
     const keys = timeframes.map(tf => `chart_cache_${symbol}_${tf}`);
     await AsyncStorage.multiRemove(keys);
     timeframes.forEach(tf => clearFromMemory(CACHE_KEYS.chart(symbol, tf)));
-  } catch (e) {
-    // Ignore errors
-  }
-}
-
-// ============================================================================
-// DATA PROCESSING
-// ============================================================================
-
-/**
- * Filter chart data to only include points from today's session (4 AM ET onwards)
- * For 1D timeframe only
- */
-function filterToTodaySession(
-  data: ChartDataPoint[],
-  sessionStart: Date
-): ChartDataPoint[] {
-  const sessionStartTime = sessionStart.getTime();
-
-  return data.filter(point => {
-    const pointTime = point.date instanceof Date
-      ? point.date.getTime()
-      : new Date(point.date).getTime();
-    return pointTime >= sessionStartTime;
-  });
-}
-
-/**
- * Ensure chart data has enough points for a visible line
- * Pads with session start and current time if needed
- */
-function ensureMinimumPoints(
-  data: ChartDataPoint[],
-  sessionStart: Date,
-  currentPrice: number | null,
-  fallbackPrice: number | null,
-  allData: ChartDataPoint[] = []
-): ChartDataPoint[] {
-  const now = new Date();
-  const priceToUse = currentPrice ?? fallbackPrice;
-
-  // If we have no data and no price, return empty
-  if (data.length === 0 && !priceToUse) {
-    return [];
-  }
-
-  // If we have enough points, return as is
-  if (data.length >= 10) {
-    return data;
-  }
-
-  // During early premarket with sparse data, include yesterday's last 2 hours as context
-  // This gives users visual context of where the price was
-  if (data.length < 10 && allData.length > 0 && isExtendedHours()) {
-    const sessionStartTime = sessionStart.getTime();
-
-    // Get points from the last 2-3 hours of yesterday's session as context
-    const contextStart = sessionStartTime - (3 * 60 * 60 * 1000); // 3 hours before session start
-    const contextPoints = allData.filter(point => {
-      const pointTime = point.date.getTime();
-      return pointTime >= contextStart && pointTime < sessionStartTime;
-    });
-
-    // Combine context points with today's data
-    if (contextPoints.length > 0) {
-      const combined = [...contextPoints, ...data];
-
-      // Add current price if we have it
-      if (priceToUse && data.length === 0) {
-        combined.push({
-          value: priceToUse,
-          label: now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-          date: now,
-        });
-      }
-
-      return combined;
-    }
-  }
-
-  // We need to pad the data
-  const result = [...data];
-
-  if (result.length === 0 && priceToUse) {
-    // No data at all - create flat line from session start to now
-    result.push({
-      value: priceToUse,
-      label: sessionStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-      date: sessionStart,
-    });
-    result.push({
-      value: priceToUse,
-      label: now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-      date: now,
-    });
-  } else if (result.length > 0) {
-    // Add session start point if not present
-    const firstPointTime = result[0].date.getTime();
-    const sessionStartTime = sessionStart.getTime();
-
-    if (firstPointTime > sessionStartTime + 60000) {
-      result.unshift({
-        value: result[0].value,
-        label: sessionStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-        date: sessionStart,
-      });
-    }
-
-    // Add current time point if needed
-    const lastPointTime = result[result.length - 1].date.getTime();
-    const priceForEnd = currentPrice ?? result[result.length - 1].value;
-
-    if (now.getTime() - lastPointTime > 60000) {
-      result.push({
-        value: priceForEnd,
-        label: now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-        date: now,
-      });
-    }
-
-    // Ensure at least 2 points
-    if (result.length === 1) {
-      result.push({
-        value: result[0].value,
-        label: now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-        date: now,
-      });
-    }
-  }
-
-  return result;
-}
-
-/**
- * Format a date for display in the chart tooltip
- */
-function formatTooltipDate(date: Date, timeframe: Timeframe): string {
-  if (timeframe === '1D') {
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  } else if (timeframe === '5D') {
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-  } else {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  }
-}
-
-// ============================================================================
-// API CONFIGURATION
-// ============================================================================
-
-// Twelve Data WebSocket covers: 4:00 AM - 8:00 PM ET (16 hours)
-// Chart intervals sized to fit full extended hours trading day
-const TIMEFRAME_CONFIG: Record<Timeframe, { interval: string; outputsize: number }> = {
-  '1D': { interval: '1min', outputsize: 960 },  // 16 hours * 60 min = 960 points (full day with pre/after)
-  '5D': { interval: '5min', outputsize: 480 },  // 5 days * 16 hours * 12 points/hour
-  '1M': { interval: '15min', outputsize: 640 }, // ~22 trading days * ~7 hours * 4 points/hour
-  '3M': { interval: '1h', outputsize: 520 },    // ~65 trading days * 8 hours
-  '1Y': { interval: '1day', outputsize: 252 },  // 252 trading days
-  'ALL': { interval: '1week', outputsize: 500 },
-};
-
-/**
- * Convert symbol to Twelve Data format (e.g., BTCUSD -> BTC/USD for crypto)
- */
-function formatSymbolForApi(symbol: string): string {
-  const etfs = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'VOO', 'XLF', 'XLE', 'XLK', 'ARKK'];
-
-  if (symbol.endsWith('USD') && symbol.length <= 10 && !symbol.includes('/') && !etfs.includes(symbol)) {
-    return symbol.slice(0, -3) + '/USD';
-  }
-
-  return symbol;
+  } catch (e) {}
 }
 
 // ============================================================================
@@ -420,11 +255,9 @@ export default function ChartTab() {
   // STATE
   // ============================================================================
   const [rawChartData, setRawChartData] = useState<ChartDataPoint[]>([]);
-  const rawChartDataRef = useRef<ChartDataPoint[]>([]); // Ref to avoid infinite loops in callbacks
+  const rawChartDataRef = useRef<ChartDataPoint[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [previousClose, setPreviousClose] = useState<number | null>(null);
-  const [dayHigh, setDayHigh] = useState<number | null>(null);
-  const [dayLow, setDayLow] = useState<number | null>(null);
   const [marketStatus, setMarketStatus] = useState<MarketStatus>(getMarketStatus());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -438,7 +271,7 @@ export default function ChartTab() {
   const [alertDirection, setAlertDirection] = useState<'above' | 'below'>('above');
   const [creatingAlert, setCreatingAlert] = useState(false);
 
-  // Technical Indicators State
+  // Technical Indicators
   const [showIndicators, setShowIndicators] = useState(false);
 
   // Refs
@@ -446,15 +279,13 @@ export default function ChartTab() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // ============================================================================
-  // WEBSOCKET & REAL-TIME PRICE (INSTANT UPDATES)
+  // WEBSOCKET INTEGRATION
   // ============================================================================
   const { subscribe, isConnected } = useWebSocket();
-
-  // Re-render trigger for instant WebSocket price updates (250ms = 4 updates/sec)
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Subscribe to WebSocket updates
+  // Subscribe to WebSocket
   useEffect(() => {
     if (cleanSymbol && isConnected) {
       const symbolsToSubscribe = [cleanSymbol];
@@ -465,11 +296,11 @@ export default function ChartTab() {
     }
   }, [cleanSymbol, apiSymbol, isConnected, subscribe]);
 
-  // Fast re-render interval for instant WebSocket price display - MAXIMUM SPEED
+  // Fast re-render for WebSocket price updates
   useEffect(() => {
     priceRefreshIntervalRef.current = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 100); // 100ms = 10 updates/sec for ultra-fast WebSocket prices
+    }, 100);
 
     return () => {
       if (priceRefreshIntervalRef.current) {
@@ -478,25 +309,20 @@ export default function ChartTab() {
     };
   }, []);
 
-  // Get FULL quote from store - includes price, change, changePercent from WebSocket
+  // Get quote from WebSocket store
   const realtimeQuoteMain = useQuote(cleanSymbol || '');
   const realtimeQuoteAlt = useQuote(apiSymbol || '');
-
-  // Use quote with data, prefer main symbol
   const liveQuote = realtimeQuoteMain ?? realtimeQuoteAlt;
   const livePrice = liveQuote?.price;
-
-  // WebSocket-provided change values (instant, no recalculation needed)
   const wsChange = liveQuote?.change;
   const wsChangePercent = liveQuote?.changePercent;
 
-  // Update currentPrice state and trigger animation when WebSocket sends new data
+  // Update price when WebSocket sends new data
   useEffect(() => {
     if (livePrice && livePrice !== currentPrice) {
       setCurrentPrice(livePrice);
       setLastUpdated(new Date());
 
-      // Pulse animation for price update visual feedback
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.05, duration: 100, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
@@ -505,121 +331,65 @@ export default function ChartTab() {
   }, [livePrice, priceUpdateTrigger]);
 
   // ============================================================================
-  // PROCESSED CHART DATA
+  // CHART DATA PROCESSING
   // ============================================================================
-  const chartData = useMemo(() => {
+
+  const liveChartData = useMemo(() => {
     if (rawChartData.length === 0) return [];
 
-    // For non-1D timeframes, return raw data as-is
-    if (timeframe !== '1D') {
-      return rawChartData;
-    }
+    let result = [...rawChartData];
 
-    const extendedHours = isExtendedHours();
+    // For 1D, append live price if available
+    if (timeframe === '1D') {
+      const currentLivePrice = livePrice ?? currentPrice;
 
-    // For 1D during extended hours: show all available data (yesterday + any premarket)
-    // This gives users context of where the price was and where it is now
-    if (extendedHours) {
-      let result = [...rawChartData];
-      const displayPrice = livePrice ?? currentPrice;
-      const now = new Date();
-
-      // If we have a live price that's different from the last data point, add it
-      if (displayPrice && result.length > 0) {
+      if (currentLivePrice && result.length > 0) {
+        const now = new Date();
         const lastPoint = result[result.length - 1];
         const timeDiff = now.getTime() - lastPoint.date.getTime();
 
-        // Add current price point if it's been more than 1 minute since last data point
+        // If last point is more than 1 minute old, append live price
         if (timeDiff > 60000) {
           result.push({
-            value: displayPrice,
+            value: currentLivePrice,
             label: now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
             date: now,
           });
+        } else {
+          // Update last point with live price
+          result[result.length - 1] = {
+            ...lastPoint,
+            value: currentLivePrice,
+          };
         }
       }
+    }
 
-      // Sample data if too many points (keeps chart smooth and prevents rendering issues)
-      const MAX_POINTS = 120;
-      if (result.length > MAX_POINTS) {
-        const sampleRate = Math.ceil(result.length / MAX_POINTS);
-        const sampled = result.filter((_, i) => i % sampleRate === 0);
-        // Always include the last point (most recent)
-        if (sampled[sampled.length - 1] !== result[result.length - 1]) {
-          sampled.push(result[result.length - 1]);
-        }
-        result = sampled;
+    // Sample if too many points
+    const MAX_POINTS = 150;
+    if (result.length > MAX_POINTS) {
+      const sampleRate = Math.ceil(result.length / MAX_POINTS);
+      const sampled = result.filter((_, i) => i % sampleRate === 0);
+      if (sampled[sampled.length - 1] !== result[result.length - 1]) {
+        sampled.push(result[result.length - 1]);
       }
-
-      
-      return result;
+      result = sampled;
     }
 
-    // During regular hours, filter to today's session only
-    const sessionStart = getTodaySessionStart();
-    let filtered = filterToTodaySession(rawChartData, sessionStart);
-
-    // Get fallback price from raw data if needed
-    const fallbackPrice = rawChartData.length > 0
-      ? rawChartData[rawChartData.length - 1].value
-      : null;
-
-    // Ensure minimum points for visible chart
-    const displayPrice = livePrice ?? currentPrice;
-    filtered = ensureMinimumPoints(filtered, sessionStart, displayPrice, fallbackPrice, rawChartData);
-
-    return filtered;
-  }, [rawChartData, timeframe, livePrice, currentPrice]);
-
-  // Append live price to chart during extended hours
-  const liveChartData = useMemo(() => {
-    if (chartData.length === 0) return chartData;
-    if (timeframe !== '1D') return chartData;
-
-    const currentLivePrice = livePrice ?? currentPrice;
-    if (!currentLivePrice) return chartData;
-
-    const now = new Date();
-    const lastPoint = chartData[chartData.length - 1];
-    const timeDiff = now.getTime() - lastPoint.date.getTime();
-
-    // If last point is more than 10 minutes old in extended hours, append live price
-    if (timeDiff > 10 * 60 * 1000 && isExtendedHours()) {
-      return [
-        ...chartData,
-        {
-          value: currentLivePrice,
-          label: now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-          date: now,
-        }
-      ];
-    }
-
-    // If price changed significantly, update last point
-    if (isExtendedHours() && Math.abs(currentLivePrice - lastPoint.value) > 0.01) {
-      const updatedData = [...chartData];
-      updatedData[updatedData.length - 1] = {
-        ...lastPoint,
-        value: currentLivePrice,
-        date: now,
-        label: now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-      };
-      return updatedData;
-    }
-
-    return chartData;
-  }, [chartData, livePrice, currentPrice, timeframe, marketStatus]);
+    return result;
+  }, [rawChartData, timeframe, livePrice, currentPrice, priceUpdateTrigger]);
 
   // ============================================================================
-  // PRICE CHANGE CALCULATION (WebSocket values preferred for instant updates)
+  // PRICE CHANGE CALCULATION
   // ============================================================================
+
   const priceChange = useMemo(() => {
-    // Use WebSocket-provided change values if available (instant, no calculation)
+    // Prefer WebSocket values
     if (wsChange !== undefined && wsChangePercent !== undefined) {
       return { amount: wsChange, percent: wsChangePercent };
     }
 
-    // Fallback: calculate from chart data
+    // Fallback: calculate from chart
     const price = livePrice ?? currentPrice;
     if (!liveChartData.length || price === null) return { amount: 0, percent: 0 };
 
@@ -636,6 +406,7 @@ export default function ChartTab() {
   // ============================================================================
   // Y-AXIS BOUNDS
   // ============================================================================
+
   const yAxisBounds = useMemo(() => {
     if (liveChartData.length === 0) return { min: 0, max: 100 };
 
@@ -645,20 +416,15 @@ export default function ChartTab() {
     const range = max - min;
     const padding = range * 0.1 || max * 0.05;
 
-    const bounds = {
+    return {
       min: Math.max(0, min - padding),
       max: max + padding,
     };
+  }, [liveChartData]);
 
-    
-
-    return bounds;
-  }, [liveChartData, cleanSymbol]);
-
-  // Chart spacing
   const chartSpacing = useMemo(() => {
     if (liveChartData.length <= 1) return 10;
-    return Math.max(2, (SCREEN_WIDTH - 20) / liveChartData.length);
+    return Math.max(2, (SCREEN_WIDTH - 25) / liveChartData.length);
   }, [liveChartData.length]);
 
   // ============================================================================
@@ -669,20 +435,16 @@ export default function ChartTab() {
     if (!cleanSymbol || !apiSymbol) return;
 
     try {
-      // Use single /price endpoint call to save API credits
-      // Extended hours data comes from the chart data which is fetched separately
       const res = await fetch(`${TWELVE_DATA_URL}/price?symbol=${encodeURIComponent(apiSymbol)}&apikey=${TWELVE_DATA_API_KEY}`);
       const data = await res.json();
 
       let price = parseFloat(data?.price) || 0;
 
-      // If /price returns 0 during extended hours, try to get from latest chart data
       if (price === 0 && rawChartDataRef.current.length > 0) {
         price = rawChartDataRef.current[rawChartDataRef.current.length - 1]?.value || 0;
       }
 
       if (price > 0) {
-        // Use existing previousClose or calculate from price
         const prevClose = previousClose || price;
         const change = price - prevClose;
         const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
@@ -690,7 +452,6 @@ export default function ChartTab() {
         setCurrentPrice(price);
         setError(null);
 
-        // Update price store with real-time price
         priceStore.setQuote({
           symbol: cleanSymbol,
           price,
@@ -699,9 +460,7 @@ export default function ChartTab() {
           previousClose: prevClose,
         });
       }
-    } catch (err) {
-      
-    }
+    } catch (err) {}
   }, [cleanSymbol, apiSymbol, previousClose]);
 
   const fetchChartData = useCallback(async (showLoading = true) => {
@@ -710,11 +469,9 @@ export default function ChartTab() {
     const cacheKey = `chart_cache_${cleanSymbol}_${timeframe}`;
     const memCacheKey = CACHE_KEYS.chart(cleanSymbol, timeframe);
     const ttl = CACHE_TTL[timeframe];
-
-    // Skip cache during extended hours for 1D to ensure fresh data
     const skipCache = timeframe === '1D' && isExtendedHours();
 
-    // Try memory cache first
+    // Try memory cache
     if (!skipCache) {
       const memCached = getFromMemory<ChartDataPoint[]>(memCacheKey, ttl);
       if (memCached && memCached.length > 0) {
@@ -740,17 +497,14 @@ export default function ChartTab() {
 
     try {
       const config = TIMEFRAME_CONFIG[timeframe];
-
-      // prepost=true gets pre-market (4AM) and after-hours (8PM) data
       const prepostParam = (timeframe === '1D' || timeframe === '5D') ? '&prepost=true' : '';
       const url = `${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(apiSymbol)}&interval=${config.interval}&outputsize=${config.outputsize}${prepostParam}&apikey=${TWELVE_DATA_API_KEY}`;
 
-      
       const res = await fetch(url);
       const data = await res.json();
 
       if (data?.values && Array.isArray(data.values) && data.values.length > 0) {
-        // Twelve Data returns newest first, we need oldest first
+        // Reverse: Twelve Data returns newest first
         const values = [...data.values].reverse();
 
         const formatted: ChartDataPoint[] = values.map((d: any) => {
@@ -763,8 +517,6 @@ export default function ChartTab() {
             label = date.toLocaleDateString('en-US', { weekday: 'short' });
           } else if (timeframe === '1M' || timeframe === '3M') {
             label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          } else if (timeframe === '1Y') {
-            label = date.toLocaleDateString('en-US', { month: 'short' });
           } else {
             label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
           }
@@ -782,14 +534,13 @@ export default function ChartTab() {
         setRawChartData(finalData);
         setError(null);
 
-        // Cache the data
+        // Cache
         setToMemory(memCacheKey, finalData);
         await setAsyncCache(cacheKey, finalData);
       } else if (rawChartDataRef.current.length === 0) {
         setError('No data available');
       }
     } catch (err) {
-      
       if (rawChartDataRef.current.length === 0) {
         setError('Unable to load chart');
       }
@@ -802,24 +553,16 @@ export default function ChartTab() {
   // EFFECTS
   // ============================================================================
 
-  // Clear cache on mount during extended hours
   useEffect(() => {
     if (cleanSymbol && isExtendedHours()) {
       clearChartCache(cleanSymbol);
     }
   }, [cleanSymbol]);
 
-  // Keep ref in sync with state (to avoid infinite loops in callbacks)
   useEffect(() => {
     rawChartDataRef.current = rawChartData;
   }, [rawChartData]);
 
-  // Refs for intervals
-  const quoteIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const chartIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Initial load - WebSocket handles real-time price updates
-  // API polling DISABLED to save credits - WebSocket provides instant prices
   useEffect(() => {
     if (!cleanSymbol) {
       setLoading(false);
@@ -827,7 +570,7 @@ export default function ChartTab() {
       return;
     }
 
-    // Start pulse animation
+    // Pulse animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.3, duration: 1000, useNativeDriver: true }),
@@ -835,27 +578,17 @@ export default function ChartTab() {
       ])
     ).start();
 
-    // Initial fetch ONCE only - WebSocket handles continuous updates
+    // Initial fetch
     fetchQuote();
     fetchChartData(true);
     setMarketStatus(getMarketStatus());
 
-    // Clear existing intervals
-    if (quoteIntervalRef.current) clearInterval(quoteIntervalRef.current);
-    if (chartIntervalRef.current) clearInterval(chartIntervalRef.current);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
-    // NO API POLLING - WebSocket provides all real-time prices
-    // Chart data fetched once, live price appended from WebSocket
-
-    // Market status update every 60 seconds (no API call)
+    // Market status update
     intervalRef.current = setInterval(() => {
       setMarketStatus(getMarketStatus());
     }, 60000);
 
     return () => {
-      if (quoteIntervalRef.current) clearInterval(quoteIntervalRef.current);
-      if (chartIntervalRef.current) clearInterval(chartIntervalRef.current);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [cleanSymbol, timeframe, fetchQuote, fetchChartData]);
@@ -921,7 +654,6 @@ export default function ChartTab() {
         Alert.alert('Error', data.error || `Failed to create alert (${res.status})`);
       }
     } catch (error) {
-      
       Alert.alert('Error', 'Failed to create alert');
     } finally {
       setCreatingAlert(false);
@@ -958,7 +690,6 @@ export default function ChartTab() {
   // RENDER
   // ============================================================================
 
-  // Loading skeleton
   if (loading && liveChartData.length === 0 && currentPrice === null) {
     return (
       <View style={styles.container}>
@@ -973,11 +704,6 @@ export default function ChartTab() {
               <View key={i} style={[styles.skeletonBox, { width: 48, height: 36, borderRadius: 18 }]} />
             ))}
           </View>
-          {error && (
-            <View style={{ marginTop: 20, alignItems: 'center' }}>
-              <Text style={{ color: '#FF3B30', fontSize: 14 }}>{error}</Text>
-            </View>
-          )}
         </View>
       </View>
     );
@@ -997,7 +723,6 @@ export default function ChartTab() {
                 {displayChange >= 0 ? '+' : ''}{displayChange.toFixed(2)} ({displayPercent >= 0 ? '+' : ''}{displayPercent.toFixed(2)}%)
               </Text>
             </View>
-
             {pointerData && <Text style={styles.pointerDate}>{pointerData.date}</Text>}
           </View>
 
@@ -1022,18 +747,16 @@ export default function ChartTab() {
                   marketStatus === 'open' && { color: '#00C853' },
                   marketStatus === 'pre-market' && { color: '#FF9500' },
                   marketStatus === 'after-hours' && { color: '#AF52DE' },
-                  marketStatus === 'closed' && { color: '#8E8E93' },
                 ]}>
                   {marketStatus === 'open' ? 'Market Open' :
                    marketStatus === 'pre-market' ? 'Pre-Market' :
-                   marketStatus === 'after-hours' ? 'After Hours' : 'Market Closed'}
+                   marketStatus === 'after-hours' ? 'After Hours' : 'Closed'}
                 </Text>
               </View>
               <Text style={styles.lastUpdated}>
                 {lastUpdated.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                {' | '}{liveChartData.length} pts
               </Text>
-              <Animated.View style={[styles.liveDot, { transform: [{ scale: pulseAnim }] }]} />
+              <Animated.View style={[styles.liveDot, { backgroundColor: priceColor, transform: [{ scale: pulseAnim }] }]} />
             </View>
           )}
         </View>
@@ -1054,22 +777,20 @@ export default function ChartTab() {
             </View>
           ) : liveChartData.length > 1 ? (
             <View style={styles.chartInner}>
-              {/* Baseline */}
-              {liveChartData.length > 0 && (
-                <View style={[
-                  styles.baselineLine,
-                  { top: CHART_HEIGHT * (1 - (liveChartData[0].value - yAxisBounds.min) / (yAxisBounds.max - yAxisBounds.min)) },
-                ]}>
-                  <View style={styles.dottedLineContainer}>
-                    {Array.from({ length: Math.floor((SCREEN_WIDTH - 60) / 8) }).map((_, i) => (
-                      <View key={i} style={styles.dot} />
-                    ))}
-                  </View>
-                  <View style={styles.baselineLabel}>
-                    <Text style={styles.baselineLabelText}>${liveChartData[0].value.toFixed(2)}</Text>
-                  </View>
+              {/* Baseline - First price of the period */}
+              <View style={[
+                styles.baselineLine,
+                { top: CHART_HEIGHT * (1 - (liveChartData[0].value - yAxisBounds.min) / (yAxisBounds.max - yAxisBounds.min)) },
+              ]}>
+                <View style={styles.dottedLineContainer}>
+                  {Array.from({ length: Math.floor((SCREEN_WIDTH - 60) / 8) }).map((_, i) => (
+                    <View key={i} style={styles.dot} />
+                  ))}
                 </View>
-              )}
+                <View style={styles.baselineLabel}>
+                  <Text style={styles.baselineLabelText}>${liveChartData[0].value.toFixed(2)}</Text>
+                </View>
+              </View>
 
               <LineChart
                 data={liveChartData.map((d, idx) => ({ value: d.value, label: '', dataPointIndex: idx }))}
@@ -1090,7 +811,7 @@ export default function ChartTab() {
                 backgroundColor="transparent"
                 spacing={chartSpacing}
                 initialSpacing={5}
-                endSpacing={20}
+                endSpacing={15}
                 yAxisOffset={yAxisBounds.min}
                 maxValue={yAxisBounds.max - yAxisBounds.min}
                 adjustToWidth
@@ -1115,10 +836,12 @@ export default function ChartTab() {
 
                     if (currentValue === undefined || currentValue === null) return null;
 
+                    // Find matched point by index
                     let matchedPoint: ChartDataPoint | null = null;
                     if (pointerIndex !== undefined && pointerIndex >= 0 && pointerIndex < liveChartData.length) {
                       matchedPoint = liveChartData[pointerIndex];
                     } else {
+                      // Fallback: find by closest value
                       let closestDiff = Infinity;
                       let closestIdx = 0;
                       for (let i = 0; i < liveChartData.length; i++) {
@@ -1131,16 +854,16 @@ export default function ChartTab() {
                       matchedPoint = liveChartData[closestIdx];
                     }
 
-                    const displayValue = currentValue;
                     const startPrice = liveChartData[0]?.value || 0;
-                    const changeFromStart = displayValue - startPrice;
+                    const changeFromStart = currentValue - startPrice;
                     const percentFromStart = startPrice > 0 ? ((changeFromStart / startPrice) * 100) : 0;
                     const isUp = changeFromStart >= 0;
                     const changeColor = isUp ? '#00C853' : '#FF3B30';
 
+                    // Update header display
                     setTimeout(() => {
                       setPointerData({
-                        price: displayValue,
+                        price: currentValue,
                         date: matchedPoint?.date ? formatTooltipDate(matchedPoint.date, timeframe) : '',
                         change: changeFromStart,
                       });
@@ -1149,9 +872,11 @@ export default function ChartTab() {
                     return (
                       <View style={styles.tooltip}>
                         {matchedPoint?.date && (
-                          <Text style={styles.tooltipDate}>{formatTooltipDate(matchedPoint.date, timeframe)}</Text>
+                          <Text style={styles.tooltipDate}>
+                            {formatTooltipDate(matchedPoint.date, timeframe)}
+                          </Text>
                         )}
-                        <Text style={styles.tooltipPriceValue}>${displayValue.toFixed(2)}</Text>
+                        <Text style={styles.tooltipPriceValue}>${currentValue.toFixed(2)}</Text>
                         <Text style={[styles.tooltipPercent, { color: changeColor }]}>
                           {isUp ? '+' : ''}{percentFromStart.toFixed(2)}%
                         </Text>
@@ -1160,7 +885,6 @@ export default function ChartTab() {
                   },
                 }}
               />
-
             </View>
           ) : (
             <View style={styles.noDataContainer}>
@@ -1169,27 +893,7 @@ export default function ChartTab() {
           )}
         </View>
 
-        {/* Stats Row */}
-        {dayHigh && dayLow && (
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Open</Text>
-              <Text style={styles.statValue}>{formatPrice(previousClose)}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>High</Text>
-              <Text style={[styles.statValue, { color: '#00C853' }]}>{formatPrice(dayHigh)}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Low</Text>
-              <Text style={[styles.statValue, { color: '#FF3B30' }]}>{formatPrice(dayLow)}</Text>
-            </View>
-          </View>
-        )}
-
-        {/* Timeframe Pills - Hidden when indicators are shown */}
+        {/* Timeframe Pills */}
         {!showIndicators && (
           <View style={styles.timeframeContainer}>
             {(['1D', '5D', '1M', '3M', '1Y', 'ALL'] as Timeframe[]).map((tf) => (
@@ -1214,31 +918,17 @@ export default function ChartTab() {
           onPress={() => setShowIndicators(!showIndicators)}
           activeOpacity={0.7}
         >
-          <Ionicons
-            name={showIndicators ? 'analytics' : 'analytics-outline'}
-            size={18}
-            color={showIndicators ? priceColor : '#8E8E93'}
-          />
-          <Text style={[styles.indicatorToggleText, showIndicators && { color: priceColor }]}>
-            Technical Indicators
-          </Text>
-          <Ionicons
-            name={showIndicators ? 'chevron-up' : 'chevron-down'}
-            size={16}
-            color={showIndicators ? priceColor : '#8E8E93'}
-          />
+          <Ionicons name={showIndicators ? 'analytics' : 'analytics-outline'} size={18} color={showIndicators ? priceColor : '#8E8E93'} />
+          <Text style={[styles.indicatorToggleText, showIndicators && { color: priceColor }]}>Technical Indicators</Text>
+          <Ionicons name={showIndicators ? 'chevron-up' : 'chevron-down'} size={16} color={showIndicators ? priceColor : '#8E8E93'} />
         </TouchableOpacity>
 
         {/* Technical Indicators Panel */}
         {showIndicators && apiSymbol && (
-          <TechnicalIndicators
-            symbol={apiSymbol}
-            timeframe={timeframe}
-            priceColor={priceColor}
-          />
+          <TechnicalIndicators symbol={apiSymbol} timeframe={timeframe} priceColor={priceColor} />
         )}
 
-        {/* Price Alert Button - Hidden when indicators are shown */}
+        {/* Price Alert Button */}
         {!showIndicators && (
           <TouchableOpacity style={styles.alertButton} onPress={openAlertModal} activeOpacity={0.7}>
             <Ionicons name="notifications-outline" size={18} color="#FFD700" />
@@ -1319,17 +1009,14 @@ const styles = StyleSheet.create({
 
   // Price Section
   priceSection: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   price: { fontSize: 44, fontWeight: '700', color: '#FFF', letterSpacing: -1 },
-  livePriceIndicator: { width: 20, height: 20, justifyContent: 'center', alignItems: 'center' },
-  livePriceInnerDot: { width: 10, height: 10, borderRadius: 5 },
   changeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 12 },
   changePill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, gap: 4 },
   changeText: { fontSize: 15, fontWeight: '600' },
   pointerDate: { fontSize: 14, color: '#8E8E93', fontWeight: '500' },
   updateRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 },
   lastUpdated: { fontSize: 13, color: '#636366' },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#00C853' },
+  liveDot: { width: 6, height: 6, borderRadius: 3 },
 
   // Chart
   chartContainer: { flex: 1, justifyContent: 'center', marginVertical: 8 },
@@ -1340,11 +1027,6 @@ const styles = StyleSheet.create({
   baselineLabel: { backgroundColor: '#1C1C1E', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 4 },
   baselineLabelText: { fontSize: 10, color: '#8E8E93', fontWeight: '500' },
 
-  // Live dot at end of chart
-  liveChartDot: { position: 'absolute', width: 12, height: 12, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
-  liveChartDotOuter: { position: 'absolute', width: 12, height: 12, borderRadius: 6, borderWidth: 2, opacity: 0.5 },
-  liveChartDotInner: { width: 6, height: 6, borderRadius: 3 },
-
   errorContainer: { alignItems: 'center', padding: 40 },
   errorText: { color: '#8E8E93', fontSize: 15, marginTop: 12, marginBottom: 16 },
   retryButton: { backgroundColor: '#1C1C1E', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20 },
@@ -1353,22 +1035,15 @@ const styles = StyleSheet.create({
   noDataText: { color: '#8E8E93', fontSize: 15 },
 
   // Tooltip
-  tooltip: { backgroundColor: '#1C1C1EF5', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: '#3C3C3E', alignItems: 'center', minWidth: 130, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
-  tooltipDate: { fontSize: 11, fontWeight: '600', color: '#A0A0A5', textAlign: 'center', marginBottom: 6, letterSpacing: 0.3 },
+  tooltip: { backgroundColor: '#1C1C1EF5', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: '#3C3C3E', alignItems: 'center', minWidth: 130 },
+  tooltipDate: { fontSize: 12, fontWeight: '600', color: '#A0A0A5', textAlign: 'center', marginBottom: 4 },
   tooltipPriceValue: { fontSize: 16, fontWeight: '700', color: '#FFF', textAlign: 'center' },
   tooltipPercent: { fontSize: 13, fontWeight: '600', textAlign: 'center', marginTop: 2 },
 
-  // Stats Row
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 20, borderTopWidth: 1, borderTopColor: '#1C1C1E', marginBottom: 8 },
-  statItem: { alignItems: 'center', flex: 1 },
-  statLabel: { fontSize: 12, color: '#636366', marginBottom: 4, fontWeight: '500' },
-  statValue: { fontSize: 15, color: '#FFF', fontWeight: '600' },
-  statDivider: { width: 1, height: 30, backgroundColor: '#2C2C2E' },
-
   // Timeframe Pills
-  timeframeContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: Platform.OS === 'ios' ? 32 : 16, backgroundColor: '#000' },
+  timeframeContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: Platform.OS === 'ios' ? 32 : 16 },
   timeframePill: { flex: 1, paddingVertical: 10, marginHorizontal: 3, borderRadius: 20, alignItems: 'center', backgroundColor: '#1C1C1E' },
-  timeframePillActive: { shadowColor: '#00C853', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4 },
+  timeframePillActive: { shadowColor: '#00C853', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 },
   timeframeText: { fontSize: 13, fontWeight: '600', color: '#8E8E93' },
   timeframeTextActive: { color: '#000', fontWeight: '700' },
 
@@ -1409,7 +1084,4 @@ const styles = StyleSheet.create({
   marketStatusClosed: { backgroundColor: '#8E8E9315' },
   marketStatusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6, backgroundColor: '#8E8E93' },
   marketStatusText: { fontSize: 11, fontWeight: '600', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.5 },
-
-  // Live indicator dot (header)
-  liveDot: { position: 'absolute', width: 12, height: 12, borderRadius: 6 },
 });
