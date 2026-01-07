@@ -1480,7 +1480,6 @@ export default function Explore() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.headerTitle}>Explore</Text>
-          <LiveIndicator />
         </View>
         <View style={styles.headerRight}>
           {showSearch ? (

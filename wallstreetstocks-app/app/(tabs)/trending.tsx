@@ -832,7 +832,6 @@ export default function Trending() {
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <Text style={styles.title}>Trending</Text>
-            <LiveIndicator />
           </View>
         </View>
         <View style={styles.center}>
@@ -852,7 +851,6 @@ export default function Trending() {
         <View style={styles.headerTopRow}>
           <Text style={styles.title}>Trending</Text>
           <View style={styles.headerRight}>
-            <LiveIndicator />
             <TouchableOpacity style={styles.refreshBtn} onPress={fetchLiveData}>
               <Ionicons name="refresh" size={20} color="#6b7280" />
             </TouchableOpacity>
