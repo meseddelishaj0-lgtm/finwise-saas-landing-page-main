@@ -792,7 +792,8 @@ export default function ChartTab() {
   const quoteIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const chartIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Initial load and polling
+  // Initial load - WebSocket handles real-time price updates
+  // API polling DISABLED to save credits - WebSocket provides instant prices
   useEffect(() => {
     if (!cleanSymbol) {
       setLoading(false);
@@ -808,7 +809,7 @@ export default function ChartTab() {
       ])
     ).start();
 
-    // Initial fetch
+    // Initial fetch ONCE only - WebSocket handles continuous updates
     fetchQuote();
     fetchChartData(true);
     setMarketStatus(getMarketStatus());
@@ -818,11 +819,13 @@ export default function ChartTab() {
     if (chartIntervalRef.current) clearInterval(chartIntervalRef.current);
     if (intervalRef.current) clearInterval(intervalRef.current);
 
-    // Price quote refresh every 3 seconds
-    quoteIntervalRef.current = setInterval(() => {
-      fetchQuote();
+    // NO quote polling - WebSocket provides real-time prices instantly
+    // This saves ~20 API credits/minute per symbol viewed
+
+    // Market status update every 30 seconds (no API call)
+    intervalRef.current = setInterval(() => {
       setMarketStatus(getMarketStatus());
-    }, 3000);
+    }, 30000);
 
     // Chart data refresh every 30 seconds for 1D, 60 seconds for others
     const chartPollInterval = timeframe === '1D' ? 30000 : 60000;
