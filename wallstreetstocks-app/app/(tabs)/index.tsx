@@ -1884,11 +1884,6 @@ export default function Dashboard() {
             <Text style={styles.sectionTitle}>Market Overview</Text>
             <View style={styles.liveStatusContainer}>
               <MarketStatusIndicator />
-              {lastUpdated && (
-                <Text style={styles.lastUpdatedText}>
-                  {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </Text>
-              )}
             </View>
           </View>
           
