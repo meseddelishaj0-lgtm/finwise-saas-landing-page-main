@@ -64,7 +64,7 @@ async function prefetchSymbolData(symbol: string) {
     }
   } catch (err) {
     // Silent fail - prefetch is best effort
-    console.log('Prefetch error (non-critical):', err);
+    :', err);
   }
 }
 

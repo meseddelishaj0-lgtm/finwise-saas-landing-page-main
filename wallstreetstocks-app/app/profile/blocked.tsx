@@ -77,7 +77,7 @@ export default function Blocked() {
       const users = await getBlockedUserDetails(userId);
       setBlockedUsers(users);
     } catch (error) {
-      console.error('Error fetching blocked users:', error);
+      
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -107,7 +107,7 @@ export default function Blocked() {
                 throw new Error('Failed to unblock user');
               }
             } catch (error) {
-              console.error('Error unblocking user:', error);
+              
               Alert.alert('Error', 'Failed to unblock user. Please try again.');
             } finally {
               setUnblocking(null);

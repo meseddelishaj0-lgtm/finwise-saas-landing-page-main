@@ -2,9 +2,9 @@
 import Purchases, { LOG_LEVEL, PurchasesPackage, CustomerInfo } from 'react-native-purchases';
 import { Platform } from 'react-native';
 
-// RevenueCat API Keys - Get from RevenueCat Dashboard → API Keys
-const REVENUECAT_API_KEY_IOS = 'appl_MvQMNxVSRjqfwMomGYDrIxbwXZi';
-const REVENUECAT_API_KEY_ANDROID = 'goog_YOUR_ANDROID_KEY';
+// RevenueCat API Keys - loaded from environment variables
+const REVENUECAT_API_KEY_IOS = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || '';
+const REVENUECAT_API_KEY_ANDROID = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID || '';
 
 // Entitlement IDs - Must match RevenueCat Dashboard
 export const ENTITLEMENT_IDS = {
@@ -45,21 +45,24 @@ export type SubscriptionTier = 'free' | 'gold' | 'platinum' | 'diamond';
 // Initialize RevenueCat - Call once on app start
 export const initializeRevenueCat = async (userId?: string): Promise<boolean> => {
   try {
-    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-    
+    // Only enable debug logging in development
+    if (__DEV__) {
+      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    }
+
     const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEY_IOS : REVENUECAT_API_KEY_ANDROID;
-    
-    console.log('🔑 Initializing RevenueCat with key:', apiKey.substring(0, 15) + '...');
-    
+
+    if (!apiKey) {
+      return false;
+    }
+
     await Purchases.configure({
       apiKey,
       appUserID: userId || undefined,
     });
-    
-    console.log('✅ RevenueCat initialized successfully');
+
     return true;
   } catch (error) {
-    console.error('❌ Failed to initialize RevenueCat:', error);
     return false;
   }
 };
@@ -72,10 +75,8 @@ export const initializeRevenueCat = async (userId?: string): Promise<boolean> =>
 export const identifyUser = async (userId: string): Promise<CustomerInfo> => {
   try {
     const { customerInfo } = await Purchases.logIn(userId);
-    console.log('✅ User identified:', userId);
     return customerInfo;
   } catch (error) {
-    console.error('Failed to identify user:', error);
     throw error;
   }
 };
@@ -84,10 +85,8 @@ export const identifyUser = async (userId: string): Promise<CustomerInfo> => {
 export const logOutUser = async (): Promise<CustomerInfo> => {
   try {
     const customerInfo = await Purchases.logOut();
-    console.log('✅ User logged out');
     return customerInfo;
   } catch (error) {
-    console.error('Failed to log out user:', error);
     throw error;
   }
 };
@@ -117,7 +116,6 @@ export const checkPremiumStatus = async (): Promise<PremiumStatus> => {
       customerInfo,
     };
   } catch (error) {
-    console.error('Failed to check premium status:', error);
     throw error;
   }
 };
@@ -125,24 +123,24 @@ export const checkPremiumStatus = async (): Promise<PremiumStatus> => {
 // Get subscription tier from product ID - REQUIRED by SubscriptionContext
 export const getSubscriptionTier = (productId: string | null): number => {
   if (!productId) return TIER_LEVELS.FREE;
-  
+
   const id = productId.toLowerCase();
   if (id.includes('diamond')) return TIER_LEVELS.DIAMOND;
   if (id.includes('platinum')) return TIER_LEVELS.PLATINUM;
   if (id.includes('gold')) return TIER_LEVELS.GOLD;
-  
+
   return TIER_LEVELS.FREE;
 };
 
 // Get tier name from product ID
 export const getTierName = (productId: string | null): SubscriptionTier => {
   if (!productId) return 'free';
-  
+
   const id = productId.toLowerCase();
   if (id.includes('diamond')) return 'diamond';
   if (id.includes('platinum')) return 'platinum';
   if (id.includes('gold')) return 'gold';
-  
+
   return 'free';
 };
 
@@ -154,25 +152,8 @@ export const getTierName = (productId: string | null): SubscriptionTier => {
 export const getOfferings = async (): Promise<PurchasesPackage[]> => {
   try {
     const offerings = await Purchases.getOfferings();
-    
-    console.log('📦 ========== OFFERINGS DEBUG ==========');
-    console.log('📦 Current offering ID:', offerings.current?.identifier);
-    console.log('📦 Packages count:', offerings.current?.availablePackages?.length || 0);
-    
-    if (offerings.current?.availablePackages) {
-      offerings.current.availablePackages.forEach((pkg, i) => {
-        console.log(`📦 Package ${i}:`, {
-          pkgIdentifier: pkg.identifier,
-          productId: pkg.product.identifier,
-          price: pkg.product.priceString
-        });
-      });
-    }
-    console.log('📦 =====================================');
-    
     return offerings.current?.availablePackages || [];
   } catch (error) {
-    console.error('Failed to get offerings:', error);
     throw error;
   }
 };
@@ -191,8 +172,7 @@ interface PurchaseResult {
 export const purchasePackage = async (pkg: PurchasesPackage): Promise<PurchaseResult> => {
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
-    
-    console.log('✅ Purchase successful');
+
     return {
       success: true,
       customerInfo,
@@ -200,15 +180,13 @@ export const purchasePackage = async (pkg: PurchasesPackage): Promise<PurchaseRe
     };
   } catch (error: any) {
     if (error.userCancelled) {
-      console.log('User cancelled purchase');
       return {
         success: false,
         customerInfo: null,
         error: 'cancelled',
       };
     }
-    
-    console.error('Purchase failed:', error);
+
     return {
       success: false,
       customerInfo: null,
@@ -223,14 +201,12 @@ export const restorePurchases = async (): Promise<PurchaseResult> => {
     const customerInfo = await Purchases.restorePurchases();
     const hasEntitlement = !!getActiveEntitlement(customerInfo.entitlements.active);
 
-    console.log('✅ Restore completed, has entitlement:', hasEntitlement);
     return {
       success: hasEntitlement,
       customerInfo,
       error: hasEntitlement ? null : 'No purchases to restore',
     };
   } catch (error: any) {
-    console.error('Restore failed:', error);
     return {
       success: false,
       customerInfo: null,
@@ -248,7 +224,6 @@ export const getCustomerInfo = async (): Promise<CustomerInfo> => {
   try {
     return await Purchases.getCustomerInfo();
   } catch (error) {
-    console.error('Failed to get customer info:', error);
     throw error;
   }
 };
@@ -261,11 +236,11 @@ export const hasAccessToTier = (userTier: number, requiredTier: number): boolean
 // Get product display name
 export const getProductDisplayName = (productId: string | null): string => {
   if (!productId) return 'Free';
-  
+
   const id = productId.toLowerCase();
   if (id.includes('diamond')) return 'Diamond';
   if (id.includes('platinum')) return 'Platinum';
   if (id.includes('gold')) return 'Gold';
-  
+
   return 'Premium';
 };

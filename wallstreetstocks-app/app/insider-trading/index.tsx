@@ -103,7 +103,7 @@ export default function InsiderTradingScreen() {
         setStats({ totalBuys: 0, totalSells: 0, netActivity: 0 });
       }
     } catch (error) {
-      console.error('Error fetching insider trades:', error);
+      
       setTrades([]);
       setFilteredTrades([]);
     } finally {

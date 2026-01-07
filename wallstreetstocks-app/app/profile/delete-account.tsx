@@ -67,7 +67,7 @@ export default function DeleteAccountScreen() {
                 [{ text: 'OK', onPress: () => router.replace('/login') }]
               );
             } catch (error) {
-              console.error('Delete account error:', error);
+              
               Alert.alert('Error', 'Failed to delete account. Please try again.');
             } finally {
               setIsDeleting(false);

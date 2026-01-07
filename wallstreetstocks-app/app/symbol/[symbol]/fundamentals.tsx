@@ -94,7 +94,7 @@ export default function FundamentalsTab() {
       if (metricsData?.[0]) setKeyMetrics(metricsData[0]);
 
     } catch (err: any) {
-      console.error("Fetch error:", err);
+      
       setError("Unable to load fundamentals");
     } finally {
       setLoading(false);

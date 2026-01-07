@@ -51,7 +51,7 @@ export default function MenuPage() {
             try {
               await logout();
             } catch (error) {
-              console.error("Error signing out:", error);
+              
               Alert.alert("Error", "Failed to sign out");
             }
           },
@@ -66,7 +66,7 @@ export default function MenuPage() {
         message: "Check out WallStreetStocks - the best app for stock research and community insights! Download it now: https://apps.apple.com/app/wallstreetstocks",
       });
     } catch (error) {
-      console.error("Share error:", error);
+      
     }
   };
 

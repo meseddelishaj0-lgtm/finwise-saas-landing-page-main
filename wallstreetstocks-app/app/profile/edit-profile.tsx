@@ -37,22 +37,22 @@ const uploadImage = async (imageUri: string): Promise<string | null> => {
     const type = match ? `image/${match[1]}` : 'image/jpeg';
     formData.append('file', { uri: imageUri, name: filename, type } as any);
 
-    console.log('🔵 Uploading image:', filename);
+    
     const response = await fetch(`${API_BASE_URL}/api/upload`, {
       method: 'POST',
       body: formData,
     });
 
     if (!response.ok) {
-      console.error('❌ Upload failed:', response.status);
+      
       return null;
     }
 
     const result = await response.json();
-    console.log('✅ Upload success:', result.url);
+    
     return result.url;
   } catch (error) {
-    console.error('❌ Upload error:', error);
+    
     return null;
   }
 };
@@ -85,7 +85,7 @@ export default function EditProfile() {
   React.useEffect(() => {
     const loadProfile = async () => {
       const userId = getUserId();
-      console.log('🔵 EditProfile: Loading profile for userId:', userId);
+      
 
       if (!userId) {
         // Fall back to local storage if not logged in
@@ -108,7 +108,7 @@ export default function EditProfile() {
       // FIRST: Use Auth context data (persisted locally, always fresh)
       // This avoids Neon read replica lag issues
       if (authUser) {
-        console.log('🔵 EditProfile: Using Auth context data:', { name: authUser.name, username: authUser.username });
+        
         setName(authUser.name || '');
         setUsername(authUser.username || '');
         setEmail(authUser.email || '');
@@ -124,7 +124,7 @@ export default function EditProfile() {
       try {
         const timestamp = Date.now();
         const url = `${API_BASE_URL}/api/user/${userId}?_t=${timestamp}`;
-        console.log('🔵 EditProfile: Fetching additional data from:', url);
+        
 
         const response = await fetch(url, {
           method: 'GET',
@@ -136,7 +136,7 @@ export default function EditProfile() {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('🔵 EditProfile: API data received:', { name: data.name, username: data.username });
+          
 
           // Only use API data for fields NOT in Auth context
           // Auth context is the source of truth for editable fields
@@ -149,10 +149,10 @@ export default function EditProfile() {
           if (!authUser?.profileImage && data.profileImage) setAvatar(data.profileImage);
           if (!(authUser as any)?.bannerImage && data.bannerImage) setBannerImage(data.bannerImage);
         } else {
-          console.error('🔴 EditProfile: Failed to fetch profile:', response.status);
+          
         }
       } catch (error) {
-        console.error('🔴 EditProfile: Error loading profile:', error);
+        
       } finally {
         setLoading(false);
       }
@@ -217,8 +217,8 @@ export default function EditProfile() {
   const handleSave = async () => {
     const userId = getUserId();
 
-    console.log('🔵 handleSave called, userId:', userId);
-    console.log('🔵 Saving data:', { name, username, bio, location, website });
+    
+    
 
     // Validate name
     if (!name || name.trim().length === 0) {
@@ -240,7 +240,7 @@ export default function EditProfile() {
       let uploadedBanner = bannerImage;
 
       if (avatar && avatar.startsWith('file://')) {
-        console.log('🔵 Uploading avatar...');
+        
         const url = await uploadImage(avatar);
         if (url) {
           uploadedAvatar = url;
@@ -253,7 +253,7 @@ export default function EditProfile() {
       }
 
       if (bannerImage && bannerImage.startsWith('file://')) {
-        console.log('🔵 Uploading banner...');
+        
         const url = await uploadImage(bannerImage);
         if (url) {
           uploadedBanner = url;
@@ -279,8 +279,8 @@ export default function EditProfile() {
         };
 
         // Use /api/user/:id endpoint which is more reliable
-        console.log('🔵 Sending PUT request to:', `${API_BASE_URL}/api/user/${userId}`);
-        console.log('🔵 Payload:', JSON.stringify(payload));
+        
+        );
 
         const response = await fetch(`${API_BASE_URL}/api/user/${userId}`, {
           method: 'PUT',
@@ -291,9 +291,9 @@ export default function EditProfile() {
           body: JSON.stringify(payload),
         });
 
-        console.log('🔵 Response status:', response.status);
+        
         const responseData = await response.json();
-        console.log('🔵 Response data:', JSON.stringify(responseData));
+        );
 
         if (!response.ok) {
           if (responseData.error?.includes('Username')) {
@@ -307,12 +307,12 @@ export default function EditProfile() {
 
         // Verify the update was successful
         if (responseData.name !== name.trim()) {
-          console.warn('⚠️ Name mismatch after save:', { sent: name.trim(), received: responseData.name });
+          , received: responseData.name });
         }
 
         // Update BOTH contexts directly with the response data
         // This avoids read replica lag issues with re-fetching
-        console.log('🔵 Updating profile contexts with response data...');
+        
 
         // Update UserProfileContext (used by Profile tab, Community)
         updateUserProfile({
@@ -336,9 +336,9 @@ export default function EditProfile() {
           bannerImage: responseData.bannerImage,
         });
 
-        console.log('🔵 Profile contexts updated');
+        
       } else {
-        console.log('🔵 No userId, saving only to local storage');
+        
       }
 
       // Also save to local storage as backup
@@ -349,7 +349,7 @@ export default function EditProfile() {
         { text: 'OK', onPress: () => router.back() }
       ]);
     } catch (error: any) {
-      console.error('❌ Error saving profile:', error);
+      
       Alert.alert('Error', error.message || 'Failed to save profile. Please try again.');
     } finally {
       setSaving(false);

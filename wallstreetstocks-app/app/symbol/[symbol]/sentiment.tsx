@@ -170,7 +170,7 @@ export default function SentimentTab() {
   }, [cleanSymbol, sentiment.length, ratings]);
 
   useEffect(() => {
-    console.log('Sentiment tab mounted with symbol:', cleanSymbol);
+    
     if (cleanSymbol) {
       fetchSentiment();
     }

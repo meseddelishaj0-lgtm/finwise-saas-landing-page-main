@@ -77,7 +77,7 @@ export default function Muted() {
       const users = await getMutedUserDetails(userId);
       setMutedUsers(users);
     } catch (error) {
-      console.error('Error fetching muted users:', error);
+      
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -107,7 +107,7 @@ export default function Muted() {
                 throw new Error('Failed to unmute user');
               }
             } catch (error) {
-              console.error('Error unmuting user:', error);
+              
               Alert.alert('Error', 'Failed to unmute user. Please try again.');
             } finally {
               setUnmuting(null);

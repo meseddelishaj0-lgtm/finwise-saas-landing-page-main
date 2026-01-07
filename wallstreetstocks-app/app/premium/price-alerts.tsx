@@ -70,7 +70,7 @@ export default function PriceAlertsScreen() {
       setLoading(false);
       updatePrices();
     } catch (err) {
-      console.error('Error loading alerts:', err);
+      
       setLoading(false);
     }
   };
@@ -80,7 +80,7 @@ export default function PriceAlertsScreen() {
       await AsyncStorage.setItem('priceAlerts', JSON.stringify(newAlerts));
       setAlerts(newAlerts);
     } catch (err) {
-      console.error('Error saving alerts:', err);
+      
     }
   };
 
@@ -129,7 +129,7 @@ export default function PriceAlertsScreen() {
         saveAlerts(updatedAlerts);
       }
     } catch (err) {
-      console.error('Error updating prices:', err);
+      
     }
   };
 

@@ -158,7 +158,7 @@ export default function SubscriptionPage() {
       // Force sync with RevenueCat to get latest subscription data
       await Purchases.syncPurchases();
     } catch (e) {
-      console.log('Sync purchases error (non-blocking):', e);
+      // Silently handle sync errors
     }
     await Promise.all([
       loadOfferings(),
@@ -176,7 +176,7 @@ export default function SubscriptionPage() {
         setPackages(offerings.current.availablePackages);
       }
     } catch (error) {
-      console.error("Error loading offerings:", error);
+      // Silently handle offerings error
     }
   };
 
@@ -188,18 +188,12 @@ export default function SubscriptionPage() {
       const activeEntitlementId = getActiveEntitlement(info.entitlements.active);
       const entitlement = activeEntitlementId ? info.entitlements.active[activeEntitlementId] : null;
 
-      console.log('📱 Subscription check:', {
-        activeEntitlementId,
-        productIdentifier: entitlement?.productIdentifier,
-        allEntitlements: Object.keys(info.entitlements.active),
-      });
-
       if (entitlement) {
         setActiveSubscription(entitlement.productIdentifier);
         setShowManageSection(true);
       }
     } catch (error) {
-      console.error("Error checking subscription:", error);
+      // Silently handle subscription check error
     }
   };
 
@@ -281,7 +275,6 @@ export default function SubscriptionPage() {
       }
     } catch (error: any) {
       if (!error.userCancelled) {
-        console.error("Purchase error:", error);
         Alert.alert("Purchase Failed", error.message || "Unable to complete purchase.");
       }
     } finally {
@@ -394,7 +387,7 @@ export default function SubscriptionPage() {
       try {
         await Purchases.syncPurchases();
       } catch (e) {
-        console.log('Sync error (non-blocking):', e);
+        // Silently handle sync errors
       }
 
       const info = await Purchases.restorePurchases();

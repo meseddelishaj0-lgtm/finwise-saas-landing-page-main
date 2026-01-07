@@ -74,7 +74,7 @@ export default function NewConversationScreen() {
         setRecipient(data);
       }
     } catch (error) {
-      console.error('Error fetching recipient:', error);
+      
     } finally {
       setLoading(false);
     }
@@ -126,7 +126,7 @@ export default function NewConversationScreen() {
       }
       return null;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      
       return null;
     } finally {
       setUploadingImage(false);
@@ -184,10 +184,10 @@ export default function NewConversationScreen() {
         // Remove temp message on error
         setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
         const errorData = await response.json();
-        console.error('Error sending message:', errorData.error);
+        
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      
       setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
     } finally {
       setSending(false);

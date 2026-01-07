@@ -140,7 +140,7 @@ export function useRemoteConfig() {
 
         return newConfig;
       } catch (err) {
-        console.warn('Failed to fetch remote config:', err);
+        
         // Return cached or default config on error
         return sharedConfig || DEFAULT_CONFIG;
       } finally {
@@ -237,6 +237,6 @@ export async function prefetchRemoteConfig(): Promise<void> {
       );
     }
   } catch (err) {
-    console.warn('Failed to prefetch remote config:', err);
+    
   }
 }

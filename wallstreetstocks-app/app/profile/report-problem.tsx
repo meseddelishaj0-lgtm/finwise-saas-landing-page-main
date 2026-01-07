@@ -86,7 +86,7 @@ export default function ReportProblem() {
         Alert.alert('Error', data.error || 'Failed to submit report. Please try again.');
       }
     } catch (error) {
-      console.error('Bug report submission error:', error);
+      
       Alert.alert('Error', 'Network error. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);

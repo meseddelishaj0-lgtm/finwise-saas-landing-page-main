@@ -81,7 +81,7 @@ export default function Signup() {
   // Debug: Log the redirect URI being used (iOS)
   useEffect(() => {
     if (request && Platform.OS === 'ios') {
-      console.log('🔑 Google Auth Redirect URI (Signup):', request.redirectUri);
+      :', request.redirectUri);
     }
   }, [request]);
 
@@ -99,7 +99,7 @@ export default function Signup() {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
 
-      console.log('🔑 Android Google Sign-In success:', userInfo.data?.user.email);
+      
 
       // Get user details and call socialLogin
       const user = userInfo.data?.user;
@@ -110,13 +110,13 @@ export default function Signup() {
       }
     } catch (error: any) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('User cancelled sign in');
+        
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log('Sign in is in progress');
+        
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         Alert.alert('Error', 'Google Play Services is not available');
       } else {
-        console.error('Google Sign-In error:', error);
+        
         Alert.alert('Error', error.message || 'Google sign-in failed');
       }
     } finally {
@@ -171,7 +171,7 @@ export default function Signup() {
         // Check if response is JSON
         if (text.startsWith('<') || text.startsWith('<!')) {
           // API returned HTML (404 page), skip check
-          console.log('Username check API not available, skipping');
+          
           setUsernameAvailable(true);
           return;
         }
@@ -185,7 +185,7 @@ export default function Signup() {
           setUsernameError('Username is already taken');
         }
       } catch (error) {
-        console.log('Username check failed, allowing username:', error);
+        
         setUsernameAvailable(true);
       } finally {
         setCheckingUsername(false);

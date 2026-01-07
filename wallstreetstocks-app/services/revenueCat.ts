@@ -1,10 +1,10 @@
 import Purchases, { LOG_LEVEL, PurchasesPackage, CustomerInfo } from 'react-native-purchases';
 import { Platform, Linking } from 'react-native';
 
-// RevenueCat API Keys - Replace with your actual keys from RevenueCat dashboard
+// RevenueCat API Keys - loaded from environment variables
 const API_KEYS = {
-  ios: 'appl_MvQMNxVSRjqfwMomGYDrIxbwXZi', // Your iOS API key from RevenueCat
-  android: 'goog_lWSKWOLpSxxBMiVzPcprDWcWpnf', // Your Android API key (if needed later)
+  ios: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || '',
+  android: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID || '',
 };
 
 // Entitlement IDs - Must match RevenueCat Dashboard

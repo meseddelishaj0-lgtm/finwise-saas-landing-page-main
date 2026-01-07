@@ -55,11 +55,11 @@ export default function Notifications() {
         const data = await res.json();
         setNotifications(Array.isArray(data) ? data : []);
       } else {
-        console.error('Failed to fetch notifications:', res.status);
+        
         setNotifications([]);
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      
       setNotifications([]);
     } finally {
       setLoading(false);
@@ -89,7 +89,7 @@ export default function Notifications() {
         prev.map(n => (n.id === notificationId ? { ...n, isRead: true } : n))
       );
     } catch (error) {
-      console.error('Error marking as read:', error);
+      
     }
   };
 
@@ -104,7 +104,7 @@ export default function Notifications() {
 
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      
     }
   };
 

@@ -66,7 +66,7 @@ export const useAuth = create<AuthState>()(
       setUserData: (data: Partial<User>) => {
         const { user } = get();
         if (user) {
-          console.log('🔵 Auth: Updating user data locally:', data);
+          
           set({ user: { ...user, ...data } });
         }
       },
@@ -110,22 +110,22 @@ export const useAuth = create<AuthState>()(
                     token,
                     loading: false,
                   });
-                  console.log('✅ Session restored for:', userData.email || cachedUser.email);
+                  
                 } else if (response.status === 401) {
                   // Token is invalid, clear session
-                  console.log('⚠️ Token expired, clearing session');
+                  
                   await SecureStore.deleteItemAsync(TOKEN_KEY);
                   await AsyncStorage.removeItem('authToken');
                   await AsyncStorage.removeItem('userId');
                   set({ user: null, token: null, loading: false });
                 } else {
                   // Other error - keep cached data
-                  console.log('⚠️ API error, using cached data');
+                  
                   set({ token, loading: false });
                 }
               } catch (fetchError) {
                 // Network error - keep existing state from persist
-                console.log('⚠️ Network error during init, using cached data');
+                
                 set({ token, loading: false });
               }
             } else {
@@ -136,7 +136,7 @@ export const useAuth = create<AuthState>()(
             set({ user: null, token: null, loading: false });
           }
         } catch (error) {
-          console.error('Auth init error:', error);
+          
           set({ user: null, token: null, loading: false });
         }
       },
@@ -148,8 +148,8 @@ export const useAuth = create<AuthState>()(
 
       // Email/Password Login
       login: async (email: string, password: string) => {
-        console.log('=== LOGIN ===');
-        console.log('Email:', email);
+        
+        
 
         try {
           const response = await fetch(`${API_URL}/api/mobile-auth/login`, {
@@ -161,9 +161,9 @@ export const useAuth = create<AuthState>()(
             body: JSON.stringify({ email, password }),
           });
 
-          console.log('Status:', response.status);
+          
           const responseText = await response.text();
-          console.log('Response:', responseText);
+          
 
           if (!response.ok) {
             const error = JSON.parse(responseText);
@@ -194,18 +194,18 @@ export const useAuth = create<AuthState>()(
           // Store userId for community pages
           await AsyncStorage.setItem('userId', data.user.id.toString());
 
-          console.log('Login complete!');
+          
         } catch (error: any) {
-          console.error('Login error:', error.message);
+          
           throw error;
         }
       },
 
       // Email/Password Signup
       signup: async (email: string, password: string, name?: string, username?: string) => {
-        console.log('=== SIGNUP ===');
-        console.log('Email:', email);
-        console.log('Username:', username);
+        
+        
+        
 
         try {
           const response = await fetch(`${API_URL}/api/mobile-auth/signup`, {
@@ -222,9 +222,9 @@ export const useAuth = create<AuthState>()(
             }),
           });
 
-          console.log('Status:', response.status);
+          
           const responseText = await response.text();
-          console.log('Response:', responseText);
+          
 
           if (!response.ok) {
             const error = JSON.parse(responseText);
@@ -255,9 +255,9 @@ export const useAuth = create<AuthState>()(
           // Store userId for community pages
           await AsyncStorage.setItem('userId', data.user.id.toString());
 
-          console.log('Signup complete!');
+          
         } catch (error: any) {
-          console.error('Signup error:', error.message);
+          
           throw error;
         }
       },
@@ -267,9 +267,9 @@ export const useAuth = create<AuthState>()(
         const userName = name || email.split('@')[0];
         const endpoint = provider === 'google' ? '/api/mobile-auth/google' : '/api/mobile-auth/apple';
 
-        console.log('=== SOCIAL LOGIN ===');
-        console.log('Provider:', provider);
-        console.log('Email:', email);
+        
+        
+        
 
         try {
           const response = await fetch(`${API_URL}${endpoint}`, {
@@ -285,9 +285,9 @@ export const useAuth = create<AuthState>()(
             }),
           });
 
-          console.log('Status:', response.status);
+          
           const responseText = await response.text();
-          console.log('Response:', responseText);
+          
 
           if (!response.ok) {
             throw new Error(`Auth failed: ${response.status}`);
@@ -322,9 +322,9 @@ export const useAuth = create<AuthState>()(
           // Store userId for community pages
           await AsyncStorage.setItem('userId', data.user.id.toString());
 
-          console.log('Social login complete! isNewUser:', isNewUser);
+          
         } catch (error: any) {
-          console.error('Social login error:', error.message);
+          
           throw error;
         }
       },
@@ -337,9 +337,9 @@ export const useAuth = create<AuthState>()(
           throw new Error('Not authenticated');
         }
 
-        console.log('=== UPDATE PROFILE ===');
-        console.log('User ID:', user.id);
-        console.log('Data:', data);
+        
+        
+        
 
         try {
           // Use /api/user/:id endpoint which is more reliable
@@ -354,9 +354,9 @@ export const useAuth = create<AuthState>()(
             body: JSON.stringify(data),
           });
 
-          console.log('Status:', response.status);
+          
           const responseText = await response.text();
-          console.log('Response:', responseText);
+          
 
           // Check if response is HTML (error page)
           if (responseText.startsWith('<') || responseText.startsWith('<!')) {
@@ -393,17 +393,17 @@ export const useAuth = create<AuthState>()(
             isNewUser: false,
           });
 
-          console.log('Profile updated!');
+          
         } catch (error: any) {
-          console.error('Update profile error:', error.message);
+          
           throw error;
         }
       },
 
       // Forgot Password
       forgotPassword: async (email: string) => {
-        console.log('=== FORGOT PASSWORD ===');
-        console.log('Email:', email);
+        
+        
 
         try {
           const response = await fetch(`${API_URL}/api/mobile-auth/forgot-password`, {
@@ -416,7 +416,7 @@ export const useAuth = create<AuthState>()(
           });
 
           const responseText = await response.text();
-          console.log('Response:', responseText);
+          
 
           if (!response.ok) {
             const error = JSON.parse(responseText);
@@ -425,15 +425,15 @@ export const useAuth = create<AuthState>()(
 
           return JSON.parse(responseText);
         } catch (error: any) {
-          console.error('Forgot password error:', error.message);
+          
           throw error;
         }
       },
 
       // Reset Password
       resetPassword: async (email: string, code: string, newPassword: string) => {
-        console.log('=== RESET PASSWORD ===');
-        console.log('Email:', email);
+        
+        
 
         try {
           const response = await fetch(`${API_URL}/api/mobile-auth/reset-password`, {
@@ -446,7 +446,7 @@ export const useAuth = create<AuthState>()(
           });
 
           const responseText = await response.text();
-          console.log('Response:', responseText);
+          
 
           if (!response.ok) {
             const error = JSON.parse(responseText);
@@ -475,9 +475,9 @@ export const useAuth = create<AuthState>()(
             loading: false
           });
 
-          console.log('Password reset complete!');
+          
         } catch (error: any) {
-          console.error('Reset password error:', error.message);
+          
           throw error;
         }
       },

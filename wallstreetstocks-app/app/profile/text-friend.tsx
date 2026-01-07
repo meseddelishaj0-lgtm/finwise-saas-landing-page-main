@@ -77,7 +77,7 @@ export default function TextFriendPage() {
         );
       }
     } catch (error) {
-      console.error("Error opening SMS:", error);
+      
       Alert.alert("Error", "Failed to open messaging app.");
     }
   };

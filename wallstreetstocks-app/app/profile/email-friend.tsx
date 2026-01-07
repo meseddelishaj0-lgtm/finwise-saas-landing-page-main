@@ -56,7 +56,7 @@ export default function EmailFriendPage() {
         );
       }
     } catch (error) {
-      console.error("Error opening email:", error);
+      
       Alert.alert("Error", "Failed to open email app.");
     }
   };

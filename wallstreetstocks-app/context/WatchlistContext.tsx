@@ -91,7 +91,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
         // Force immediate save on unmount
-        AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(pendingWatchlistRef.current)).catch(console.error);
+        AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(pendingWatchlistRef.current)).catch(() => {});
       }
     };
   }, []);

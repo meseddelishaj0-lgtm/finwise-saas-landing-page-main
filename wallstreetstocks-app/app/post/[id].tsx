@@ -114,7 +114,7 @@ export default function PostDetail() {
         const postData = await postRes.json();
         setPost(postData);
       } else {
-        console.error('Failed to fetch post:', postRes.status);
+        
         Alert.alert('Error', 'Post not found');
         router.back();
         return;
@@ -127,7 +127,7 @@ export default function PostDetail() {
         setComments(Array.isArray(commentsData) ? commentsData : []);
       }
     } catch (error) {
-      console.error('Error fetching post:', error);
+      
       Alert.alert('Error', 'Failed to load post');
     } finally {
       setLoading(false);
@@ -160,7 +160,7 @@ export default function PostDetail() {
         );
       }
     } catch (error) {
-      console.error('Error liking post:', error);
+      
     }
   };
 
@@ -182,7 +182,7 @@ export default function PostDetail() {
         setPost(prev => (prev ? { ...prev, commentCount: prev.commentCount + 1 } : null));
       }
     } catch (error) {
-      console.error('Error posting comment:', error);
+      
       Alert.alert('Error', 'Failed to post comment');
     } finally {
       setSubmitting(false);

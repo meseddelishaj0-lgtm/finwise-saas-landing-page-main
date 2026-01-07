@@ -24,7 +24,7 @@ export function openSSEConnection(
         onMessage({ type: 'notifications', data: notifications });
       }
     } catch (error) {
-      console.log('Notification polling error:', error);
+      
     }
 
     // Schedule next poll if still active

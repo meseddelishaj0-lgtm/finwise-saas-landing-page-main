@@ -1,5 +1,5 @@
 // app/config/api.js
-const FMP_API_KEY = "bHEVbQmAwcqlcykQWdA3FEXxypn3qFAU";   // ← put your key here
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 
 export const FMP_BASE_URL = "https://financialmodelingprep.com/api/v3";
 

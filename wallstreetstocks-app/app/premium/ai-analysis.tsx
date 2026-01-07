@@ -167,7 +167,7 @@ Return ONLY the JSON, no other text.`
       });
 
     } catch (err) {
-      console.error('Analysis error:', err);
+      
       setError('Analysis failed. Please try again.');
     } finally {
       setLoading(false);

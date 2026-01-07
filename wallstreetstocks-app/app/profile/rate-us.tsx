@@ -46,7 +46,7 @@ export default function RateUsPage() {
         openStore();
       }
     } catch (error) {
-      console.error("Error requesting review:", error);
+      
       // Fallback to opening store directly
       openStore();
     }
@@ -77,7 +77,7 @@ export default function RateUsPage() {
         }
       }
     } catch (error) {
-      console.error("Error opening store:", error);
+      
       Alert.alert("Error", "Failed to open the app store.");
     }
   };

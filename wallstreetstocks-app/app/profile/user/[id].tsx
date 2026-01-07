@@ -120,7 +120,7 @@ export default function UserProfile() {
         setPosts(Array.isArray(postsData) ? postsData : []);
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -166,7 +166,7 @@ export default function UserProfile() {
         );
       }
     } catch (error) {
-      console.error('Error following user:', error);
+      
     } finally {
       setFollowLoading(false);
     }

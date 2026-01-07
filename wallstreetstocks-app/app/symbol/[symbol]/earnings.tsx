@@ -71,7 +71,7 @@ export default function EarningsTab() {
     setError(null);
 
     try {
-      console.log('Fetching earnings for:', cleanSymbol);
+      
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -88,7 +88,7 @@ export default function EarningsTab() {
       }
 
       const data = await response.json();
-      console.log('Earnings data received:', data?.length || 0);
+      
 
       if (data && Array.isArray(data) && data.length > 0) {
         // Sort by date, most recent first
@@ -102,7 +102,7 @@ export default function EarningsTab() {
         setError(`No earnings data available for ${cleanSymbol}`);
       }
     } catch (err: any) {
-      console.error('Earnings fetch error:', err);
+      
       
       const errorMessage = err.name === 'AbortError'
         ? 'Request timeout. Please try again.'
@@ -118,7 +118,7 @@ export default function EarningsTab() {
   };
 
   useEffect(() => {
-    console.log('Earnings tab mounted with symbol:', cleanSymbol);
+    
     if (cleanSymbol) {
       fetchEarnings();
     }

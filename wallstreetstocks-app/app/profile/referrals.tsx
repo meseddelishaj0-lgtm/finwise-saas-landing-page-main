@@ -104,7 +104,7 @@ export default function Referrals() {
         await refreshReferrals();
       }
     } catch (error) {
-      console.error('Error applying code:', error);
+      
     } finally {
       setApplyingCode(false);
     }

@@ -166,7 +166,7 @@ export async function batchFetch<T>(
         const data = await fetchJSON<T>(url, { timeout });
         results[i + chunkIndex] = data;
       } catch (e) {
-        console.warn(`Batch fetch failed for ${url}:`, e);
+        
         results[i + chunkIndex] = null;
       }
       completed++;

@@ -492,12 +492,6 @@ export default function ChartTab() {
     }
 
     const extendedHours = isExtendedHours();
-    console.log(`📊 [${cleanSymbol}] Processing chart data:`, {
-      rawDataLength: rawChartData.length,
-      isExtendedHours: extendedHours,
-      firstDate: rawChartData[0]?.date?.toISOString(),
-      lastDate: rawChartData[rawChartData.length - 1]?.date?.toISOString(),
-    });
 
     // For 1D during extended hours: show all available data (yesterday + any premarket)
     // This gives users context of where the price was and where it is now
@@ -533,7 +527,7 @@ export default function ChartTab() {
         result = sampled;
       }
 
-      console.log(`📊 [${cleanSymbol}] Extended hours - returning ${result.length} points`);
+      
       return result;
     }
 
@@ -626,7 +620,7 @@ export default function ChartTab() {
       max: max + padding,
     };
 
-    console.log(`📊 [${cleanSymbol}] Y-Axis bounds:`, { min, max, range, bounds });
+    
 
     return bounds;
   }, [liveChartData, cleanSymbol]);
@@ -676,7 +670,7 @@ export default function ChartTab() {
         });
       }
     } catch (err) {
-      console.error('Quote fetch error:', err);
+      
     }
   }, [cleanSymbol, apiSymbol, previousClose]);
 
@@ -725,19 +719,9 @@ export default function ChartTab() {
       const prepostParam = (timeframe === '1D' || timeframe === '5D') ? '&prepost=true' : '';
       const url = `${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(apiSymbol)}&interval=${config.interval}&outputsize=${config.outputsize}${prepostParam}&apikey=${TWELVE_DATA_API_KEY}`;
 
-      console.log(`📊 [${cleanSymbol}] Fetching: ${url}`);
+      
       const res = await fetch(url);
       const data = await res.json();
-
-      // Debug: Log API response
-      console.log(`📊 [${cleanSymbol}] API Response:`, {
-        status: data?.status,
-        code: data?.code,
-        message: data?.message,
-        valuesCount: data?.values?.length || 0,
-        firstValue: data?.values?.[0],
-        lastValue: data?.values?.[data?.values?.length - 1],
-      });
 
       if (data?.values && Array.isArray(data.values) && data.values.length > 0) {
         // Twelve Data returns newest first, we need oldest first
@@ -779,7 +763,7 @@ export default function ChartTab() {
         setError('No data available');
       }
     } catch (err) {
-      console.error('Chart data error:', err);
+      
       if (rawChartDataRef.current.length === 0) {
         setError('Unable to load chart');
       }
@@ -914,7 +898,7 @@ export default function ChartTab() {
         Alert.alert('Error', data.error || `Failed to create alert (${res.status})`);
       }
     } catch (error) {
-      console.error('Error creating alert:', error);
+      
       Alert.alert('Error', 'Failed to create alert');
     } finally {
       setCreatingAlert(false);

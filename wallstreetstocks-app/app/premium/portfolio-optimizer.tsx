@@ -121,7 +121,7 @@ export default function PortfolioOptimizerScreen() {
         setTotalValue(total);
       }
     } catch (err) {
-      console.error('Error updating prices:', err);
+      
     } finally {
       setLoading(false);
     }
@@ -283,7 +283,7 @@ Provide actionable advice for a balanced, risk-adjusted portfolio. Return ONLY v
       });
 
     } catch (err) {
-      console.error('Optimization error:', err);
+      
       Alert.alert('Error', 'Failed to optimize portfolio');
     } finally {
       setOptimizing(false);

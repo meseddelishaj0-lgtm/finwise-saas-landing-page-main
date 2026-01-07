@@ -96,7 +96,7 @@ export default function ConversationScreen() {
       });
 
       if (!response.ok) {
-        console.error('Failed to fetch messages:', response.status);
+        
         return;
       }
 
@@ -108,7 +108,7 @@ export default function ConversationScreen() {
         setOtherUser(data.conversation.otherUser);
       }
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      
     } finally {
       if (!silent) {
         setLoading(false);
@@ -162,7 +162,7 @@ export default function ConversationScreen() {
       }
       return null;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      
       return null;
     } finally {
       setUploadingImage(false);
@@ -204,7 +204,7 @@ export default function ConversationScreen() {
                 Alert.alert('Error', 'Failed to delete message');
               }
             } catch (error) {
-              console.error('Error deleting message:', error);
+              
               if (deletedMessage) {
                 setMessages((prev) => [...prev, deletedMessage].sort(
                   (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -274,7 +274,7 @@ export default function ConversationScreen() {
         setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      
       setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
     } finally {
       setSending(false);

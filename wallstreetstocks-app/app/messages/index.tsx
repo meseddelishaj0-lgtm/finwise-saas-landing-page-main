@@ -102,7 +102,7 @@ export default function MessagesScreen() {
 
       // Check if response is OK
       if (!response.ok) {
-        console.error('API error:', response.status, response.statusText);
+        
         return;
       }
 
@@ -110,7 +110,7 @@ export default function MessagesScreen() {
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
-        console.error('API returned non-JSON response:', text.substring(0, 200));
+        );
         return;
       }
 
@@ -119,7 +119,7 @@ export default function MessagesScreen() {
         setConversations(data.conversations);
       }
     } catch (error) {
-      console.error('Error fetching conversations:', error);
+      
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -141,7 +141,7 @@ export default function MessagesScreen() {
         setSuggestedUsers(data);
       }
     } catch (error) {
-      console.error('Error fetching suggested users:', error);
+      
     }
   };
 
@@ -174,7 +174,7 @@ export default function MessagesScreen() {
         setSearchResults([]);
       }
     } catch (error) {
-      console.error('Error searching users:', error);
+      
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
@@ -252,7 +252,7 @@ export default function MessagesScreen() {
                 Alert.alert('Error', 'Failed to delete conversation');
               }
             } catch (error) {
-              console.error('Error deleting conversation:', error);
+              
               if (deletedConversation) {
                 setConversations((prev) => [deletedConversation, ...prev]);
               }

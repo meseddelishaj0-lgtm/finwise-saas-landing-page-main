@@ -71,7 +71,7 @@ export default function SetupUsername() {
         setIsAvailable(null);
       }
     } catch (err) {
-      console.error('Error checking username:', err);
+      
       setIsAvailable(null);
     } finally {
       setChecking(false);
@@ -121,7 +121,7 @@ export default function SetupUsername() {
         Alert.alert('Error', data.error || 'Failed to set username');
       }
     } catch (err) {
-      console.error('Error setting username:', err);
+      
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);

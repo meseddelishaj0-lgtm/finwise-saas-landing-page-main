@@ -60,10 +60,10 @@ export default function PriceAlerts() {
         const data = await res.json();
         setAlerts(Array.isArray(data) ? data : []);
       } else {
-        console.error('Failed to fetch alerts:', res.status);
+        
       }
     } catch (error) {
-      console.error('Error fetching alerts:', error);
+      
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -111,7 +111,7 @@ export default function PriceAlerts() {
       try {
         data = text ? JSON.parse(text) : {};
       } catch (e) {
-        console.error('Failed to parse response:', text);
+        
         data = { error: 'Server returned invalid response' };
       }
 
@@ -128,7 +128,7 @@ export default function PriceAlerts() {
         Alert.alert('Error', data.error || `Failed to create alert (${res.status})`);
       }
     } catch (error) {
-      console.error('Error creating alert:', error);
+      
       Alert.alert('Error', 'Failed to create alert');
     } finally {
       setCreating(false);
@@ -158,7 +158,7 @@ export default function PriceAlerts() {
                 Alert.alert('Error', 'Failed to delete alert');
               }
             } catch (error) {
-              console.error('Error deleting alert:', error);
+              
               Alert.alert('Error', 'Failed to delete alert');
             }
           },
@@ -189,7 +189,7 @@ export default function PriceAlerts() {
         Alert.alert('Error', 'Failed to update alert');
       }
     } catch (error) {
-      console.error('Error toggling alert:', error);
+      
       Alert.alert('Error', 'Failed to update alert');
     }
   };

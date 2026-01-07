@@ -154,7 +154,7 @@ export default function LiveChat() {
         addWelcomeMessage();
       }
     } catch (err) {
-      console.error('Error loading chat history:', err);
+      
       addWelcomeMessage();
     }
   };
@@ -173,7 +173,7 @@ export default function LiveChat() {
     try {
       await AsyncStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(newMessages));
     } catch (err) {
-      console.error('Error saving chat history:', err);
+      
     }
   };
 

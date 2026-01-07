@@ -267,7 +267,7 @@ export default function HelpCenter() {
       if (recentData) setRecentlyViewed(JSON.parse(recentData));
       if (feedbackData) setArticleFeedback(JSON.parse(feedbackData));
     } catch (err) {
-      console.error('Error loading help center data:', err);
+      
     }
   };
 
@@ -278,7 +278,7 @@ export default function HelpCenter() {
       setRecentlyViewed(updated);
       await AsyncStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(updated));
     } catch (err) {
-      console.error('Error saving recently viewed:', err);
+      
     }
   };
 
@@ -293,7 +293,7 @@ export default function HelpCenter() {
       // Reset feedback submitted state after 3 seconds
       setTimeout(() => setFeedbackSubmitted(null), 3000);
     } catch (err) {
-      console.error('Error saving feedback:', err);
+      
     }
   };
 

@@ -90,7 +90,7 @@ Return ONLY a valid JSON array with no markdown formatting, like this:
 
     throw new Error('Invalid AI response');
   } catch (error) {
-    console.error('Error generating AI stock picks:', error);
+    
     // Return fallback picks if AI fails
     return getFallbackPicks();
   }
@@ -123,7 +123,7 @@ const getCachedPicks = async (): Promise<{ picks: AIPick[], timestamp: number } 
       return JSON.parse(cached);
     }
   } catch (error) {
-    console.error('Error reading cache:', error);
+    
   }
   return null;
 };
@@ -135,7 +135,7 @@ const setCachedPicks = async (picks: AIPick[]): Promise<void> => {
       timestamp: Date.now(),
     }));
   } catch (error) {
-    console.error('Error saving cache:', error);
+    
   }
 };
 
@@ -193,13 +193,13 @@ export default function StockPicksScreen() {
     if (!forceRefresh) {
       const cached = await getCachedPicks();
       if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-        console.log('Using cached AI picks');
+        
         return cached.picks;
       }
     }
 
     // Generate new picks from AI
-    console.log('Generating new AI stock picks...');
+    
     setGeneratingPicks(true);
     const newPicks = await generateAIStockPicks();
     setGeneratingPicks(false);
@@ -239,7 +239,7 @@ export default function StockPicksScreen() {
         setStockPicks(enrichedPicks);
       }
     } catch (error) {
-      console.error('Error fetching stock data:', error);
+      
     } finally {
       setLoading(false);
       setRefreshing(false);

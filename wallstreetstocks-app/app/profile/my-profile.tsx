@@ -102,7 +102,7 @@ export default function PersonalInfoScreen() {
         setPosts(Array.isArray(postsData) ? postsData : []);
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -130,7 +130,7 @@ export default function PersonalInfoScreen() {
             setPosts(Array.isArray(postsData) ? postsData : []);
           }
         } catch (error) {
-          console.error("Error fetching posts on focus:", error);
+          
         }
       };
       fetchPosts();

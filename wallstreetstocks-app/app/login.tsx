@@ -98,13 +98,13 @@ export default function Login() {
       }
     } catch (error: any) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('User cancelled sign in');
+        
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log('Sign in is in progress');
+        
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         Alert.alert('Error', 'Google Play Services is not available');
       } else {
-        console.error('Google Sign-In error:', error);
+        
         Alert.alert('Error', error.message || 'Google sign-in failed');
       }
     } finally {

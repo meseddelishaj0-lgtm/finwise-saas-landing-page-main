@@ -83,7 +83,7 @@ export default function InfoTab() {
     setError(null);
 
     try {
-      console.log('Fetching company info for:', cleanSymbol);
+      
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -100,7 +100,7 @@ export default function InfoTab() {
       }
 
       const data = await response.json();
-      console.log('Company info received:', data?.length || 0);
+      
 
       if (data && Array.isArray(data) && data.length > 0) {
         setProfile(data[0]);
@@ -109,7 +109,7 @@ export default function InfoTab() {
         throw new Error('No company information available');
       }
     } catch (err: any) {
-      console.error('Company info error:', err);
+      
       
       const errorMessage = err.name === 'AbortError'
         ? 'Request timeout. Please try again.'
@@ -124,7 +124,7 @@ export default function InfoTab() {
   };
 
   useEffect(() => {
-    console.log('Info tab mounted with symbol:', cleanSymbol);
+    
     if (cleanSymbol) {
       fetchCompanyInfo();
     }
@@ -145,7 +145,7 @@ export default function InfoTab() {
           await Linking.openURL(url);
         }
       } catch (err) {
-        console.error('Error opening website:', err);
+        
       }
     }
   };

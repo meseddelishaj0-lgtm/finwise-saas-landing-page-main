@@ -71,7 +71,7 @@ export default function ProfileSetupScreen() {
         
         // Check if response is HTML (404 page)
         if (text.startsWith('<')) {
-          console.log('Username check API not available');
+          
           setUsernameAvailable(true);
           setCheckingUsername(false);
           return;
@@ -83,7 +83,7 @@ export default function ProfileSetupScreen() {
           setUsernameError('Username is already taken');
         }
       } catch (error) {
-        console.log('Username check failed:', error);
+        
         setUsernameAvailable(true); // Allow on error, server will validate
       } finally {
         setCheckingUsername(false);

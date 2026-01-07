@@ -83,7 +83,7 @@ export default function PortfolioScreen() {
         setPortfolios(data.portfolios);
       }
     } catch (error) {
-      console.error('Error fetching portfolios:', error);
+      
     } finally {
       setLoading(false);
       setRefreshing(false);

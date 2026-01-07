@@ -51,7 +51,7 @@ export default function Trending() {
         }
       } catch (err) {
         if (isMounted) setError("Failed to load trending stocks");
-        console.error(err);
+        
       } finally {
         if (isMounted) setLoading(false);
       }

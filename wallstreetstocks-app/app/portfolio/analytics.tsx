@@ -112,7 +112,7 @@ export default function AnalyticsScreen() {
             });
           }
         } catch (err) {
-          console.error(`Error fetching chart for ${holding.symbol}:`, err);
+          
         }
       }
 
@@ -154,7 +154,7 @@ export default function AnalyticsScreen() {
       // Fetch S&P 500 performance
       await fetchSp500Data();
     } catch (error) {
-      console.error('Error loading chart data:', error);
+      
     } finally {
       setChartLoading(false);
     }
@@ -163,14 +163,14 @@ export default function AnalyticsScreen() {
   // Fetch S&P 500 1-year performance for all-time comparison
   const fetchSp500AllTimeData = async () => {
     try {
-      console.log('Fetching S&P 500 1-year data...');
+      
 
       // Get 1-year historical data for SPY (S&P 500 ETF)
       const sp500Url = `${BASE_URL}/historical-price-full/SPY?serietype=line&apikey=${FMP_API_KEY}`;
       const sp500Response = await fetch(sp500Url);
       const sp500Data = await sp500Response.json();
 
-      console.log('S&P 500 response:', sp500Data?.historical?.length, 'data points');
+      
 
       if (sp500Data?.historical && Array.isArray(sp500Data.historical) && sp500Data.historical.length > 0) {
         // Get approximately 1 year of trading days (252)
@@ -183,19 +183,19 @@ export default function AnalyticsScreen() {
           const sp500ChangeVal = sp500End - sp500Start;
           const sp500ChangePercent = sp500Start > 0 ? (sp500ChangeVal / sp500Start) * 100 : 0;
 
-          console.log(`S&P 500: Start=${sp500Start}, End=${sp500End}, Change=${sp500ChangePercent.toFixed(2)}%`);
+          }%`);
           setSp500Change({ value: sp500ChangeVal, percent: sp500ChangePercent });
           return;
         }
       }
 
       // Fallback to YTD change from quote
-      console.log('Falling back to quote endpoint...');
+      
       const quoteUrl = `${BASE_URL}/quote/SPY?apikey=${FMP_API_KEY}`;
       const quoteResponse = await fetch(quoteUrl);
       const quoteData = await quoteResponse.json();
 
-      console.log('Quote data:', quoteData);
+      
 
       if (Array.isArray(quoteData) && quoteData.length > 0) {
         const quote = quoteData[0];
@@ -207,7 +207,7 @@ export default function AnalyticsScreen() {
         });
       }
     } catch (error) {
-      console.error('Error fetching S&P 500 data:', error);
+      
     }
   };
 
