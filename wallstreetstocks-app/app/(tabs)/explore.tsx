@@ -800,9 +800,9 @@ export default function Explore() {
                     price: quote.price,
                     change: quote.change || 0,
                     changePercent: quote.changePercent || 0,
-                    type: "stock" as any,
+                    type: "stock" as const,
                     exchange: "NYSE",
-                  };
+                  } as MarketItem;
                 }
                 return null;
               })
@@ -850,9 +850,9 @@ export default function Explore() {
                     price: quote.price,
                     change: quote.change || 0,
                     changePercent: quote.changePercent || 0,
-                    type: "crypto" as any,
+                    type: "crypto" as const,
                     exchange: "Crypto",
-                  };
+                  } as MarketItem;
                 }
                 return null;
               })
@@ -898,9 +898,9 @@ export default function Explore() {
                     price: quote.price,
                     change: quote.change || 0,
                     changePercent: quote.changePercent || 0,
-                    type: "etf" as any,
+                    type: "etf" as const,
                     exchange: "NYSE",
-                  };
+                  } as MarketItem;
                 }
                 return null;
               })

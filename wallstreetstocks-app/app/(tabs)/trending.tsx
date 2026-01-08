@@ -337,6 +337,35 @@ export default function Trending() {
     }
   };
 
+  // Fetch quotes from Twelve Data API
+  const fetchTwelveDataQuotes = async (symbols: string[]): Promise<any[]> => {
+    try {
+      if (symbols.length === 0) return [];
+
+      // Batch symbols (max 8 per request for Twelve Data)
+      const batchSize = 8;
+      const allResults: any[] = [];
+
+      for (let i = 0; i < symbols.length; i += batchSize) {
+        const batch = symbols.slice(i, i + batchSize);
+        const url = `${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`;
+        const res = await fetchWithTimeout(url, { timeout: 15000 });
+        const json = await res.json();
+
+        if (Array.isArray(json)) {
+          allResults.push(...json);
+        } else if (json && typeof json === 'object' && !json.code) {
+          // Single symbol returns object, not array
+          allResults.push(json);
+        }
+      }
+
+      return allResults;
+    } catch (err) {
+      return [];
+    }
+  };
+
   const fetchLiveData = useCallback(async () => {
     setError(null);
 
