@@ -1293,7 +1293,7 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={styles.winnerContent}>
                     {comparisonResult.winner === 'TIE' ? (
                       <View style={styles.tieContainer}>
-                        <Text style={styles.tieText}>It's a Tie!</Text>
+                        <Text style={styles.tieText}>It&apos;s a Tie!</Text>
                         <Text style={styles.tieSubtext}>Both stocks have comparable merits</Text>
                       </View>
                     ) : (

@@ -112,7 +112,7 @@ export default function About() {
               Wallstreetstocks is for informational and educational purposes only.
               The information provided does not constitute investment advice, financial advice,
               trading advice, or any other sort of advice, and you should not treat any of the
-              app's content as such.
+              app&apos;s content as such.
             </Text>
             <Text style={styles.disclaimerText}>
               We do not recommend that any securities should be bought, sold, or held by you.
@@ -122,7 +122,7 @@ export default function About() {
             </Text>
             <Text style={styles.disclaimerText}>
               Stock prices and market data displayed may be delayed or contain inaccuracies.
-              Real-time quotes are provided "as is" without warranty of any kind. Historical
+              Real-time quotes are provided &quot;as is&quot; without warranty of any kind. Historical
               performance is not indicative of future results.
             </Text>
             <Text style={styles.disclaimerText}>

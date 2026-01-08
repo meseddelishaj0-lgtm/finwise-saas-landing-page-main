@@ -116,12 +116,12 @@ export default function TextFriendPage() {
           {/* Title & Description */}
           <Text style={styles.title}>Share WallStreetStocks</Text>
           <Text style={styles.description}>
-            Know someone who'd love to stay on top of the markets? Send them a text and help them discover WallStreetStocks!
+            Know someone who&apos;d love to stay on top of the markets? Send them a text and help them discover WallStreetStocks!
           </Text>
 
           {/* Phone Number Input */}
           <View style={styles.inputSection}>
-            <Text style={styles.inputLabel}>Friend's Phone Number (Optional)</Text>
+            <Text style={styles.inputLabel}>Friend&apos;s Phone Number (Optional)</Text>
             <View style={styles.phoneInputContainer}>
               <Smartphone size={20} color="#8E8E93" style={styles.phoneIcon} />
               <TextInput

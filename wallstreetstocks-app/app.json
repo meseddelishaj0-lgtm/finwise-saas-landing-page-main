@@ -10,8 +10,7 @@
     "newArchEnabled": true,
     "platforms": [
       "ios",
-      "android",
-      "web"
+      "android"
     ],
     "ios": {
       "bundleIdentifier": "ai.wallstreetstocks.ios",

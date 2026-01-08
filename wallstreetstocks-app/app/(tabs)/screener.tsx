@@ -1187,7 +1187,7 @@ export default function Screener() {
           <View style={styles.searchResultsDropdown}>
             <View style={styles.noResultsContainer}>
               <Ionicons name="search-outline" size={24} color="#999" />
-              <Text style={styles.noResultsText}>No stocks found for "{searchQuery}"</Text>
+              <Text style={styles.noResultsText}>No stocks found for &quot;{searchQuery}&quot;</Text>
             </View>
           </View>
         )}

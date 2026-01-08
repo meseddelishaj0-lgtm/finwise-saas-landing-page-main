@@ -117,7 +117,7 @@ export default function ReportProblem() {
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Category Selection */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>What's the issue?</Text>
+            <Text style={styles.sectionTitle}>What&apos;s the issue?</Text>
             <View style={styles.categoriesGrid}>
               {categories.map((category) => (
                 <TouchableOpacity
@@ -172,7 +172,7 @@ export default function ReportProblem() {
               onChangeText={setEmail}
             />
             <Text style={styles.emailHint}>
-              Provide your email if you'd like us to follow up on your report.
+              Provide your email if you&apos;d like us to follow up on your report.
             </Text>
           </View>
 

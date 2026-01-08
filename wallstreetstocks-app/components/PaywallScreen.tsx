@@ -243,7 +243,7 @@ export default function PaywallScreen() {
             <Text style={styles.currentTierBadgeText}>{currentTierName}</Text>
           </View>
           <Ionicons name="checkmark-circle" size={80} color="#4CAF50" style={{ marginTop: 20 }} />
-          <Text style={styles.alreadyPremiumTitle}>You're {currentTierName}!</Text>
+          <Text style={styles.alreadyPremiumTitle}>You&apos;re {currentTierName}!</Text>
           <Text style={styles.alreadyPremiumText}>
             You have an active {currentTierName} subscription. Enjoy all your premium features!
           </Text>

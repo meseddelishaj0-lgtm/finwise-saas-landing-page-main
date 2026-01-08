@@ -63,11 +63,10 @@ export default function Login() {
   const router = useRouter();
 
   // Google OAuth configuration (iOS only - Android uses native SDK)
-  const [request, response, promptAsync] = Platform.OS === 'ios'
-    ? Google.useAuthRequest({
-        iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
-      })
-    : [null, null, async () => {}];
+  // Always call hook to satisfy React rules, but only use on iOS
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
+  });
 
   // Handle iOS Google Sign-In response
   useEffect(() => {
@@ -308,7 +307,7 @@ export default function Login() {
       )}
 
       <TouchableOpacity onPress={() => router.push('/signup')} disabled={loading}>
-        <Text style={styles.link}>Don't have an account? Sign Up</Text>
+        <Text style={styles.link}>Don&apos;t have an account? Sign Up</Text>
       </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

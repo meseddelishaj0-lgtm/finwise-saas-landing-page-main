@@ -863,7 +863,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
       {/* Equity Detail */}
       <View style={balanceStyles.detailSection}>
         <Text style={balanceStyles.sectionHeader}>
-          <Ionicons name="shield-checkmark" size={16} color="#007AFF" /> Shareholders' Equity
+          <Ionicons name="shield-checkmark" size={16} color="#007AFF" /> Shareholders&apos; Equity
         </Text>
 
         <View style={balanceStyles.detailCard}>

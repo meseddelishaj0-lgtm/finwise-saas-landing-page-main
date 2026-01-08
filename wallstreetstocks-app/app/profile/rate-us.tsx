@@ -142,7 +142,7 @@ export default function RateUsPage() {
           </View>
           <Text style={styles.thankYouTitle}>Thank You!</Text>
           <Text style={styles.thankYouText}>
-            Your feedback means the world to us. We're constantly working to make WallStreetStocks the best stock research app for you.
+            Your feedback means the world to us. We&apos;re constantly working to make WallStreetStocks the best stock research app for you.
           </Text>
           <TouchableOpacity
             style={styles.doneButton}

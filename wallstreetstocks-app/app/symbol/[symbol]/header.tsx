@@ -306,7 +306,7 @@ export default function SymbolHeader() {
             </View>
 
             <Text style={styles.alertSubtitle}>
-              You'll get a notification for each alert at most once a day
+              You&apos;ll get a notification for each alert at most once a day
             </Text>
 
             {/* Tabs */}

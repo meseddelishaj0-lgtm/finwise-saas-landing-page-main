@@ -117,6 +117,8 @@ export const AnimatedPrice = memo(({
   );
 });
 
+AnimatedPrice.displayName = 'AnimatedPrice';
+
 // Animated percentage change with color
 interface AnimatedChangeProps {
   value: number;
@@ -172,6 +174,8 @@ export const AnimatedChange = memo(({
     </Animated.Text>
   );
 });
+
+AnimatedChange.displayName = 'AnimatedChange';
 
 // Market status types
 type MarketStatus = 'live' | 'premarket' | 'afterhours' | 'closed';
@@ -377,6 +381,8 @@ export const MarketStatusIndicator = memo(() => {
   );
 });
 
+MarketStatusIndicator.displayName = 'MarketStatusIndicator';
+
 // Live indicator dot with pulse animation
 export const LiveIndicator = memo(() => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -482,6 +488,8 @@ export const LiveIndicator = memo(() => {
     </View>
   );
 });
+
+LiveIndicator.displayName = 'LiveIndicator';
 
 const styles = StyleSheet.create({
   flashContainer: {

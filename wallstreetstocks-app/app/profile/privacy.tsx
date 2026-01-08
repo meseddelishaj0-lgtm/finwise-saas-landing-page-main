@@ -164,7 +164,7 @@ For privacy-related inquiries, please include "Privacy Inquiry" in your email su
         <View style={styles.importantNotice}>
           <Ionicons name="lock-closed" size={24} color="#34C759" />
           <View style={styles.noticeContent}>
-            <Text style={styles.noticeTitle}>We Don't Sell Your Data</Text>
+            <Text style={styles.noticeTitle}>We Don&apos;t Sell Your Data</Text>
             <Text style={styles.noticeText}>
               WallStreetStocks.ai does not sell, rent, or trade your personal information
               to third parties for their marketing purposes.

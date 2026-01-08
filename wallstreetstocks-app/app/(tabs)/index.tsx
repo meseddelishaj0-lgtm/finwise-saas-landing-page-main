@@ -2795,7 +2795,7 @@ export default function Dashboard() {
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalTitle}>Add to Watchlist</Text>
-                <Text style={styles.modalSubtitle}>Track stocks you're interested in</Text>
+                <Text style={styles.modalSubtitle}>Track stocks you&apos;re interested in</Text>
               </View>
               <TouchableOpacity onPress={() => {
                 setWatchlistModal(false);

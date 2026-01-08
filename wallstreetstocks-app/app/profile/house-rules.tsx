@@ -157,7 +157,7 @@ export default function HouseRules() {
             <View style={[styles.listCard, styles.dontsCard]}>
               <View style={styles.listHeader}>
                 <Ionicons name="close-circle" size={24} color="#FF3B30" />
-                <Text style={[styles.listTitle, { color: '#FF3B30' }]}>Don't</Text>
+                <Text style={[styles.listTitle, { color: '#FF3B30' }]}>Don&apos;t</Text>
               </View>
               {quickDonts.map((item, index) => (
                 <View key={index} style={styles.listItem}>
@@ -187,7 +187,7 @@ export default function HouseRules() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Enforcement</Text>
           <Text style={styles.enforcementIntro}>
-            We take violations seriously. Here's what happens when rules are broken:
+            We take violations seriously. Here&apos;s what happens when rules are broken:
           </Text>
           
           <View style={styles.penaltiesContainer}>

@@ -89,7 +89,7 @@ export default function ContactUs() {
           <View style={styles.heroIcon}>
             <Ionicons name="headset" size={40} color="#007AFF" />
           </View>
-          <Text style={styles.heroTitle}>We're Here to Help</Text>
+          <Text style={styles.heroTitle}>We&apos;re Here to Help</Text>
           <Text style={styles.heroSubtitle}>
             Our support team is available to assist you with any questions or concerns
           </Text>

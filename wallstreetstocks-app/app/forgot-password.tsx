@@ -147,7 +147,7 @@ export default function ForgotPassword() {
             <Text style={styles.buttonText}>Verify Code</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleSendCode} disabled={loading}>
-            <Text style={styles.resend}>Didn't receive code? Resend</Text>
+            <Text style={styles.resend}>Didn&apos;t receive code? Resend</Text>
           </TouchableOpacity>
         </>
       )}

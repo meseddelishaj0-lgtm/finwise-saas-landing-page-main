@@ -164,6 +164,8 @@ const MiniSparkline = memo(({
   );
 });
 
+MiniSparkline.displayName = 'MiniSparkline';
+
 // Header Card Component - Memoized for performance
 const HeaderCard = memo(({
   item,
@@ -229,6 +231,8 @@ const HeaderCard = memo(({
     </TouchableOpacity>
   );
 });
+
+HeaderCard.displayName = 'HeaderCard';
 
 export default function Trending() {
   const [activeTab, setActiveTab] = useState<TabType>("trending");

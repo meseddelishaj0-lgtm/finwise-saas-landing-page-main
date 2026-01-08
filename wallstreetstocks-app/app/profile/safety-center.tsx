@@ -94,7 +94,7 @@ export default function SafetyCenter() {
           </View>
           <Text style={styles.heroTitle}>Your Safety Matters</Text>
           <Text style={styles.heroSubtitle}>
-            We're committed to keeping you and your investments safe
+            We&apos;re committed to keeping you and your investments safe
           </Text>
         </View>
 

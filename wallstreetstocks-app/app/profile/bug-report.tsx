@@ -316,7 +316,7 @@ export default function BugReportScreen() {
 
           <Text style={styles.privacyNote}>
             Your bug report may include diagnostic data to help us investigate.
-            We respect your privacy and won't share your information.
+            We respect your privacy and won&apos;t share your information.
           </Text>
         </View>
 

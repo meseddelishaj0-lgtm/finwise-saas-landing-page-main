@@ -95,12 +95,12 @@ export default function EmailFriendPage() {
           {/* Title & Description */}
           <Text style={styles.title}>Share WallStreetStocks</Text>
           <Text style={styles.description}>
-            Know someone who'd benefit from better market insights? Send them an email and introduce them to WallStreetStocks!
+            Know someone who&apos;d benefit from better market insights? Send them an email and introduce them to WallStreetStocks!
           </Text>
 
           {/* Email Input */}
           <View style={styles.inputSection}>
-            <Text style={styles.inputLabel}>Friend's Email (Optional)</Text>
+            <Text style={styles.inputLabel}>Friend&apos;s Email (Optional)</Text>
             <View style={styles.emailInputContainer}>
               <AtSign size={20} color="#8E8E93" style={styles.inputIcon} />
               <TextInput

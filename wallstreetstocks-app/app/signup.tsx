@@ -72,11 +72,10 @@ export default function Signup() {
   const router = useRouter();
 
   // Google OAuth configuration (iOS only - Android uses native SDK)
-  const [request, response, promptAsync] = Platform.OS === 'ios'
-    ? Google.useAuthRequest({
-        iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
-      })
-    : [null, null, async () => {}];
+  // Always call hook to satisfy React rules, but only use on iOS
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
+  });
 
   // Debug: Log the redirect URI being used (iOS)
   useEffect(() => {

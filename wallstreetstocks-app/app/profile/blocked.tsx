@@ -178,7 +178,7 @@ export default function Blocked() {
           <Ionicons name="shield-checkmark-outline" size={64} color="#ccc" />
           <Text style={styles.emptyTitle}>No Blocked Users</Text>
           <Text style={styles.emptySubtitle}>
-            When you block someone, they'll appear here
+            When you block someone, they&apos;ll appear here
           </Text>
         </View>
       ) : (

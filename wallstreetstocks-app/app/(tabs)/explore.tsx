@@ -154,6 +154,8 @@ const MiniSparkline = memo(({
   );
 });
 
+MiniSparkline.displayName = 'MiniSparkline';
+
 // Yield Curve Chart Component
 const YieldCurveChart = ({
   data,
@@ -369,6 +371,8 @@ const HeaderCard = memo(({
     </TouchableOpacity>
   );
 });
+
+HeaderCard.displayName = 'HeaderCard';
 
 export default function Explore() {
   const [activeTab, setActiveTab] = useState<Tab>("stocks");
@@ -1858,7 +1862,7 @@ export default function Explore() {
               ) : (
                 <View style={styles.emptyState}>
                   <Ionicons name="search" size={64} color="#e5e7eb" />
-                  <Text style={styles.emptyText}>No results for "{searchQuery}"</Text>
+                  <Text style={styles.emptyText}>No results for &quot;{searchQuery}&quot;</Text>
                   <Text style={styles.emptySubtext}>Try another symbol or company name</Text>
                 </View>
               )

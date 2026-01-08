@@ -279,7 +279,7 @@ export default function Upgrade() {
             ))}
           </View>
           <Text style={styles.testimonialText}>
-            "The AI insights alone are worth the subscription. I've discovered so many great research opportunities!"
+            &quot;The AI insights alone are worth the subscription. I&apos;ve discovered so many great research opportunities!&quot;
           </Text>
           <Text style={styles.testimonialAuthor}>— Michael R., Pro Member</Text>
         </View>
@@ -291,14 +291,14 @@ export default function Upgrade() {
           <View style={styles.faqItem}>
             <Text style={styles.faqQuestion}>Can I cancel anytime?</Text>
             <Text style={styles.faqAnswer}>
-              Yes! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period.
+              Yes! You can cancel your subscription at any time. You&apos;ll continue to have access until the end of your billing period.
             </Text>
           </View>
           
           <View style={styles.faqItem}>
             <Text style={styles.faqQuestion}>Is there a free trial?</Text>
             <Text style={styles.faqAnswer}>
-              Yes, all plans include a 7-day free trial. You won't be charged until the trial ends.
+              Yes, all plans include a 7-day free trial. You won&apos;t be charged until the trial ends.
             </Text>
           </View>
           

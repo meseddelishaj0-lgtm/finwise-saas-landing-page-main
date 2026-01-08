@@ -263,7 +263,7 @@ export default function Notifications() {
           <Ionicons name="notifications-outline" size={64} color="#CCC" />
           <Text style={styles.emptyTitle}>No notifications yet</Text>
           <Text style={styles.emptySubtitle}>
-            When someone likes, comments, or mentions you, you'll see it here
+            When someone likes, comments, or mentions you, you&apos;ll see it here
           </Text>
         </View>
       ) : (

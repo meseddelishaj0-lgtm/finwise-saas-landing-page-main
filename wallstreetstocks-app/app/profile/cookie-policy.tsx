@@ -58,7 +58,7 @@ export default function CookiePolicy() {
           <Text style={styles.lastUpdated}>Last Updated: January 2025</Text>
           
           <Text style={styles.paragraph}>
-            This Cookie Policy explains how WallStreetStocks ("we", "us", or "our") uses cookies 
+            This Cookie Policy explains how WallStreetStocks (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) uses cookies
             and similar tracking technologies when you use our mobile application and services.
           </Text>
         </View>

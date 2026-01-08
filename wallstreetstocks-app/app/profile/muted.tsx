@@ -178,7 +178,7 @@ export default function Muted() {
           <Ionicons name="volume-mute-outline" size={64} color="#ccc" />
           <Text style={styles.emptyTitle}>No Muted Users</Text>
           <Text style={styles.emptySubtitle}>
-            When you mute someone, they'll appear here
+            When you mute someone, they&apos;ll appear here
           </Text>
         </View>
       ) : (

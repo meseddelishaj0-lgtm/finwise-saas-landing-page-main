@@ -433,7 +433,7 @@ export default function Referrals() {
         <View style={styles.haveCodeSection}>
           <Text style={styles.haveCodeTitle}>Have a referral code?</Text>
           <Text style={styles.haveCodeSubtitle}>
-            Enter a friend's code to get 1 week of Premium free
+            Enter a friend&apos;s code to get 1 week of Premium free
           </Text>
           <TouchableOpacity
             style={styles.enterCodeButton}
@@ -479,7 +479,7 @@ export default function Referrals() {
             </View>
 
             <Text style={styles.modalSubtitle}>
-              Enter a friend's referral code to get 1 week of Premium free!
+              Enter a friend&apos;s referral code to get 1 week of Premium free!
             </Text>
 
             <TextInput

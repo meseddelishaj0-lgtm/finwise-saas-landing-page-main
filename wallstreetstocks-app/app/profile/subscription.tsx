@@ -546,7 +546,7 @@ export default function SubscriptionPage() {
         {subscriptionDetails.isCanceled && !isExpiringSoon && (
           <View style={styles.canceledWarning}>
             <Text style={styles.canceledWarningText}>
-              Your subscription has been canceled. You'll have access until {formatExpirationDate(subscriptionDetails.expirationDate)}.
+              Your subscription has been canceled. You&apos;ll have access until {formatExpirationDate(subscriptionDetails.expirationDate)}.
             </Text>
           </View>
         )}
