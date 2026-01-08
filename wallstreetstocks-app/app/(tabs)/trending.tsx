@@ -354,8 +354,17 @@ export default function Trending() {
         if (Array.isArray(json)) {
           allResults.push(...json);
         } else if (json && typeof json === 'object' && !json.code) {
-          // Single symbol returns object, not array
-          allResults.push(json);
+          // Multi-symbol response returns object with symbol keys like:
+          // { "EUR/USD": {...}, "GBP/USD": {...} }
+          // Single symbol returns object with data directly
+          const values = Object.values(json);
+          if (values.length > 0 && values[0] && typeof values[0] === 'object' && 'symbol' in (values[0] as object)) {
+            // Multi-symbol response - extract all quote objects
+            allResults.push(...values);
+          } else if (json.symbol) {
+            // Single symbol response
+            allResults.push(json);
+          }
         }
       }
 
