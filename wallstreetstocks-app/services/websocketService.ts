@@ -5,9 +5,9 @@
 import { priceStore } from '../stores/priceStore';
 import { AppState, AppStateStatus } from 'react-native';
 
-// Twelve Data WebSocket configuration
-const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const WEBSOCKET_URL = `wss://ws.twelvedata.com/v1/quotes/price?apikey=${TWELVE_DATA_API_KEY}`;
+// WebSocket configuration - connects to our Railway relay server (not directly to Twelve Data)
+// This allows unlimited app users with just 1 Twelve Data connection
+const WEBSOCKET_URL = 'wss://wallstreetstocks-ws-server-production.up.railway.app';
 
 const MAX_SYMBOLS = 800; // Pro plan: 1000 WS credits - maximize usage!
 const RECONNECT_DELAY = 3000; // 3 seconds
@@ -235,13 +235,11 @@ class WebSocketService {
       const symbolsToRemove = symbolsArray.slice(0, toRemove);
 
 
-      // Actually send unsubscribe request to Twelve Data
+      // Actually send unsubscribe request to server
       if (symbolsToRemove.length > 0) {
         const unsubscribeMessage = {
           action: 'unsubscribe',
-          params: {
-            symbols: symbolsToRemove.join(','),
-          },
+          symbols: symbolsToRemove.join(','),
         };
         this.ws.send(JSON.stringify(unsubscribeMessage));
 
@@ -252,12 +250,10 @@ class WebSocketService {
 
     const newSymbols = Array.from(this.pendingSubscriptions);
 
-    // Twelve Data subscribe message format
+    // Subscribe message format for our Railway relay server
     const subscribeMessage = {
       action: 'subscribe',
-      params: {
-        symbols: newSymbols.join(','),
-      },
+      symbols: newSymbols.join(','),
     };
 
     this.ws.send(JSON.stringify(subscribeMessage));
@@ -279,9 +275,7 @@ class WebSocketService {
 
     const subscribeMessage = {
       action: 'subscribe',
-      params: {
-        symbols: symbols.join(','),
-      },
+      symbols: symbols.join(','),
     };
 
     this.ws.send(JSON.stringify(subscribeMessage));
@@ -308,9 +302,7 @@ class WebSocketService {
 
     const unsubscribeMessage = {
       action: 'unsubscribe',
-      params: {
-        symbols: normalizedSymbols.join(','),
-      },
+      symbols: normalizedSymbols.join(','),
     };
 
     this.ws.send(JSON.stringify(unsubscribeMessage));
