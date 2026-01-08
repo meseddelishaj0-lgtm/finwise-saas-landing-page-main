@@ -831,7 +831,7 @@ export default function Trending() {
           </View>
         </View>
         <View style={styles.right}>
-          {item.price && (
+          {item.price != null && (
             <AnimatedPrice
               value={item.price}
               style={styles.price}
