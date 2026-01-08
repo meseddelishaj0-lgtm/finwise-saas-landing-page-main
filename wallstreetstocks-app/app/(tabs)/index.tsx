@@ -381,6 +381,7 @@ export default function Dashboard() {
   const [portfolioTimeRange, setPortfolioTimeRange] = useState('1Y');
 
   // Live Major Indices - Expanded list
+  const INDICES_CACHE_KEY = 'cached_market_indices';
   const [majorIndices, setMajorIndices] = useState([
     { symbol: 'SPY', name: 'S&P 500', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'QQQ', name: 'Nasdaq 100', price: 0, change: 0, changePercent: 0, color: '#34C759' },
@@ -396,11 +397,14 @@ export default function Dashboard() {
     { symbol: 'TLT', name: '20+ Yr Treasury', price: 0, change: 0, changePercent: 0, color: '#34C759' },
   ]);
   const [indicesLoading, setIndicesLoading] = useState(true);
+  const [indicesCacheLoaded, setIndicesCacheLoaded] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Live Trending
+  const TRENDING_CACHE_KEY = 'cached_trending_stocks';
   const [trending, setTrending] = useState<any[]>([]);
   const [trendingLoading, setTrendingLoading] = useState(true);
+  const [trendingCacheLoaded, setTrendingCacheLoaded] = useState(false);
 
   // Unread messages count
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
@@ -568,6 +572,62 @@ export default function Dashboard() {
       wsSubscribe(MARKET_INDICES_SYMBOLS);
     }
   }, [wsConnected, wsSubscribe]);
+
+  // Load cached market indices on mount (show last prices instantly)
+  useEffect(() => {
+    const loadCachedIndices = async () => {
+      try {
+        const cached = await AsyncStorage.getItem(INDICES_CACHE_KEY);
+        if (cached) {
+          const parsedCache = JSON.parse(cached);
+          if (parsedCache && Array.isArray(parsedCache) && parsedCache.length > 0) {
+            setMajorIndices(parsedCache);
+            setIndicesLoading(false);
+          }
+        }
+      } catch (error) {
+        // Ignore cache errors
+      } finally {
+        setIndicesCacheLoaded(true);
+      }
+    };
+    loadCachedIndices();
+  }, []);
+
+  // Save market indices to cache when they update (for next app open)
+  useEffect(() => {
+    if (indicesCacheLoaded && majorIndices.some(i => i.price > 0)) {
+      AsyncStorage.setItem(INDICES_CACHE_KEY, JSON.stringify(majorIndices)).catch(() => {});
+    }
+  }, [majorIndices, indicesCacheLoaded]);
+
+  // Load cached trending stocks on mount
+  useEffect(() => {
+    const loadCachedTrending = async () => {
+      try {
+        const cached = await AsyncStorage.getItem(TRENDING_CACHE_KEY);
+        if (cached) {
+          const parsedCache = JSON.parse(cached);
+          if (parsedCache && Array.isArray(parsedCache) && parsedCache.length > 0) {
+            setTrending(parsedCache);
+            setTrendingLoading(false);
+          }
+        }
+      } catch (error) {
+        // Ignore cache errors
+      } finally {
+        setTrendingCacheLoaded(true);
+      }
+    };
+    loadCachedTrending();
+  }, []);
+
+  // Save trending stocks to cache when they update
+  useEffect(() => {
+    if (trendingCacheLoaded && trending.length > 0 && trending.some(t => t.price > 0)) {
+      AsyncStorage.setItem(TRENDING_CACHE_KEY, JSON.stringify(trending)).catch(() => {});
+    }
+  }, [trending, trendingCacheLoaded]);
 
   // Subscribe portfolio holdings to WebSocket
   useEffect(() => {
