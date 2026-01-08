@@ -314,7 +314,7 @@ export default function Trending() {
       });
 
       setHeaderCards(cards);
-    } catch (err) {
+    } catch {
       // Error handled silently
     }
   };
@@ -331,7 +331,7 @@ export default function Trending() {
         return json.values;
       }
       return [];
-    } catch (err) {
+    } catch {
       return [];
     }
   };
@@ -369,7 +369,7 @@ export default function Trending() {
       }
 
       return allResults;
-    } catch (err) {
+    } catch {
       return [];
     }
   };
@@ -613,7 +613,7 @@ export default function Trending() {
           }));
           tabDataCache.current["gainers"] = { data: cleaned, timestamp: Date.now() };
         }
-      } catch (err) {
+      } catch {
         // Non-critical prefetch failure
       }
 
@@ -630,7 +630,7 @@ export default function Trending() {
           }));
           tabDataCache.current["losers"] = { data: cleaned, timestamp: Date.now() };
         }
-      } catch (err) {
+      } catch {
         // Non-critical prefetch failure
       }
 
@@ -653,7 +653,7 @@ export default function Trending() {
         if (cleaned.length > 0) {
           tabDataCache.current["indices"] = { data: cleaned, timestamp: Date.now() };
         }
-      } catch (err) {
+      } catch {
         // Non-critical prefetch failure
       }
     };

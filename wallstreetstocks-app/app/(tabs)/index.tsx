@@ -500,7 +500,7 @@ export default function Dashboard() {
       const conversations = data.conversations || [];
       const totalUnread = conversations.reduce((sum: number, conv: any) => sum + (conv.unreadCount || 0), 0);
       setUnreadMessagesCount(totalUnread);
-    } catch (error) {
+    } catch {
     }
   }, []);
 
@@ -542,7 +542,7 @@ export default function Dashboard() {
             setIndicesLoading(false);
           }
         }
-      } catch (error) {
+      } catch {
         // Ignore cache errors
       } finally {
         setIndicesCacheLoaded(true);
@@ -570,7 +570,7 @@ export default function Dashboard() {
             setTrendingLoading(false);
           }
         }
-      } catch (error) {
+      } catch {
         // Ignore cache errors
       } finally {
         setTrendingCacheLoaded(true);
@@ -932,7 +932,7 @@ export default function Dashboard() {
                 data: chartValues,
                 rank: idx + 1
               };
-            } catch (err) {
+            } catch {
               return {
                 symbol: stock.symbol,
                 name: stock.name || stock.symbol,
@@ -949,7 +949,7 @@ export default function Dashboard() {
 
         setTrending(trendingData);
       }
-    } catch (err) {
+    } catch {
     } finally {
       setTrendingLoading(false);
     }
@@ -987,7 +987,7 @@ export default function Dashboard() {
         }
         return item;
       }));
-    } catch (err) {
+    } catch {
     }
   };
 
@@ -1083,7 +1083,7 @@ export default function Dashboard() {
         }
         return item;
       }));
-    } catch (err) {
+    } catch {
     }
   };
 
@@ -1111,7 +1111,7 @@ export default function Dashboard() {
         // Fetch real charts in background
         fetchWatchlistCharts();
       }
-    } catch (err) {
+    } catch {
       setWatchlistDataLoading(false);
     }
   };
@@ -1135,7 +1135,7 @@ export default function Dashboard() {
         });
         setStockPicksData(enrichedPicks);
       }
-    } catch (err) {
+    } catch {
     }
   };
 
@@ -1195,7 +1195,7 @@ export default function Dashboard() {
           holdings,
         }));
       }
-    } catch (err) {
+    } catch {
     }
   };
 
@@ -1296,7 +1296,7 @@ export default function Dashboard() {
           yearChangePercent
         }));
       }
-    } catch (err) {
+    } catch {
       setPortfolio(prev => ({
         ...prev,
         chartData: [
@@ -1349,7 +1349,7 @@ export default function Dashboard() {
       }, 500);
 
       Alert.alert('Success', `${symbol} added to your portfolio!`);
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Failed to add stock. Please try again.');
     } finally {
       setAddingStock(false);
@@ -1436,7 +1436,7 @@ export default function Dashboard() {
       }, 500);
 
       Alert.alert('Success', `${editingHolding.symbol} updated successfully!`);
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Failed to update holding. Please try again.');
     } finally {
       setSavingEdit(false);
@@ -1508,7 +1508,7 @@ export default function Dashboard() {
         setSearchResults(data);
         setShowSearchDropdown(true);
       }
-    } catch (err) {
+    } catch {
     }
   };
 
@@ -1530,7 +1530,7 @@ export default function Dashboard() {
         setWatchlistSearchResults(data);
         setShowWatchlistSearchDropdown(true);
       }
-    } catch (err) {
+    } catch {
     }
   };
 
@@ -1574,7 +1574,7 @@ export default function Dashboard() {
         setStockSearchResults(data);
         setShowStockSearchDropdown(true);
       }
-    } catch (err) {
+    } catch {
     }
   };
 

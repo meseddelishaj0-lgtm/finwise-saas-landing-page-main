@@ -584,7 +584,7 @@ export default function Explore() {
         // Store last 30 days for historical comparison
         setTreasuryHistory(data.slice(0, 30));
       }
-    } catch (err) {
+    } catch {
     } finally {
       setTreasuryLoading(false);
     }
@@ -672,7 +672,7 @@ export default function Explore() {
 
         setHeaderCards(cards);
       }
-    } catch (err) {
+    } catch {
     }
   };
 
@@ -716,7 +716,7 @@ export default function Explore() {
           }
         }
       }
-    } catch (err) {
+    } catch {
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
@@ -944,7 +944,7 @@ export default function Explore() {
               };
             }
             return null;
-          } catch (err) {
+          } catch {
             return null;
           }
         });

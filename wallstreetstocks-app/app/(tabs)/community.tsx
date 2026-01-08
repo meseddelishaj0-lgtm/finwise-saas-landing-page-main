@@ -634,7 +634,7 @@ export default function CommunityPage() {
     );
 
     try {
-      const result = await followUserApi(userId, targetUserId);
+      await followUserApi(userId, targetUserId);
 
       // Don't update from server response - trust local state (server may return stale data from replica)
       // The local follow change is tracked and will persist across re-fetches
@@ -1203,7 +1203,7 @@ export default function CommunityPage() {
 
     try {
       await likePost(postId.toString(), userId);
-    } catch (error: any) {
+    } catch {
       setPosts(prev =>
         prev.map(post =>
           post.id === postId
