@@ -431,7 +431,7 @@ export default function Dashboard() {
   useFocusEffect(
     useCallback(() => {
       refreshPrices();
-    }, [refreshPrices])
+    }, [])
   );
 
   // Create new portfolio using context
@@ -519,7 +519,7 @@ export default function Dashboard() {
         fetchMarketChips();
         fetchTrending();
       }, 100);
-    }, [fetchTrending])
+    }, [])
   );
 
   // Subscribe to WebSocket for real-time streaming
@@ -592,7 +592,7 @@ export default function Dashboard() {
       const portfolioSymbols = contextCurrentPortfolio.holdings.map(h => h.symbol);
       wsSubscribe(portfolioSymbols);
     }
-  }, [wsConnected, contextCurrentPortfolio, wsSubscribe]);
+  }, [wsConnected, contextCurrentPortfolio?.holdings, wsSubscribe]);
 
   // Subscribe watchlist to WebSocket
   useEffect(() => {
@@ -607,7 +607,7 @@ export default function Dashboard() {
       const trendingSymbols = trending.map(s => s.symbol);
       wsSubscribe(trendingSymbols);
     }
-  }, [wsConnected, trending, wsSubscribe]);
+  }, [wsConnected, trending.length, wsSubscribe]);
 
   // Subscribe stock picks to WebSocket
   useEffect(() => {
@@ -1649,14 +1649,14 @@ export default function Dashboard() {
     if (contextCurrentPortfolio && contextCurrentPortfolio.holdings.length > 0) {
       fetchPortfolio();
     }
-  }, [portfolioTimeRange, contextCurrentPortfolio, fetchPortfolio]);
+  }, [portfolioTimeRange]);
 
   // Refetch portfolio when selected portfolio changes
   useEffect(() => {
     if (holdingsInitialized && selectedPortfolioId) {
       fetchPortfolio();
     }
-  }, [selectedPortfolioId, holdingsInitialized, fetchPortfolio]);
+  }, [selectedPortfolioId]);
 
   // Track if initial watchlist data was loaded to prevent duplicate fetches
   const watchlistInitialLoadDone = React.useRef(false);
@@ -1674,7 +1674,7 @@ export default function Dashboard() {
       setWatchlistData([]);
       setWatchlistDataLoading(false);
     }
-  }, [watchlist, contextWatchlistLoading, fetchWatchlist]);
+  }, [watchlist, contextWatchlistLoading]);
 
   // Memoized filtered and sorted watchlist - uses live prices from WebSocket
   const filteredWatchlist = useMemo(() => {

@@ -582,7 +582,7 @@ export default function Trending() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, fetchMarketMovers, fetchTwelveDataQuotes]);
+  }, [activeTab]);
 
   // Update cache when data changes successfully
   useEffect(() => {
@@ -659,7 +659,7 @@ export default function Trending() {
     };
 
     prefetchTabs();
-  }, [fetchMarketMovers, fetchTwelveDataQuotes]);
+  }, []);
 
   // ============================================================================
   // OPTIMIZED TAB SWITCHING - Instant + Smooth
@@ -724,7 +724,7 @@ export default function Trending() {
     // ALWAYS fetch fresh data - gainers/losers/trending change frequently
     fetchLiveData();
     fetchHeaderCards();
-  }, [activeTab, fetchLiveData, fetchHeaderCards]);
+  }, [activeTab]);
 
   // Re-subscribe when returning to screen
   useFocusEffect(
@@ -813,7 +813,6 @@ export default function Trending() {
       }
       return item;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, priceUpdateTrigger]);
 
   const renderItem = useCallback(({ item, index }: { item: StockItem; index: number }) => {

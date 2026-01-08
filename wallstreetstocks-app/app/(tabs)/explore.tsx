@@ -570,7 +570,7 @@ export default function Explore() {
   };
 
   // Fetch Treasury Rates with timeout
-  const fetchTreasuryRates = useCallback(async () => {
+  const fetchTreasuryRates = async () => {
     setTreasuryLoading(true);
     try {
       const response = await fetchWithTimeout(
@@ -588,7 +588,7 @@ export default function Explore() {
     } finally {
       setTreasuryLoading(false);
     }
-  }, []);
+  };
 
   // Get rate change from previous day
   const getRateChange = (tenor: keyof TreasuryRate): { change: number; isPositive: boolean } | null => {
@@ -626,7 +626,7 @@ export default function Explore() {
   };
 
   // Fetch header cards data based on active tab with cache support (syncs with chart prices)
-  const fetchHeaderCards = useCallback(async () => {
+  const fetchHeaderCards = async () => {
     // Use dynamic symbols for stocks tab based on region
     const symbols = activeTab === "stocks" ? getStockHeaderSymbols() : TAB_HEADER_SYMBOLS[activeTab];
     if (symbols.length === 0) {
@@ -674,7 +674,7 @@ export default function Explore() {
       }
     } catch {
     }
-  }, [activeTab, getStockHeaderSymbols]);
+  };
 
   // Search for tickers
   const searchTickers = async (query: string) => {
@@ -736,7 +736,7 @@ export default function Explore() {
   };
 
   // Fetch live data based on tab
-  const fetchLiveData = useCallback(async () => {
+  const fetchLiveData = async () => {
     setError(null);
 
     try {
@@ -1037,12 +1037,12 @@ export default function Explore() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, stockRegion]);
+  };
 
   // Fetch treasury rates on mount
   useEffect(() => {
     fetchTreasuryRates();
-  }, [fetchTreasuryRates]);
+  }, []);
 
   // WebSocket handles all real-time prices - no prefetch API calls needed
 
@@ -1109,7 +1109,7 @@ export default function Explore() {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [activeTab, stockRegion, fetchLiveData, fetchHeaderCards]);
+  }, [activeTab, stockRegion]);
 
   // NO focus refresh needed - WebSocket provides real-time updates
 
