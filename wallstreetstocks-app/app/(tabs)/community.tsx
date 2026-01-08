@@ -934,7 +934,7 @@ export default function CommunityPage() {
     } finally {
       setNotificationsLoading(false);
     }
-  }, [getUserId, fetchNotifications]);
+  }, [getUserId]);
 
   const loadPosts = useCallback(async () => {
     try {
@@ -948,7 +948,7 @@ export default function CommunityPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [posts.length, getUserId, fetchPosts]);
+  }, [posts.length, getUserId]);
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
@@ -2106,7 +2106,7 @@ export default function CommunityPage() {
     if (!loading && (searchParams.openPostId || searchParams.openUserId)) {
       handleDeepLink();
     }
-  }, [searchParams.openPostId, searchParams.openUserId, loading, posts]);
+  }, [searchParams.openPostId, searchParams.openUserId, loading, posts, handleOpenComments, handleOpenProfile, navRouter]);
 
   // Helper function to get display name for any user (use current user profile for self)
   const getUserDisplayName = (user: User | null | undefined): string => {
