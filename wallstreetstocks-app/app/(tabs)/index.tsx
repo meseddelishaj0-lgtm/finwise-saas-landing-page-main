@@ -23,19 +23,17 @@ import { useFocusEffect } from '@react-navigation/native';
 import { LineChart as GiftedLineChart } from 'react-native-gifted-charts';
 import { Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useWatchlist } from '@/context/WatchlistContext';
 import { usePortfolio } from '@/context/PortfolioContext';
 import { useWebSocket } from '@/context/WebSocketContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiCache } from '@/utils/performance';
 import { fetchQuotesWithCache } from '@/services/quoteService';
 import { priceStore } from '@/stores/priceStore';
-import { AnimatedPrice, AnimatedChange, LiveIndicator, MarketStatusIndicator } from '@/components/AnimatedPrice';
+import { AnimatedPrice, AnimatedChange, MarketStatusIndicator } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
-import { IndicesSkeletonList, WatchlistSkeletonList, TrendingSkeletonList, PortfolioSkeleton } from '@/components/SkeletonLoader';
+import { IndicesSkeletonList, WatchlistSkeletonList, TrendingSkeletonList } from '@/components/SkeletonLoader';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -124,44 +122,6 @@ const cleanChartData = (data: number[]): number[] => {
   return cleaned;
 };
 
-// Normalize data to prevent extreme spikes that break bezier curves
-const normalizeChartData = (data: number[]): number[] => {
-  const cleaned = cleanChartData(data);
-  if (cleaned.length < 2) return cleaned;
-
-  const min = Math.min(...cleaned);
-  const max = Math.max(...cleaned);
-  const range = max - min;
-
-  // If range is too small, return flat line
-  if (range < 0.001) {
-    return cleaned.map(() => 50);
-  }
-
-  // Normalize to 0-100 range to prevent extreme bezier artifacts
-  return cleaned.map(val => ((val - min) / range) * 100);
-};
-
-// Smooth data using moving average to eliminate jaggedness
-const smoothData = (data: number[], windowSize: number = 3): number[] => {
-  // First clean the data to remove gaps
-  const cleanedData = cleanChartData(data);
-
-  if (cleanedData.length <= windowSize) return cleanedData;
-
-  const smoothed: number[] = [];
-  for (let i = 0; i < cleanedData.length; i++) {
-    let sum = 0;
-    let count = 0;
-    for (let j = Math.max(0, i - Math.floor(windowSize / 2)); j <= Math.min(cleanedData.length - 1, i + Math.floor(windowSize / 2)); j++) {
-      sum += cleanedData[j];
-      count++;
-    }
-    smoothed.push(sum / count);
-  }
-  return smoothed;
-};
-
 // Interpolate sparkline data to create smooth continuous lines
 const interpolateSparkline = (data: number[], targetPoints: number = 20): number[] => {
   const cleaned = cleanChartData(data);
@@ -229,7 +189,6 @@ const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 // Real-time prices handled by WebSocket (pre-market + after-hours included)
 // No API polling needed - WebSocket provides instant updates via Twelve Data WebSocket
-const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
 // Batch quotes helper - uses shared quote service with cache support
 // Prices sync with chart data for consistent display across screens
@@ -326,7 +285,6 @@ export default function Dashboard() {
     selectedPortfolioId: contextSelectedId,
     currentPortfolio: contextCurrentPortfolio,
     loading: portfolioLoading,
-    refreshing: portfolioRefreshing,
     setSelectedPortfolioId: setContextSelectedId,
     createPortfolio: contextCreatePortfolio,
     deletePortfolio: contextDeletePortfolio,
@@ -398,7 +356,6 @@ export default function Dashboard() {
   ]);
   const [indicesLoading, setIndicesLoading] = useState(true);
   const [indicesCacheLoaded, setIndicesCacheLoaded] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Live Trending
   const TRENDING_CACHE_KEY = 'cached_trending_stocks';
@@ -516,7 +473,7 @@ export default function Dashboard() {
   };
 
   // Watchlist from context (single source of truth)
-  const { watchlist, watchlistLoading: contextWatchlistLoading, addToWatchlist, removeFromWatchlist, isInWatchlist, refreshWatchlist } = useWatchlist();
+  const { watchlist, watchlistLoading: contextWatchlistLoading, addToWatchlist, removeFromWatchlist, refreshWatchlist } = useWatchlist();
   const [watchlistData, setWatchlistData] = useState<any[]>([]);
   const [watchlistDataLoading, setWatchlistDataLoading] = useState(true);
 
@@ -674,7 +631,6 @@ export default function Dashboard() {
   // Now safe to run fast since we disabled REST API polling
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const realTimePriceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Use useFocusEffect to restart price updates when tab is focused
   useFocusEffect(
@@ -875,7 +831,6 @@ export default function Dashboard() {
 
       if (results.length > 0) {
         setMajorIndices(results);
-        setLastUpdated(new Date());
         setIndicesLoading(false);
         return;
       }
@@ -897,7 +852,6 @@ export default function Dashboard() {
 
     if (storeResults.length > 0) {
       setMajorIndices(storeResults);
-      setLastUpdated(new Date());
     }
     setIndicesLoading(false);
   };
@@ -1250,7 +1204,6 @@ export default function Dashboard() {
     try {
       let historicalData: any[] = [];
       let labels: string[] = [];
-      let fullLabels: string[] = [];
 
       const today = new Date();
       let daysBack = 365;
@@ -1299,29 +1252,7 @@ export default function Dashboard() {
         // Create data array with labels for each point
         historicalData = sampledValues.map((value: number, idx: number) => {
           const date = new Date(sampledDates[idx].date);
-          let label = '';
-          
-          // Show labels based on position for better visibility
-          const totalPoints = sampledValues.length;
-          const labelInterval = Math.ceil(totalPoints / 5); // Show ~5 labels
-          const showLabel = idx % labelInterval === 0 || idx === totalPoints - 1;
-          
-          if (showLabel) {
-            if (portfolioTimeRange === '1D') {
-              label = date.toLocaleTimeString('en-US', { 
-                hour: 'numeric',
-              });
-            } else if (portfolioTimeRange === '5D') {
-              label = date.toLocaleDateString('en-US', { 
-                weekday: 'short'
-              });
-            } else {
-              label = date.toLocaleDateString('en-US', { 
-                month: 'short'
-              });
-            }
-          }
-          
+
           // Full label for tooltip
           let fullLabel = '';
           if (portfolioTimeRange === '1D') {
@@ -1671,26 +1602,19 @@ export default function Dashboard() {
     setRefreshing(false);
   };
 
-  // App state tracking for smart polling (pause when backgrounded)
+  // App state tracking for refreshing data when app comes to foreground
   const appState = useRef(AppState.currentState);
-  const [isAppActive, setIsAppActive] = useState(true);
-  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Handle app state changes for smart polling
+  // Handle app state changes - refresh data when app returns to foreground
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       const wasActive = appState.current === 'active';
       const isActive = nextAppState === 'active';
       appState.current = nextAppState;
 
-      if (wasActive !== isActive) {
-        setIsAppActive(isActive);
-
-        // Refresh data immediately when app comes back to foreground
-        if (isActive && holdingsInitialized && !contextWatchlistLoading) {
-          Promise.all([
-          ]);
-        }
+      // Refresh data immediately when app comes back to foreground
+      if (!wasActive && isActive && holdingsInitialized && !contextWatchlistLoading) {
+        // WebSocket handles real-time updates, no additional refresh needed
       }
     });
 
@@ -1719,31 +1643,6 @@ export default function Dashboard() {
       clearTimeout(tertiaryTimer);
     };
   }, [holdingsInitialized, contextWatchlistLoading]);
-
-  // NO API POLLING - WebSocket handles all real-time price updates
-  // This interval only updates the timestamp display, no API calls
-  useEffect(() => {
-    if (!holdingsInitialized || contextWatchlistLoading) return;
-
-    // Clear existing interval
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-    }
-
-    // Only update timestamp when app is active (no API calls)
-    if (isAppActive) {
-      pollingIntervalRef.current = setInterval(() => {
-        setLastUpdated(new Date()); // Just update timestamp display
-      }, 30000); // Every 30 seconds
-    }
-
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
-  }, [holdingsInitialized, contextWatchlistLoading, isAppActive]);
 
   // Refetch portfolio chart when time range changes
   useEffect(() => {
