@@ -18,7 +18,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
 import { fetchWithTimeout } from "@/utils/performance";
-import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
+import { AnimatedPrice, AnimatedChange } from "@/components/AnimatedPrice";
 import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
 import { InlineAdBanner } from "@/components/AdBanner";
@@ -244,8 +244,7 @@ export default function Trending() {
 
 
   // Cache for tab data to avoid re-fetching on tab switch
-  const tabDataCache = useRef<Record<string, { data: StockItem[]; timestamp: number }>>({});
-  const CACHE_TTL = 300000; // 5 minute cache TTL for instant tab switching
+  const tabDataCache = useRef<Record<string, { data: StockItem[]; timestamp: number }>>({})
 
   // WebSocket for real-time forex/commodities prices
   const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();

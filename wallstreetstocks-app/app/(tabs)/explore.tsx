@@ -16,10 +16,9 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { fetchWithTimeout } from "@/utils/performance";
-import { AnimatedPrice, AnimatedChange, LiveIndicator } from "@/components/AnimatedPrice";
+import { AnimatedPrice, AnimatedChange } from "@/components/AnimatedPrice";
 import { fetchQuotesWithCache } from "@/services/quoteService";
 import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
@@ -84,13 +83,6 @@ interface TreasuryRate {
   year30: number;
 }
 
-interface TreasuryHistorical {
-  current: TreasuryRate;
-  previous: TreasuryRate | null;
-  weekAgo: TreasuryRate | null;
-  monthAgo: TreasuryRate | null;
-}
-
 // Mini Sparkline Component - Memoized for performance
 const MiniSparkline = memo(({
   data,
@@ -131,7 +123,7 @@ const MiniSparkline = memo(({
 
   const areaPath = `${pathD} L ${width} ${height} L 0 ${height} Z`;
   const color = isPositive ? "#00C853" : "#FF1744";
-  const gradientId = `gradient-${isPositive ? 'green' : 'red'}-${Math.random().toString(36).substr(2, 9)}`;
+  const gradientId = `gradient-${isPositive ? 'green' : 'red'}-${Math.random().toString(36).substring(2, 11)}`;
 
   return (
     <Svg width={width} height={height}>
@@ -251,14 +243,13 @@ const YieldCurveChart = ({
 
 // Treasury Rate Card Component
 const TreasuryRateCard = ({
-  tenor,
   label,
   rate,
   change,
   isSelected,
   onPress,
 }: {
-  tenor: string;
+  tenor?: string;
   label: string;
   rate: number;
   change: { change: number; isPositive: boolean } | null;
@@ -390,12 +381,10 @@ export default function Explore() {
   const [treasuryLoading, setTreasuryLoading] = useState(true);
   const [selectedTenor, setSelectedTenor] = useState<string>("year10");
   const router = useRouter();
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cache for tab data to avoid re-fetching on tab switch
-  const tabDataCache = useRef<Record<string, { data: MarketItem[]; headerCards: ChipData[]; timestamp: number }>>({});
-  const CACHE_TTL = 300000; // 5 minute cache TTL for instant tab switching
+  const tabDataCache = useRef<Record<string, { data: MarketItem[]; headerCards: ChipData[]; timestamp: number }>>({})
 
   // WebSocket for real-time prices
   const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
@@ -1452,7 +1441,7 @@ export default function Explore() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.headerCardsContent}
         >
-          {headerCards.map((card, index) => (
+          {headerCards.map((card) => (
             <HeaderCard
               key={card.symbol}
               item={card}
@@ -1738,7 +1727,7 @@ export default function Explore() {
                   <YieldCurveChart data={getYieldCurveData()} />
                   {/* X-axis labels */}
                   <View style={styles.yieldCurveLabels}>
-                    {["1M", "3M", "6M", "1Y", "2Y", "5Y", "10Y", "30Y"].map((label, i) => (
+                    {["1M", "3M", "6M", "1Y", "2Y", "5Y", "10Y", "30Y"].map((label) => (
                       <Text key={label} style={styles.yieldCurveLabel}>{label}</Text>
                     ))}
                   </View>
