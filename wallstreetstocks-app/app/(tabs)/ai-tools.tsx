@@ -18,7 +18,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
 // FMP API Configuration
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
@@ -163,7 +162,7 @@ const DIAMOND_TABS = ['analyzer', 'compare', 'forecast', 'assistant', 'insider']
 
 export default function AITools() {
   const router = useRouter();
-  const { canAccess, isPremium, currentTier } = usePremiumFeature();
+  const { canAccess } = usePremiumFeature();
   const [activeTab, setActiveTab] = useState<'analyzer' | 'compare' | 'forecast' | 'assistant' | 'resources' | 'calculator' | 'insider'>('analyzer');
 
   // Check if user has Diamond access for AI tools
@@ -187,7 +186,6 @@ export default function AITools() {
   const [calcMonthlyContribution, setCalcMonthlyContribution] = useState('500');
   const [calcYears, setCalcYears] = useState('10');
   const [calcAnnualReturn, setCalcAnnualReturn] = useState('8');
-  const [calcInflationRate, setCalcInflationRate] = useState('3');
   const [calcResult, setCalcResult] = useState<any>(null);
 
   // Mortgage Calculator
@@ -380,7 +378,7 @@ Return ONLY a JSON object:
         recommendation: aiAnalysis.recommendation,
         priceTarget: aiAnalysis.priceTarget,
       });
-    } catch (err) {
+    } catch {
       setAnalyzerError('Analysis failed. Please try again.');
     } finally {
       setAnalyzerLoading(false);
@@ -533,7 +531,7 @@ Return JSON only:
           momentum: parsedAI.momentum || ticker1,
         }
       });
-    } catch (err) {
+    } catch {
       setCompareError('Comparison failed. Please try again.');
     } finally {
       setCompareLoading(false);
@@ -558,7 +556,7 @@ Return JSON only:
         fetch(`${FMP_BASE_URL}/ratios/${symbol}?limit=1&apikey=${FMP_API_KEY}`),
       ]);
 
-      const [quoteData, historyData, ratiosData] = await Promise.all([
+      const [quoteData, historyData] = await Promise.all([
         quoteRes.json(),
         historyRes.json(),
         ratiosRes.json(),
@@ -571,7 +569,6 @@ Return JSON only:
 
       const quote = quoteData[0];
       const history = historyData.historical || [];
-      const ratios = ratiosData[0] || {};
 
       // Calculate technical indicators
       const prices = history.slice(0, 30).map((h: any) => h.close).reverse();
@@ -660,7 +657,7 @@ Return ONLY a JSON object with this exact structure:
         technicalSignals: aiAnalysis.technicalSignals || { trend: 'sideways', support: low52w, resistance: high52w },
         summary: aiAnalysis.summary || `Analysis for ${symbol}`,
       });
-    } catch (err) {
+    } catch {
       setForecastError('Forecast failed. Please try again.');
     } finally {
       setForecastLoading(false);
@@ -724,7 +721,7 @@ Always remind users that this is educational information, not financial advice.`
 
       const assistantReply = data.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
       setMessages(prev => [...prev, { role: 'assistant', content: assistantReply }]);
-    } catch (err) {
+    } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: "I'm having trouble connecting right now. Please check your connection and try again."
@@ -1375,7 +1372,6 @@ Always remind users that this is educational information, not financial advice.`
                     value1={comparisonResult.stock1.pe?.toFixed(2) || '—'}
                     value2={comparisonResult.stock2.pe?.toFixed(2) || '—'}
                     winner={comparisonResult.stock1.pe && comparisonResult.stock2.pe ? (comparisonResult.stock1.pe < comparisonResult.stock2.pe ? 1 : 2) : 0}
-                    lowerBetter
                   />
                   <CompareRow
                     label="EPS"
@@ -1428,7 +1424,6 @@ Always remind users that this is educational information, not financial advice.`
                     value1={comparisonResult.stock1.debtToEquity?.toFixed(2) || '—'}
                     value2={comparisonResult.stock2.debtToEquity?.toFixed(2) || '—'}
                     winner={comparisonResult.stock1.debtToEquity && comparisonResult.stock2.debtToEquity ? (comparisonResult.stock1.debtToEquity < comparisonResult.stock2.debtToEquity ? 1 : 2) : 0}
-                    lowerBetter
                   />
                   <CompareRow
                     label="Current Ratio"
@@ -2390,7 +2385,6 @@ Always remind users that this is educational information, not financial advice.`
                   }
                   const pvFaceValue = faceValue / Math.pow(1 + periodicRate, totalPeriods);
                   const bondPrice = pvCoupons + pvFaceValue;
-                  const ytm = couponRate;
                   const currentYield = (couponPayment * frequency) / bondPrice * 100;
                   setCalcResult({ type: 'bond', bondPrice: Math.round(bondPrice * 100) / 100, couponPayment: Math.round(couponPayment * 100) / 100, annualIncome: Math.round(couponPayment * frequency * 100) / 100, totalIncome: Math.round(couponPayment * totalPeriods * 100) / 100, currentYield: Math.round(currentYield * 100) / 100, isPremium: bondPrice > faceValue, faceValue });
                 }}>
@@ -2631,14 +2625,13 @@ Always remind users that this is educational information, not financial advice.`
 }
 
 // Compare Row Component
-const CompareRow = ({ label, value1, value2, color1, color2, winner, lowerBetter }: {
+const CompareRow = ({ label, value1, value2, color1, color2, winner }: {
   label: string;
   value1: string;
   value2: string;
   color1?: string;
   color2?: string;
   winner?: 0 | 1 | 2;
-  lowerBetter?: boolean;
 }) => (
   <View style={compareStyles.row}>
     <View style={compareStyles.rowLeft}>

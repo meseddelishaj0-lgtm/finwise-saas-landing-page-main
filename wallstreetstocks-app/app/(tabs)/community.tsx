@@ -26,10 +26,9 @@ import { useAuth } from '@/lib/auth';
 import { useUserProfile } from '@/context/UserProfileContext';
 import FormattedContent from '@/components/FormattedContent';
 import TrendingTickers from '@/components/TrendingTickers';
-import { PremiumFeatureCard, FEATURE_TIERS } from '@/components/PremiumFeatureGate';
+import { FEATURE_TIERS } from '@/components/PremiumFeatureGate';
 import { SubscriptionBadgeInline } from '@/components/SubscriptionBadge';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
-import { router } from 'expo-router';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -46,7 +45,7 @@ const fetchPosts = async (forumSlug?: string, currentUserId?: number): Promise<a
     if (!response.ok) throw new Error('Failed to fetch posts');
     const data = await response.json();
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -72,7 +71,7 @@ const searchPosts = async (query: string, ticker?: string): Promise<any[]> => {
     if (!response.ok) return [];
     const data = await response.json();
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -85,7 +84,7 @@ const fetchComments = async (postId: string | number, userId?: number): Promise<
     if (!response.ok) return [];
     const data = await response.json();
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -110,7 +109,7 @@ const likePost = async (postId: string, userId: number): Promise<{ liked: boolea
     if (!response.ok) throw new Error('Failed to like post');
     const result = await response.json();
     return { liked: result?.liked ?? true, likesCount: result?.likesCount };
-  } catch (error) {
+  } catch {
     throw error;
   }
 };
@@ -125,7 +124,7 @@ const likeComment = async (commentId: string, userId: number): Promise<{ liked: 
     if (!response.ok) throw new Error('Failed to like comment');
     const result = await response.json();
     return { liked: result?.liked ?? true, likesCount: result?.likesCount };
-  } catch (error) {
+  } catch {
     throw error;
   }
 };
@@ -141,7 +140,7 @@ const fetchNotifications = async (userId: number): Promise<any[]> => {
     if (!response.ok) return [];
     const data = await response.json();
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -175,7 +174,7 @@ const getCurrentUser = async (): Promise<any> => {
     const response = await fetch(`${API_BASE}/api/auth/session`);
     if (!response.ok) return null;
     return response.json();
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -239,7 +238,7 @@ const fetchSuggestedUsersApi = async (userId?: number): Promise<any[]> => {
     if (!response.ok) return [];
     const data = await response.json();
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -261,7 +260,7 @@ const followUserApi = async (followerId: number, followingId: number): Promise<{
       action: result.action || 'followed',
       isFollowing: result.isFollowing ?? true,
     };
-  } catch (error) {
+  } catch {
     throw error;
   }
 };
@@ -429,7 +428,7 @@ export default function CommunityPage() {
   const searchParams = useLocalSearchParams<{ openPostId?: string; openUserId?: string }>();
   const { user: authUser } = useAuth();
   const { profile: userProfile, getDisplayName: getContextDisplayName } = useUserProfile();
-  const { canAccess, withPremiumAccess, isPremium } = usePremiumFeature();
+  const { canAccess, withPremiumAccess } = usePremiumFeature();
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -454,7 +453,6 @@ export default function CommunityPage() {
   const [selectedPostForOptions, setSelectedPostForOptions] = useState<Post | null>(null);
   const [commentOptionsModal, setCommentOptionsModal] = useState(false);
   const [selectedCommentForOptions, setSelectedCommentForOptions] = useState<Comment | null>(null);
-  const [hiddenPosts, setHiddenPosts] = useState<number[]>([]);
 
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -580,7 +578,7 @@ export default function CommunityPage() {
           .slice(0, 10) as SuggestedUser[];
         setSuggestedUsers(uniqueUsers);
       }
-    } catch (error) {
+    } catch {
       // Fallback to users from posts
       const uniqueUsers = posts
         .map(p => p.user)
@@ -640,7 +638,7 @@ export default function CommunityPage() {
 
       // Don't update from server response - trust local state (server may return stale data from replica)
       // The local follow change is tracked and will persist across re-fetches
-    } catch (error) {
+    } catch {
       // Revert local change tracking
       setLocalFollowChanges(prev => {
         const newMap = new Map(prev);
@@ -721,7 +719,7 @@ export default function CommunityPage() {
           const userPosts = posts.filter(p => p.userId === user.id || p.user?.id === user.id);
           setProfilePosts(userPosts);
         }
-      } catch (error) {
+      } catch {
         const userPosts = posts.filter(p => p.userId === user.id || p.user?.id === user.id);
         setProfilePosts(userPosts);
       } finally {
@@ -795,7 +793,7 @@ export default function CommunityPage() {
         const userPosts = posts.filter(p => p.userId === user.id || p.user?.id === user.id);
         setProfilePosts(userPosts);
       }
-    } catch (error) {
+    } catch {
       // Fallback: use passed user data
       setSelectedProfile({
         ...user,
@@ -872,7 +870,7 @@ export default function CommunityPage() {
       if (!response.ok) {
         throw new Error('Failed to follow user');
       }
-    } catch (error) {
+    } catch {
       // Revert local change tracking
       setLocalFollowChanges(prev => {
         const newMap = new Map(prev);
@@ -918,7 +916,7 @@ export default function CommunityPage() {
     try {
       const user = await getCurrentUser();
       setCurrentUser(user);
-    } catch (error) {
+    } catch {
     }
   };
 
@@ -931,7 +929,7 @@ export default function CommunityPage() {
       const notifs = await fetchNotifications(userId);
       setNotifications(notifs || []);
       setUnreadCount((notifs || []).filter((n: Notification) => !n.isRead).length);
-    } catch (error) {
+    } catch {
       setNotifications([]);
     } finally {
       setNotificationsLoading(false);
@@ -944,7 +942,7 @@ export default function CommunityPage() {
       const userId = getUserId();
       const fetchedPosts = await fetchPosts(undefined, userId || undefined);
       setPosts(fetchedPosts || []);
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to load posts');
     } finally {
       setLoading(false);
@@ -963,7 +961,7 @@ export default function CommunityPage() {
       const ticker = query.startsWith('$') ? query.substring(1) : undefined;
       const results = await searchPosts(query, ticker);
       setSearchResults(results || []);
-    } catch (error) {
+    } catch {
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
@@ -975,7 +973,7 @@ export default function CommunityPage() {
     try {
       const fetchedComments = await fetchComments(postId.toString());
       setComments(fetchedComments || []);
-    } catch (error) {
+    } catch {
       setComments([]);
     } finally {
       setCommentsLoading(false);
@@ -1024,7 +1022,7 @@ export default function CommunityPage() {
       if (!result.canceled && result.assets[0]) {
         setNewPostImage(result.assets[0].uri);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to pick image');
     }
   };
@@ -1042,7 +1040,7 @@ export default function CommunityPage() {
         );
         const data = await response.json();
         setGiphyResults(data.data || []);
-      } catch (error) {
+      } catch {
       } finally {
         setGiphyLoading(false);
       }
@@ -1056,7 +1054,7 @@ export default function CommunityPage() {
       );
       const data = await response.json();
       setGiphyResults(data.data || []);
-    } catch (error) {
+    } catch {
     } finally {
       setGiphyLoading(false);
     }
@@ -1249,7 +1247,7 @@ export default function CommunityPage() {
 
     try {
       await likeComment(commentId.toString(), userId);
-    } catch (error) {
+    } catch {
       setComments(prev =>
         prev.map(comment =>
           comment.id === commentId
@@ -1299,7 +1297,7 @@ export default function CommunityPage() {
                 const data = await response.json();
                 Alert.alert('Error', data.error || 'Failed to delete post');
               }
-            } catch (error) {
+            } catch {
               Alert.alert('Error', 'Failed to delete post');
             }
           },
@@ -1353,7 +1351,7 @@ export default function CommunityPage() {
           };
         })
       );
-    } catch (error) {
+    } catch {
     }
   };
 
@@ -1407,7 +1405,7 @@ export default function CommunityPage() {
       } else {
         Alert.alert('User not found', `@${username} doesn't exist`);
       }
-    } catch (error) {
+    } catch {
     }
   };
 
@@ -1451,7 +1449,7 @@ export default function CommunityPage() {
       await Share.share({
         message: `${post.title || ''}\n\n${post.content}\n\nShared from WallStreetStocks`,
       });
-    } catch (error) {
+    } catch {
     }
   };
 
@@ -1477,7 +1475,7 @@ export default function CommunityPage() {
           uniqueViewers: data.uniqueViewers || 0,
         });
       }
-    } catch (error) {
+    } catch {
     }
   };
 
@@ -1540,7 +1538,7 @@ export default function CommunityPage() {
             setTimeout(() => handleOpenProfile(notif.fromUser), 300);
           }
         }
-      } catch (error) {
+      } catch {
         // Fallback to opening profile
         if (notif.fromUser) {
           setTimeout(() => handleOpenProfile(notif.fromUser), 300);
@@ -1598,7 +1596,7 @@ export default function CommunityPage() {
       } else {
         throw new Error('Failed to follow user');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to follow user. Please try again.');
     } finally {
       setPostOptionsModal(false);
@@ -1634,7 +1632,7 @@ export default function CommunityPage() {
                 setPosts(prev => prev.filter(p => p.user?.id !== targetUserId));
                 Alert.alert('Blocked', `${targetUserName} has been blocked`);
               }
-            } catch (error) {
+            } catch {
               Alert.alert('Error', 'Failed to block user. Please try again.');
             }
           },
@@ -1662,7 +1660,7 @@ export default function CommunityPage() {
       if (result.success) {
         Alert.alert('Muted', `${targetUserName} has been muted. You won't receive notifications from them.`);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to mute user. Please try again.');
     } finally {
       setPostOptionsModal(false);
@@ -1716,7 +1714,7 @@ export default function CommunityPage() {
     try {
       await reportUser(userId, targetUserId, reason, postId);
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
-    } catch (error) {
+    } catch {
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
     }
   };
@@ -1733,7 +1731,7 @@ export default function CommunityPage() {
         message: `${shareContent}\n\nCheck out this post on WallStreetStocks: ${postUrl}`,
         url: postUrl,
       });
-    } catch (error) {
+    } catch {
     }
     setPostOptionsModal(false);
   };
@@ -1747,7 +1745,7 @@ export default function CommunityPage() {
     try {
       await Clipboard.setStringAsync(postUrl);
       Alert.alert('Copied!', 'Post link copied to clipboard');
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to copy link');
     }
     setPostOptionsModal(false);
@@ -1815,7 +1813,7 @@ export default function CommunityPage() {
                 setPosts(prev => prev.filter(p => p.user?.id !== targetUserId));
                 Alert.alert('Blocked', `${targetUserName} has been blocked`);
               }
-            } catch (error) {
+            } catch {
               Alert.alert('Error', 'Failed to block user. Please try again.');
             }
           },
@@ -1843,7 +1841,7 @@ export default function CommunityPage() {
       if (result.success) {
         Alert.alert('Muted', `${targetUserName} has been muted. You won't receive notifications from them.`);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to mute user. Please try again.');
     } finally {
       setCommentOptionsModal(false);
@@ -1885,7 +1883,7 @@ export default function CommunityPage() {
     try {
       await reportUser(userId, targetUserId, reason, undefined, commentId);
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
-    } catch (error) {
+    } catch {
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
     }
   };
@@ -1919,7 +1917,7 @@ export default function CommunityPage() {
                 setProfileModal(false);
                 Alert.alert('Blocked', `${targetUserName} has been blocked`);
               }
-            } catch (error) {
+            } catch {
               Alert.alert('Error', 'Failed to block user. Please try again.');
             }
           },
@@ -1945,7 +1943,7 @@ export default function CommunityPage() {
       if (result.success) {
         Alert.alert('Muted', `${targetUserName} has been muted.`);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to mute user. Please try again.');
     }
   };
@@ -1981,7 +1979,7 @@ export default function CommunityPage() {
     try {
       await reportUser(userId, selectedProfile.id, reason);
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
-    } catch (error) {
+    } catch {
       Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
     }
   };
@@ -1994,7 +1992,7 @@ export default function CommunityPage() {
       await markAllNotificationsRead(userId);
       setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
       setUnreadCount(0);
-    } catch (error) {
+    } catch {
     }
   };
 
@@ -2081,7 +2079,7 @@ export default function CommunityPage() {
             };
             handleOpenComments(post);
           }
-        } catch (error) {
+        } catch {
         }
         // Clear the param
         navRouter.setParams({ openPostId: undefined } as any);
@@ -2097,7 +2095,7 @@ export default function CommunityPage() {
             const userData = await response.json();
             handleOpenProfile(userData);
           }
-        } catch (error) {
+        } catch {
         }
         // Clear the param
         navRouter.setParams({ openUserId: undefined } as any);
@@ -3643,7 +3641,7 @@ export default function CommunityPage() {
                       url: selectedImage,
                       message: 'Check out this image from WallStreetStocks',
                     });
-                  } catch (error) {
+                  } catch {
                   }
                 }
               }}

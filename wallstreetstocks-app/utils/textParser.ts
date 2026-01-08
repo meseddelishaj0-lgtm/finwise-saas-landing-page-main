@@ -6,7 +6,6 @@ import { router } from 'expo-router';
 // Regex patterns
 const TICKER_REGEX = /\$([A-Za-z]{1,5})\b/g;  // $AAPL, $TSLA
 const MENTION_REGEX = /@([a-zA-Z0-9_]{3,20})\b/g;  // @username
-const HASHTAG_REGEX = /#([a-zA-Z0-9_]+)\b/g;  // #bullish
 
 interface ParsedSegment {
   type: 'text' | 'ticker' | 'mention' | 'hashtag';

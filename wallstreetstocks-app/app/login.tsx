@@ -59,7 +59,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login, socialLogin, isNewUser } = useAuth();
+  const { login, socialLogin } = useAuth();
   const router = useRouter();
 
   // Google OAuth configuration (iOS only - Android uses native SDK)
