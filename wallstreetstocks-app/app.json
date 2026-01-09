@@ -74,6 +74,9 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
       "allowBackup": true,
+      "permissions": [
+        "com.google.android.gms.permission.AD_ID"
+      ],
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-7939235723023664~5272582285"
       }
