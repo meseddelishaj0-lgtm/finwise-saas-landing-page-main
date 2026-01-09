@@ -4,6 +4,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { captureError } from '../utils/sentry';
 
 interface Props {
   children: ReactNode;
@@ -26,7 +27,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error - Sentry will capture this automatically if configured
+    // Report error to Sentry with component stack
+    captureError(error, {
+      componentStack: errorInfo.componentStack,
+      errorBoundary: true,
+    });
     console.error('ErrorBoundary caught:', error, errorInfo);
   }
 
