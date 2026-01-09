@@ -23,16 +23,36 @@
         ],
         "GADApplicationIdentifier": "ca-app-pub-7939235723023664~6192758198",
         "SKAdNetworkItems": [
-          { "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork" },
-          { "SKAdNetworkIdentifier": "4fzdc2evr5.skadnetwork" },
-          { "SKAdNetworkIdentifier": "2fnua5tdw4.skadnetwork" },
-          { "SKAdNetworkIdentifier": "ydx93a7ass.skadnetwork" },
-          { "SKAdNetworkIdentifier": "5a6flpkh64.skadnetwork" },
-          { "SKAdNetworkIdentifier": "p78aez3dzu.skadnetwork" },
-          { "SKAdNetworkIdentifier": "v72qych5uu.skadnetwork" },
-          { "SKAdNetworkIdentifier": "c6k4g5qg8m.skadnetwork" },
-          { "SKAdNetworkIdentifier": "s39g8k73mm.skadnetwork" },
-          { "SKAdNetworkIdentifier": "3qy4746246.skadnetwork" }
+          {
+            "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "4fzdc2evr5.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "2fnua5tdw4.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "ydx93a7ass.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "5a6flpkh64.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "p78aez3dzu.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "v72qych5uu.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "c6k4g5qg8m.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "s39g8k73mm.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "3qy4746246.skadnetwork"
+          }
         ],
         "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
       },
@@ -95,6 +115,13 @@
           "delayAppMeasurementInit": true,
           "optimizeInitialization": true,
           "optimizeAdLoading": true
+        }
+      ],
+      [
+        "@sentry/react-native",
+        {
+          "organization": "wallstreetstocks",
+          "project": "wallstreetstocks-app"
         }
       ]
     ],

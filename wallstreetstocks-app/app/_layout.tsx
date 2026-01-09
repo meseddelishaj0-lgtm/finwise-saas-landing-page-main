@@ -16,6 +16,11 @@ import { PortfolioProvider } from "../context/PortfolioContext";
 import { ThemeProvider } from "../context/ThemeContext";
 import { useAuth } from "@/lib/auth";
 import { preloadAppData } from "../utils/preload";
+import { ErrorBoundary } from "../components/ErrorBoundary";
+import { initializeSentry } from "../utils/sentry";
+
+// Initialize Sentry for crash reporting
+initializeSentry();
 
 // Default symbols to stream (major indices and popular stocks)
 const DEFAULT_STREAMING_SYMBOLS = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL'];
@@ -75,32 +80,34 @@ export default function RootLayout() {
                           initialSymbols={DEFAULT_STREAMING_SYMBOLS}
                         >
                           <AppInitializer>
-                            <View style={{ flex: 1, backgroundColor: "black" }}>
-                              <StatusBar
-                                barStyle="light-content"
-                                backgroundColor="black"
-                                translucent={Platform.OS === 'android'}
-                              />
-                              <Stack
-                                screenOptions={{
-                                  headerShown: false,
-                                }}
-                              >
-                                {/* Disable swipe back on tabs to prevent exiting app */}
-                                <Stack.Screen
-                                  name="(tabs)"
-                                  options={{
-                                    gestureEnabled: false,
-                                  }}
+                            <ErrorBoundary>
+                              <View style={{ flex: 1, backgroundColor: "black" }}>
+                                <StatusBar
+                                  barStyle="light-content"
+                                  backgroundColor="black"
+                                  translucent={Platform.OS === 'android'}
                                 />
-                                <Stack.Screen
-                                  name="index"
-                                  options={{
-                                    gestureEnabled: false,
+                                <Stack
+                                  screenOptions={{
+                                    headerShown: false,
                                   }}
-                                />
-                              </Stack>
-                            </View>
+                                >
+                                  {/* Disable swipe back on tabs to prevent exiting app */}
+                                  <Stack.Screen
+                                    name="(tabs)"
+                                    options={{
+                                      gestureEnabled: false,
+                                    }}
+                                  />
+                                  <Stack.Screen
+                                    name="index"
+                                    options={{
+                                      gestureEnabled: false,
+                                    }}
+                                  />
+                                </Stack>
+                              </View>
+                            </ErrorBoundary>
                           </AppInitializer>
                         </WebSocketProvider>
                       </NotificationProvider>
