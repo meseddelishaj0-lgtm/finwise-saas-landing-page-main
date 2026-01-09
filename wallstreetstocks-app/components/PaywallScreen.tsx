@@ -343,7 +343,7 @@ export default function PaywallScreen() {
                   <Text style={styles.termsLink}>Terms of Use (EULA)</Text>
                 </TouchableOpacity>
                 <Text style={styles.termsDivider}>•</Text>
-                <TouchableOpacity onPress={() => router.push('/profile/privacy')}>
+                <TouchableOpacity onPress={() => Linking.openURL('https://www.wallstreetstocks.ai/privacy')}>
                   <Text style={styles.termsLink}>Privacy Policy</Text>
                 </TouchableOpacity>
               </View>
