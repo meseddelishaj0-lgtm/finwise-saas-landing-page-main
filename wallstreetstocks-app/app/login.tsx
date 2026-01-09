@@ -31,11 +31,15 @@ if (Platform.OS === 'ios') {
   WebBrowser.maybeCompleteAuthSession();
 }
 
-// Configure Google Sign-In for Android
+// Configure Google Sign-In for Android (wrapped in try-catch to prevent crashes)
 if (Platform.OS === 'android') {
-  GoogleSignin.configure({
-    webClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com',
-  });
+  try {
+    GoogleSignin.configure({
+      webClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com',
+    });
+  } catch (e) {
+    // Google Sign-In configuration failed - will handle in sign-in flow
+  }
 }
 
 function decodeJWT(token: string): { email?: string; sub?: string } | null {
