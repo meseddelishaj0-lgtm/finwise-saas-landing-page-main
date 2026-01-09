@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -338,7 +339,7 @@ export default function PaywallScreen() {
                 Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period.
               </Text>
               <View style={styles.termsLinks}>
-                <TouchableOpacity onPress={() => router.push('/profile/terms')}>
+                <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
                   <Text style={styles.termsLink}>Terms of Use (EULA)</Text>
                 </TouchableOpacity>
                 <Text style={styles.termsDivider}>•</Text>
