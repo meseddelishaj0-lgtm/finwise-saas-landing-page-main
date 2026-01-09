@@ -339,7 +339,7 @@ export default function PaywallScreen() {
               </Text>
               <View style={styles.termsLinks}>
                 <TouchableOpacity onPress={() => router.push('/profile/terms')}>
-                  <Text style={styles.termsLink}>Terms of Service</Text>
+                  <Text style={styles.termsLink}>Terms of Use (EULA)</Text>
                 </TouchableOpacity>
                 <Text style={styles.termsDivider}>•</Text>
                 <TouchableOpacity onPress={() => router.push('/profile/privacy')}>
