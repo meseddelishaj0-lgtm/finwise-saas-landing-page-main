@@ -75,10 +75,11 @@ export default function Signup() {
   const { signup, socialLogin } = useAuth();
   const router = useRouter();
 
-  // Google OAuth configuration (iOS only - Android uses native SDK)
-  // Always call hook to satisfy React rules, but only use on iOS
+  // Google OAuth configuration (iOS uses expo-auth-session, Android uses native SDK)
+  // Provide both client IDs to prevent hook errors, but Android uses native SDK for actual sign-in
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: '596401606956-4dsv6d83a9a93cmbh1ehinr352craei6.apps.googleusercontent.com',
+    androidClientId: '596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com',
   });
 
   // Debug: Log the redirect URI being used (iOS)
