@@ -534,7 +534,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (wsConnected) {
       // Subscribe to market indices
-      wsSubscribe(MARKET_INDICES_SYMBOLS);
+      wsSubscribe(MARKET_OVERVIEW_SYMBOLS);
     }
   }, [wsConnected, wsSubscribe]);
 
@@ -655,7 +655,7 @@ export default function Dashboard() {
 
       // Also re-subscribe to WebSocket when tab is focused
       if (wsConnected) {
-        wsSubscribe(MARKET_INDICES_SYMBOLS);
+        wsSubscribe(MARKET_OVERVIEW_SYMBOLS);
         wsSubscribe(POPULAR_STOCKS_WS);
       }
 
