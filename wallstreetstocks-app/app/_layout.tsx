@@ -22,8 +22,13 @@ import { initializeSentry } from "../utils/sentry";
 // Initialize Sentry for crash reporting
 initializeSentry();
 
-// Default symbols to stream (major indices and popular stocks)
-const DEFAULT_STREAMING_SYMBOLS = ['SPY', 'QQQ', 'AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL'];
+// Default symbols to stream (indices, crypto, and popular stocks)
+// Crypto trades 24/7 ensuring live price updates for Apple review outside market hours
+const DEFAULT_STREAMING_SYMBOLS = [
+  'SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'GLD',  // Indices
+  'BTC/USD', 'ETH/USD', 'SOL/USD', 'XRP/USD', 'DOGE/USD', 'ADA/USD',  // Crypto (24/7)
+  'AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL',  // Popular stocks
+];
 
 const queryClient = new QueryClient();
 

@@ -203,8 +203,16 @@ const STOCK_PICKS_PREVIEW = [
   { symbol: 'MSFT', category: 'Cloud & AI', reason: 'Azure expansion' },
 ];
 
-// Market indices symbols for WebSocket subscription
-const MARKET_INDICES_SYMBOLS = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'EFA', 'EEM', 'VXX', 'GLD', 'SLV', 'USO', 'TLT'];
+// Market Overview symbols - alternating indices and crypto for 24/7 live updates
+// Crypto trades 24/7 so Apple reviewers will always see live price movement
+const MARKET_OVERVIEW_SYMBOLS = [
+  'SPY', 'BTC/USD',   // S&P 500, Bitcoin
+  'QQQ', 'ETH/USD',   // Nasdaq 100, Ethereum
+  'DIA', 'SOL/USD',   // Dow Jones, Solana
+  'IWM', 'XRP/USD',   // Russell 2000, Ripple
+  'VTI', 'DOGE/USD',  // Total Market, Dogecoin
+  'GLD', 'ADA/USD',   // Gold, Cardano
+];
 
 // Popular stocks to subscribe via WebSocket for real-time prices
 // Pro plan has 1000 WS credits - MAXIMIZE usage for instant price updates
@@ -664,12 +672,14 @@ export default function Dashboard() {
   // WebSocket handles ALL real-time prices including pre-market and after-hours
   // NO API POLLING - saves 700+ API credits/minute
 
-  // Live market indices - updates every 2s from price store for real-time display
+  // Live market overview - updates every 2s from price store for real-time display
+  // Includes both indices and crypto for 24/7 live updates
   const liveMarketIndices = useMemo(() => {
     const nameMap: { [key: string]: string } = {
       'SPY': 'S&P 500', 'QQQ': 'Nasdaq 100', 'DIA': 'Dow Jones', 'IWM': 'Russell 2000',
-      'VTI': 'Total Market', 'EFA': 'Intl Developed', 'EEM': 'Emerging Mkts', 'VXX': 'Volatility',
-      'GLD': 'Gold', 'SLV': 'Silver', 'USO': 'Oil', 'TLT': '20+ Yr Treasury',
+      'VTI': 'Total Market', 'GLD': 'Gold',
+      'BTC/USD': 'Bitcoin', 'ETH/USD': 'Ethereum', 'SOL/USD': 'Solana',
+      'XRP/USD': 'Ripple', 'DOGE/USD': 'Dogecoin', 'ADA/USD': 'Cardano',
     };
 
     return majorIndices.map(index => {
@@ -770,45 +780,54 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stockPicksData, priceUpdateTrigger]);
 
-  // Fetch live market indices data - INSTANT from pre-loaded ETF data
+  // Fetch live market overview data - INSTANT from pre-loaded ETF and crypto data
+  // Mix of indices and crypto ensures 24/7 live price updates for Apple review
   const fetchMarketChips = async () => {
-    const symbols = ['SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'EFA', 'EEM', 'VXX', 'GLD', 'SLV', 'USO', 'TLT'];
+    const symbols = MARKET_OVERVIEW_SYMBOLS;
     const nameMap: { [key: string]: string } = {
       'SPY': 'S&P 500',
       'QQQ': 'Nasdaq 100',
       'DIA': 'Dow Jones',
       'IWM': 'Russell 2000',
       'VTI': 'Total Market',
-      'EFA': 'Intl Developed',
-      'EEM': 'Emerging Mkts',
-      'VXX': 'Volatility',
       'GLD': 'Gold',
-      'SLV': 'Silver',
-      'USO': 'Oil',
-      'TLT': '20+ Yr Treasury',
+      'BTC/USD': 'Bitcoin',
+      'ETH/USD': 'Ethereum',
+      'SOL/USD': 'Solana',
+      'XRP/USD': 'Ripple',
+      'DOGE/USD': 'Dogecoin',
+      'ADA/USD': 'Cardano',
     };
 
-    // INSTANT: Try to use pre-loaded ETF data from marketDataService
+    // INSTANT: Try to use pre-loaded ETF and crypto data from marketDataService
     const localETFs = marketDataService.getLiveData('etf');
+    const localCrypto = marketDataService.getLiveData('crypto');
+    const allLocalData = [...localETFs, ...localCrypto];
     const symbolSet = new Set(symbols);
-    const matchedETFs = localETFs.filter(etf => symbolSet.has(etf.symbol));
 
-    if (matchedETFs.length > 0) {
+    // Also check for crypto symbols without slash (e.g., BTCUSD for BTC/USD)
+    const matchedData = allLocalData.filter(item => {
+      const normalizedSymbol = item.symbol.replace('/', '');
+      return symbolSet.has(item.symbol) || symbols.some(s => s.replace('/', '') === normalizedSymbol);
+    });
+
+    if (matchedData.length > 0) {
       // Instant - data already in memory
       const results = symbols.map(symbol => {
-        const etf = matchedETFs.find(e => e.symbol === symbol);
-        if (etf) {
+        const normalizedSymbol = symbol.replace('/', '');
+        const item = matchedData.find(e => e.symbol === symbol || e.symbol.replace('/', '') === normalizedSymbol);
+        if (item) {
           return {
             symbol,
-            name: nameMap[symbol] || etf.name || symbol,
-            price: etf.price,
-            change: etf.change,
-            changePercent: etf.changePercent,
-            color: etf.changePercent >= 0 ? '#34C759' : '#FF3B30',
+            name: nameMap[symbol] || item.name || symbol,
+            price: item.price,
+            change: item.change,
+            changePercent: item.changePercent,
+            color: item.changePercent >= 0 ? '#34C759' : '#FF3B30',
           };
         }
-        // Check price store as fallback
-        const storeQuote = priceStore.getQuote(symbol);
+        // Check price store as fallback (try both with and without slash)
+        const storeQuote = priceStore.getQuote(symbol) || priceStore.getQuote(normalizedSymbol);
         if (storeQuote && storeQuote.price > 0) {
           return {
             symbol,
@@ -839,7 +858,8 @@ export default function Dashboard() {
     // No API fallback - WebSocket handles all real-time prices (including pre-market/after-hours)
     // Just use priceStore data which is updated by WebSocket
     const storeResults = symbols.map(symbol => {
-      const storeQuote = priceStore.getQuote(symbol);
+      const normalizedSymbol = symbol.replace('/', '');
+      const storeQuote = priceStore.getQuote(symbol) || priceStore.getQuote(normalizedSymbol);
       return {
         symbol,
         name: nameMap[symbol] || storeQuote?.name || symbol,
