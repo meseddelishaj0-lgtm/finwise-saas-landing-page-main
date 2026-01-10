@@ -69,14 +69,34 @@ export const usePriceStore = create<PriceState>((set, get) => ({
     });
   },
 
-  // Get a quote by symbol
+  // Get a quote by symbol (also checks normalized crypto symbols)
   getQuote: (symbol) => {
-    return get().quotes[symbol];
+    const quotes = get().quotes;
+    // Try exact match first
+    if (quotes[symbol]) return quotes[symbol];
+    // Try with slash for crypto (e.g., BTCUSD -> BTC/USD)
+    if (!symbol.includes('/') && symbol.length >= 6) {
+      const withSlash = symbol.slice(0, -3) + '/' + symbol.slice(-3);
+      if (quotes[withSlash]) return quotes[withSlash];
+    }
+    // Try without slash for crypto (e.g., BTC/USD -> BTCUSD)
+    const withoutSlash = symbol.replace('/', '');
+    if (quotes[withoutSlash]) return quotes[withoutSlash];
+    return undefined;
   },
 
   // Get just the price for a symbol
   getPrice: (symbol) => {
-    return get().quotes[symbol]?.price;
+    const quotes = get().quotes;
+    if (quotes[symbol]?.price) return quotes[symbol].price;
+    // Try normalized versions
+    const withoutSlash = symbol.replace('/', '');
+    if (quotes[withoutSlash]?.price) return quotes[withoutSlash].price;
+    if (!symbol.includes('/') && symbol.length >= 6) {
+      const withSlash = symbol.slice(0, -3) + '/' + symbol.slice(-3);
+      if (quotes[withSlash]?.price) return quotes[withSlash].price;
+    }
+    return undefined;
   },
 
   // Clear all quotes
@@ -120,8 +140,8 @@ export const useAllQuotes = (): Record<string, Quote> => {
 
 // Non-hook access for use in async functions
 export const priceStore = {
-  getQuote: (symbol: string) => usePriceStore.getState().quotes[symbol],
-  getPrice: (symbol: string) => usePriceStore.getState().quotes[symbol]?.price,
+  getQuote: (symbol: string) => usePriceStore.getState().getQuote(symbol),
+  getPrice: (symbol: string) => usePriceStore.getState().getPrice(symbol),
   setQuote: usePriceStore.getState().setQuote,
   setQuotes: usePriceStore.getState().setQuotes,
   getAll: () => usePriceStore.getState().quotes,
