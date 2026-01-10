@@ -209,7 +209,7 @@ const MARKET_OVERVIEW_SYMBOLS = [
   'SPY', 'BTC/USD',   // S&P 500, Bitcoin
   'QQQ', 'ETH/USD',   // Nasdaq 100, Ethereum
   'DIA', 'SOL/USD',   // Dow Jones, Solana
-  'IWM', 'XRP/USD',   // Russell 2000, Ripple
+  'IWM', 'BNB/USD',   // Russell 2000, Binance Coin
   'VTI', 'DOGE/USD',  // Total Market, Dogecoin
   'GLD', 'ADA/USD',   // Gold, Cardano
 ];
@@ -690,16 +690,40 @@ export default function Dashboard() {
 
   // Live market overview - updates every 2s from price store for real-time display
   // Includes both indices and crypto for 24/7 live updates
+  // Uses same model as explore page - tries both symbol formats and picks most recent
   const liveMarketIndices = useMemo(() => {
     const nameMap: { [key: string]: string } = {
       'SPY': 'S&P 500', 'QQQ': 'Nasdaq 100', 'DIA': 'Dow Jones', 'IWM': 'Russell 2000',
       'VTI': 'Total Market', 'GLD': 'Gold',
       'BTC/USD': 'Bitcoin', 'ETH/USD': 'Ethereum', 'SOL/USD': 'Solana',
-      'XRP/USD': 'Ripple', 'DOGE/USD': 'Dogecoin', 'ADA/USD': 'Cardano',
+      'BNB/USD': 'Binance Coin', 'DOGE/USD': 'Dogecoin', 'ADA/USD': 'Cardano',
     };
 
     return majorIndices.map(index => {
-      const quote = priceStore.getQuote(index.symbol);
+      let quote = priceStore.getQuote(index.symbol);
+
+      // For crypto, try both formats and use the most recent one
+      // WebSocket may store as "BTC/USD" or "BTCUSD"
+      if (index.symbol?.includes('/')) {
+        // Symbol has slash (BTC/USD) - also try without slash (BTCUSD)
+        const noSlashSymbol = index.symbol.replace('/', '');
+        const noSlashQuote = priceStore.getQuote(noSlashSymbol);
+        if (noSlashQuote && noSlashQuote.price > 0) {
+          if (!quote || (noSlashQuote.updatedAt > (quote.updatedAt || 0))) {
+            quote = noSlashQuote;
+          }
+        }
+      } else if (index.symbol?.endsWith('USD') && index.symbol.length <= 10) {
+        // Symbol has no slash (BTCUSD) - also try with slash (BTC/USD)
+        const slashSymbol = index.symbol.slice(0, -3) + '/USD';
+        const slashQuote = priceStore.getQuote(slashSymbol);
+        if (slashQuote && slashQuote.price > 0) {
+          if (!quote || (slashQuote.updatedAt > (quote.updatedAt || 0))) {
+            quote = slashQuote;
+          }
+        }
+      }
+
       if (quote && quote.price > 0) {
         return {
           ...index,
@@ -716,13 +740,26 @@ export default function Dashboard() {
   }, [majorIndices, priceUpdateTrigger]);
 
   // Live watchlist - updates from price store with WebSocket real-time prices
+  // Uses same model as explore page - tries both symbol formats and picks most recent
   const liveWatchlistData = useMemo(() => {
     return watchlistData.map(stock => {
-      // Try both formats for crypto (BTCUSD and BTC/USD)
-      const normalizedSymbol = stock.symbol.endsWith('USD') && !stock.symbol.includes('/') && stock.symbol.length >= 6
-        ? stock.symbol.slice(0, -3) + '/USD'
-        : stock.symbol;
-      const quote = priceStore.getQuote(stock.symbol) || priceStore.getQuote(normalizedSymbol);
+      // For crypto, try both formats and use the most recent one
+      // WebSocket stores as "BTC/USD", local data stores as "BTCUSD"
+      let quote = priceStore.getQuote(stock.symbol);
+
+      if (stock.symbol?.endsWith('USD') && !stock.symbol.includes('/') && stock.symbol.length <= 10) {
+        // Try slash format for crypto: BTCUSD -> BTC/USD
+        const slashSymbol = stock.symbol.slice(0, -3) + '/USD';
+        const slashQuote = priceStore.getQuote(slashSymbol);
+
+        // Use the more recent quote (WebSocket updates have later timestamps)
+        if (slashQuote && slashQuote.price > 0) {
+          if (!quote || (slashQuote.updatedAt > (quote.updatedAt || 0))) {
+            quote = slashQuote;
+          }
+        }
+      }
+
       if (quote && quote.price > 0) {
         const newChangePercent = quote.changePercent ?? stock.changePercent;
         return {
@@ -735,7 +772,7 @@ export default function Dashboard() {
       }
       return stock;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks-exhaustive-deps
   }, [watchlistData, priceUpdateTrigger]);
 
   // Live trending stocks - updates every 3 seconds from price store
@@ -756,6 +793,7 @@ export default function Dashboard() {
   }, [trending, priceUpdateTrigger]);
 
   // Live portfolio data - updates from price store with WebSocket real-time prices
+  // Uses same model as explore page - tries both symbol formats and picks most recent
   const livePortfolioData = useMemo(() => {
     if (!contextCurrentPortfolio?.holdings?.length) return null;
 
@@ -763,11 +801,29 @@ export default function Dashboard() {
     let totalCost = 0;
 
     const holdings = contextCurrentPortfolio.holdings.map((holding: any) => {
-      // Try both formats for crypto (BTCUSD and BTC/USD)
-      const normalizedSymbol = holding.symbol.endsWith('USD') && !holding.symbol.includes('/') && holding.symbol.length >= 6
-        ? holding.symbol.slice(0, -3) + '/USD'
-        : holding.symbol;
-      const quote = priceStore.getQuote(holding.symbol) || priceStore.getQuote(normalizedSymbol);
+      // For crypto, try both formats and use the most recent one (explore page model)
+      let quote = priceStore.getQuote(holding.symbol);
+
+      if (holding.symbol?.includes('/')) {
+        // Symbol has slash (BTC/USD) - also try without slash (BTCUSD)
+        const noSlashSymbol = holding.symbol.replace('/', '');
+        const noSlashQuote = priceStore.getQuote(noSlashSymbol);
+        if (noSlashQuote && noSlashQuote.price > 0) {
+          if (!quote || (noSlashQuote.updatedAt > (quote.updatedAt || 0))) {
+            quote = noSlashQuote;
+          }
+        }
+      } else if (holding.symbol?.endsWith('USD') && holding.symbol.length <= 10) {
+        // Symbol has no slash (BTCUSD) - also try with slash (BTC/USD)
+        const slashSymbol = holding.symbol.slice(0, -3) + '/USD';
+        const slashQuote = priceStore.getQuote(slashSymbol);
+        if (slashQuote && slashQuote.price > 0) {
+          if (!quote || (slashQuote.updatedAt > (quote.updatedAt || 0))) {
+            quote = slashQuote;
+          }
+        }
+      }
+
       const currentPrice = (quote && quote.price > 0) ? quote.price : holding.currentPrice || holding.avgCost;
       const currentValue = currentPrice * holding.shares;
       const costBasis = holding.avgCost * holding.shares;
@@ -824,7 +880,7 @@ export default function Dashboard() {
       'BTC/USD': 'Bitcoin',
       'ETH/USD': 'Ethereum',
       'SOL/USD': 'Solana',
-      'XRP/USD': 'Ripple',
+      'BNB/USD': 'Binance Coin',
       'DOGE/USD': 'Dogecoin',
       'ADA/USD': 'Cardano',
     };

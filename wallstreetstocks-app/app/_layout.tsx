@@ -26,7 +26,7 @@ initializeSentry();
 // Crypto trades 24/7 ensuring live price updates for Apple review outside market hours
 const DEFAULT_STREAMING_SYMBOLS = [
   'SPY', 'QQQ', 'DIA', 'IWM', 'VTI', 'GLD',  // Indices
-  'BTC/USD', 'ETH/USD', 'SOL/USD', 'XRP/USD', 'DOGE/USD', 'ADA/USD',  // Crypto (24/7)
+  'BTC/USD', 'ETH/USD', 'SOL/USD', 'BNB/USD', 'DOGE/USD', 'ADA/USD',  // Crypto (24/7)
   'AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL',  // Popular stocks
 ];
 
