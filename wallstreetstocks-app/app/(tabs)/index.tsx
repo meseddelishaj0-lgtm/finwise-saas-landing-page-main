@@ -1826,7 +1826,7 @@ export default function Dashboard() {
                       onPress={() => {
                         setSearchQuery('');
                         setShowSearchDropdown(false);
-                        router.push(`/symbol/${result.symbol}/chart`);
+                        router.push(`/symbol/${encodeURIComponent(result.symbol)}/chart`);
                       }}
                     >
                       <View style={styles.searchResultLeft}>
@@ -1878,7 +1878,7 @@ export default function Dashboard() {
                 <TouchableOpacity
                   key={index.symbol}
                   style={styles.indexCard}
-                  onPress={() => router.push(`/symbol/${index.symbol}/chart`)}
+                  onPress={() => router.push(`/symbol/${encodeURIComponent(index.symbol)}/chart`)}
                 >
                   <View style={styles.indexCardHeader}>
                     <View style={[styles.indexIconContainer, { backgroundColor: index.color + '15' }]}>
@@ -2321,7 +2321,7 @@ export default function Dashboard() {
                 <TouchableOpacity
                   key={idx}
                   style={styles.watchlistRow}
-                  onPress={() => router.push(`/symbol/${stock.symbol}/chart`)}
+                  onPress={() => router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`)}
                   onLongPress={() => handleRemoveFromWatchlist(stock.symbol)}
                 >
                   <View style={styles.watchlistRowLeft}>
@@ -2493,7 +2493,7 @@ export default function Dashboard() {
                 <TouchableOpacity 
                   key={i} 
                   style={styles.trendingCard}
-                  onPress={() => router.push(`/symbol/${stock.symbol}/chart`)}
+                  onPress={() => router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`)}
                 >
                   <View style={styles.trendingHeader}>
                     <Text style={styles.trendingSymbol}>{stock.symbol}</Text>
@@ -2895,7 +2895,7 @@ export default function Dashboard() {
                     style={styles.holdingOptionButton}
                     onPress={() => {
                       setHoldingOptionsModal(false);
-                      router.push(`/symbol/${selectedHolding.symbol}/chart`);
+                      router.push(`/symbol/${encodeURIComponent(selectedHolding.symbol)}/chart`);
                     }}
                   >
                     <Ionicons name="stats-chart" size={24} color="#007AFF" />
