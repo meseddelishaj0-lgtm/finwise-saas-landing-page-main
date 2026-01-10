@@ -735,7 +735,7 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trending, priceUpdateTrigger]);
 
-  // Live portfolio data - updates every 3 seconds from price store
+  // Live portfolio data - updates from price store with WebSocket real-time prices
   const livePortfolioData = useMemo(() => {
     if (!contextCurrentPortfolio?.holdings?.length) return null;
 
@@ -749,18 +749,22 @@ export default function Dashboard() {
       const costBasis = holding.avgCost * holding.shares;
       const gain = currentValue - costBasis;
       const gainPercent = costBasis > 0 ? ((currentValue - costBasis) / costBasis) * 100 : 0;
+      const color = gainPercent >= 0 ? '#34C759' : '#FF3B30';
 
       totalValue += currentValue;
       totalCost += costBasis;
 
-      return { ...holding, currentPrice, currentValue, gain, gainPercent };
+      return { ...holding, currentPrice, currentValue, gain, gainPercent, color };
     });
+
+    const totalGainPercent = totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0;
 
     return {
       holdings,
       totalValue,
       totalGain: totalValue - totalCost,
-      totalGainPercent: totalCost > 0 ? ((totalValue - totalCost) / totalCost) * 100 : 0,
+      totalGainPercent,
+      totalColor: totalGainPercent >= 0 ? '#34C759' : '#FF3B30',
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contextCurrentPortfolio?.holdings, priceUpdateTrigger]);
