@@ -595,17 +595,33 @@ export default function Dashboard() {
   }, [trending, trendingCacheLoaded]);
 
   // Subscribe portfolio holdings to WebSocket
+  // Normalize crypto symbols (BTCUSD -> BTC/USD) for Twelve Data format
   useEffect(() => {
     if (wsConnected && contextCurrentPortfolio && contextCurrentPortfolio.holdings && contextCurrentPortfolio.holdings.length > 0) {
-      const portfolioSymbols = contextCurrentPortfolio.holdings.map(h => h.symbol);
+      const portfolioSymbols = contextCurrentPortfolio.holdings.map(h => {
+        const symbol = h.symbol;
+        // Convert crypto symbols like BTCUSD to BTC/USD for Twelve Data
+        if (symbol.endsWith('USD') && !symbol.includes('/') && symbol.length >= 6 && symbol.length <= 10) {
+          return symbol.slice(0, -3) + '/USD';
+        }
+        return symbol;
+      });
       wsSubscribe(portfolioSymbols);
     }
   }, [wsConnected, contextCurrentPortfolio?.holdings, wsSubscribe]);
 
   // Subscribe watchlist to WebSocket
+  // Normalize crypto symbols (BTCUSD -> BTC/USD) for Twelve Data format
   useEffect(() => {
     if (wsConnected && watchlist?.length > 0) {
-      wsSubscribe(watchlist);
+      const normalizedSymbols = watchlist.map(symbol => {
+        // Convert crypto symbols like BTCUSD to BTC/USD for Twelve Data
+        if (symbol.endsWith('USD') && !symbol.includes('/') && symbol.length >= 6 && symbol.length <= 10) {
+          return symbol.slice(0, -3) + '/USD';
+        }
+        return symbol;
+      });
+      wsSubscribe(normalizedSymbols);
     }
   }, [wsConnected, watchlist, wsSubscribe]);
 
