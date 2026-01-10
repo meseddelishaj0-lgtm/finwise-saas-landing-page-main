@@ -346,21 +346,21 @@ export default function Dashboard() {
   // Portfolio graph time range
   const [portfolioTimeRange, setPortfolioTimeRange] = useState('1Y');
 
-  // Live Major Indices - Expanded list
+  // Live Market Overview - alternating indices and crypto for 24/7 updates
   const INDICES_CACHE_KEY = 'cached_market_indices';
   const [majorIndices, setMajorIndices] = useState([
     { symbol: 'SPY', name: 'S&P 500', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'BTC/USD', name: 'Bitcoin', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'QQQ', name: 'Nasdaq 100', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'ETH/USD', name: 'Ethereum', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'DIA', name: 'Dow Jones', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'SOL/USD', name: 'Solana', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'IWM', name: 'Russell 2000', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'BNB/USD', name: 'Binance Coin', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'VTI', name: 'Total Market', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'EFA', name: 'Intl Developed', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'EEM', name: 'Emerging Mkts', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'VXX', name: 'Volatility', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'DOGE/USD', name: 'Dogecoin', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'GLD', name: 'Gold', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'SLV', name: 'Silver', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'USO', name: 'Oil', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'TLT', name: '20+ Yr Treasury', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'ADA/USD', name: 'Cardano', price: 0, change: 0, changePercent: 0, color: '#34C759' },
   ]);
   const [indicesLoading, setIndicesLoading] = useState(true);
   const [indicesCacheLoaded, setIndicesCacheLoaded] = useState(false);
@@ -769,7 +769,7 @@ export default function Dashboard() {
       }
       return stock;
     });
-    // eslint-disable-next-line react-hooks-exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchlistData, priceUpdateTrigger]);
 
   // Live trending stocks - updates every 3 seconds from price store
@@ -2204,7 +2204,7 @@ export default function Dashboard() {
                       <Text style={styles.holdingIcon}>{holding.symbol.charAt(0)}</Text>
                     </View>
                     <View>
-                      <Text style={styles.holdingSymbol}>{holding.symbol}</Text>
+                      <Text style={styles.holdingSymbol}>{formatSymbolDisplay(holding.symbol)}</Text>
                       <Text style={styles.holdingShares}>
                         {holding.shares} shares • ${holding.avgCost.toFixed(2)} avg
                       </Text>
