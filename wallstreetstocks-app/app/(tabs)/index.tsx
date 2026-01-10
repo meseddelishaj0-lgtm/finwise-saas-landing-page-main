@@ -652,35 +652,32 @@ export default function Dashboard() {
 
   // ============= REAL-TIME PRICE REFRESH =============
   // Interval triggers re-render to show WebSocket price updates
-  // Now safe to run fast since we disabled REST API polling
+  // Runs CONTINUOUSLY even when scrolled away - prices always update
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Use useFocusEffect to restart price updates when tab is focused
-  useFocusEffect(
-    useCallback(() => {
-      // Clear any existing interval first
+  // Price update interval - runs continuously regardless of focus or scroll position
+  useEffect(() => {
+    // Start instant price updates - MAXIMUM SPEED
+    priceRefreshIntervalRef.current = setInterval(() => {
+      setPriceUpdateTrigger(prev => prev + 1);
+    }, 100); // 100ms = 10 updates/sec for ultra-fast WebSocket prices
+
+    return () => {
       if (priceRefreshIntervalRef.current) {
         clearInterval(priceRefreshIntervalRef.current);
+        priceRefreshIntervalRef.current = null;
       }
+    };
+  }, []);
 
-      // Start instant price updates - MAXIMUM SPEED
-      priceRefreshIntervalRef.current = setInterval(() => {
-        setPriceUpdateTrigger(prev => prev + 1);
-      }, 100); // 100ms = 10 updates/sec for ultra-fast WebSocket prices
-
-      // Also re-subscribe to WebSocket when tab is focused
+  // Re-subscribe to WebSocket when tab is focused
+  useFocusEffect(
+    useCallback(() => {
       if (wsConnected) {
         wsSubscribe(MARKET_OVERVIEW_SYMBOLS);
         wsSubscribe(POPULAR_STOCKS_WS);
       }
-
-      return () => {
-        if (priceRefreshIntervalRef.current) {
-          clearInterval(priceRefreshIntervalRef.current);
-          priceRefreshIntervalRef.current = null;
-        }
-      };
     }, [wsConnected, wsSubscribe])
   );
 
