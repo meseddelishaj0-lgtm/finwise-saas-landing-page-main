@@ -1752,6 +1752,14 @@ export default function Dashboard() {
     return filtered;
   }, [liveWatchlistData, watchlistFilter, watchlistSort]);
 
+  // Format crypto symbols with slash for display (BTCUSD -> BTC/USD)
+  const formatSymbolDisplay = (symbol: string): string => {
+    if (symbol.endsWith('USD') && !symbol.includes('/') && symbol.length >= 6 && symbol.length <= 10) {
+      return symbol.slice(0, -3) + '/USD';
+    }
+    return symbol;
+  };
+
   // Get icon for index type
   const getIndexIcon = (symbol: string): string => {
     switch (symbol) {
@@ -2347,7 +2355,7 @@ export default function Dashboard() {
                   onLongPress={() => handleRemoveFromWatchlist(stock.symbol)}
                 >
                   <View style={styles.watchlistRowLeft}>
-                    <Text style={styles.watchlistRowSymbol}>{stock.symbol}</Text>
+                    <Text style={styles.watchlistRowSymbol}>{formatSymbolDisplay(stock.symbol)}</Text>
                     <Text style={styles.watchlistRowName} numberOfLines={1}>{stock.name}</Text>
                   </View>
                   
