@@ -718,7 +718,11 @@ export default function Dashboard() {
   // Live watchlist - updates from price store with WebSocket real-time prices
   const liveWatchlistData = useMemo(() => {
     return watchlistData.map(stock => {
-      const quote = priceStore.getQuote(stock.symbol);
+      // Try both formats for crypto (BTCUSD and BTC/USD)
+      const normalizedSymbol = stock.symbol.endsWith('USD') && !stock.symbol.includes('/') && stock.symbol.length >= 6
+        ? stock.symbol.slice(0, -3) + '/USD'
+        : stock.symbol;
+      const quote = priceStore.getQuote(stock.symbol) || priceStore.getQuote(normalizedSymbol);
       if (quote && quote.price > 0) {
         const newChangePercent = quote.changePercent ?? stock.changePercent;
         return {
@@ -759,7 +763,11 @@ export default function Dashboard() {
     let totalCost = 0;
 
     const holdings = contextCurrentPortfolio.holdings.map((holding: any) => {
-      const quote = priceStore.getQuote(holding.symbol);
+      // Try both formats for crypto (BTCUSD and BTC/USD)
+      const normalizedSymbol = holding.symbol.endsWith('USD') && !holding.symbol.includes('/') && holding.symbol.length >= 6
+        ? holding.symbol.slice(0, -3) + '/USD'
+        : holding.symbol;
+      const quote = priceStore.getQuote(holding.symbol) || priceStore.getQuote(normalizedSymbol);
       const currentPrice = (quote && quote.price > 0) ? quote.price : holding.currentPrice || holding.avgCost;
       const currentValue = currentPrice * holding.shares;
       const costBasis = holding.avgCost * holding.shares;
