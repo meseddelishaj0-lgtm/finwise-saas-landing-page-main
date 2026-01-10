@@ -699,16 +699,18 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [majorIndices, priceUpdateTrigger]);
 
-  // Live watchlist - updates every 3 seconds from price store
+  // Live watchlist - updates from price store with WebSocket real-time prices
   const liveWatchlistData = useMemo(() => {
     return watchlistData.map(stock => {
       const quote = priceStore.getQuote(stock.symbol);
       if (quote && quote.price > 0) {
+        const newChangePercent = quote.changePercent ?? stock.changePercent;
         return {
           ...stock,
           price: quote.price,
           change: quote.change ?? stock.change,
-          changePercent: quote.changePercent ?? stock.changePercent,
+          changePercent: newChangePercent,
+          color: newChangePercent >= 0 ? '#34C759' : '#FF3B30',
         };
       }
       return stock;
