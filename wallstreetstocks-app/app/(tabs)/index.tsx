@@ -1953,6 +1953,14 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
+        {/* Connection Status Banner - Shows during initial connection */}
+        {!wsConnected && (
+          <View style={styles.connectionBanner}>
+            <ActivityIndicator size="small" color="#007AFF" />
+            <Text style={styles.connectionText}>Connecting to live markets...</Text>
+          </View>
+        )}
+
         {/* Live Major Indices - Horizontal Scrollable */}
         <View style={styles.indicesSection}>
           <View style={styles.sectionHeader}>
@@ -3243,7 +3251,27 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  
+
+  // Connection Banner
+  connectionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    borderRadius: 10,
+    gap: 10,
+  },
+  connectionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1976D2',
+  },
+
   // Header
   header: {
     flexDirection: 'row',

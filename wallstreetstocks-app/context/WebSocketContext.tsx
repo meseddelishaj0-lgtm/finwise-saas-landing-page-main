@@ -57,15 +57,15 @@ export function WebSocketProvider({
     initializedRef.current = true;
 
     if (autoConnect) {
-      // Connect after a longer delay to let app fully initialize and render
-      // This prevents the app from becoming unresponsive on iPad
+      // Connect after brief delay to let app render first frame
+      // Reduced from 4s to 1s for faster live data display
       const timeout = setTimeout(() => {
         if (initialSymbols.length > 0) {
           websocketService.subscribe(initialSymbols);
         } else {
           websocketService.connect();
         }
-      }, 4000); // Increased from 1s to 4s
+      }, 1000); // 1 second - enough for first render, fast enough to show live data quickly
 
       return () => clearTimeout(timeout);
     }
