@@ -30,7 +30,7 @@ import { useWebSocket } from '@/context/WebSocketContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchQuotesWithCache } from '@/services/quoteService';
 import { priceStore } from '@/stores/priceStore';
-import { AnimatedPrice, AnimatedChange, MarketStatusIndicator } from '@/components/AnimatedPrice';
+import { AnimatedPrice, AnimatedChange, MarketStatusIndicator, LastUpdated, CryptoLiveIndicator } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
 import { IndicesSkeletonList, WatchlistSkeletonList, TrendingSkeletonList } from '@/components/SkeletonLoader';
@@ -1951,10 +1951,11 @@ export default function Dashboard() {
         {/* Live Major Indices - Horizontal Scrollable */}
         <View style={styles.indicesSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Market Overview</Text>
-            <View style={styles.liveStatusContainer}>
-              <MarketStatusIndicator />
+            <View style={styles.sectionTitleRow}>
+              <Text style={styles.sectionTitle}>Market Overview</Text>
+              <CryptoLiveIndicator />
             </View>
+            <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 4 }} />
           </View>
           
           {indicesLoading ? (
@@ -2021,6 +2022,7 @@ export default function Dashboard() {
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#007AFF" />
               </TouchableOpacity>
+              <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 4 }} />
 
               {/* Portfolio Dropdown Menu */}
               {showPortfolioDropdown && (
@@ -2291,13 +2293,16 @@ export default function Dashboard() {
         <View style={styles.watchlistSection}>
           <View style={styles.watchlistHeader}>
             <View style={styles.watchlistHeaderLeft}>
-              <Text style={styles.sectionTitle}>Watchlist</Text>
-              <TouchableOpacity 
-                style={styles.addWatchlistButtonHeader}
-                onPress={() => setWatchlistModal(true)}
-              >
-                <Ionicons name="add-circle-outline" size={24} color="#8E8E93" />
-              </TouchableOpacity>
+              <View style={styles.sectionTitleRow}>
+                <Text style={styles.sectionTitle}>Watchlist</Text>
+                <TouchableOpacity
+                  style={styles.addWatchlistButtonHeader}
+                  onPress={() => setWatchlistModal(true)}
+                >
+                  <Ionicons name="add-circle-outline" size={24} color="#8E8E93" />
+                </TouchableOpacity>
+              </View>
+              <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 2 }} />
             </View>
             <View style={styles.watchlistHeaderRight}>
               {/* Filter Dropdown */}
@@ -3367,6 +3372,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
     includeFontPadding: false,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   liveIndicatorContainer: {
     flexDirection: 'row',

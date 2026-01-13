@@ -550,6 +550,152 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginLeft: 22, // Align with text (dot container width + gap)
   },
+  lastUpdated: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#8E8E93',
+  },
+  cryptoLiveContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(52, 199, 89, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  cryptoLiveText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#34C759',
+    letterSpacing: 0.3,
+  },
 });
+
+// Last Updated timestamp that ticks in real-time
+interface LastUpdatedProps {
+  timestamp: number; // Unix timestamp in ms
+  style?: TextStyle;
+  prefix?: string;
+}
+
+export const LastUpdated = memo(({ timestamp, style, prefix = 'Updated' }: LastUpdatedProps) => {
+  const [secondsAgo, setSecondsAgo] = React.useState(0);
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = Date.now();
+      const diff = Math.floor((now - timestamp) / 1000);
+      setSecondsAgo(Math.max(0, diff));
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, [timestamp]);
+
+  const formatTime = () => {
+    if (secondsAgo < 60) {
+      return `${secondsAgo}s ago`;
+    } else if (secondsAgo < 3600) {
+      return `${Math.floor(secondsAgo / 60)}m ago`;
+    } else {
+      return `${Math.floor(secondsAgo / 3600)}h ago`;
+    }
+  };
+
+  return (
+    <Text style={[styles.lastUpdated, style]}>
+      {prefix} {formatTime()}
+    </Text>
+  );
+});
+
+LastUpdated.displayName = 'LastUpdated';
+
+// Crypto Live Indicator - always shows LIVE since crypto trades 24/7
+export const CryptoLiveIndicator = memo(() => {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    const glow = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    pulse.start();
+    glow.start();
+
+    return () => {
+      pulse.stop();
+      glow.stop();
+    };
+  }, []);
+
+  const glowScale = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 2.5],
+  });
+
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.6, 0.3, 0],
+  });
+
+  return (
+    <View style={styles.cryptoLiveContainer}>
+      <View style={styles.liveDotContainer}>
+        <Animated.View
+          style={[
+            styles.liveGlow,
+            {
+              backgroundColor: '#34C759',
+              transform: [{ scale: glowScale }],
+              opacity: glowOpacity,
+            },
+          ]}
+        />
+        <Animated.View
+          style={[
+            styles.liveDot,
+            {
+              backgroundColor: '#34C759',
+              transform: [{ scale: pulseAnim }],
+            },
+          ]}
+        />
+      </View>
+      <Text style={styles.cryptoLiveText}>24/7 LIVE</Text>
+    </View>
+  );
+});
+
+CryptoLiveIndicator.displayName = 'CryptoLiveIndicator';
 
 export default AnimatedPrice;
