@@ -18,7 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { fetchWithTimeout } from "@/utils/performance";
-import { AnimatedPrice, AnimatedChange } from "@/components/AnimatedPrice";
+import { AnimatedPrice, AnimatedChange, MarketTimeLabel } from "@/components/AnimatedPrice";
 import { fetchQuotesWithCache } from "@/services/quoteService";
 import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
@@ -318,6 +318,10 @@ const HeaderCard = memo(({
       <View style={styles.headerCardTop}>
         <View style={styles.headerCardInfo}>
           <Text style={styles.headerCardSymbol}>{item.name}</Text>
+          <MarketTimeLabel
+            isCrypto={item.symbol?.includes('/') || (item.symbol?.endsWith('USD') && item.symbol?.length <= 10)}
+            style={{ marginTop: 2 }}
+          />
           {item.value !== "..." ? (
             <AnimatedPrice
               value={priceValue}
@@ -1402,7 +1406,7 @@ export default function Explore() {
           </View>
           <View style={styles.itemInfo}>
             <Text style={styles.itemSymbol}>{item.symbol}</Text>
-            <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+            <MarketTimeLabel isCrypto={item.symbol?.includes('/') || (item.symbol?.endsWith('USD') && item.symbol?.length <= 10)} style={{ marginTop: 2, marginBottom: 2 }} />
           </View>
         </View>
         <View style={styles.itemRight}>

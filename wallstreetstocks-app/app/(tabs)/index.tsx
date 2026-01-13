@@ -2599,12 +2599,13 @@ export default function Dashboard() {
                 >
                   <View style={styles.trendingHeader}>
                     <Text style={styles.trendingSymbol}>{stock.symbol}</Text>
-                    <Ionicons 
-                      name={stock.changePercent >= 0 ? 'trending-up' : 'trending-down'} 
-                      size={16} 
-                      color={stock.color} 
+                    <Ionicons
+                      name={stock.changePercent >= 0 ? 'trending-up' : 'trending-down'}
+                      size={16}
+                      color={stock.color}
                     />
                   </View>
+                  <MarketTimeLabel isCrypto={false} style={{ marginBottom: 4 }} />
                   
                   <AnimatedPrice
                     value={stock.price}
