@@ -18,7 +18,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
 import { fetchWithTimeout } from "@/utils/performance";
-import { AnimatedPrice, AnimatedChange } from "@/components/AnimatedPrice";
+import { AnimatedPrice, AnimatedChange, MarketTimeLabel } from "@/components/AnimatedPrice";
 import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
 import { InlineAdBanner } from "@/components/AdBanner";
@@ -189,6 +189,7 @@ const HeaderCard = memo(({
       <View style={styles.headerCardTop}>
         <View style={styles.headerCardInfo}>
           <Text style={styles.headerCardSymbol}>{item.name}</Text>
+          <MarketTimeLabel isCrypto={false} style={{ marginTop: 2 }} />
           {item.value !== "..." ? (
             <AnimatedPrice
               value={priceValue}
@@ -836,7 +837,10 @@ export default function Trending() {
           </View>
           <View style={styles.info}>
             <Text style={styles.symbol}>{item.symbol}</Text>
-            <Text style={styles.name} numberOfLines={1}>{item.companyName}</Text>
+            <MarketTimeLabel
+              isCrypto={item.symbol?.includes('/') || (item.symbol?.endsWith('USD') && item.symbol?.length <= 10)}
+              style={{ marginTop: 2 }}
+            />
           </View>
         </View>
         <View style={styles.right}>
