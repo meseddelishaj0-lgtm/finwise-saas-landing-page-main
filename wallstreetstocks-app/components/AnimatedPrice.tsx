@@ -25,7 +25,7 @@ export const AnimatedPrice = memo(({
   containerStyle,
   flashOnChange = true,
   showPulse = false,
-  duration = 300,
+  duration = 150, // Faster for smooth crypto updates
 }: AnimatedPriceProps) => {
   const animatedValue = useRef(new Animated.Value(value)).current;
   const flashAnim = useRef(new Animated.Value(0)).current;
@@ -33,13 +33,24 @@ export const AnimatedPrice = memo(({
   const prevValue = useRef(value);
   const [displayValue, setDisplayValue] = React.useState(value);
 
-  // Smooth number transition
+  // Set up listener ONCE on mount - keeps animation smooth
+  useEffect(() => {
+    const listener = animatedValue.addListener(({ value: v }) => {
+      setDisplayValue(v);
+    });
+
+    return () => {
+      animatedValue.removeListener(listener);
+    };
+  }, []); // Empty deps - only run once
+
+  // Smooth number transition - animate to new value
   useEffect(() => {
     const wasUp = value > prevValue.current;
     const wasDown = value < prevValue.current;
     prevValue.current = value;
 
-    // Animate the number change
+    // Animate the number change smoothly
     Animated.timing(animatedValue, {
       toValue: value,
       duration,
@@ -51,20 +62,11 @@ export const AnimatedPrice = memo(({
       flashAnim.setValue(wasUp ? 1 : -1);
       Animated.timing(flashAnim, {
         toValue: 0,
-        duration: 600,
+        duration: 400, // Faster flash fade
         useNativeDriver: false,
       }).start();
     }
-
-    // Listen to animated value changes
-    const listener = animatedValue.addListener(({ value: v }) => {
-      setDisplayValue(v);
-    });
-
-    return () => {
-      animatedValue.removeListener(listener);
-    };
-  }, [value]);
+  }, [value, duration, flashOnChange]);
 
   // Continuous pulse animation for "live" feel
   useEffect(() => {
@@ -146,11 +148,11 @@ export const AnimatedChange = memo(({
       flashAnim.setValue(1);
       Animated.timing(flashAnim, {
         toValue: 0,
-        duration: 600,
+        duration: 400, // Faster flash for smooth updates
         useNativeDriver: true,
       }).start();
     }
-  }, [value]);
+  }, [value, flashOnChange]);
 
   const isPositive = value >= 0;
   const color = isPositive ? '#34C759' : '#FF3B30';
@@ -194,7 +196,6 @@ const getMarketStatus = (): MarketStatus => {
   // EST = UTC - 5 hours, EDT = UTC - 4 hours
   // Determine if we're in DST (roughly March second Sunday to November first Sunday)
   const month = now.getUTCMonth(); // 0-11
-  const date = now.getUTCDate();
 
   // Simple DST check: DST is roughly mid-March to early November
   const isDST = month > 2 && month < 10; // April through October is definitely DST
