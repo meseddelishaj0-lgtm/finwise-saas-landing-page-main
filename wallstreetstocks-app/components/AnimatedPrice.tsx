@@ -750,14 +750,14 @@ export const MarketTimeLabel = memo(({ isCrypto = false, style }: MarketTimeLabe
     }
   };
 
-  // Get color based on status - RED for pre/after market like Investing.com
+  // Get color based on status - RED for any non-live status
   const getColor = () => {
     if (isCrypto) return '#34C759'; // Crypto is always live (green)
     switch (status) {
       case 'live': return '#34C759'; // Green
       case 'premarket': return '#FF3B30'; // Red
       case 'afterhours': return '#FF3B30'; // Red
-      case 'closed': return '#8E8E93'; // Gray
+      case 'closed': return '#FF3B30'; // Red (not live)
     }
   };
 
