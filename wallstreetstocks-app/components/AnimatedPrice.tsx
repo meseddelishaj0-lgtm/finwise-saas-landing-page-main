@@ -2,6 +2,7 @@
 // Animated price display with smooth transitions and flash effects
 import React, { useEffect, useRef, memo } from 'react';
 import { Text, StyleSheet, Animated, View, TextStyle, ViewStyle } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface AnimatedPriceProps {
   value: number;
@@ -575,6 +576,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.2,
   },
+  marketTimeLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
 });
 
 // Last Updated timestamp that ticks in real-time
@@ -703,11 +709,11 @@ export const CryptoLiveIndicator = memo(() => {
 
 CryptoLiveIndicator.displayName = 'CryptoLiveIndicator';
 
-// Market Time Label - shows current time with color based on market status
-// Green = Live, Orange = Pre-market/After-hours, Gray = Closed
+// Market Time Label - shows clock icon + time with color based on market status
+// Green = Live, Red = Pre-market/After-hours, Gray = Closed
 interface MarketTimeLabelProps {
   isCrypto?: boolean;
-  style?: TextStyle;
+  style?: ViewStyle;
 }
 
 export const MarketTimeLabel = memo(({ isCrypto = false, style }: MarketTimeLabelProps) => {
@@ -722,7 +728,7 @@ export const MarketTimeLabel = memo(({ isCrypto = false, style }: MarketTimeLabe
     return () => clearInterval(interval);
   }, []);
 
-  // Format time as HH:MM AM/PM
+  // Format time as HH:MM
   const formatTime = () => {
     let hours = time.getHours();
     const minutes = time.getMinutes();
@@ -730,7 +736,7 @@ export const MarketTimeLabel = memo(({ isCrypto = false, style }: MarketTimeLabe
     hours = hours % 12;
     hours = hours ? hours : 12;
     const minutesStr = minutes < 10 ? '0' + minutes : minutes;
-    return `${hours}:${minutesStr} ${ampm}`;
+    return `${hours}:${minutesStr}${ampm}`;
   };
 
   // Get status label
@@ -744,23 +750,26 @@ export const MarketTimeLabel = memo(({ isCrypto = false, style }: MarketTimeLabe
     }
   };
 
-  // Get color based on status
+  // Get color based on status - RED for pre/after market like Investing.com
   const getColor = () => {
-    if (isCrypto) return '#34C759'; // Crypto is always live
+    if (isCrypto) return '#34C759'; // Crypto is always live (green)
     switch (status) {
-      case 'live': return '#34C759';
-      case 'premarket': return '#FF9500';
-      case 'afterhours': return '#FF9500';
-      case 'closed': return '#8E8E93';
+      case 'live': return '#34C759'; // Green
+      case 'premarket': return '#FF3B30'; // Red
+      case 'afterhours': return '#FF3B30'; // Red
+      case 'closed': return '#8E8E93'; // Gray
     }
   };
 
   const color = getColor();
 
   return (
-    <Text style={[styles.marketTimeLabel, { color }, style]}>
-      {formatTime()} | {getStatusLabel()}
-    </Text>
+    <View style={[styles.marketTimeLabelContainer, style]}>
+      <Ionicons name="time-outline" size={10} color={color} />
+      <Text style={[styles.marketTimeLabel, { color }]}>
+        {formatTime()} | {getStatusLabel()}
+      </Text>
+    </View>
   );
 });
 

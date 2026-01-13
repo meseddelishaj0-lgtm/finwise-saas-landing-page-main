@@ -2423,8 +2423,7 @@ export default function Dashboard() {
                 >
                   <View style={styles.watchlistRowLeft}>
                     <Text style={styles.watchlistRowSymbol}>{formatSymbolDisplay(stock.symbol)}</Text>
-                    <MarketTimeLabel isCrypto={stock.symbol.includes('/') || (stock.symbol.endsWith('USD') && stock.symbol.length <= 10)} style={{ marginTop: 1 }} />
-                    <Text style={styles.watchlistRowName} numberOfLines={1}>{stock.name}</Text>
+                    <MarketTimeLabel isCrypto={stock.symbol.includes('/') || (stock.symbol.endsWith('USD') && stock.symbol.length <= 10)} style={{ marginTop: 2 }} />
                   </View>
                   
                   <View style={styles.watchlistRowCenter}>
