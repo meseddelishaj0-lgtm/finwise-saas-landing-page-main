@@ -203,15 +203,21 @@ const STOCK_PICKS_PREVIEW = [
   { symbol: 'MSFT', category: 'Cloud & AI', reason: 'Azure expansion' },
 ];
 
-// Market Overview symbols - alternating indices and crypto for 24/7 live updates
-// Crypto trades 24/7 so Apple reviewers will always see live price movement
+// Market Overview symbols - ONLY 24/7 assets (crypto)
+// Crypto trades 24/7 so Apple reviewers will ALWAYS see live price movement
 const MARKET_OVERVIEW_SYMBOLS = [
-  'SPY', 'BTC/USD',   // S&P 500, Bitcoin
-  'QQQ', 'ETH/USD',   // Nasdaq 100, Ethereum
-  'DIA', 'SOL/USD',   // Dow Jones, Solana
-  'IWM', 'BNB/USD',   // Russell 2000, Binance Coin
-  'VTI', 'DOGE/USD',  // Total Market, Dogecoin
-  'GLD', 'ADA/USD',   // Gold, Cardano
+  'BTC/USD',   // Bitcoin
+  'ETH/USD',   // Ethereum
+  'SOL/USD',   // Solana
+  'BNB/USD',   // Binance Coin
+  'XRP/USD',   // Ripple
+  'ADA/USD',   // Cardano
+  'DOGE/USD',  // Dogecoin
+  'AVAX/USD',  // Avalanche
+  'DOT/USD',   // Polkadot
+  'MATIC/USD', // Polygon
+  'LINK/USD',  // Chainlink
+  'LTC/USD',   // Litecoin
 ];
 
 // Popular stocks to subscribe via WebSocket for real-time prices
@@ -349,18 +355,18 @@ export default function Dashboard() {
   // Live Market Overview - alternating indices and crypto for 24/7 updates
   const INDICES_CACHE_KEY = 'cached_market_indices';
   const [majorIndices, setMajorIndices] = useState([
-    { symbol: 'SPY', name: 'S&P 500', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'BTC/USD', name: 'Bitcoin', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'QQQ', name: 'Nasdaq 100', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'ETH/USD', name: 'Ethereum', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'DIA', name: 'Dow Jones', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'SOL/USD', name: 'Solana', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'IWM', name: 'Russell 2000', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'BNB/USD', name: 'Binance Coin', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'VTI', name: 'Total Market', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'DOGE/USD', name: 'Dogecoin', price: 0, change: 0, changePercent: 0, color: '#34C759' },
-    { symbol: 'GLD', name: 'Gold', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'XRP/USD', name: 'Ripple', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'ADA/USD', name: 'Cardano', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'DOGE/USD', name: 'Dogecoin', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'AVAX/USD', name: 'Avalanche', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'DOT/USD', name: 'Polkadot', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'MATIC/USD', name: 'Polygon', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'LINK/USD', name: 'Chainlink', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'LTC/USD', name: 'Litecoin', price: 0, change: 0, changePercent: 0, color: '#34C759' },
   ]);
   const [indicesLoading, setIndicesLoading] = useState(true);
   const [indicesCacheLoaded, setIndicesCacheLoaded] = useState(false);
@@ -690,10 +696,10 @@ export default function Dashboard() {
   // Uses same model as explore page - tries both symbol formats and picks most recent
   const liveMarketIndices = useMemo(() => {
     const nameMap: { [key: string]: string } = {
-      'SPY': 'S&P 500', 'QQQ': 'Nasdaq 100', 'DIA': 'Dow Jones', 'IWM': 'Russell 2000',
-      'VTI': 'Total Market', 'GLD': 'Gold',
       'BTC/USD': 'Bitcoin', 'ETH/USD': 'Ethereum', 'SOL/USD': 'Solana',
-      'BNB/USD': 'Binance Coin', 'DOGE/USD': 'Dogecoin', 'ADA/USD': 'Cardano',
+      'BNB/USD': 'Binance Coin', 'XRP/USD': 'Ripple', 'ADA/USD': 'Cardano',
+      'DOGE/USD': 'Dogecoin', 'AVAX/USD': 'Avalanche', 'DOT/USD': 'Polkadot',
+      'MATIC/USD': 'Polygon', 'LINK/USD': 'Chainlink', 'LTC/USD': 'Litecoin',
     };
 
     return majorIndices.map(index => {
@@ -863,29 +869,28 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stockPicksData, priceUpdateTrigger]);
 
-  // Fetch live market overview data - INSTANT from pre-loaded ETF and crypto data
-  // Mix of indices and crypto ensures 24/7 live price updates for Apple review
+  // Fetch live market overview data - INSTANT from pre-loaded crypto data
+  // Crypto only - trades 24/7 for Apple review
   const fetchMarketChips = async () => {
     const symbols = MARKET_OVERVIEW_SYMBOLS;
     const nameMap: { [key: string]: string } = {
-      'SPY': 'S&P 500',
-      'QQQ': 'Nasdaq 100',
-      'DIA': 'Dow Jones',
-      'IWM': 'Russell 2000',
-      'VTI': 'Total Market',
-      'GLD': 'Gold',
       'BTC/USD': 'Bitcoin',
       'ETH/USD': 'Ethereum',
       'SOL/USD': 'Solana',
       'BNB/USD': 'Binance Coin',
-      'DOGE/USD': 'Dogecoin',
+      'XRP/USD': 'Ripple',
       'ADA/USD': 'Cardano',
+      'DOGE/USD': 'Dogecoin',
+      'AVAX/USD': 'Avalanche',
+      'DOT/USD': 'Polkadot',
+      'MATIC/USD': 'Polygon',
+      'LINK/USD': 'Chainlink',
+      'LTC/USD': 'Litecoin',
     };
 
-    // INSTANT: Try to use pre-loaded ETF and crypto data from marketDataService
-    const localETFs = marketDataService.getLiveData('etf');
+    // INSTANT: Try to use pre-loaded crypto data from marketDataService
     const localCrypto = marketDataService.getLiveData('crypto');
-    const allLocalData = [...localETFs, ...localCrypto];
+    const allLocalData = [...localCrypto];
     const symbolSet = new Set(symbols);
 
     // Also check for crypto symbols without slash (e.g., BTCUSD for BTC/USD)
