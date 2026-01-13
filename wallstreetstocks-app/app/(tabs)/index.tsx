@@ -30,7 +30,7 @@ import { useWebSocket } from '@/context/WebSocketContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchQuotesWithCache } from '@/services/quoteService';
 import { priceStore } from '@/stores/priceStore';
-import { AnimatedPrice, AnimatedChange, MarketStatusIndicator, LastUpdated, CryptoLiveIndicator } from '@/components/AnimatedPrice';
+import { AnimatedPrice, AnimatedChange, MarketStatusIndicator, LastUpdated, CryptoLiveIndicator, MarketTimeLabel } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
 import { IndicesSkeletonList, WatchlistSkeletonList, TrendingSkeletonList } from '@/components/SkeletonLoader';
@@ -1982,6 +1982,7 @@ export default function Dashboard() {
                     </View>
                     <Text style={styles.indexSymbol}>{index.symbol}</Text>
                   </View>
+                  <MarketTimeLabel isCrypto={index.symbol.includes('/') || index.symbol.includes('USD')} />
                   <Text style={styles.indexName} numberOfLines={1}>{index.name}</Text>
                   <AnimatedPrice
                     value={index.price}
@@ -2422,6 +2423,7 @@ export default function Dashboard() {
                 >
                   <View style={styles.watchlistRowLeft}>
                     <Text style={styles.watchlistRowSymbol}>{formatSymbolDisplay(stock.symbol)}</Text>
+                    <MarketTimeLabel isCrypto={stock.symbol.includes('/') || (stock.symbol.endsWith('USD') && stock.symbol.length <= 10)} style={{ marginTop: 1 }} />
                     <Text style={styles.watchlistRowName} numberOfLines={1}>{stock.name}</Text>
                   </View>
                   

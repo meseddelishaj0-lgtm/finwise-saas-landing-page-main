@@ -570,6 +570,11 @@ const styles = StyleSheet.create({
     color: '#34C759',
     letterSpacing: 0.3,
   },
+  marketTimeLabel: {
+    fontSize: 9,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
 });
 
 // Last Updated timestamp that ticks in real-time
@@ -697,5 +702,68 @@ export const CryptoLiveIndicator = memo(() => {
 });
 
 CryptoLiveIndicator.displayName = 'CryptoLiveIndicator';
+
+// Market Time Label - shows current time with color based on market status
+// Green = Live, Orange = Pre-market/After-hours, Gray = Closed
+interface MarketTimeLabelProps {
+  isCrypto?: boolean;
+  style?: TextStyle;
+}
+
+export const MarketTimeLabel = memo(({ isCrypto = false, style }: MarketTimeLabelProps) => {
+  const [time, setTime] = React.useState(new Date());
+  const [status, setStatus] = React.useState<MarketStatus>(getMarketStatus);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(new Date());
+      setStatus(getMarketStatus());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Format time as HH:MM AM/PM
+  const formatTime = () => {
+    let hours = time.getHours();
+    const minutes = time.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+    return `${hours}:${minutesStr} ${ampm}`;
+  };
+
+  // Get status label
+  const getStatusLabel = () => {
+    if (isCrypto) return 'LIVE';
+    switch (status) {
+      case 'live': return 'LIVE';
+      case 'premarket': return 'PRE';
+      case 'afterhours': return 'AH';
+      case 'closed': return 'CLOSED';
+    }
+  };
+
+  // Get color based on status
+  const getColor = () => {
+    if (isCrypto) return '#34C759'; // Crypto is always live
+    switch (status) {
+      case 'live': return '#34C759';
+      case 'premarket': return '#FF9500';
+      case 'afterhours': return '#FF9500';
+      case 'closed': return '#8E8E93';
+    }
+  };
+
+  const color = getColor();
+
+  return (
+    <Text style={[styles.marketTimeLabel, { color }, style]}>
+      {formatTime()} | {getStatusLabel()}
+    </Text>
+  );
+});
+
+MarketTimeLabel.displayName = 'MarketTimeLabel';
 
 export default AnimatedPrice;
