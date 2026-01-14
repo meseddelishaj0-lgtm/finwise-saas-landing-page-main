@@ -14,7 +14,7 @@
     ],
     "ios": {
       "bundleIdentifier": "ai.wallstreetstocks.ios",
-      "supportsTablet": true,
+      "supportsTablet": false,
       "infoPlist": {
         "NSAppleEventsUsageDescription": "This app uses Apple Sign-In for authentication.",
         "ITSAppUsesNonExemptEncryption": false,
