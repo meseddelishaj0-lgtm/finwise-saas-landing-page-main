@@ -2000,7 +2000,7 @@ export default function Dashboard() {
                   <AnimatedPrice
                     value={index.price}
                     prefix="$"
-                    decimals={2}
+                    decimals={index.price >= 1000 ? 0 : index.price >= 100 ? 1 : 2}
                     style={styles.indexPrice}
                     flashOnChange={true}
                   />
