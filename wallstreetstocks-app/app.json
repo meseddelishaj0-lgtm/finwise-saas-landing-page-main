@@ -127,7 +127,8 @@
           "organization": "wallstreetstocks",
           "project": "wallstreetstocks-app"
         }
-      ]
+      ],
+      "expo-tracking-transparency"
     ],
     "experiments": {
       "typedRoutes": true,

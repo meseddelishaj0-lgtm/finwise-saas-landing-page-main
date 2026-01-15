@@ -5,6 +5,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View, StatusBar, Platform, AppState } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
 import { SubscriptionProvider, useSubscription } from "../context/SubscriptionContext";
 import { StockProvider } from "../context/StockContext";
 import { WatchlistProvider } from "../context/WatchlistContext";
@@ -39,6 +40,22 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   const { initialize, isInitialized } = useSubscription();
   const { initializeReferral, initialized: referralInitialized } = useReferral();
   const appState = useRef(AppState.currentState);
+  const trackingRequested = useRef(false);
+
+  // Request App Tracking Transparency permission on iOS (required for personalized ads)
+  useEffect(() => {
+    const requestTracking = async () => {
+      if (Platform.OS === 'ios' && !trackingRequested.current) {
+        trackingRequested.current = true;
+        try {
+          await requestTrackingPermissionsAsync();
+        } catch {
+          // Tracking permission request failed - ads will be non-personalized
+        }
+      }
+    };
+    requestTracking();
+  }, []);
 
   useEffect(() => {
     if (!isInitialized) {
