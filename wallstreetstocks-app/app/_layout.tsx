@@ -12,6 +12,14 @@ try {
 } catch {
   // Module not available in Expo Go - will work in production builds
 }
+
+// Google Mobile Ads - must be initialized AFTER ATT consent
+let mobileAds: (() => { initialize: () => Promise<any> }) | null = null;
+try {
+  mobileAds = require("react-native-google-mobile-ads").default;
+} catch {
+  // Module not available in Expo Go
+}
 import { SubscriptionProvider, useSubscription } from "../context/SubscriptionContext";
 import { StockProvider } from "../context/StockContext";
 import { WatchlistProvider } from "../context/WatchlistContext";
@@ -50,20 +58,45 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 
   // Request App Tracking Transparency permission on iOS (required for personalized ads)
   // Delay ensures app is fully loaded - iOS ignores ATT requests if called too early
+  // AdMob is initialized AFTER ATT consent (GADDelayAppMeasurementInit in app.json)
   useEffect(() => {
-    const requestTracking = async () => {
-      if (Platform.OS === 'ios' && !trackingRequested.current && requestTrackingPermissionsAsync) {
+    const initializeAdsWithConsent = async () => {
+      // On iOS, request ATT first, then initialize ads
+      if (Platform.OS === 'ios' && !trackingRequested.current) {
         trackingRequested.current = true;
+
         // Wait 1 second for app to be fully ready before showing ATT prompt
         await new Promise(resolve => setTimeout(resolve, 1000));
-        try {
-          await requestTrackingPermissionsAsync();
-        } catch {
-          // Tracking permission request failed - ads will be non-personalized
+
+        // Request tracking permission
+        if (requestTrackingPermissionsAsync) {
+          try {
+            await requestTrackingPermissionsAsync();
+          } catch {
+            // Tracking permission request failed - ads will be non-personalized
+          }
+        }
+
+        // Initialize Google Mobile Ads AFTER ATT consent (regardless of user choice)
+        if (mobileAds) {
+          try {
+            await mobileAds().initialize();
+          } catch {
+            // AdMob initialization failed
+          }
+        }
+      } else if (Platform.OS === 'android') {
+        // On Android, just initialize ads (no ATT needed)
+        if (mobileAds) {
+          try {
+            await mobileAds().initialize();
+          } catch {
+            // AdMob initialization failed
+          }
         }
       }
     };
-    requestTracking();
+    initializeAdsWithConsent();
   }, []);
 
   useEffect(() => {

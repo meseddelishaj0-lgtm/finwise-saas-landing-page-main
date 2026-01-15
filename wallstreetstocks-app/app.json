@@ -55,7 +55,8 @@
             "SKAdNetworkIdentifier": "3qy4746246.skadnetwork"
           }
         ],
-        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
+        "GADDelayAppMeasurementInit": true
       },
       "entitlements": {
         "com.apple.developer.applesignin": [
