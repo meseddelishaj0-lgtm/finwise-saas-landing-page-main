@@ -663,11 +663,11 @@ export default function Dashboard() {
   const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Price update interval - runs continuously regardless of focus or scroll position
+  // 250ms interval to reduce CPU usage on iPad compatibility mode
   useEffect(() => {
-    // Start instant price updates - MAXIMUM SPEED
     priceRefreshIntervalRef.current = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 100); // 100ms = 10 updates/sec for ultra-fast WebSocket prices
+    }, 250); // 250ms = 4 updates/sec - fast updates while reducing CPU load
 
     return () => {
       if (priceRefreshIntervalRef.current) {

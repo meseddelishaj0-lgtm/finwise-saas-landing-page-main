@@ -1381,7 +1381,7 @@ export default function CommunityPage() {
       `$${ticker}`,
       'What would you like to do?',
       [
-        { text: 'View Stock', onPress: () => router.push(`/symbol/${ticker.toUpperCase()}` as any) },
+        { text: 'View Stock', onPress: () => navRouter.push(`/symbol/${ticker.toUpperCase()}` as any) },
         { text: 'Add to Watchlist', onPress: () => handleAddToWatchlist(ticker) },
         { text: 'Search Posts', onPress: () => {
           setSearchQuery(`$${ticker}`);
@@ -2335,7 +2335,7 @@ export default function CommunityPage() {
         <View style={styles.premiumSection}>
           <View style={styles.premiumHeader}>
             <Text style={styles.premiumTitle}>Premium Tools</Text>
-            <TouchableOpacity onPress={() => router.push('/(modals)/paywall' as any)}>
+            <TouchableOpacity onPress={() => navRouter.push('/(modals)/paywall' as any)}>
               <Text style={styles.seeAllText}>See Plans</Text>
             </TouchableOpacity>
           </View>
@@ -2353,7 +2353,7 @@ export default function CommunityPage() {
               onPress={() => {
                 withPremiumAccess(
                   FEATURE_TIERS.BASIC_ANALYSIS,
-                  () => router.push('/premium/ai-analysis' as any),
+                  () => navRouter.push('/premium/ai-analysis' as any),
                   { alertTitle: 'Gold Feature', alertMessage: 'AI Stock Analysis requires a Gold subscription.' }
                 );
               }}
@@ -2380,7 +2380,7 @@ export default function CommunityPage() {
               onPress={() => {
                 withPremiumAccess(
                   FEATURE_TIERS.REALTIME_ALERTS,
-                  () => router.push('/premium/price-alerts' as any),
+                  () => navRouter.push('/premium/price-alerts' as any),
                   { alertTitle: 'Platinum Feature', alertMessage: 'Real-time Alerts requires a Platinum subscription.' }
                 );
               }}
@@ -2407,7 +2407,7 @@ export default function CommunityPage() {
               onPress={() => {
                 withPremiumAccess(
                   FEATURE_TIERS.RESEARCH_REPORTS,
-                  () => router.push('/premium/research-reports' as any),
+                  () => navRouter.push('/premium/research-reports' as any),
                   { alertTitle: 'Diamond Feature', alertMessage: 'Research Reports requires a Diamond subscription.' }
                 );
               }}
@@ -2434,7 +2434,7 @@ export default function CommunityPage() {
               onPress={() => {
                 withPremiumAccess(
                   FEATURE_TIERS.PORTFOLIO_OPTIMIZATION,
-                  () => router.push('/premium/portfolio-optimizer' as any),
+                  () => navRouter.push('/premium/portfolio-optimizer' as any),
                   { alertTitle: 'Diamond Feature', alertMessage: 'Portfolio Optimization requires a Diamond subscription.' }
                 );
               }}
@@ -2790,7 +2790,7 @@ export default function CommunityPage() {
                     onPress={() => {
                       if (selectedProfile?.id) {
                         setProfileModal(false);
-                        router.push(`/messages/new?recipientId=${selectedProfile.id}`);
+                        navRouter.push(`/messages/new?recipientId=${selectedProfile.id}`);
                       }
                     }}
                   >
@@ -2836,7 +2836,7 @@ export default function CommunityPage() {
                   style={styles.editProfileButton}
                   onPress={() => {
                     setProfileModal(false);
-                    router.push('/profile/edit-profile');
+                    navRouter.push('/profile/edit-profile');
                   }}
                 >
                   <Ionicons name="create-outline" size={18} color="#007AFF" />
