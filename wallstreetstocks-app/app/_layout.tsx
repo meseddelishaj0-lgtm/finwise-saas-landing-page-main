@@ -5,7 +5,13 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View, StatusBar, Platform, AppState } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
+// ATT module - only available in production builds, not Expo Go
+let requestTrackingPermissionsAsync: (() => Promise<any>) | null = null;
+try {
+  requestTrackingPermissionsAsync = require("expo-tracking-transparency").requestTrackingPermissionsAsync;
+} catch {
+  // Module not available in Expo Go - will work in production builds
+}
 import { SubscriptionProvider, useSubscription } from "../context/SubscriptionContext";
 import { StockProvider } from "../context/StockContext";
 import { WatchlistProvider } from "../context/WatchlistContext";
@@ -45,7 +51,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   // Request App Tracking Transparency permission on iOS (required for personalized ads)
   useEffect(() => {
     const requestTracking = async () => {
-      if (Platform.OS === 'ios' && !trackingRequested.current) {
+      if (Platform.OS === 'ios' && !trackingRequested.current && requestTrackingPermissionsAsync) {
         trackingRequested.current = true;
         try {
           await requestTrackingPermissionsAsync();
