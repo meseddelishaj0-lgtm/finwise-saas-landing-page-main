@@ -49,10 +49,13 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   const trackingRequested = useRef(false);
 
   // Request App Tracking Transparency permission on iOS (required for personalized ads)
+  // Delay ensures app is fully loaded - iOS ignores ATT requests if called too early
   useEffect(() => {
     const requestTracking = async () => {
       if (Platform.OS === 'ios' && !trackingRequested.current && requestTrackingPermissionsAsync) {
         trackingRequested.current = true;
+        // Wait 1 second for app to be fully ready before showing ATT prompt
+        await new Promise(resolve => setTimeout(resolve, 1000));
         try {
           await requestTrackingPermissionsAsync();
         } catch {
