@@ -570,11 +570,15 @@ export default function HelpCenter() {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setSelectedArticle(null)}>
-              <Ionicons name="close" size={28} color="#000" />
+            <TouchableOpacity
+              onPress={() => setSelectedArticle(null)}
+              style={styles.modalBackButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="arrow-back" size={24} color="#000" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Help Article</Text>
-            <View style={{ width: 28 }} />
+            <View style={{ width: 44 }} />
           </View>
 
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
@@ -909,13 +913,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  modalBackButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    zIndex: 1,
   },
   modalContent: {
     flex: 1,
