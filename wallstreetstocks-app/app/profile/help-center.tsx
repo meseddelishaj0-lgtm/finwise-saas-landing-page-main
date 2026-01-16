@@ -570,6 +570,7 @@ export default function HelpCenter() {
       <Modal
         visible={selectedArticle !== null}
         animationType="slide"
+        presentationStyle="fullScreen"
         onRequestClose={() => setSelectedArticle(null)}
       >
         <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
