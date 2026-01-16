@@ -568,7 +568,7 @@ export default function HelpCenter() {
         animationType="slide"
         onRequestClose={() => setSelectedArticle(null)}
       >
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
               onPress={() => setSelectedArticle(null)}
@@ -913,9 +913,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    minHeight: 56,
   },
   modalBackButton: {
     width: 44,
