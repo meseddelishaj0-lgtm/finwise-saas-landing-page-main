@@ -380,7 +380,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e5e5',
   },
   backButton: {
-    padding: 4,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   headerCenter: {
     flexDirection: 'row',
