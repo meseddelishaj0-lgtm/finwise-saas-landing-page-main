@@ -221,48 +221,6 @@ export default function AboutPremium() {
           </View>
         </View>
 
-        {/* Comparison */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Free vs Premium</Text>
-          <View style={styles.comparisonTable}>
-            <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonFeature}>Real-time quotes</Text>
-              <Ionicons name="close-circle" size={20} color="#FF3B30" />
-              <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-            </View>
-            <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonFeature}>Advanced charts</Text>
-              <Text style={styles.comparisonLimit}>Basic</Text>
-              <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-            </View>
-            <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonFeature}>Price alerts</Text>
-              <Text style={styles.comparisonLimit}>3</Text>
-              <Text style={styles.comparisonUnlimited}>Unlimited</Text>
-            </View>
-            <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonFeature}>AI insights</Text>
-              <Ionicons name="close-circle" size={20} color="#FF3B30" />
-              <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-            </View>
-            <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonFeature}>Premium news</Text>
-              <Ionicons name="close-circle" size={20} color="#FF3B30" />
-              <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-            </View>
-            <View style={styles.comparisonRow}>
-              <Text style={styles.comparisonFeature}>Data export</Text>
-              <Ionicons name="close-circle" size={20} color="#FF3B30" />
-              <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-            </View>
-          </View>
-          <View style={styles.comparisonHeader}>
-            <Text style={styles.comparisonHeaderText}>Feature</Text>
-            <Text style={styles.comparisonHeaderText}>Free</Text>
-            <Text style={[styles.comparisonHeaderText, { color: '#007AFF' }]}>Premium</Text>
-          </View>
-        </View>
-
         {/* FAQs */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
@@ -487,53 +445,6 @@ const styles = StyleSheet.create({
     color: '#34C759',
     fontSize: 12,
     fontWeight: '600',
-  },
-  comparisonTable: {
-    marginTop: 8,
-  },
-  comparisonHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: '#e5e5e5',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-  comparisonHeaderText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#666',
-    flex: 1,
-    textAlign: 'center',
-  },
-  comparisonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e5e5',
-  },
-  comparisonFeature: {
-    flex: 2,
-    fontSize: 14,
-    color: '#333',
-  },
-  comparisonLimit: {
-    flex: 1,
-    fontSize: 13,
-    color: '#999',
-    textAlign: 'center',
-  },
-  comparisonUnlimited: {
-    flex: 1,
-    fontSize: 13,
-    color: '#34C759',
-    fontWeight: '600',
-    textAlign: 'center',
   },
   faqItem: {
     marginBottom: 20,
