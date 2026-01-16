@@ -5,6 +5,7 @@ import {
   Text,
   TouchableOpacity,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -45,7 +46,11 @@ export default function SettingsScreen() {
       </View>
 
       {/* Settings List */}
-      <View style={styles.listContainer}>
+      <ScrollView
+        style={styles.listContainer}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      >
         {settingsItems.map((item, index) => (
           <TouchableOpacity
             key={index}
@@ -83,7 +88,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           ))}
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -100,7 +105,8 @@ const styles = StyleSheet.create({
   },
   titleContainer: { flex: 1, alignItems: 'center' },
   titleText: { fontSize: 18, fontWeight: '600' },
-  listContainer: { flex: 1, paddingTop: 12 },
+  listContainer: { flex: 1 },
+  listContent: { paddingTop: 12, paddingBottom: 40 },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
