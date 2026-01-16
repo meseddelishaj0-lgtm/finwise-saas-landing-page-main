@@ -1,7 +1,6 @@
 // app/profile/password.tsx
 import React, { useState } from 'react';
 import {
-  SafeAreaView,
   View,
   Text,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -58,7 +58,7 @@ export default function Password() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -66,7 +66,11 @@ export default function Password() {
         <ScrollView showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Ionicons name="arrow-back" size={24} color="black" />
             </TouchableOpacity>
             <Text style={styles.title}>Password</Text>
@@ -171,14 +175,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    minHeight: 56,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
   },
   content: { flex: 1, padding: 20 },
   description: {
