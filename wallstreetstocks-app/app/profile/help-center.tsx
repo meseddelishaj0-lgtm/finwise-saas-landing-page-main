@@ -10,7 +10,7 @@ import {
   Modal,
   Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -245,6 +245,7 @@ const allArticles = helpCategories.flatMap(cat => cat.articles);
 
 export default function HelpCenter() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
@@ -573,7 +574,7 @@ export default function HelpCenter() {
         presentationStyle="fullScreen"
         onRequestClose={() => setSelectedArticle(null)}
       >
-        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
+        <View style={[styles.modalContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
               onPress={() => setSelectedArticle(null)}
@@ -675,7 +676,7 @@ export default function HelpCenter() {
               </>
             )}
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </Modal>
 
     </SafeAreaView>
