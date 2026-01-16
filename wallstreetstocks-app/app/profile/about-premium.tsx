@@ -72,6 +72,13 @@ export default function AboutPremium() {
       period: '/month',
       savings: null,
       color: '#FFD700',
+      features: [
+        '5 Expert Stock Picks',
+        'Ad-free experience',
+        'Basic watchlists',
+        'Community access',
+        'Daily market summary',
+      ],
     },
     {
       name: 'Platinum',
@@ -80,6 +87,14 @@ export default function AboutPremium() {
       savings: null,
       popular: true,
       color: '#E5E4E2',
+      features: [
+        'Everything in Gold',
+        '8 Expert Stock Picks',
+        'Screener Filters & Presets',
+        'Real-time price alerts',
+        'Unlimited watchlists',
+        'Priority support',
+      ],
     },
     {
       name: 'Diamond',
@@ -87,6 +102,14 @@ export default function AboutPremium() {
       period: '/month',
       savings: 'Best Value',
       color: '#B9F2FF',
+      features: [
+        'Everything in Platinum',
+        '15 Expert Stock Picks',
+        'AI Tools & Assistant',
+        'Insider Trading Data',
+        'Research Reports',
+        'Portfolio Tools',
+      ],
     },
   ];
 
@@ -155,28 +178,38 @@ export default function AboutPremium() {
         {/* Pricing */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Choose Your Plan</Text>
-          <View style={styles.plansContainer}>
+          <View style={styles.plansVerticalContainer}>
             {plans.map((plan, index) => (
               <TouchableOpacity
                 key={index}
                 style={[
-                  styles.planCard,
-                  plan.popular && styles.popularPlan,
+                  styles.planCardVertical,
+                  plan.popular && styles.popularPlanVertical,
                   { borderColor: plan.color }
                 ]}
                 onPress={() => router.push('/paywall' as any)}
               >
                 {plan.popular && (
-                  <View style={[styles.popularBadge, { backgroundColor: plan.color }]}>
-                    <Text style={styles.popularText}>Most Popular</Text>
+                  <View style={[styles.popularBadgeVertical, { backgroundColor: plan.color }]}>
+                    <Text style={styles.popularText}>MOST POPULAR</Text>
                   </View>
                 )}
-                <View style={[styles.tierBadge, { backgroundColor: plan.color }]}>
-                  <Text style={styles.tierBadgeText}>{plan.name}</Text>
+                <View style={styles.planCardHeader}>
+                  <View style={[styles.tierBadge, { backgroundColor: plan.color }]}>
+                    <Text style={styles.tierBadgeText}>{plan.name}</Text>
+                  </View>
+                  <View style={styles.priceRow}>
+                    <Text style={styles.planPrice}>{plan.price}</Text>
+                    <Text style={styles.planPeriod}>{plan.period}</Text>
+                  </View>
                 </View>
-                <View style={styles.priceRow}>
-                  <Text style={styles.planPrice}>{plan.price}</Text>
-                  <Text style={styles.planPeriod}>{plan.period}</Text>
+                <View style={styles.planFeatures}>
+                  {plan.features.map((feature, idx) => (
+                    <View key={idx} style={styles.planFeatureRow}>
+                      <Ionicons name="checkmark-circle" size={16} color={plan.color} />
+                      <Text style={styles.planFeatureText}>{feature}</Text>
+                    </View>
+                  ))}
                 </View>
                 {plan.savings && (
                   <View style={[styles.savingsBadge, { backgroundColor: `${plan.color}30` }]}>
@@ -239,18 +272,6 @@ export default function AboutPremium() {
               <Text style={styles.faqAnswer}>{faq.answer}</Text>
             </View>
           ))}
-        </View>
-
-        {/* CTA */}
-        <View style={styles.ctaSection}>
-          <TouchableOpacity 
-            style={styles.ctaButton}
-            onPress={() => router.push('/paywall' as any)}
-          >
-            <Ionicons name="diamond" size={20} color="#fff" />
-            <Text style={styles.ctaButtonText}>Start Free Trial</Text>
-          </TouchableOpacity>
-          <Text style={styles.ctaNote}>7-day free trial • Cancel anytime</Text>
         </View>
 
         <View style={{ height: 40 }} />
@@ -362,6 +383,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  plansVerticalContainer: {
+    gap: 16,
+  },
   planCard: {
     flex: 1,
     backgroundColor: '#f9f9f9',
@@ -370,6 +394,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#e5e5e5',
+  },
+  planCardVertical: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#e5e5e5',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  popularPlanVertical: {
+    backgroundColor: '#f8f8f8',
+  },
+  planCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  planFeatures: {
+    gap: 8,
+  },
+  planFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  planFeatureText: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
   },
   popularPlan: {
     backgroundColor: '#f0f8ff',
@@ -381,6 +436,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
+  },
+  popularBadgeVertical: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderBottomLeftRadius: 12,
   },
   popularText: {
     color: '#000',
@@ -485,28 +548,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 22,
-  },
-  ctaSection: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 30,
-    gap: 8,
-  },
-  ctaButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  ctaNote: {
-    marginTop: 12,
-    fontSize: 13,
-    color: '#999',
   },
 });
