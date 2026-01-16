@@ -67,23 +67,26 @@ export default function AboutPremium() {
 
   const plans = [
     {
-      name: 'Monthly',
-      price: '$14.99',
-      period: '/month',
-      savings: null,
-    },
-    {
-      name: 'Annual',
+      name: 'Gold',
       price: '$9.99',
       period: '/month',
-      savings: 'Save 33%',
-      popular: true,
+      savings: null,
+      color: '#FFD700',
     },
     {
-      name: 'Lifetime',
-      price: '$299',
-      period: 'one-time',
+      name: 'Platinum',
+      price: '$19.99',
+      period: '/month',
+      savings: null,
+      popular: true,
+      color: '#E5E4E2',
+    },
+    {
+      name: 'Diamond',
+      price: '$29.99',
+      period: '/month',
       savings: 'Best Value',
+      color: '#B9F2FF',
     },
   ];
 
@@ -110,11 +113,15 @@ export default function AboutPremium() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>Premium</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: 44 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -152,22 +159,28 @@ export default function AboutPremium() {
             {plans.map((plan, index) => (
               <TouchableOpacity
                 key={index}
-                style={[styles.planCard, plan.popular && styles.popularPlan]}
-                onPress={() => router.push('/profile/upgrade' as any)}
+                style={[
+                  styles.planCard,
+                  plan.popular && styles.popularPlan,
+                  { borderColor: plan.color }
+                ]}
+                onPress={() => router.push('/paywall' as any)}
               >
                 {plan.popular && (
-                  <View style={styles.popularBadge}>
+                  <View style={[styles.popularBadge, { backgroundColor: plan.color }]}>
                     <Text style={styles.popularText}>Most Popular</Text>
                   </View>
                 )}
-                <Text style={styles.planName}>{plan.name}</Text>
+                <View style={[styles.tierBadge, { backgroundColor: plan.color }]}>
+                  <Text style={styles.tierBadgeText}>{plan.name}</Text>
+                </View>
                 <View style={styles.priceRow}>
                   <Text style={styles.planPrice}>{plan.price}</Text>
                   <Text style={styles.planPeriod}>{plan.period}</Text>
                 </View>
                 {plan.savings && (
-                  <View style={styles.savingsBadge}>
-                    <Text style={styles.savingsText}>{plan.savings}</Text>
+                  <View style={[styles.savingsBadge, { backgroundColor: `${plan.color}30` }]}>
+                    <Text style={[styles.savingsText, { color: '#000' }]}>{plan.savings}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -232,7 +245,7 @@ export default function AboutPremium() {
         <View style={styles.ctaSection}>
           <TouchableOpacity 
             style={styles.ctaButton}
-            onPress={() => router.push('/profile/upgrade' as any)}
+            onPress={() => router.push('/paywall' as any)}
           >
             <Ionicons name="diamond" size={20} color="#fff" />
             <Text style={styles.ctaButtonText}>Start Free Trial</Text>
@@ -253,13 +266,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    zIndex: 1,
   },
   content: { flex: 1 },
   heroSection: {
@@ -344,10 +369,9 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: '#e5e5e5',
   },
   popularPlan: {
-    borderColor: '#007AFF',
     backgroundColor: '#f0f8ff',
   },
   popularBadge: {
@@ -359,16 +383,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   popularText: {
-    color: '#fff',
-    fontSize: 11,
+    color: '#000',
+    fontSize: 10,
     fontWeight: '700',
   },
-  planName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
+  tierBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
     marginTop: 8,
+    marginBottom: 8,
+  },
+  tierBadgeText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '700',
   },
   priceRow: {
     flexDirection: 'row',
