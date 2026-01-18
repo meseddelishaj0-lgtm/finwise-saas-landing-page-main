@@ -1999,14 +1999,12 @@ export default function Dashboard() {
                   onPress={() => router.push(`/symbol/${encodeURIComponent(index.symbol)}/chart`)}
                 >
                   <View style={styles.indexCardHeader}>
-                    <View style={[styles.indexIconContainer, { backgroundColor: index.color + '15' }]}>
-                      <Ionicons
-                        name={getIndexIcon(index.symbol) as any}
-                        size={16}
-                        color={index.color}
-                      />
-                    </View>
-                    <Text style={styles.indexSymbol}>{index.symbol}</Text>
+                    <StockLogo 
+                      symbol={index.symbol} 
+                      size={Platform.OS === 'android' ? 24 : 28} 
+                      style={{ marginRight: Platform.OS === 'android' ? 6 : 8 }}
+                    />
+                    <Text style={styles.indexSymbol}>{index.symbol.replace('/USD', '')}</Text>
                   </View>
                   <MarketTimeLabel isCrypto={index.symbol.includes('/') || index.symbol.includes('USD')} />
                   <Text style={styles.indexName} numberOfLines={1}>{index.name}</Text>
