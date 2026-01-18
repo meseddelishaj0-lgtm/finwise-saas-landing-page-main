@@ -109,7 +109,7 @@ const likePost = async (postId: string, userId: number): Promise<{ liked: boolea
     if (!response.ok) throw new Error('Failed to like post');
     const result = await response.json();
     return { liked: result?.liked ?? true, likesCount: result?.likesCount };
-  } catch (error) {
+  } catch {
     throw error;
   }
 };
@@ -124,7 +124,7 @@ const likeComment = async (commentId: string, userId: number): Promise<{ liked: 
     if (!response.ok) throw new Error('Failed to like comment');
     const result = await response.json();
     return { liked: result?.liked ?? true, likesCount: result?.likesCount };
-  } catch (error) {
+  } catch {
     throw error;
   }
 };
@@ -251,8 +251,8 @@ const followUserApi = async (followerId: number, followingId: number): Promise<{
       body: JSON.stringify({ followerId, followingId }),
     });
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to follow user');
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to follow user');
     }
     const result = await response.json();
     return {
@@ -260,7 +260,7 @@ const followUserApi = async (followerId: number, followingId: number): Promise<{
       action: result.action || 'followed',
       isFollowing: result.isFollowing ?? true,
     };
-  } catch (error) {
+  } catch {
     throw error;
   }
 };
@@ -438,7 +438,6 @@ export default function CommunityPage() {
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [suggestedLoading, setSuggestedLoading] = useState(true);
   const [dismissedUsers, setDismissedUsers] = useState<number[]>([]);
-  const [hiddenPosts, setHiddenPosts] = useState<number[]>([]);
   // Track local follow changes to preserve optimistic updates across re-fetches
   const [localFollowChanges, setLocalFollowChanges] = useState<Map<number, boolean>>(new Map());
   
@@ -553,7 +552,6 @@ export default function CommunityPage() {
       setSuggestedUsers(users.map((u: any) => ({
         id: u.id,
         name: u.name,
-        email: u.email || '',
         followers: u._count?.followers,
         isFollowing: u.isFollowing
       })));
@@ -699,8 +697,10 @@ export default function CommunityPage() {
         email: userProfile.email || '',
         username: userProfile.username,
         profileImage: userProfile.profileImage,
-        bio: userProfile.bio ?? undefined,
-        createdAt: userProfile.createdAt ?? undefined,
+        bio: userProfile.bio,
+        location: userProfile.location,
+        website: userProfile.website,
+        bannerImage: userProfile.bannerImage,
         subscriptionTier: userProfile.subscriptionTier,
         _count: userProfile._count || { posts: 0, followers: 0, following: 0 },
       });
@@ -2069,15 +2069,13 @@ export default function CommunityPage() {
               content: postData.content,
               mediaUrl: postData.mediaUrl,
               ticker: postData.ticker,
-              image: postData.image || postData.imageUrl,
+              imageUrl: postData.imageUrl,
               createdAt: postData.createdAt,
-              user: postData.user || { id: postData.userId, name: null, email: '', username: null, profileImage: null },
-              userId: postData.userId,
-              _count: {
-                comments: postData._count?.comments || 0,
-                likes: postData._count?.likes || 0,
-              },
+              likes: postData._count?.likes || postData.likes || 0,
+              commentCount: postData._count?.comments || postData.commentCount || 0,
               isLiked: postData.isLiked || false,
+              user: postData.user || { id: postData.userId, name: null, username: null, profileImage: null },
+              userId: postData.userId,
             };
             handleOpenComments(post);
           }
