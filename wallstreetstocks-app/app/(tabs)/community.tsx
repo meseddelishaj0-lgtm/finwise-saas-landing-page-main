@@ -1,5 +1,5 @@
 // app/(tabs)/community.tsx - Optimized with expo-image for caching
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,

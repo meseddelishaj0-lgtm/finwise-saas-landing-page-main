@@ -1,5 +1,5 @@
 // app/(tabs)/screener.tsx
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -22,8 +22,17 @@ import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import StockLogo from '@/components/StockLogo';
+import { FLATLIST_PERFORMANCE_PROPS } from '@/components/OptimizedListItems';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
+
+// Stock row height for getItemLayout optimization
+const STOCK_ROW_HEIGHT = 72;
+const getStockItemLayout = (_data: any, index: number) => ({
+  length: STOCK_ROW_HEIGHT,
+  offset: STOCK_ROW_HEIGHT * index,
+  index,
+});
 
 interface SavedPreset {
   id: string;
@@ -1081,7 +1090,7 @@ export default function Screener() {
     );
   };
 
-  const renderStockItem = ({ item }: { item: Stock }) => {
+  const renderStockItem = useCallback(({ item }: { item: Stock }) => {
     const isPositive = item.change >= 0;
     return (
       <TouchableOpacity style={styles.stockItem} activeOpacity={0.7} onPress={() => handleStockPress(item.symbol)}>
@@ -1116,7 +1125,7 @@ export default function Screener() {
         </View>
       </TouchableOpacity>
     );
-  };
+  }, [handleStockPress]);
 
   const sortOptions = [
     { key: 'marketCap', label: 'Mkt Cap' },
@@ -1264,11 +1273,24 @@ export default function Screener() {
           )}
 
           {!loading && !error && (
-            <View style={styles.stockList}>
-              {filteredResults.length > 0 ? filteredResults.map(stock => <View key={stock.symbol}>{renderStockItem({ item: stock })}</View>) : (
-                <View style={styles.emptyContainer}><Ionicons name="search" size={48} color="#CCC" /><Text style={styles.emptyText}>No stocks found</Text><Text style={styles.emptySubtext}>Try adjusting your filters</Text></View>
-              )}
-            </View>
+            filteredResults.length > 0 ? (
+              <FlatList
+                data={filteredResults}
+                renderItem={renderStockItem}
+                keyExtractor={(item) => item.symbol}
+                getItemLayout={getStockItemLayout}
+                {...FLATLIST_PERFORMANCE_PROPS}
+                scrollEnabled={false}
+                nestedScrollEnabled
+                ListFooterComponent={<View style={{ height: 20 }} />}
+              />
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="search" size={48} color="#CCC" />
+                <Text style={styles.emptyText}>No stocks found</Text>
+                <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
+              </View>
+            )
           )}
         </View>
         <View style={{ height: 100 }} />
