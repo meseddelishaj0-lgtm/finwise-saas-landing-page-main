@@ -109,7 +109,7 @@ const likePost = async (postId: string, userId: number): Promise<{ liked: boolea
     if (!response.ok) throw new Error('Failed to like post');
     const result = await response.json();
     return { liked: result?.liked ?? true, likesCount: result?.likesCount };
-  } catch {
+  } catch (error) {
     throw error;
   }
 };
@@ -124,7 +124,7 @@ const likeComment = async (commentId: string, userId: number): Promise<{ liked: 
     if (!response.ok) throw new Error('Failed to like comment');
     const result = await response.json();
     return { liked: result?.liked ?? true, likesCount: result?.likesCount };
-  } catch {
+  } catch (error) {
     throw error;
   }
 };
@@ -260,7 +260,7 @@ const followUserApi = async (followerId: number, followingId: number): Promise<{
       action: result.action || 'followed',
       isFollowing: result.isFollowing ?? true,
     };
-  } catch {
+  } catch (error) {
     throw error;
   }
 };
@@ -493,6 +493,7 @@ export default function CommunityPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [hiddenPosts, setHiddenPosts] = useState<number[]>([]);
   // userProfile now comes from UserProfileContext
 
   // Helper functions
@@ -549,16 +550,19 @@ export default function CommunityPage() {
       const userId = getUserId();
 
       const users = await fetchSuggestedUsersApi(userId || undefined);
-      setSuggestedUsers(users.map((u: any) => ({
-        id: u.id,
-        name: u.name,
-        followers: u._count?.followers,
-        isFollowing: u.isFollowing
-      })));
-
+      
       if (users.length > 0) {
+        // Map users to SuggestedUser format and merge with local follow changes
+        const mappedUsers = users.map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email || '',
+          followers: u._count?.followers,
+          isFollowing: u.isFollowing
+        }));
+        
         // Merge with local follow changes to preserve optimistic updates
-        const mergedUsers = users.map((user: any) => {
+        const mergedUsers = mappedUsers.map((user) => {
           const localChange = localFollowChanges.get(user.id);
           if (localChange !== undefined) {
             return { ...user, isFollowing: localChange };
@@ -697,10 +701,7 @@ export default function CommunityPage() {
         email: userProfile.email || '',
         username: userProfile.username,
         profileImage: userProfile.profileImage,
-        bio: userProfile.bio,
-        location: userProfile.location,
-        website: userProfile.website,
-        bannerImage: userProfile.bannerImage,
+        bio: userProfile.bio ?? undefined,
         subscriptionTier: userProfile.subscriptionTier,
         _count: userProfile._count || { posts: 0, followers: 0, following: 0 },
       });
@@ -2069,12 +2070,14 @@ export default function CommunityPage() {
               content: postData.content,
               mediaUrl: postData.mediaUrl,
               ticker: postData.ticker,
-              imageUrl: postData.imageUrl,
+              image: postData.imageUrl || postData.image,
               createdAt: postData.createdAt,
-              likes: postData._count?.likes || postData.likes || 0,
-              commentCount: postData._count?.comments || postData.commentCount || 0,
+              _count: {
+                likes: postData._count?.likes || postData.likes || 0,
+                comments: postData._count?.comments || postData.commentCount || 0,
+              },
               isLiked: postData.isLiked || false,
-              user: postData.user || { id: postData.userId, name: null, username: null, profileImage: null },
+              user: postData.user || { id: postData.userId, name: null, username: null, profileImage: null, email: '' },
               userId: postData.userId,
             };
             handleOpenComments(post);
