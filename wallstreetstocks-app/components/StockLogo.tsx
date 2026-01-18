@@ -1,5 +1,11 @@
-import React, { useState, memo } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { View, Image, Text, StyleSheet, Platform } from 'react-native';
+
+// Twelve Data API key
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+
+// Cache for fetched stock logo URLs to avoid repeated API calls
+const stockLogoCache: { [key: string]: string | null } = {};
 
 // Commodity symbols that should NOT be treated as crypto
 const COMMODITY_SYMBOLS = [
@@ -142,6 +148,9 @@ interface StockLogoProps {
 const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [useFallbackSource, setUseFallbackSource] = useState(false);
+  const [twelveDataLogoUrl, setTwelveDataLogoUrl] = useState<string | null>(null);
+  const [logoFetchAttempted, setLogoFetchAttempted] = useState(false);
 
   // Normalize symbol - remove /USD suffix
   const normalizedSymbol = symbol.replace('/USD', '').replace('USD', '');
@@ -166,10 +175,54 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
   // Get crypto icon if available (for fallback)
   const cryptoIcon = CRYPTO_ICONS[normalizedSymbol];
   const cryptoColor = CRYPTO_COLORS[normalizedSymbol] || '#007AFF';
+  
   // Logo URLs
+  // For stocks: FMP provides direct image URLs (fallback)
   const stockLogoUrl = `https://financialmodelingprep.com/image-stock/${normalizedSymbol}.png`;
-  // CoinCap API for crypto logos (reliable and consistent)
+  
+  // For crypto: Twelve Data has direct logo URLs (primary), CoinCap as fallback
+  const twelveDataCryptoLogoUrl = `https://logo.twelvedata.com/crypto/${normalizedSymbol.toLowerCase()}.png`;
   const cryptoLogoUrl = `https://assets.coincap.io/assets/icons/${normalizedSymbol.toLowerCase()}@2x.png`;
+
+  // Fetch Twelve Data logo URL for stocks
+  useEffect(() => {
+    // Only fetch for stocks (not crypto or commodities) and if API key exists
+    if (isCrypto || isCommodity || !TWELVE_DATA_API_KEY || logoFetchAttempted) {
+      return;
+    }
+
+    // Check cache first
+    const cacheKey = normalizedSymbol.toUpperCase();
+    if (cacheKey in stockLogoCache) {
+      setTwelveDataLogoUrl(stockLogoCache[cacheKey]);
+      setLogoFetchAttempted(true);
+      return;
+    }
+
+    const fetchLogo = async () => {
+      try {
+        const response = await fetch(
+          `https://api.twelvedata.com/logo?symbol=${normalizedSymbol}&apikey=${TWELVE_DATA_API_KEY}`
+        );
+        const data = await response.json();
+        
+        if (data && data.url && !data.code) {
+          // Cache the result
+          stockLogoCache[cacheKey] = data.url;
+          setTwelveDataLogoUrl(data.url);
+        } else {
+          // Cache null to avoid re-fetching
+          stockLogoCache[cacheKey] = null;
+        }
+      } catch (error) {
+        // Cache null on error
+        stockLogoCache[cacheKey] = null;
+      }
+      setLogoFetchAttempted(true);
+    };
+
+    fetchLogo();
+  }, [normalizedSymbol, isCrypto, isCommodity, logoFetchAttempted]);
 
   // Get commodity icon and color
   const commodityKey = normalizedSymbol.toUpperCase();
@@ -203,8 +256,10 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
     );
   }
 
-  // For crypto, try to load logo image with fallback to icon
+  // For crypto, try Twelve Data first, then CoinCap fallback
   if (isCrypto) {
+    const currentCryptoUrl = useFallbackSource ? cryptoLogoUrl : twelveDataCryptoLogoUrl;
+    
     return (
       <View style={[
         styles.container,
@@ -219,7 +274,7 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
         {!imageError ? (
           <>
             <Image
-              source={{ uri: cryptoLogoUrl }}
+              source={{ uri: currentCryptoUrl }}
               style={[
                 styles.image,
                 { 
@@ -230,7 +285,14 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
                 }
               ]}
               onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
+              onError={() => {
+                if (!useFallbackSource) {
+                  setUseFallbackSource(true);
+                  setImageLoaded(false);
+                } else {
+                  setImageError(true);
+                }
+              }}
               resizeMode="contain"
             />
             {/* Show fallback icon while loading */}
@@ -264,7 +326,10 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
     );
   }
 
-  // For stocks, try to load the logo image
+  // For stocks, try Twelve Data first, then FMP fallback
+  // Use Twelve Data if available, otherwise use FMP
+  const currentStockLogoUrl = useFallbackSource ? stockLogoUrl : (twelveDataLogoUrl || stockLogoUrl);
+  
   return (
     <View style={[
       styles.container,
@@ -279,7 +344,7 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
       {!imageError ? (
         <>
           <Image
-            source={{ uri: stockLogoUrl }}
+            source={{ uri: currentStockLogoUrl }}
             style={[
               styles.image,
               { 
@@ -290,7 +355,15 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
               }
             ]}
             onLoad={() => setImageLoaded(true)}
-            onError={() => setImageError(true)}
+            onError={() => {
+              // If Twelve Data logo failed, try FMP fallback
+              if (twelveDataLogoUrl && !useFallbackSource) {
+                setUseFallbackSource(true);
+                setImageLoaded(false);
+              } else {
+                setImageError(true);
+              }
+            }}
             resizeMode="cover"
           />
           {/* Show fallback while loading */}
