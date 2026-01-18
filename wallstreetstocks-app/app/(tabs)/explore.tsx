@@ -1654,7 +1654,7 @@ export default function Explore() {
           transform: [{ translateX: slideAnim }] 
         }}
       >
-      {activeTab === "treasury" ? (
+        {activeTab === "treasury" ? (
         <ScrollView
           style={styles.treasuryScrollView}
           contentContainerStyle={styles.treasuryContentContainer}
@@ -1958,7 +1958,7 @@ export default function Explore() {
           onRefresh={fetchLiveData}
           ListFooterComponent={<InlineAdBanner />}
         />
-      )}
+        )}
       </Animated.View>
     </View>
   );
