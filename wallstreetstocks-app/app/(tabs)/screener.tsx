@@ -890,7 +890,12 @@ export default function Screener() {
 
   const enrichStocksWithQuotes = async (stocks: Stock[]): Promise<Stock[]> => {
     try {
-      const needsQuotes = stocks.some(s => s.change === 0 && s.changePercent === 0);
+      // Check if any stock is missing key data (change, marketCap, or pe)
+      const needsQuotes = stocks.some(s => 
+        (s.change === 0 && s.changePercent === 0) || 
+        !s.marketCap || s.marketCap === 0 || 
+        s.pe === null
+      );
       if (!needsQuotes) return stocks;
       const quotes = await fetchQuotes(stocks.map(s => s.symbol));
       return stocks.map(stock => {
@@ -902,8 +907,8 @@ export default function Screener() {
             change: quote.change ?? stock.change,
             changePercent: quote.changesPercentage ?? stock.changePercent,
             marketCap: quote.marketCap || stock.marketCap,
+            pe: quote.pe ?? stock.pe,
             volume: quote.volume || stock.volume,
-            pe: quote.pe || stock.pe,
           };
         }
         return stock;
@@ -937,9 +942,18 @@ export default function Screener() {
 
       if (preset) {
         switch (preset) {
-          case 'trending': stocks = await fetchMostActive(); break;
-          case 'gainers': stocks = await fetchGainers(); break;
-          case 'losers': stocks = await fetchLosers(); break;
+          case 'trending': 
+            stocks = await fetchMostActive(); 
+            stocks = await enrichStocksWithQuotes(stocks);
+            break;
+          case 'gainers': 
+            stocks = await fetchGainers(); 
+            stocks = await enrichStocksWithQuotes(stocks);
+            break;
+          case 'losers': 
+            stocks = await fetchLosers(); 
+            stocks = await enrichStocksWithQuotes(stocks);
+            break;
           case 'undervalued':
             stocks = await fetchScreenerResults({ marketCapMoreThan: 1000000000, peLessThan: 15, peMoreThan: 0, limit: 50 });
             stocks = await enrichStocksWithQuotes(stocks);
@@ -960,13 +974,16 @@ export default function Screener() {
             stocks = await fetchScreenerResults({ freeCashFlowMoreThan: 1000000000, netMarginMoreThan: 10, limit: 50 });
             stocks = await enrichStocksWithQuotes(stocks);
             break;
-          default: stocks = await fetchMostActive();
+          default: 
+            stocks = await fetchMostActive();
+            stocks = await enrichStocksWithQuotes(stocks);
         }
       } else if (Object.keys(filtersToUse).some(k => filtersToUse[k] && filtersToUse[k] !== 'Any')) {
         stocks = await fetchScreenerResults(buildScreenerParams(filtersToUse));
         stocks = await enrichStocksWithQuotes(stocks);
       } else {
         stocks = await fetchMostActive();
+        stocks = await enrichStocksWithQuotes(stocks);
       }
 
       setResults(sortStocks(stocks));
