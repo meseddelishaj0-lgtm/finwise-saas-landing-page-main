@@ -24,6 +24,7 @@ import { priceStore } from "@/stores/priceStore";
 import { InlineAdBanner } from "@/components/AdBanner";
 import { useWebSocket } from "@/context/WebSocketContext";
 import { marketDataService } from "@/services/marketDataService";
+import StockLogo from "@/components/StockLogo";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
@@ -835,6 +836,11 @@ export default function Trending() {
           <View style={styles.rankBadge}>
             <Text style={styles.rank}>{index + 1}</Text>
           </View>
+          <StockLogo 
+            symbol={item.symbol} 
+            size={Platform.OS === 'android' ? 32 : 36} 
+            style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
+          />
           <View style={styles.info}>
             <Text style={styles.symbol}>{item.symbol}</Text>
             <MarketTimeLabel

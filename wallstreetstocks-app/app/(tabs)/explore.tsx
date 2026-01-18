@@ -25,6 +25,7 @@ import { priceStore } from "@/stores/priceStore";
 import { useWebSocket } from "@/context/WebSocketContext";
 import { InlineAdBanner } from "@/components/AdBanner";
 import { marketDataService } from "@/services/marketDataService";
+import StockLogo from "@/components/StockLogo";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
@@ -1295,6 +1296,11 @@ export default function Explore() {
           onPress={() => router.push(`/symbol/${item.symbol}/chart`)}
         >
           <View style={styles.ipoHeader}>
+            <StockLogo 
+              symbol={item.symbol} 
+              size={Platform.OS === 'android' ? 36 : 40} 
+              style={{ marginRight: Platform.OS === 'android' ? 10 : 12 }}
+            />
             <View style={styles.ipoLeft}>
               <Text style={styles.ipoCompany} numberOfLines={1}>{item.name}</Text>
               <View style={styles.ipoMetaRow}>
@@ -1339,6 +1345,11 @@ export default function Explore() {
           onPress={() => router.push(`/symbol/${item.symbol}/chart`)}
         >
           <View style={styles.dividendHeader}>
+            <StockLogo 
+              symbol={item.symbol} 
+              size={Platform.OS === 'android' ? 36 : 40} 
+              style={{ marginRight: Platform.OS === 'android' ? 10 : 12 }}
+            />
             <View style={styles.dividendLeft}>
               <View style={styles.dividendSymbolRow}>
                 <Text style={styles.dividendSymbol}>{item.symbol}</Text>
@@ -1404,6 +1415,11 @@ export default function Explore() {
           <View style={styles.rankBadge}>
             <Text style={styles.itemRank}>{index + 1}</Text>
           </View>
+          <StockLogo 
+            symbol={item.symbol} 
+            size={Platform.OS === 'android' ? 32 : 36} 
+            style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
+          />
           <View style={styles.itemInfo}>
             <Text style={styles.itemSymbol}>{item.symbol}</Text>
             <MarketTimeLabel isCrypto={item.symbol?.includes('/') || (item.symbol?.endsWith('USD') && item.symbol?.length <= 10)} style={{ marginTop: 2, marginBottom: 2 }} />

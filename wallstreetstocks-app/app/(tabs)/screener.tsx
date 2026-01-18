@@ -21,6 +21,7 @@ import { useRouter } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import StockLogo from '@/components/StockLogo';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
@@ -1085,11 +1086,18 @@ export default function Screener() {
     return (
       <TouchableOpacity style={styles.stockItem} activeOpacity={0.7} onPress={() => handleStockPress(item.symbol)}>
         <View style={styles.stockLeft}>
-          <View style={styles.stockSymbolRow}>
-            <Text style={styles.stockSymbol}>{item.symbol}</Text>
-            {item.sector ? <View style={styles.sectorBadge}><Text style={styles.sectorText} numberOfLines={1}>{item.sector.length > 10 ? item.sector.substring(0, 10) + '..' : item.sector}</Text></View> : null}
+          <StockLogo 
+            symbol={item.symbol} 
+            size={Platform.OS === 'android' ? 32 : 36} 
+            style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
+          />
+          <View>
+            <View style={styles.stockSymbolRow}>
+              <Text style={styles.stockSymbol}>{item.symbol}</Text>
+              {item.sector ? <View style={styles.sectorBadge}><Text style={styles.sectorText} numberOfLines={1}>{item.sector.length > 10 ? item.sector.substring(0, 10) + '..' : item.sector}</Text></View> : null}
+            </View>
+            <Text style={styles.stockName} numberOfLines={1}>{item.name}</Text>
           </View>
-          <Text style={styles.stockName} numberOfLines={1}>{item.name}</Text>
         </View>
         <View style={styles.stockMiddle}>
           <Text style={styles.stockMetricLabel}>Mkt Cap</Text>
