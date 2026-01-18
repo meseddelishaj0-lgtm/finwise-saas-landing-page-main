@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Platform,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -387,6 +388,52 @@ export default function Explore() {
   const [selectedTenor, setSelectedTenor] = useState<string>("year10");
   const router = useRouter();
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Animation for smooth tab transitions
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  
+  // Handle tab change with smooth animation
+  const handleTabChange = useCallback((newTab: Tab) => {
+    if (newTab === activeTab) return;
+    
+    // Clear search when changing tabs
+    setSearchQuery("");
+    setSearchResults([]);
+    
+    // Animate out
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: -20,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Change tab
+      setActiveTab(newTab);
+      
+      // Reset position and animate in
+      slideAnim.setValue(20);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  }, [activeTab, fadeAnim, slideAnim]);
 
   // Cache for tab data to avoid re-fetching on tab switch
   const tabDataCache = useRef<Record<string, { data: MarketItem[]; headerCards: ChipData[]; timestamp: number }>>({})
@@ -1534,11 +1581,7 @@ export default function Explore() {
           {(["stocks", "crypto", "etf", "bonds", "treasury", "ipo", "ma", "dividends"] as Tab[]).map((tab) => (
             <TouchableOpacity
               key={tab}
-              onPress={() => {
-                setActiveTab(tab);
-                setSearchQuery("");
-                setSearchResults([]);
-              }}
+              onPress={() => handleTabChange(tab)}
               style={[styles.tab, activeTab === tab && styles.tabActive]}
             >
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
@@ -1604,6 +1647,13 @@ export default function Explore() {
       )}
 
       {/* Live Results */}
+      <Animated.View 
+        style={{ 
+          flex: 1, 
+          opacity: fadeAnim, 
+          transform: [{ translateX: slideAnim }] 
+        }}
+      >
       {activeTab === "treasury" ? (
         <ScrollView
           style={styles.treasuryScrollView}
@@ -1909,6 +1959,7 @@ export default function Explore() {
           ListFooterComponent={<InlineAdBanner />}
         />
       )}
+      </Animated.View>
     </View>
   );
 }

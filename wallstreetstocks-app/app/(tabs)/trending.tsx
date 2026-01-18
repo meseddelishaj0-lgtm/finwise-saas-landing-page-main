@@ -11,6 +11,7 @@ import {
   StatusBar,
   Dimensions,
   Platform,
+  Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -243,6 +244,48 @@ export default function Trending() {
   const [error, setError] = useState<string | null>(null);
   const [headerCards, setHeaderCards] = useState<ChipData[]>([]);
   const router = useRouter();
+  
+  // Animation for smooth tab transitions
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  
+  // Handle tab change with smooth animation
+  const handleTabChange = useCallback((newTab: TabType) => {
+    if (newTab === activeTab) return;
+    
+    // Animate out
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: -20,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // Change tab
+      setActiveTab(newTab);
+      
+      // Reset position and animate in
+      slideAnim.setValue(20);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 100,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    });
+  }, [activeTab, fadeAnim, slideAnim]);
 
 
   // Cache for tab data to avoid re-fetching on tab switch
@@ -944,7 +987,7 @@ export default function Trending() {
             return (
               <TouchableOpacity 
                 key={tab.id} 
-                onPress={() => setActiveTab(tab.id)}
+                onPress={() => handleTabChange(tab.id)}
                 style={[styles.tabPill, isActive && styles.tabPillActive]}
                 activeOpacity={0.7}
               >
@@ -971,21 +1014,29 @@ export default function Trending() {
         </View>
       )}
 
-      <FlatList
-        data={liveData}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => `${item.symbol}-${index}`}
-        getItemLayout={getStockRowLayout}
-        {...FLATLIST_PERFORMANCE_PROPS}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="trending-up" size={64} color="#e5e7eb" />
-            <Text style={styles.emptyText}>No data available</Text>
-          </View>
-        }
-        ListFooterComponent={<InlineAdBanner />}
-      />
+      <Animated.View 
+        style={{ 
+          flex: 1, 
+          opacity: fadeAnim, 
+          transform: [{ translateX: slideAnim }] 
+        }}
+      >
+        <FlatList
+          data={liveData}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => `${item.symbol}-${index}`}
+          getItemLayout={getStockRowLayout}
+          {...FLATLIST_PERFORMANCE_PROPS}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="trending-up" size={64} color="#e5e7eb" />
+              <Text style={styles.emptyText}>No data available</Text>
+            </View>
+          }
+          ListFooterComponent={<InlineAdBanner />}
+        />
+      </Animated.View>
     </View>
   );
 }
