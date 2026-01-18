@@ -109,7 +109,7 @@ const likePost = async (postId: string, userId: number): Promise<{ liked: boolea
     if (!response.ok) throw new Error('Failed to like post');
     const result = await response.json();
     return { liked: result?.liked ?? true, likesCount: result?.likesCount };
-  } catch {
+  } catch (error) {
     throw error;
   }
 };
@@ -124,7 +124,7 @@ const likeComment = async (commentId: string, userId: number): Promise<{ liked: 
     if (!response.ok) throw new Error('Failed to like comment');
     const result = await response.json();
     return { liked: result?.liked ?? true, likesCount: result?.likesCount };
-  } catch {
+  } catch (error) {
     throw error;
   }
 };
@@ -251,8 +251,8 @@ const followUserApi = async (followerId: number, followingId: number): Promise<{
       body: JSON.stringify({ followerId, followingId }),
     });
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to follow user');
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to follow user');
     }
     const result = await response.json();
     return {
@@ -260,7 +260,7 @@ const followUserApi = async (followerId: number, followingId: number): Promise<{
       action: result.action || 'followed',
       isFollowing: result.isFollowing ?? true,
     };
-  } catch {
+  } catch (error) {
     throw error;
   }
 };
@@ -438,6 +438,7 @@ export default function CommunityPage() {
   const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([]);
   const [suggestedLoading, setSuggestedLoading] = useState(true);
   const [dismissedUsers, setDismissedUsers] = useState<number[]>([]);
+  const [hiddenPosts, setHiddenPosts] = useState<number[]>([]);
   // Track local follow changes to preserve optimistic updates across re-fetches
   const [localFollowChanges, setLocalFollowChanges] = useState<Map<number, boolean>>(new Map());
   
