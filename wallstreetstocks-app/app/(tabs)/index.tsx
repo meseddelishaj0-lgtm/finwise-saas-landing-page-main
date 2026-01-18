@@ -34,6 +34,7 @@ import { AnimatedPrice, AnimatedChange, MarketStatusIndicator, LastUpdated, Cryp
 import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
 import { IndicesSkeletonList, WatchlistSkeletonList, TrendingSkeletonList } from '@/components/SkeletonLoader';
+import StockLogo from '@/components/StockLogo';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -271,7 +272,8 @@ const POPULAR_STOCKS_WS = [
   'EQR', 'VTR', 'ARE', 'UDR', 'PEAK',
 
   // ========== COMMUNICATION (15 stocks) ==========
-  'GOOG', 'T', 'VZ', 'TMUS', 'CMCSA', 'CHTR', 'NFLX', 'DIS', 'WBD', 'PARA',
+  // Note: GOOG, NFLX, DIS already included above - adding unique symbols only
+  'T', 'VZ', 'TMUS', 'CMCSA', 'CHTR', 'WBD', 'PARA',
   'FOX', 'FOXA', 'NWSA', 'OMC', 'IPG',
 
   // ========== UTILITIES (10 stocks) ==========
@@ -287,7 +289,8 @@ const POPULAR_STOCKS_WS = [
   'XPEV', 'LI', 'FSR', 'NKLA', 'WKHS', 'GOEV', 'RIDE', 'MULN', 'FFIE', 'HYLN',
 
   // ========== CRYPTO-RELATED (10) ==========
-  'MSTR', 'MARA', 'RIOT', 'CLSK', 'HUT', 'BITF', 'COIN', 'SI', 'GBTC', 'ETHE',
+  // Note: COIN already included above - adding unique symbols only
+  'MSTR', 'MARA', 'RIOT', 'CLSK', 'HUT', 'BITF', 'SI', 'GBTC', 'ETHE',
 ];
 
 export default function Dashboard() {
@@ -445,7 +448,7 @@ export default function Dashboard() {
   useFocusEffect(
     useCallback(() => {
       refreshPrices();
-    }, [])
+    }, [refreshPrices])
   );
 
   // Create new portfolio using context
@@ -525,14 +528,13 @@ export default function Dashboard() {
     }, [fetchUnreadMessagesCount])
   );
 
-  // Refresh market data when screen is focused (picks up prices from memory cache)
+  // Refresh market data when screen is focused
+  // Uses cached data from priceStore so it's instant - no API calls needed
+  // WebSocket handles real-time streaming, this just triggers UI refresh
   useFocusEffect(
     useCallback(() => {
-      // Small delay to ensure memory cache is populated from chart page
-      setTimeout(() => {
-        fetchMarketChips();
-        fetchTrending();
-      }, 100);
+      // Trigger a price update to refresh the UI with latest cached prices
+      setPriceUpdateTrigger(prev => prev + 1);
     }, [])
   );
 
@@ -783,11 +785,13 @@ export default function Dashboard() {
     return trending.map(stock => {
       const quote = priceStore.getQuote(stock.symbol);
       if (quote && quote.price > 0) {
+        const newChangePercent = quote.changePercent ?? stock.changePercent ?? 0;
         return {
           ...stock,
           price: quote.price,
-          change: quote.change ?? stock.change,
-          changesPercentage: quote.changePercent ?? stock.changesPercentage,
+          change: quote.change ?? stock.change ?? 0,
+          changePercent: newChangePercent,
+          color: newChangePercent >= 0 ? '#34C759' : '#FF3B30',
         };
       }
       return stock;
@@ -1716,34 +1720,39 @@ export default function Dashboard() {
   // Handle app state changes - refresh data when app returns to foreground
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      const wasActive = appState.current === 'active';
-      const isActive = nextAppState === 'active';
+      const wasInBackground = appState.current.match(/inactive|background/);
       appState.current = nextAppState;
 
-      // Refresh data immediately when app comes back to foreground
-      if (!wasActive && isActive && holdingsInitialized && !contextWatchlistLoading) {
-        // WebSocket handles real-time updates, no additional refresh needed
+      // When app returns to foreground, refresh prices from context
+      // WebSocket handles real-time streaming, but refresh ensures UI is in sync
+      if (nextAppState === 'active' && wasInBackground && holdingsInitialized) {
+        refreshPrices();
       }
     });
 
     return () => subscription.remove();
-  }, [holdingsInitialized, contextWatchlistLoading]);
+  }, [holdingsInitialized, refreshPrices]);
 
   // Initial fetch - staggered loading for better responsiveness
   // Load visible content first, then secondary content
   useEffect(() => {
     if (!holdingsInitialized || contextWatchlistLoading) return;
 
-    // PHASE 1: Load most visible content IMMEDIATELY (no InteractionManager delay)
-    // These use cached data so they're instant
+    // PHASE 1: Load most visible content IMMEDIATELY
+    // Market chips and trending use cached data so they're instant
+    fetchMarketChips();
+    fetchTrending();
 
     // PHASE 2: Load secondary content after a brief delay (50ms)
     // This prevents UI from freezing by spreading out the work
     const secondaryTimer = setTimeout(() => {
+      fetchWatchlist();
+      fetchPortfolio();
     }, 50);
 
     // PHASE 3: Load tertiary content last (100ms delay)
     const tertiaryTimer = setTimeout(() => {
+      fetchStockPicks();
     }, 100);
 
     return () => {
@@ -1757,31 +1766,35 @@ export default function Dashboard() {
     if (contextCurrentPortfolio && contextCurrentPortfolio.holdings.length > 0) {
       fetchPortfolio();
     }
-  }, [portfolioTimeRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portfolioTimeRange, contextCurrentPortfolio?.holdings?.length]);
 
   // Refetch portfolio when selected portfolio changes
   useEffect(() => {
     if (holdingsInitialized && selectedPortfolioId) {
       fetchPortfolio();
     }
-  }, [selectedPortfolioId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPortfolioId, holdingsInitialized]);
 
   // Track if initial watchlist data was loaded to prevent duplicate fetches
-  const watchlistInitialLoadDone = React.useRef(false);
+  const watchlistInitialLoadDone = useRef(false);
 
   // Refetch watchlist data when watchlist array changes (but not on initial load)
   useEffect(() => {
+    // Skip the very first render - initial useEffect handles the first fetch
+    if (!watchlistInitialLoadDone.current) {
+      watchlistInitialLoadDone.current = true;
+      return;
+    }
+    
     if (!contextWatchlistLoading && watchlist.length > 0) {
-      // Skip if this is the initial load (initial useEffect handles it)
-      if (!watchlistInitialLoadDone.current) {
-        watchlistInitialLoadDone.current = true;
-        return;
-      }
       fetchWatchlist();
     } else if (!contextWatchlistLoading && watchlist.length === 0) {
       setWatchlistData([]);
       setWatchlistDataLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchlist, contextWatchlistLoading]);
 
   // Memoized filtered and sorted watchlist - uses live prices from WebSocket
@@ -1790,24 +1803,24 @@ export default function Dashboard() {
 
     // Apply filter
     if (watchlistFilter === 'Gainers') {
-      filtered = filtered.filter(stock => stock.changePercent >= 0);
+      filtered = filtered.filter(stock => (stock.changePercent || 0) >= 0);
     } else if (watchlistFilter === 'Losers') {
-      filtered = filtered.filter(stock => stock.changePercent < 0);
+      filtered = filtered.filter(stock => (stock.changePercent || 0) < 0);
     }
 
     // Apply sort
     switch (watchlistSort) {
       case 'Name':
-        filtered.sort((a, b) => a.symbol.localeCompare(b.symbol));
+        filtered.sort((a, b) => (a.symbol || '').localeCompare(b.symbol || ''));
         break;
       case 'Price':
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
         break;
       case 'Change %':
-        filtered.sort((a, b) => b.changePercent - a.changePercent);
+        filtered.sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
         break;
       case 'Change $':
-        filtered.sort((a, b) => b.change - a.change);
+        filtered.sort((a, b) => (b.change || 0) - (a.change || 0));
         break;
       case 'My Sort':
       default:
@@ -2216,22 +2229,24 @@ export default function Dashboard() {
                   onPress={() => handleHoldingPress(holding)}
                 >
                   <View style={styles.holdingLeft}>
-                    <View style={styles.holdingIconContainer}>
-                      <Text style={styles.holdingIcon}>{holding.symbol.charAt(0)}</Text>
-                    </View>
+                    <StockLogo 
+                      symbol={holding.symbol} 
+                      size={Platform.OS === 'android' ? 32 : 40} 
+                      style={styles.holdingLogo}
+                    />
                     <View>
                       <Text style={styles.holdingSymbol}>{formatSymbolDisplay(holding.symbol)}</Text>
                       <Text style={styles.holdingShares}>
-                        {holding.shares} shares • ${holding.avgCost.toFixed(2)} avg
+                        {holding.shares} shares • ${(holding.avgCost || 0).toFixed(2)} avg
                       </Text>
                     </View>
                   </View>
                   <View style={styles.holdingRight}>
                     <Text style={styles.holdingValue}>
-                      ${holding.currentValue.toFixed(2)}
+                      ${(holding.currentValue || 0).toFixed(2)}
                     </Text>
-                    <Text style={[styles.holdingGain, { color: holding.gain >= 0 ? "#34C759" : "#FF3B30" }]}>
-                      {holding.gain >= 0 ? '+' : ''}${Math.abs(holding.gain).toFixed(2)}
+                    <Text style={[styles.holdingGain, { color: (holding.gain || 0) >= 0 ? "#34C759" : "#FF3B30" }]}>
+                      {(holding.gain || 0) >= 0 ? '+' : ''}${Math.abs(holding.gain || 0).toFixed(2)}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -2435,8 +2450,15 @@ export default function Dashboard() {
                   onLongPress={() => handleRemoveFromWatchlist(stock.symbol)}
                 >
                   <View style={styles.watchlistRowLeft}>
-                    <Text style={styles.watchlistRowSymbol}>{formatSymbolDisplay(stock.symbol)}</Text>
-                    <MarketTimeLabel isCrypto={stock.symbol.includes('/') || (stock.symbol.endsWith('USD') && stock.symbol.length <= 10)} style={{ marginTop: 2 }} />
+                    <StockLogo 
+                      symbol={stock.symbol} 
+                      size={Platform.OS === 'android' ? 26 : 34} 
+                      style={styles.watchlistLogo}
+                    />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.watchlistRowSymbol} numberOfLines={1}>{formatSymbolDisplay(stock.symbol)}</Text>
+                      <MarketTimeLabel isCrypto={stock.symbol.includes('/') || (stock.symbol.endsWith('USD') && stock.symbol.length <= 10)} style={{ marginTop: 2 }} />
+                    </View>
                   </View>
                   
                   <View style={styles.watchlistRowCenter}>
@@ -2475,12 +2497,12 @@ export default function Dashboard() {
                     />
                     <View style={styles.watchlistRowChangeContainer}>
                       <Ionicons
-                        name={stock.changePercent >= 0 ? 'arrow-up' : 'arrow-down'} 
+                        name={(stock.changePercent || 0) >= 0 ? 'arrow-up' : 'arrow-down'} 
                         size={12} 
                         color={stock.color} 
                       />
                       <Text style={[styles.watchlistRowChange, { color: stock.color }]}>
-                        ${Math.abs(stock.change).toFixed(2)} ({Math.abs(stock.changePercent).toFixed(2)}%)
+                        ${Math.abs(stock.change || 0).toFixed(2)} ({Math.abs(stock.changePercent || 0).toFixed(2)}%)
                       </Text>
                     </View>
                   </View>
@@ -2606,10 +2628,14 @@ export default function Dashboard() {
                   onPress={() => router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`)}
                 >
                   <View style={styles.trendingHeader}>
-                    <Text style={styles.trendingSymbol}>{stock.symbol}</Text>
+                    <StockLogo 
+                      symbol={stock.symbol} 
+                      size={Platform.OS === 'android' ? 22 : 26} 
+                    />
+                    <Text style={styles.trendingSymbol} numberOfLines={1}>{stock.symbol}</Text>
                     <Ionicons
-                      name={stock.changePercent >= 0 ? 'trending-up' : 'trending-down'}
-                      size={16}
+                      name={(stock.changePercent || 0) >= 0 ? 'trending-up' : 'trending-down'}
+                      size={Platform.OS === 'android' ? 14 : 16}
                       color={stock.color}
                     />
                   </View>
@@ -2620,12 +2646,13 @@ export default function Dashboard() {
                     style={styles.trendingPrice}
                     flashOnChange={true}
                     decimals={2}
+            
                   />
 
                   <GiftedLineChart
                     data={interpolateSparkline(stock.data.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.98, (stock.price || 100) * 1.02, stock.price || 100], 18).map(value => ({ value }))}
-                    width={chartWidth - 10}
-                    height={45}
+                    width={Platform.OS === 'android' ? 90 : chartWidth - 10}
+                    height={Platform.OS === 'android' ? 40 : 45}
                     curved
                     areaChart
                     hideDataPoints
@@ -2635,7 +2662,7 @@ export default function Dashboard() {
                     disableScroll
                     initialSpacing={0}
                     endSpacing={0}
-                    spacing={(chartWidth - 10) / 18}
+                    spacing={(Platform.OS === 'android' ? 90 : chartWidth - 10) / 18}
                     thickness={1.5}
                     color={stock.color}
                     startFillColor={stock.color}
@@ -2972,13 +2999,15 @@ export default function Dashboard() {
             {selectedHolding && (
               <>
                 <View style={styles.holdingOptionsHeader}>
-                  <View style={styles.holdingOptionsIconContainer}>
-                    <Text style={styles.holdingOptionsIcon}>{selectedHolding.symbol.charAt(0)}</Text>
-                  </View>
+                  <StockLogo 
+                    symbol={selectedHolding.symbol} 
+                    size={50} 
+                    style={{ marginRight: 14 }}
+                  />
                   <View>
-                    <Text style={styles.holdingOptionsSymbol}>{selectedHolding.symbol}</Text>
+                    <Text style={styles.holdingOptionsSymbol}>{formatSymbolDisplay(selectedHolding.symbol)}</Text>
                     <Text style={styles.holdingOptionsShares}>
-                      {selectedHolding.shares} shares • ${selectedHolding.avgCost.toFixed(2)} avg
+                      {selectedHolding.shares} shares • ${(selectedHolding.avgCost || 0).toFixed(2)} avg
                     </Text>
                   </View>
                 </View>
@@ -3072,10 +3101,12 @@ export default function Dashboard() {
             <View style={styles.modalForm}>
               {editingHolding && (
                 <View style={styles.editHoldingSymbolRow}>
-                  <View style={styles.editHoldingIconContainer}>
-                    <Text style={styles.editHoldingIcon}>{editingHolding.symbol.charAt(0)}</Text>
-                  </View>
-                  <Text style={styles.editHoldingSymbol}>{editingHolding.symbol}</Text>
+                  <StockLogo 
+                    symbol={editingHolding.symbol} 
+                    size={50} 
+                    style={{ marginRight: 14 }}
+                  />
+                  <Text style={styles.editHoldingSymbol}>{formatSymbolDisplay(editingHolding.symbol)}</Text>
                 </View>
               )}
 
@@ -3771,6 +3802,9 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     includeFontPadding: false,
   },
+  holdingLogo: {
+    marginRight: Platform.OS === 'android' ? 8 : 12,
+  },
   holdingSymbol: {
     fontSize: Platform.OS === 'android' ? 12 : 16,
     fontWeight: '700',
@@ -3932,8 +3966,13 @@ const styles = StyleSheet.create({
   },
   watchlistRowLeft: {
     flex: Platform.OS === 'android' ? 0 : 1,
-    width: Platform.OS === 'android' ? 85 : undefined,
-    minWidth: Platform.OS === 'android' ? undefined : 100,
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: Platform.OS === 'android' ? 100 : undefined,
+    minWidth: Platform.OS === 'android' ? undefined : 140,
+  },
+  watchlistLogo: {
+    marginRight: Platform.OS === 'android' ? 6 : 8,
   },
   watchlistRowSymbol: {
     fontSize: Platform.OS === 'android' ? 12 : 16,
@@ -3950,11 +3989,11 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   watchlistRowCenter: {
-    width: Platform.OS === 'android' ? 60 : 90,
+    width: Platform.OS === 'android' ? 55 : 85,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    marginHorizontal: Platform.OS === 'android' ? 4 : 0,
+    marginHorizontal: Platform.OS === 'android' ? 6 : 8,
   },
   watchlistSparkline: {
     paddingRight: 0,
@@ -4041,7 +4080,7 @@ const styles = StyleSheet.create({
     borderRadius: Platform.OS === 'android' ? 12 : 16,
     padding: Platform.OS === 'android' ? 10 : 12,
     marginRight: Platform.OS === 'android' ? 8 : 12,
-    width: Platform.OS === 'android' ? 100 : chartWidth + 24,
+    width: Platform.OS === 'android' ? 110 : chartWidth + 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -4053,12 +4092,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Platform.OS === 'android' ? 4 : 6,
+    gap: Platform.OS === 'android' ? 4 : 6,
   },
   trendingSymbol: {
+    flex: 1,
     fontWeight: '700',
     fontSize: Platform.OS === 'android' ? 11 : 15,
     color: '#000',
     includeFontPadding: false,
+    marginLeft: Platform.OS === 'android' ? 2 : 4,
   },
   trendingPrice: {
     fontSize: Platform.OS === 'android' ? 13 : 18,
