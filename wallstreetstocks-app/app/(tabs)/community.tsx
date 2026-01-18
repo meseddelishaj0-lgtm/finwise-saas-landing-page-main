@@ -553,6 +553,7 @@ export default function CommunityPage() {
       setSuggestedUsers(users.map((u: any) => ({
         id: u.id,
         name: u.name,
+        email: u.email || '',
         followers: u._count?.followers,
         isFollowing: u.isFollowing
       })));
@@ -698,10 +699,8 @@ export default function CommunityPage() {
         email: userProfile.email || '',
         username: userProfile.username,
         profileImage: userProfile.profileImage,
-        bio: userProfile.bio,
-        location: userProfile.location,
-        website: userProfile.website,
-        bannerImage: userProfile.bannerImage,
+        bio: userProfile.bio ?? undefined,
+        createdAt: userProfile.createdAt ?? undefined,
         subscriptionTier: userProfile.subscriptionTier,
         _count: userProfile._count || { posts: 0, followers: 0, following: 0 },
       });
@@ -2070,13 +2069,15 @@ export default function CommunityPage() {
               content: postData.content,
               mediaUrl: postData.mediaUrl,
               ticker: postData.ticker,
-              imageUrl: postData.imageUrl,
+              image: postData.image || postData.imageUrl,
               createdAt: postData.createdAt,
-              likes: postData._count?.likes || postData.likes || 0,
-              commentCount: postData._count?.comments || postData.commentCount || 0,
-              isLiked: postData.isLiked || false,
-              user: postData.user || { id: postData.userId, name: null, username: null, profileImage: null },
+              user: postData.user || { id: postData.userId, name: null, email: '', username: null, profileImage: null },
               userId: postData.userId,
+              _count: {
+                comments: postData._count?.comments || 0,
+                likes: postData._count?.likes || 0,
+              },
+              isLiked: postData.isLiked || false,
             };
             handleOpenComments(post);
           }
