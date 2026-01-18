@@ -1,7 +1,7 @@
 import React, { useState, memo } from 'react';
 import { View, Image, Text, StyleSheet, Platform } from 'react-native';
 
-// Crypto symbol to icon mapping for popular cryptocurrencies
+// Crypto symbol to icon mapping for popular cryptocurrencies (fallback)
 const CRYPTO_ICONS: { [key: string]: string } = {
   'BTC': '₿',
   'ETH': 'Ξ',
@@ -17,7 +17,7 @@ const CRYPTO_ICONS: { [key: string]: string } = {
   'LTC': 'Ł',
 };
 
-// Color mapping for crypto symbols
+// Color mapping for crypto symbols (used for fallback background)
 const CRYPTO_COLORS: { [key: string]: string } = {
   'BTC': '#F7931A',
   'ETH': '#627EEA',
@@ -31,6 +31,45 @@ const CRYPTO_COLORS: { [key: string]: string } = {
   'MATIC': '#8247E5',
   'LINK': '#2A5ADA',
   'LTC': '#BFBBBB',
+};
+
+// CoinGecko ID mapping for crypto symbols (for logo fetching)
+const CRYPTO_IDS: { [key: string]: string } = {
+  'BTC': 'bitcoin',
+  'ETH': 'ethereum',
+  'SOL': 'solana',
+  'BNB': 'binancecoin',
+  'XRP': 'ripple',
+  'ADA': 'cardano',
+  'DOGE': 'dogecoin',
+  'AVAX': 'avalanche-2',
+  'DOT': 'polkadot',
+  'MATIC': 'matic-network',
+  'LINK': 'chainlink',
+  'LTC': 'litecoin',
+  'USDT': 'tether',
+  'USDC': 'usd-coin',
+  'SHIB': 'shiba-inu',
+  'TRX': 'tron',
+  'UNI': 'uniswap',
+  'ATOM': 'cosmos',
+  'XLM': 'stellar',
+  'ALGO': 'algorand',
+  'NEAR': 'near',
+  'APT': 'aptos',
+  'ARB': 'arbitrum',
+  'OP': 'optimism',
+  'FTM': 'fantom',
+  'AAVE': 'aave',
+  'MKR': 'maker',
+  'CRO': 'crypto-com-chain',
+  'VET': 'vechain',
+  'HBAR': 'hedera-hashgraph',
+  'FIL': 'filecoin',
+  'ICP': 'internet-computer',
+  'ETC': 'ethereum-classic',
+  'BCH': 'bitcoin-cash',
+  'XMR': 'monero',
 };
 
 interface StockLogoProps {
@@ -47,19 +86,21 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
   const normalizedSymbol = symbol.replace('/USD', '').replace('USD', '');
   const isCrypto = symbol.includes('/') || 
     (symbol.endsWith('USD') && symbol.length <= 10) ||
-    Object.keys(CRYPTO_ICONS).includes(normalizedSymbol);
+    Object.keys(CRYPTO_ICONS).includes(normalizedSymbol) ||
+    Object.keys(CRYPTO_IDS).includes(normalizedSymbol);
 
   // Get first letter for fallback
   const firstLetter = normalizedSymbol.charAt(0).toUpperCase();
   
-  // Get crypto icon if available
+  // Get crypto icon if available (for fallback)
   const cryptoIcon = CRYPTO_ICONS[normalizedSymbol];
   const cryptoColor = CRYPTO_COLORS[normalizedSymbol] || '#007AFF';
+  // Logo URLs
+  const stockLogoUrl = `https://financialmodelingprep.com/image-stock/${normalizedSymbol}.png`;
+  // CoinCap API for crypto logos (reliable and consistent)
+  const cryptoLogoUrl = `https://assets.coincap.io/assets/icons/${normalizedSymbol.toLowerCase()}@2x.png`;
 
-  // FMP logo URL - works for most US stocks
-  const logoUrl = `https://financialmodelingprep.com/image-stock/${normalizedSymbol}.png`;
-
-  // For crypto, use fallback icon
+  // For crypto, try to load logo image with fallback to icon
   if (isCrypto) {
     return (
       <View style={[
@@ -72,15 +113,50 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
         },
         style
       ]}>
-        <Text style={[
-          styles.cryptoIcon,
-          { 
-            fontSize: size * 0.5,
-            color: cryptoColor,
-          }
-        ]}>
-          {cryptoIcon || firstLetter}
-        </Text>
+        {!imageError ? (
+          <>
+            <Image
+              source={{ uri: cryptoLogoUrl }}
+              style={[
+                styles.image,
+                { 
+                  width: size - 4, 
+                  height: size - 4, 
+                  borderRadius: (size - 4) / 2,
+                  opacity: imageLoaded ? 1 : 0,
+                }
+              ]}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+              resizeMode="contain"
+            />
+            {/* Show fallback icon while loading */}
+            {!imageLoaded && (
+              <View style={[styles.fallbackOverlay, { width: size, height: size, borderRadius: size / 2, backgroundColor: 'transparent' }]}>
+                <Text style={[
+                  styles.cryptoIcon,
+                  { 
+                    fontSize: size * 0.5,
+                    color: cryptoColor,
+                  }
+                ]}>
+                  {cryptoIcon || firstLetter}
+                </Text>
+              </View>
+            )}
+          </>
+        ) : (
+          // Fallback to text icon if image fails
+          <Text style={[
+            styles.cryptoIcon,
+            { 
+              fontSize: size * 0.5,
+              color: cryptoColor,
+            }
+          ]}>
+            {cryptoIcon || firstLetter}
+          </Text>
+        )}
       </View>
     );
   }
@@ -100,7 +176,7 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
       {!imageError ? (
         <>
           <Image
-            source={{ uri: logoUrl }}
+            source={{ uri: stockLogoUrl }}
             style={[
               styles.image,
               { 
