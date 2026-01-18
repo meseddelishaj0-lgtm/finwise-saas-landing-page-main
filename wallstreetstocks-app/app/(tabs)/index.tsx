@@ -766,7 +766,17 @@ export default function Dashboard() {
       }
 
       if (quote && quote.price > 0) {
-        const newChangePercent = quote.changePercent ?? stock.changePercent;
+        // Use previousClose to calculate accurate change if quote.changePercent is 0 or missing
+        const previousClose = quote.previousClose || stock.previousClose;
+        let newChange = quote.change ?? stock.change;
+        let newChangePercent = quote.changePercent ?? stock.changePercent;
+        
+        // Recalculate if change is 0 but we have previousClose
+        if ((newChangePercent === 0 || newChangePercent === undefined) && previousClose && previousClose > 0) {
+          newChange = quote.price - previousClose;
+          newChangePercent = (newChange / previousClose) * 100;
+        }
+        
         // Update sparkline data with live price as the last point
         let updatedData = stock.data || [];
         if (updatedData.length > 0) {
@@ -776,9 +786,9 @@ export default function Dashboard() {
         return {
           ...stock,
           price: quote.price,
-          change: quote.change ?? stock.change,
+          change: newChange,
           changePercent: newChangePercent,
-          color: newChangePercent >= 0 ? '#34C759' : '#FF3B30',
+          color: (newChangePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
           data: updatedData,
         };
       }
@@ -792,7 +802,17 @@ export default function Dashboard() {
     return trending.map(stock => {
       const quote = priceStore.getQuote(stock.symbol);
       if (quote && quote.price > 0) {
-        const newChangePercent = quote.changePercent ?? stock.changePercent ?? 0;
+        // Use previousClose to calculate accurate change if quote.changePercent is 0 or missing
+        const previousClose = quote.previousClose || stock.previousClose;
+        let newChange = quote.change ?? stock.change ?? 0;
+        let newChangePercent = quote.changePercent ?? stock.changePercent ?? 0;
+        
+        // Recalculate if change is 0 but we have previousClose
+        if ((newChangePercent === 0 || newChangePercent === undefined) && previousClose && previousClose > 0) {
+          newChange = quote.price - previousClose;
+          newChangePercent = (newChange / previousClose) * 100;
+        }
+        
         // Update sparkline data with live price as the last point
         let updatedData = stock.data || [];
         if (updatedData.length > 0) {
@@ -802,9 +822,9 @@ export default function Dashboard() {
         return {
           ...stock,
           price: quote.price,
-          change: quote.change ?? stock.change ?? 0,
+          change: newChange,
           changePercent: newChangePercent,
-          color: newChangePercent >= 0 ? '#34C759' : '#FF3B30',
+          color: (newChangePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
           data: updatedData,
         };
       }
@@ -1044,12 +1064,13 @@ export default function Dashboard() {
       const data = await res.json();
 
       if (data && Array.isArray(data)) {
-        // Update global price store with trending data
+        // Update global price store with trending data including previousClose
         priceStore.setQuotes(data.slice(0, 6).map((stock: any) => ({
           symbol: stock.symbol,
           price: stock.price || 0,
           change: stock.change || 0,
           changePercent: stock.changesPercentage || 0,
+          previousClose: stock.previousClose || stock.price || 0,
           name: stock.name,
         })));
 
@@ -1164,14 +1185,30 @@ export default function Dashboard() {
         );
 
         if (localItem) {
+          const price = localItem.price || 0;
+          const previousClose = localItem.previousClose || price;
+          const change = localItem.change || 0;
+          const changePercent = localItem.changePercent || 0;
+          
+          // Ensure priceStore has previousClose for WebSocket updates
+          priceStore.setQuote({
+            symbol: localItem.symbol,
+            price,
+            change,
+            changePercent,
+            previousClose,
+            name: localItem.name || localItem.symbol,
+          });
+          
           return {
             symbol: localItem.symbol,
             name: localItem.name || localItem.symbol,
-            price: localItem.price,
-            change: localItem.change,
-            changePercent: localItem.changePercent,
-            color: localItem.changePercent >= 0 ? '#34C759' : '#FF3B30',
-            data: generatePlaceholderChart(localItem.price, localItem.changePercent, localItem.symbol),
+            price,
+            change,
+            changePercent,
+            previousClose,
+            color: changePercent >= 0 ? '#34C759' : '#FF3B30',
+            data: generatePlaceholderChart(price, changePercent, localItem.symbol),
           };
         }
 
@@ -1244,15 +1281,33 @@ export default function Dashboard() {
 
       if (data && Array.isArray(data)) {
         // Show data immediately with placeholder charts
-        const watchlistWithPlaceholders = data.map((stock: any) => ({
-          symbol: stock.symbol,
-          name: stock.name || stock.symbol,
-          price: stock.price || 0,
-          change: stock.change || 0,
-          changePercent: stock.changesPercentage || 0,
-          color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-          data: generatePlaceholderChart(stock.price || 100, stock.changesPercentage || 0, stock.symbol),
-        }));
+        const watchlistWithPlaceholders = data.map((stock: any) => {
+          const price = stock.price || 0;
+          const previousClose = stock.previousClose || price;
+          const change = stock.change || (price - previousClose);
+          const changePercent = stock.changesPercentage || (previousClose > 0 ? ((price - previousClose) / previousClose) * 100 : 0);
+          
+          // Store in priceStore with previousClose for WebSocket updates
+          priceStore.setQuote({
+            symbol: stock.symbol,
+            price,
+            change,
+            changePercent,
+            previousClose,
+            name: stock.name || stock.symbol,
+          });
+          
+          return {
+            symbol: stock.symbol,
+            name: stock.name || stock.symbol,
+            price,
+            change,
+            changePercent,
+            previousClose,
+            color: changePercent >= 0 ? '#34C759' : '#FF3B30',
+            data: generatePlaceholderChart(price || 100, changePercent, stock.symbol),
+          };
+        });
 
         setWatchlistData(watchlistWithPlaceholders);
         setWatchlistDataLoading(false);
