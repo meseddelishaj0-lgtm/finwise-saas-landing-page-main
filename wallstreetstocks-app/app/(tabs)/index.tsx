@@ -767,12 +767,19 @@ export default function Dashboard() {
 
       if (quote && quote.price > 0) {
         const newChangePercent = quote.changePercent ?? stock.changePercent;
+        // Update sparkline data with live price as the last point
+        let updatedData = stock.data || [];
+        if (updatedData.length > 0) {
+          updatedData = [...updatedData];
+          updatedData[updatedData.length - 1] = quote.price;
+        }
         return {
           ...stock,
           price: quote.price,
           change: quote.change ?? stock.change,
           changePercent: newChangePercent,
           color: newChangePercent >= 0 ? '#34C759' : '#FF3B30',
+          data: updatedData,
         };
       }
       return stock;
@@ -786,12 +793,19 @@ export default function Dashboard() {
       const quote = priceStore.getQuote(stock.symbol);
       if (quote && quote.price > 0) {
         const newChangePercent = quote.changePercent ?? stock.changePercent ?? 0;
+        // Update sparkline data with live price as the last point
+        let updatedData = stock.data || [];
+        if (updatedData.length > 0) {
+          updatedData = [...updatedData];
+          updatedData[updatedData.length - 1] = quote.price;
+        }
         return {
           ...stock,
           price: quote.price,
           change: quote.change ?? stock.change ?? 0,
           changePercent: newChangePercent,
           color: newChangePercent >= 0 ? '#34C759' : '#FF3B30',
+          data: updatedData,
         };
       }
       return stock;
@@ -872,6 +886,29 @@ export default function Dashboard() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stockPicksData, priceUpdateTrigger]);
+
+  // Live portfolio chart data - appends current live portfolio value to historical chart
+  // This makes the chart follow real-time price changes
+  const livePortfolioChartData = useMemo(() => {
+    if (!portfolio.chartData || portfolio.chartData.length < 2) return portfolio.chartData;
+    
+    const currentLiveValue = livePortfolioData?.totalValue;
+    if (!currentLiveValue || currentLiveValue <= 0) return portfolio.chartData;
+    
+    // Create a copy of the chart data
+    const result = [...portfolio.chartData];
+    const lastPoint = result[result.length - 1];
+    
+    // Update the last point with the current live portfolio value
+    // This ensures the chart endpoint matches the displayed total value
+    result[result.length - 1] = {
+      ...lastPoint,
+      value: currentLiveValue,
+    };
+    
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [portfolio.chartData, livePortfolioData?.totalValue, priceUpdateTrigger]);
 
   // Fetch live market overview data - INSTANT from pre-loaded crypto data
   // Crypto only - trades 24/7 for Apple review
@@ -2119,9 +2156,9 @@ export default function Dashboard() {
           </View>
 
           {/* Portfolio Chart */}
-          {portfolio.chartData.length > 1 && (() => {
-            // Smooth and interpolate data for cleaner curves
-            const smoothedChartData = interpolateData(portfolio.chartData, 80);
+          {livePortfolioChartData.length > 1 && (() => {
+            // Smooth and interpolate data for cleaner curves - uses live data
+            const smoothedChartData = interpolateData(livePortfolioChartData, 80);
             const chartSpacing = Math.max(2, (portfolioChartWidth - 40) / smoothedChartData.length);
 
             return (
