@@ -1107,17 +1107,25 @@ export default function Screener() {
     );
   };
 
-  const renderStockItem = useCallback(({ item }: { item: Stock }) => {
+  const renderStockItem = useCallback(({ item, index }: { item: Stock; index: number }) => {
     const isPositive = item.change >= 0;
+    const isEven = index % 2 === 0;
     return (
-      <TouchableOpacity style={styles.stockItem} activeOpacity={0.7} onPress={() => handleStockPress(item.symbol)}>
+      <TouchableOpacity 
+        style={[
+          styles.stockItem, 
+          isEven ? styles.stockItemEven : styles.stockItemOdd
+        ]} 
+        activeOpacity={0.7} 
+        onPress={() => handleStockPress(item.symbol)}
+      >
         <View style={styles.stockLeft}>
           <StockLogo 
             symbol={item.symbol} 
-            size={Platform.OS === 'android' ? 32 : 36} 
-            style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
+            size={Platform.OS === 'android' ? 36 : 40} 
+            style={{ marginRight: Platform.OS === 'android' ? 10 : 12 }}
           />
-          <View>
+          <View style={styles.stockInfo}>
             <View style={styles.stockSymbolRow}>
               <Text style={styles.stockSymbol}>{item.symbol}</Text>
               {item.sector ? <View style={styles.sectorBadge}><Text style={styles.sectorText} numberOfLines={1}>{item.sector.length > 10 ? item.sector.substring(0, 10) + '..' : item.sector}</Text></View> : null}
@@ -1683,14 +1691,17 @@ const styles = StyleSheet.create({
   sortButtonActive: { backgroundColor: '#E8F2FF' },
   sortButtonText: { fontSize: 13, color: '#666', fontWeight: '500' },
   sortButtonTextActive: { color: '#007AFF' },
-  stockList: { backgroundColor: '#fff', marginHorizontal: 20, borderRadius: 16, overflow: 'hidden' },
-  stockItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
-  stockLeft: { flex: 1.2 },
+  stockList: { backgroundColor: '#fff', marginHorizontal: 16, borderRadius: 16, overflow: 'hidden', ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 }, android: { elevation: 2 } }) },
+  stockItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E8E8E8' },
+  stockItemEven: { backgroundColor: '#FFFFFF' },
+  stockItemOdd: { backgroundColor: '#FAFBFC' },
+  stockLeft: { flex: 1.2, flexDirection: 'row', alignItems: 'center' },
+  stockInfo: { flex: 1 },
   stockSymbolRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   stockSymbol: { fontSize: 16, fontWeight: '700', color: '#000' },
   sectorBadge: { backgroundColor: '#F0F0F0', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, maxWidth: 80 },
   sectorText: { fontSize: 9, color: '#666', fontWeight: '600' },
-  stockName: { fontSize: 12, color: '#666', marginTop: 3 },
+  stockName: { fontSize: 12, color: '#666', marginTop: 4 },
   stockMiddle: { flex: 0.55, alignItems: 'center' },
   stockMetricLabel: { fontSize: 10, color: '#999', marginBottom: 2 },
   stockMetricValue: { fontSize: 12, fontWeight: '600', color: '#333' },
