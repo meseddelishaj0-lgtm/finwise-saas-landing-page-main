@@ -942,14 +942,16 @@ export default function CommunityPage() {
       setLoading(posts.length === 0);
       const userId = getUserId();
       const fetchedPosts = await fetchPosts(undefined, userId || undefined);
-      setPosts(fetchedPosts || []);
+      // Filter out hidden posts
+      const filteredPosts = (fetchedPosts || []).filter((p: Post) => !hiddenPosts.includes(p.id));
+      setPosts(filteredPosts);
     } catch {
       Alert.alert('Error', 'Failed to load posts');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [posts.length, getUserId, fetchPosts]);
+  }, [posts.length, getUserId, hiddenPosts]);
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
