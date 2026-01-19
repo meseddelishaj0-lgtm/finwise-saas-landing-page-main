@@ -851,74 +851,182 @@ export default function Explore() {
             }
             
             // ============================================================
-            // EUROPE STOCKS - WebSocket only (no API polling)
+            // EUROPE STOCKS - Initial API fetch + WebSocket updates
             // ============================================================
             if (stockRegion === "europe") {
-              // Create stock data from priceStore (WebSocket populated)
-              const stockData: MarketItem[] = EUROPE_STOCKS.slice(0, 40).map(symbol => {
-                const quote = priceStore.getQuote(symbol);
-                return {
-                  symbol,
-                  name: quote?.name || symbol,
-                  price: quote?.price || 0,
-                  change: quote?.change || 0,
-                  changePercent: quote?.changePercent || 0,
-                  type: "stock" as const,
-                  exchange: "EU",
-                };
+              const europeSymbols = EUROPE_STOCKS.slice(0, 40);
+              
+              // Check if we have prices in priceStore already
+              let hasData = europeSymbols.some(s => {
+                const q = priceStore.getQuote(s);
+                return q && q.price > 0;
               });
               
-              // Sort: items with price first, then by change percent
-              stockData.sort((a, b) => {
-                if (a.price === 0 && b.price > 0) return 1;
-                if (a.price > 0 && b.price === 0) return -1;
-                return Math.abs(b.changePercent) - Math.abs(a.changePercent);
-              });
-              
-              // Subscribe to WebSocket for these symbols
-              if (wsConnected) {
-                wsSubscribe(EUROPE_STOCKS.slice(0, 40));
+              if (hasData) {
+                // Show cached data from priceStore
+                const stockData: MarketItem[] = europeSymbols.map(symbol => {
+                  const quote = priceStore.getQuote(symbol);
+                  return {
+                    symbol,
+                    name: quote?.name || symbol,
+                    price: quote?.price || 0,
+                    change: quote?.change || 0,
+                    changePercent: quote?.changePercent || 0,
+                    type: "stock" as const,
+                    exchange: "EU",
+                  };
+                });
+                stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+                setData(stockData);
+                setLoading(false);
+              } else {
+                // Fetch initial prices from API (one-time)
+                setLoading(true);
+                try {
+                  const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+                  const batchSize = 8;
+                  const stockData: MarketItem[] = [];
+                  
+                  for (let i = 0; i < europeSymbols.length; i += batchSize) {
+                    const batch = europeSymbols.slice(i, i + batchSize);
+                    const response = await fetch(
+                      `https://api.twelvedata.com/quote?symbol=${batch.join(',')}&apikey=${TWELVE_DATA_API_KEY}`
+                    );
+                    const result = await response.json();
+                    const quotes = result.symbol ? [result] : Object.values(result);
+                    
+                    for (const quote of quotes as any[]) {
+                      if (quote && quote.symbol && !quote.code) {
+                        const price = parseFloat(quote.close) || parseFloat(quote.price) || 0;
+                        const change = parseFloat(quote.change) || 0;
+                        const changePercent = parseFloat(quote.percent_change) || 0;
+                        const previousClose = parseFloat(quote.previous_close) || price;
+                        
+                        stockData.push({
+                          symbol: quote.symbol,
+                          name: quote.name || quote.symbol,
+                          price,
+                          change,
+                          changePercent,
+                          type: "stock" as const,
+                          exchange: "EU",
+                        });
+                        
+                        // Store in priceStore for WebSocket updates
+                        priceStore.setQuote({
+                          symbol: quote.symbol,
+                          price,
+                          change,
+                          changePercent,
+                          previousClose,
+                          name: quote.name || quote.symbol,
+                        });
+                      }
+                    }
+                  }
+                  
+                  stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+                  setData(stockData);
+                } catch (error) {
+                  console.log('Error fetching Europe stocks:', error);
+                }
+                setLoading(false);
               }
               
-              setData(stockData);
-              setLoading(false);
+              // Subscribe to WebSocket for real-time updates
+              if (wsConnected) {
+                wsSubscribe(europeSymbols);
+              }
               return;
             }
             
             // ============================================================
-            // ASIA STOCKS - WebSocket only (no API polling)
+            // ASIA STOCKS - Initial API fetch + WebSocket updates
             // ============================================================
             if (stockRegion === "asia") {
               const asiaSymbols = [...ASIA_STOCKS.filter(s => !s.includes(".")), ...ASIA_ETFS].slice(0, 40);
               
-              // Create stock data from priceStore (WebSocket populated)
-              const stockData: MarketItem[] = asiaSymbols.map(symbol => {
-                const quote = priceStore.getQuote(symbol);
-                return {
-                  symbol,
-                  name: quote?.name || symbol,
-                  price: quote?.price || 0,
-                  change: quote?.change || 0,
-                  changePercent: quote?.changePercent || 0,
-                  type: "stock" as const,
-                  exchange: "APAC",
-                };
+              // Check if we have prices in priceStore already
+              let hasData = asiaSymbols.some(s => {
+                const q = priceStore.getQuote(s);
+                return q && q.price > 0;
               });
               
-              // Sort: items with price first, then by change percent
-              stockData.sort((a, b) => {
-                if (a.price === 0 && b.price > 0) return 1;
-                if (a.price > 0 && b.price === 0) return -1;
-                return Math.abs(b.changePercent) - Math.abs(a.changePercent);
-              });
+              if (hasData) {
+                // Show cached data from priceStore
+                const stockData: MarketItem[] = asiaSymbols.map(symbol => {
+                  const quote = priceStore.getQuote(symbol);
+                  return {
+                    symbol,
+                    name: quote?.name || symbol,
+                    price: quote?.price || 0,
+                    change: quote?.change || 0,
+                    changePercent: quote?.changePercent || 0,
+                    type: "stock" as const,
+                    exchange: "APAC",
+                  };
+                });
+                stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+                setData(stockData);
+                setLoading(false);
+              } else {
+                // Fetch initial prices from API (one-time)
+                setLoading(true);
+                try {
+                  const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+                  const batchSize = 8;
+                  const stockData: MarketItem[] = [];
+                  
+                  for (let i = 0; i < asiaSymbols.length; i += batchSize) {
+                    const batch = asiaSymbols.slice(i, i + batchSize);
+                    const response = await fetch(
+                      `https://api.twelvedata.com/quote?symbol=${batch.join(',')}&apikey=${TWELVE_DATA_API_KEY}`
+                    );
+                    const result = await response.json();
+                    const quotes = result.symbol ? [result] : Object.values(result);
+                    
+                    for (const quote of quotes as any[]) {
+                      if (quote && quote.symbol && !quote.code) {
+                        const price = parseFloat(quote.close) || parseFloat(quote.price) || 0;
+                        const change = parseFloat(quote.change) || 0;
+                        const changePercent = parseFloat(quote.percent_change) || 0;
+                        const previousClose = parseFloat(quote.previous_close) || price;
+                        
+                        stockData.push({
+                          symbol: quote.symbol,
+                          name: quote.name || quote.symbol,
+                          price,
+                          change,
+                          changePercent,
+                          type: "stock" as const,
+                          exchange: "APAC",
+                        });
+                        
+                        // Store in priceStore for WebSocket updates
+                        priceStore.setQuote({
+                          symbol: quote.symbol,
+                          price,
+                          change,
+                          changePercent,
+                          previousClose,
+                          name: quote.name || quote.symbol,
+                        });
+                      }
+                    }
+                  }
+                  
+                  stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+                  setData(stockData);
+                } catch (error) {
+                  console.log('Error fetching Asia stocks:', error);
+                }
+                setLoading(false);
+              }
               
-              // Subscribe to WebSocket for these symbols
+              // Subscribe to WebSocket for real-time updates
               if (wsConnected) {
                 wsSubscribe(asiaSymbols);
               }
-              
-              setData(stockData);
-              setLoading(false);
               return;
             }
             
@@ -1216,61 +1324,74 @@ export default function Explore() {
         }
       }
       
-      // Europe - instant display, WebSocket updates prices
+      // Europe - check priceStore first, fetch if needed
       if (stockRegion === "europe") {
-        const stockData: MarketItem[] = EUROPE_STOCKS.slice(0, 40).map(symbol => {
-          const quote = priceStore.getQuote(symbol);
-          return {
-            symbol,
-            name: quote?.name || symbol,
-            price: quote?.price || 0,
-            change: quote?.change || 0,
-            changePercent: quote?.changePercent || 0,
-            type: "stock" as const,
-            exchange: "EU",
-          };
+        const europeSymbols = EUROPE_STOCKS.slice(0, 40);
+        const hasData = europeSymbols.some(s => {
+          const q = priceStore.getQuote(s);
+          return q && q.price > 0;
         });
-        stockData.sort((a, b) => {
-          if (a.price === 0 && b.price > 0) return 1;
-          if (a.price > 0 && b.price === 0) return -1;
-          return Math.abs(b.changePercent) - Math.abs(a.changePercent);
-        });
-        setData(stockData);
-        setLoading(false);
-        // Subscribe to WebSocket for real-time prices
-        if (wsConnected) {
-          wsSubscribe(EUROPE_STOCKS.slice(0, 40));
+        
+        if (hasData) {
+          // Show cached data instantly
+          const stockData: MarketItem[] = europeSymbols.map(symbol => {
+            const quote = priceStore.getQuote(symbol);
+            return {
+              symbol,
+              name: quote?.name || symbol,
+              price: quote?.price || 0,
+              change: quote?.change || 0,
+              changePercent: quote?.changePercent || 0,
+              type: "stock" as const,
+              exchange: "EU",
+            };
+          });
+          stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+          setData(stockData);
+          setLoading(false);
+          if (wsConnected) wsSubscribe(europeSymbols);
+          fetchHeaderCards();
+          return;
         }
+        // No cached data - fetch via fetchLiveData
+        setLoading(true);
+        fetchLiveData();
         fetchHeaderCards();
         return;
       }
       
-      // Asia - instant display, WebSocket updates prices
+      // Asia - check priceStore first, fetch if needed
       if (stockRegion === "asia") {
         const asiaSymbols = [...ASIA_STOCKS.filter(s => !s.includes(".")), ...ASIA_ETFS].slice(0, 40);
-        const stockData: MarketItem[] = asiaSymbols.map(symbol => {
-          const quote = priceStore.getQuote(symbol);
-          return {
-            symbol,
-            name: quote?.name || symbol,
-            price: quote?.price || 0,
-            change: quote?.change || 0,
-            changePercent: quote?.changePercent || 0,
-            type: "stock" as const,
-            exchange: "APAC",
-          };
+        const hasData = asiaSymbols.some(s => {
+          const q = priceStore.getQuote(s);
+          return q && q.price > 0;
         });
-        stockData.sort((a, b) => {
-          if (a.price === 0 && b.price > 0) return 1;
-          if (a.price > 0 && b.price === 0) return -1;
-          return Math.abs(b.changePercent) - Math.abs(a.changePercent);
-        });
-        setData(stockData);
-        setLoading(false);
-        // Subscribe to WebSocket for real-time prices
-        if (wsConnected) {
-          wsSubscribe(asiaSymbols);
+        
+        if (hasData) {
+          // Show cached data instantly
+          const stockData: MarketItem[] = asiaSymbols.map(symbol => {
+            const quote = priceStore.getQuote(symbol);
+            return {
+              symbol,
+              name: quote?.name || symbol,
+              price: quote?.price || 0,
+              change: quote?.change || 0,
+              changePercent: quote?.changePercent || 0,
+              type: "stock" as const,
+              exchange: "APAC",
+            };
+          });
+          stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+          setData(stockData);
+          setLoading(false);
+          if (wsConnected) wsSubscribe(asiaSymbols);
+          fetchHeaderCards();
+          return;
         }
+        // No cached data - fetch via fetchLiveData
+        setLoading(true);
+        fetchLiveData();
         fetchHeaderCards();
         return;
       }
