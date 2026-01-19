@@ -83,6 +83,7 @@ const generatePlaceholderChart = (price: number, changePercent: number, symbol?:
 
   data[0] = Math.max(startPrice, 0.01);
   data[data.length - 1] = price;
+  
   return data;
 };
 
@@ -494,12 +495,9 @@ export default function Dashboard() {
   const [watchlistData, setWatchlistData] = useState<any[]>([]);
   const [watchlistDataLoading, setWatchlistDataLoading] = useState(true);
 
-  // Reload watchlist when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      refreshWatchlist();
-    }, [refreshWatchlist])
-  );
+  // Note: Watchlist data is kept live via WebSocket - no need to refresh on focus
+  // Removing refreshWatchlist() call here prevents the flash/glitch when navigating back
+  // The watchlist context auto-loads on mount and WebSocket keeps prices updated
 
   // Fetch unread messages count
   const fetchUnreadMessagesCount = useCallback(async () => {
@@ -783,6 +781,7 @@ export default function Dashboard() {
           updatedData = [...updatedData];
           updatedData[updatedData.length - 1] = quote.price;
         }
+        
         return {
           ...stock,
           price: quote.price,
@@ -1249,9 +1248,12 @@ export default function Dashboard() {
             const chartData = await chartRes.json();
 
             if (chartData && Array.isArray(chartData) && chartData.length > 0) {
+              const rawData = chartData.slice(0, 40).reverse().map((d: any) => d.close);
+              const cleanedData = cleanChartData(rawData);
+              
               return {
                 symbol,
-                data: cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close)),
+                data: cleanedData,
               };
             }
             return null;
@@ -2265,6 +2267,7 @@ export default function Dashboard() {
                     );
                   },
                 }}
+                animateOnDataChange={false}
               />
               
               {/* Time Range Selector */}
@@ -2532,9 +2535,14 @@ export default function Dashboard() {
             </View>
           ) : (
             <View style={styles.watchlistList}>
-              {filteredWatchlist.map((stock, idx) => (
+              {filteredWatchlist.map((stock, idx) => {
+                // Compute chart data once per render
+                const rawChartData = stock.data?.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.98, (stock.price || 100) * 1.02, stock.price || 100];
+                const chartData = interpolateSparkline(rawChartData, 18);
+                
+                return (
                 <TouchableOpacity
-                  key={idx}
+                  key={stock.symbol}
                   style={styles.watchlistRow}
                   onPress={() => router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`)}
                   onLongPress={() => handleRemoveFromWatchlist(stock.symbol)}
@@ -2553,7 +2561,7 @@ export default function Dashboard() {
                   
                   <View style={styles.watchlistRowCenter}>
                     <GiftedLineChart
-                      data={interpolateSparkline(stock.data.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.98, (stock.price || 100) * 1.02, stock.price || 100], 18).map(value => ({ value }))}
+                      data={chartData.map(value => ({ value }))}
                       width={Platform.OS === 'android' ? 55 : 85}
                       height={Platform.OS === 'android' ? 28 : 36}
                       curved
@@ -2575,6 +2583,7 @@ export default function Dashboard() {
                       yAxisOffset={0}
                       maxValue={105}
                       mostNegativeValue={-5}
+                      animateOnDataChange={false}
                     />
                   </View>
                   
@@ -2597,7 +2606,8 @@ export default function Dashboard() {
                     </View>
                   </View>
                 </TouchableOpacity>
-              ))}
+                );
+              })}
             </View>
           )}
         </View>
@@ -2762,6 +2772,7 @@ export default function Dashboard() {
                     yAxisOffset={0}
                     maxValue={105}
                     mostNegativeValue={-5}
+                    animateOnDataChange={false}
                   />
                   
                   <AnimatedChange
