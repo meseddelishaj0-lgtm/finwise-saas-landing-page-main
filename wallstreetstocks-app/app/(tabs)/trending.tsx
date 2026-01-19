@@ -248,6 +248,17 @@ export default function Trending() {
   // Animation for smooth tab transitions
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const isMountedRef = useRef(true);
+  
+  // Cleanup animations on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      fadeAnim.stopAnimation();
+      slideAnim.stopAnimation();
+    };
+  }, [fadeAnim, slideAnim]);
   
   // Handle tab change with smooth animation
   const handleTabChange = useCallback((newTab: TabType) => {
@@ -266,6 +277,9 @@ export default function Trending() {
         useNativeDriver: true,
       }),
     ]).start(() => {
+      // Check if still mounted before continuing
+      if (!isMountedRef.current) return;
+      
       // Change tab
       setActiveTab(newTab);
       
