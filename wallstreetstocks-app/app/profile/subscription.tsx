@@ -42,6 +42,7 @@ import {
   getSubscriptionDetails,
   formatExpirationDate,
 } from "@/services/revenueCat";
+import { useSubscription } from "@/context/SubscriptionContext";
 
 // Screen dimensions for responsive layout
 const _screenWidth = Dimensions.get("window").width;
@@ -134,6 +135,7 @@ interface SubscriptionDetails {
 
 export default function SubscriptionPage() {
   const router = useRouter();
+  const { refreshStatus: refreshGlobalSubscription } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -164,9 +166,12 @@ export default function SubscriptionPage() {
         setShowManageSection(true);
         // Reload subscription details to update the UI
         await loadSubscriptionDetails();
+        // Refresh global subscription context so all features unlock immediately
+        await refreshGlobalSubscription();
       } else {
         setActiveSubscription(null);
         setShowManageSection(false);
+        await refreshGlobalSubscription();
       }
     };
 
@@ -175,7 +180,7 @@ export default function SubscriptionPage() {
     return () => {
       Purchases.removeCustomerInfoUpdateListener(customerInfoUpdated);
     };
-  }, []);
+  }, [refreshGlobalSubscription]);
 
   const loadData = async () => {
     setLoading(true);
@@ -303,6 +308,9 @@ export default function SubscriptionPage() {
         setShowManageSection(true);
         await loadSubscriptionDetails();
 
+        // Refresh global subscription context so all features unlock immediately
+        await refreshGlobalSubscription();
+
         Alert.alert(
           "Success!",
           `Welcome to ${tier.name}! Your subscription is now active.`,
@@ -311,6 +319,7 @@ export default function SubscriptionPage() {
       } else {
         // Entitlement not immediately available - reload all data
         await loadData();
+        await refreshGlobalSubscription();
         Alert.alert(
           "Success!",
           `Welcome to ${tier.name}! Your subscription is now active.`,
@@ -379,6 +388,9 @@ export default function SubscriptionPage() {
                 setShowManageSection(true);
                 await loadSubscriptionDetails();
 
+                // Refresh global subscription context so all features unlock immediately
+                await refreshGlobalSubscription();
+
                 Alert.alert(
                   "Upgraded!",
                   `You're now on the ${tier.name} plan. Enjoy your new features!`
@@ -386,6 +398,7 @@ export default function SubscriptionPage() {
               } else {
                 // Entitlement not immediately available - reload all data
                 await loadData();
+                await refreshGlobalSubscription();
                 Alert.alert(
                   "Upgraded!",
                   `You're now on the ${tier.name} plan. Enjoy your new features!`
@@ -457,6 +470,8 @@ export default function SubscriptionPage() {
         setShowManageSection(true);
         setIsExpired(false);
         await loadSubscriptionDetails();
+        // Refresh global subscription context so all features unlock immediately
+        await refreshGlobalSubscription();
         Alert.alert("Success", "Your subscription has been restored!");
       } else {
         Alert.alert("No Subscriptions Found", "We couldn't find any active subscriptions to restore. If you recently subscribed, please try again in a few minutes.");
