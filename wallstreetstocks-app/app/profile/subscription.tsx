@@ -152,10 +152,37 @@ export default function SubscriptionPage() {
     }, [])
   );
 
+  // Listen for customer info updates (catches external upgrades/changes from App Store)
+  useEffect(() => {
+    const customerInfoUpdated = async (info: CustomerInfo) => {
+      setCustomerInfo(info);
+      const activeEntitlementId = getActiveEntitlement(info.entitlements.active);
+      const entitlement = activeEntitlementId ? info.entitlements.active[activeEntitlementId] : null;
+
+      if (entitlement) {
+        setActiveSubscription(entitlement.productIdentifier);
+        setShowManageSection(true);
+        // Reload subscription details to update the UI
+        await loadSubscriptionDetails();
+      } else {
+        setActiveSubscription(null);
+        setShowManageSection(false);
+      }
+    };
+
+    Purchases.addCustomerInfoUpdateListener(customerInfoUpdated);
+
+    return () => {
+      Purchases.removeCustomerInfoUpdateListener(customerInfoUpdated);
+    };
+  }, []);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      // Force sync with RevenueCat to get latest subscription data
+      // Invalidate cache first to ensure we get fresh data (important for external upgrades)
+      await Purchases.invalidateCustomerInfoCache();
+      // Force sync with RevenueCat to get latest subscription data from App Store
       await Purchases.syncPurchases();
     } catch (e) {
       // Silently handle sync errors
@@ -182,6 +209,7 @@ export default function SubscriptionPage() {
 
   const checkSubscriptionStatus = async () => {
     try {
+      // Get fresh customer info (cache already invalidated in loadData)
       const info = await Purchases.getCustomerInfo();
       setCustomerInfo(info);
 
@@ -191,6 +219,10 @@ export default function SubscriptionPage() {
       if (entitlement) {
         setActiveSubscription(entitlement.productIdentifier);
         setShowManageSection(true);
+      } else {
+        // No active entitlement - clear subscription state
+        setActiveSubscription(null);
+        setShowManageSection(false);
       }
     } catch (error) {
       // Silently handle subscription check error
@@ -258,15 +290,27 @@ export default function SubscriptionPage() {
     setPurchasing(true);
     try {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      setCustomerInfo(customerInfo);
 
-      const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
+      // Invalidate cache and re-fetch to ensure we have the latest entitlements
+      await Purchases.invalidateCustomerInfoCache();
+      const freshInfo = await Purchases.getCustomerInfo();
+      setCustomerInfo(freshInfo);
+
+      const activeEntitlementId = getActiveEntitlement(freshInfo.entitlements.active);
       if (activeEntitlementId) {
-        const productId = customerInfo.entitlements.active[activeEntitlementId].productIdentifier;
+        const productId = freshInfo.entitlements.active[activeEntitlementId].productIdentifier;
         setActiveSubscription(productId);
         setShowManageSection(true);
         await loadSubscriptionDetails();
 
+        Alert.alert(
+          "Success!",
+          `Welcome to ${tier.name}! Your subscription is now active.`,
+          [{ text: "OK" }]
+        );
+      } else {
+        // Entitlement not immediately available - reload all data
+        await loadData();
         Alert.alert(
           "Success!",
           `Welcome to ${tier.name}! Your subscription is now active.`,
@@ -322,14 +366,26 @@ export default function SubscriptionPage() {
             setPurchasing(true);
             try {
               const { customerInfo } = await Purchases.purchasePackage(pkg);
-              setCustomerInfo(customerInfo);
 
-              const activeEntitlementId = getActiveEntitlement(customerInfo.entitlements.active);
+              // Invalidate cache and re-fetch to ensure we have the latest entitlements
+              await Purchases.invalidateCustomerInfoCache();
+              const freshInfo = await Purchases.getCustomerInfo();
+              setCustomerInfo(freshInfo);
+
+              const activeEntitlementId = getActiveEntitlement(freshInfo.entitlements.active);
               if (activeEntitlementId) {
-                const productId = customerInfo.entitlements.active[activeEntitlementId].productIdentifier;
+                const productId = freshInfo.entitlements.active[activeEntitlementId].productIdentifier;
                 setActiveSubscription(productId);
+                setShowManageSection(true);
                 await loadSubscriptionDetails();
 
+                Alert.alert(
+                  "Upgraded!",
+                  `You're now on the ${tier.name} plan. Enjoy your new features!`
+                );
+              } else {
+                // Entitlement not immediately available - reload all data
+                await loadData();
                 Alert.alert(
                   "Upgraded!",
                   `You're now on the ${tier.name} plan. Enjoy your new features!`
@@ -383,8 +439,9 @@ export default function SubscriptionPage() {
   const handleRestore = async () => {
     setRestoring(true);
     try {
-      // Force sync first to get latest data from stores
+      // Invalidate cache and force sync to get latest data from stores
       try {
+        await Purchases.invalidateCustomerInfoCache();
         await Purchases.syncPurchases();
       } catch (e) {
         // Silently handle sync errors

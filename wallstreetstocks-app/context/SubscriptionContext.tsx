@@ -286,9 +286,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      // Force sync with RevenueCat to get latest data
+      // Invalidate cache and force sync with RevenueCat to get latest data
+      // This is critical for detecting external upgrades done through App Store settings
       try {
         const Purchases = require('react-native-purchases').default;
+        await Purchases.invalidateCustomerInfoCache();
         await Purchases.syncPurchases();
       } catch (e) {
       }
@@ -379,7 +381,13 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       const result = await purchasePackage(pkg);
 
       if (result.success && result.customerInfo) {
-        const activeEntitlements = result.customerInfo?.entitlements?.active || {};
+        // Invalidate cache and re-fetch to ensure we have the latest entitlements
+        // This is critical for upgrade scenarios
+        const Purchases = require('react-native-purchases').default;
+        await Purchases.invalidateCustomerInfoCache();
+        const freshInfo = await Purchases.getCustomerInfo();
+
+        const activeEntitlements = freshInfo?.entitlements?.active || {};
         const activeEntitlementId = getActiveEntitlement(activeEntitlements);
         const entitlement = activeEntitlementId ? activeEntitlements[activeEntitlementId] : null;
         const activeSubscription = entitlement?.productIdentifier || null;
@@ -389,7 +397,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         setState(prev => ({
           ...prev,
           isLoading: false,
-          customerInfo: result.customerInfo,
+          customerInfo: freshInfo,
           isPremium: !!entitlement,
           activeSubscription,
           currentTier,
@@ -434,21 +442,25 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const restore = useCallback(async (): Promise<boolean> => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
-      
+
       const result = await restorePurchases();
-      
+
       if (result.success && result.customerInfo) {
-        const activeEntitlements = result.customerInfo?.entitlements?.active || {};
+        // Invalidate cache and re-fetch to ensure we have the latest entitlements
+        const Purchases = require('react-native-purchases').default;
+        await Purchases.invalidateCustomerInfoCache();
+        const freshInfo = await Purchases.getCustomerInfo();
+
+        const activeEntitlements = freshInfo?.entitlements?.active || {};
         const activeEntitlementId = getActiveEntitlement(activeEntitlements);
         const entitlement = activeEntitlementId ? activeEntitlements[activeEntitlementId] : null;
         const activeSubscription = entitlement?.productIdentifier || null;
         const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
 
-
         setState(prev => ({
           ...prev,
           isLoading: false,
-          customerInfo: result.customerInfo,
+          customerInfo: freshInfo,
           isPremium: !!entitlement,
           activeSubscription,
           currentTier,
