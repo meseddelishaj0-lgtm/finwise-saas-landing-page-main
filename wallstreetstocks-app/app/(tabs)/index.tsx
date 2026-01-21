@@ -35,6 +35,7 @@ import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
 import { IndicesSkeletonList, WatchlistSkeletonList, TrendingSkeletonList } from '@/components/SkeletonLoader';
 import StockLogo from '@/components/StockLogo';
+import { useAppReview } from '@/hooks/useAppReview';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -312,6 +313,10 @@ export default function Dashboard() {
     removeHolding: contextRemoveHolding,
     refreshPrices,
   } = usePortfolio();
+  
+  // App review prompt - shows after user has engaged with the app
+  const { trackAction, checkAndPromptReview } = useAppReview();
+  
   const [refreshing, setRefreshing] = useState(false);
   const [stockPicksData, setStockPicksData] = useState<any[]>([]);
 
@@ -533,7 +538,10 @@ export default function Dashboard() {
     useCallback(() => {
       // Trigger a price update to refresh the UI with latest cached prices
       setPriceUpdateTrigger(prev => prev + 1);
-    }, [])
+      
+      // Check if we should show app review prompt after user has browsed for a bit
+      checkAndPromptReview();
+    }, [checkAndPromptReview])
   );
 
   // Subscribe to WebSocket for real-time streaming
@@ -1673,6 +1681,9 @@ export default function Dashboard() {
 
     // Use context's addToWatchlist (handles validation, storage, and alerts)
     await addToWatchlist(symbolToAdd);
+    
+    // Track action for app review prompt
+    trackAction();
 
     setAddingToWatchlist(false);
   };
@@ -2544,7 +2555,10 @@ export default function Dashboard() {
                 <TouchableOpacity
                   key={stock.symbol}
                   style={styles.watchlistRow}
-                  onPress={() => router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`)}
+                  onPress={() => {
+                    trackAction(); // Track stock view for app review
+                    router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`);
+                  }}
                   onLongPress={() => handleRemoveFromWatchlist(stock.symbol)}
                 >
                   <View style={styles.watchlistRowLeft}>
@@ -2725,7 +2739,10 @@ export default function Dashboard() {
                 <TouchableOpacity 
                   key={i} 
                   style={styles.trendingCard}
-                  onPress={() => router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`)}
+                  onPress={() => {
+                    trackAction(); // Track stock view for app review
+                    router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`);
+                  }}
                 >
                   <View style={styles.trendingHeader}>
                     <StockLogo 
