@@ -67,8 +67,8 @@ export default function Referrals() {
   };
 
   const handleCopyLink = async () => {
-    await Clipboard.setStringAsync(`https://wallstreetstocks.app/invite/${referralCode}`);
-    Alert.alert('Copied!', 'Referral link copied to clipboard');
+    await Clipboard.setStringAsync(`https://apps.apple.com/us/app/wallstreetstocks/id6756940110`);
+    Alert.alert('Copied!', 'App Store link copied to clipboard');
   };
 
   const handleShare = async () => {
@@ -192,10 +192,10 @@ export default function Referrals() {
           </View>
 
           <View style={styles.shareLinkContainer}>
-            <Text style={styles.shareLinkLabel}>Or share your link:</Text>
+            <Text style={styles.shareLinkLabel}>Or share the app:</Text>
             <TouchableOpacity onPress={handleCopyLink}>
               <Text style={styles.shareLink}>
-                wallstreetstocks.app/invite/{referralCode}
+                apps.apple.com/app/wallstreetstocks
               </Text>
             </TouchableOpacity>
           </View>

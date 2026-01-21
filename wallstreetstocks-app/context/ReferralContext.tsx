@@ -390,7 +390,7 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
   // Generate share message
   const generateShareMessage = useCallback((): string => {
     const code = referralData?.referralCode || 'WALLST2025';
-    return `Join me on WallStreetStocks - the best app for stock research and market insights! Use my referral code ${code} to get 1 week of Premium free. Download now: https://wallstreetstocks.app/invite/${code}`;
+    return `Join me on WallStreetStocks - the best app for stock research and market insights! Use my referral code ${code} when you sign up to get 1 week of Premium free. Download now: https://apps.apple.com/us/app/wallstreetstocks/id6756940110`;
   }, [referralData]);
 
   // Load data on mount
