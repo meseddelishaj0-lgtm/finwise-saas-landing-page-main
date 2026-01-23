@@ -21,12 +21,12 @@ const DEFAULT_REVIEW_DATA: ReviewData = {
   meaningfulActions: 0,
 };
 
-// Configuration - adjust these to control when prompt appears
+// Configuration - Industry standard for financial apps
 const CONFIG = {
-  MIN_APP_OPENS: 5,           // Minimum app opens before prompting
-  MIN_DAYS_INSTALLED: 3,      // Minimum days since first open
-  MIN_ACTIONS: 10,            // Minimum meaningful actions (view stock, add to watchlist)
-  DAYS_BETWEEN_PROMPTS: 60,   // Don't prompt again for 60 days if dismissed
+  MIN_APP_OPENS: 3,           // 3 sessions shows genuine interest
+  MIN_DAYS_INSTALLED: 2,      // 2 days ensures they've returned
+  MIN_ACTIONS: 5,             // 5 meaningful actions (view stocks, add watchlist)
+  DAYS_BETWEEN_PROMPTS: 90,   // Don't prompt again for 90 days if dismissed
 };
 
 /**
