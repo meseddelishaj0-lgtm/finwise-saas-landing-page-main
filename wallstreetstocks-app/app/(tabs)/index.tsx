@@ -17,9 +17,9 @@ import {
   AppStateStatus,
   BackHandler,
   ToastAndroid,
-  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useFocusEffect } from '@react-navigation/native';
 import { LineChart as GiftedLineChart } from 'react-native-gifted-charts';
 import { Dimensions } from 'react-native';
@@ -2597,9 +2597,9 @@ export default function Dashboard() {
                 <TouchableOpacity
                   key={i}
                   style={styles.newsCard}
-                  onPress={() => {
+                  onPress={async () => {
                     trackAction();
-                    Linking.openURL(item.url);
+                    await WebBrowser.openBrowserAsync(item.url);
                   }}
                   activeOpacity={0.7}
                 >
