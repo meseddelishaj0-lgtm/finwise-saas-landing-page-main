@@ -17,6 +17,7 @@ import {
   AppStateStatus,
   BackHandler,
   ToastAndroid,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -33,7 +34,7 @@ import { priceStore } from '@/stores/priceStore';
 import { AnimatedPrice, AnimatedChange, MarketStatusIndicator, LastUpdated, CryptoLiveIndicator, MarketTimeLabel } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
-import { IndicesSkeletonList, WatchlistSkeletonList, TrendingSkeletonList } from '@/components/SkeletonLoader';
+import { IndicesSkeletonList, WatchlistSkeletonList } from '@/components/SkeletonLoader';
 import StockLogo from '@/components/StockLogo';
 import { useAppReview } from '@/hooks/useAppReview';
 
@@ -189,6 +190,26 @@ const interpolateData = (data: { value: number; label: string; dataPointText?: s
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+
+// Format news date to relative time
+const formatNewsDate = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffMinutes = Math.floor(diffTime / (1000 * 60));
+  const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  } else if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  } else {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+};
 
 // Real-time prices handled by WebSocket (pre-market + after-hours included)
 // No API polling needed - WebSocket provides instant updates via Twelve Data WebSocket
@@ -380,11 +401,11 @@ export default function Dashboard() {
   const [indicesLoading, setIndicesLoading] = useState(true);
   const [indicesCacheLoaded, setIndicesCacheLoaded] = useState(false);
 
-  // Live Trending
-  const TRENDING_CACHE_KEY = 'cached_trending_stocks';
-  const [trending, setTrending] = useState<any[]>([]);
-  const [trendingLoading, setTrendingLoading] = useState(true);
-  const [trendingCacheLoaded, setTrendingCacheLoaded] = useState(false);
+  // Market News
+  const NEWS_CACHE_KEY = 'cached_market_news';
+  const [news, setNews] = useState<any[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [newsCacheLoaded, setNewsCacheLoaded] = useState(false);
 
   // Unread messages count
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
@@ -580,33 +601,33 @@ export default function Dashboard() {
     }
   }, [majorIndices, indicesCacheLoaded]);
 
-  // Load cached trending stocks on mount
+  // Load cached news on mount
   useEffect(() => {
-    const loadCachedTrending = async () => {
+    const loadCachedNews = async () => {
       try {
-        const cached = await AsyncStorage.getItem(TRENDING_CACHE_KEY);
+        const cached = await AsyncStorage.getItem(NEWS_CACHE_KEY);
         if (cached) {
           const parsedCache = JSON.parse(cached);
           if (parsedCache && Array.isArray(parsedCache) && parsedCache.length > 0) {
-            setTrending(parsedCache);
-            setTrendingLoading(false);
+            setNews(parsedCache);
+            setNewsLoading(false);
           }
         }
       } catch {
         // Ignore cache errors
       } finally {
-        setTrendingCacheLoaded(true);
+        setNewsCacheLoaded(true);
       }
     };
-    loadCachedTrending();
+    loadCachedNews();
   }, []);
 
-  // Save trending stocks to cache when they update
+  // Save news to cache when they update
   useEffect(() => {
-    if (trendingCacheLoaded && trending.length > 0 && trending.some(t => t.price > 0)) {
-      AsyncStorage.setItem(TRENDING_CACHE_KEY, JSON.stringify(trending)).catch(() => {});
+    if (newsCacheLoaded && news.length > 0) {
+      AsyncStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(news)).catch(() => {});
     }
-  }, [trending, trendingCacheLoaded]);
+  }, [news, newsCacheLoaded]);
 
   // Subscribe portfolio holdings to WebSocket
   // Normalize crypto symbols (BTCUSD -> BTC/USD) for Twelve Data format
@@ -638,14 +659,6 @@ export default function Dashboard() {
       wsSubscribe(normalizedSymbols);
     }
   }, [wsConnected, watchlist, wsSubscribe]);
-
-  // Subscribe trending stocks to WebSocket
-  useEffect(() => {
-    if (wsConnected && trending.length > 0) {
-      const trendingSymbols = trending.map(s => s.symbol);
-      wsSubscribe(trendingSymbols);
-    }
-  }, [wsConnected, trending.length, wsSubscribe]);
 
   // Subscribe stock picks to WebSocket
   useEffect(() => {
@@ -803,42 +816,6 @@ export default function Dashboard() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchlistData, priceUpdateTrigger]);
-
-  // Live trending stocks - updates every 3 seconds from price store
-  const liveTrending = useMemo(() => {
-    return trending.map(stock => {
-      const quote = priceStore.getQuote(stock.symbol);
-      if (quote && quote.price > 0) {
-        // Use previousClose to calculate accurate change if quote.changePercent is 0 or missing
-        const previousClose = quote.previousClose || stock.previousClose;
-        let newChange = quote.change ?? stock.change ?? 0;
-        let newChangePercent = quote.changePercent ?? stock.changePercent ?? 0;
-        
-        // Recalculate if change is 0 but we have previousClose
-        if ((newChangePercent === 0 || newChangePercent === undefined) && previousClose && previousClose > 0) {
-          newChange = quote.price - previousClose;
-          newChangePercent = (newChange / previousClose) * 100;
-        }
-        
-        // Update sparkline data with live price as the last point
-        let updatedData = stock.data || [];
-        if (updatedData.length > 0) {
-          updatedData = [...updatedData];
-          updatedData[updatedData.length - 1] = quote.price;
-        }
-        return {
-          ...stock,
-          price: quote.price,
-          change: newChange,
-          changePercent: newChangePercent,
-          color: (newChangePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
-          data: updatedData,
-        };
-      }
-      return stock;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trending, priceUpdateTrigger]);
 
   // Live portfolio data - updates from price store with WebSocket real-time prices
   // Uses same model as explore page - tries both symbol formats and picks most recent
@@ -1032,139 +1009,22 @@ export default function Dashboard() {
     setIndicesLoading(false);
   };
 
-  // Fetch trending stocks with live data - INSTANT from pre-loaded stock data
-  const fetchTrending = async () => {
-    // INSTANT: Try to use pre-loaded stock data from marketDataService
-    const localStocks = marketDataService.getLiveData('stock');
-
-    if (localStocks.length > 0) {
-      // Sort by absolute change percent to get most active/trending
-      const sortedStocks = [...localStocks]
-        .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
-        .slice(0, 6);
-
-      const trendingData = sortedStocks.map((stock, idx) => ({
-        symbol: stock.symbol,
-        name: stock.name || stock.symbol,
-        price: stock.price,
-        change: stock.change,
-        changePercent: stock.changePercent,
-        color: stock.changePercent >= 0 ? '#34C759' : '#FF3B30',
-        data: generatePlaceholderChart(stock.price, stock.changePercent, stock.symbol), // Instant placeholder
-        rank: idx + 1
-      }));
-
-      setTrending(trendingData);
-      setTrendingLoading(false);
-
-      // Fetch real chart data in background (don't await)
-      fetchTrendingCharts(sortedStocks.map(s => s.symbol));
-      return;
-    }
-
-    // Fallback: fetch from API if local data not ready
-    setTrendingLoading(true);
+  // Fetch market news from FMP API
+  const fetchNews = async () => {
+    setNewsLoading(true);
     try {
       const res = await fetch(
-        `${BASE_URL}/stock_market/actives?limit=6&apikey=${FMP_API_KEY}`
+        `${BASE_URL}/stock_news?limit=10&apikey=${FMP_API_KEY}`
       );
       const data = await res.json();
 
       if (data && Array.isArray(data)) {
-        // Update global price store with trending data including previousClose
-        priceStore.setQuotes(data.slice(0, 6).map((stock: any) => ({
-          symbol: stock.symbol,
-          price: stock.price || 0,
-          change: stock.change || 0,
-          changePercent: stock.changesPercentage || 0,
-          previousClose: stock.previousClose || stock.price || 0,
-          name: stock.name,
-        })));
-
-        const trendingData = await Promise.all(
-          data.slice(0, 6).map(async (stock: any, idx: number) => {
-            // Check global price store for chart-synced price
-            const storeQuote = priceStore.getQuote(stock.symbol);
-            const price = storeQuote?.price || stock.price || 0;
-
-            try {
-              // Use 1-minute intervals for more real-time data
-              const chartRes = await fetch(
-                `${BASE_URL}/historical-chart/1min/${stock.symbol}?apikey=${FMP_API_KEY}`
-              );
-              const chartData = await chartRes.json();
-
-              // Get the most recent 40 data points for a smoother chart
-              const chartValues = chartData && Array.isArray(chartData) && chartData.length > 0
-                ? cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close))
-                : [price, price * 0.995, price * 1.005, price];
-
-              return {
-                symbol: stock.symbol,
-                name: stock.name || stock.symbol,
-                price: price,
-                change: stock.change || 0,
-                changePercent: stock.changesPercentage || 0,
-                color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-                data: chartValues,
-                rank: idx + 1
-              };
-            } catch {
-              return {
-                symbol: stock.symbol,
-                name: stock.name || stock.symbol,
-                price: price,
-                change: stock.change || 0,
-                changePercent: stock.changesPercentage || 0,
-                color: (stock.changesPercentage || 0) >= 0 ? '#34C759' : '#FF3B30',
-                data: cleanChartData([price || 1, price || 1, price || 1, price || 1]),
-                rank: idx + 1
-              };
-            }
-          })
-        );
-
-        setTrending(trendingData);
+        setNews(data);
       }
     } catch {
+      // Ignore errors, keep cached data
     } finally {
-      setTrendingLoading(false);
-    }
-  };
-
-  // Fetch real chart data for trending (runs in background)
-  const fetchTrendingCharts = async (symbols: string[]) => {
-    try {
-      const chartsData = await Promise.all(
-        symbols.map(async (symbol) => {
-          try {
-            const chartRes = await fetch(
-              `${BASE_URL}/historical-chart/1min/${symbol}?apikey=${FMP_API_KEY}`
-            );
-            const chartData = await chartRes.json();
-
-            if (chartData && Array.isArray(chartData) && chartData.length > 0) {
-              return {
-                symbol,
-                data: cleanChartData(chartData.slice(0, 40).reverse().map((d: any) => d.close)),
-              };
-            }
-            return null;
-          } catch {
-            return null;
-          }
-        })
-      );
-
-      // Update trending with real chart data
-      setTrending(prev => prev.map(item => {
-        const chartInfo = chartsData.find(c => c?.symbol === item.symbol);
-        if (chartInfo) {
-          return { ...item, data: chartInfo.data };
-        }
-        return item;
-      }));
-    } catch {
+      setNewsLoading(false);
     }
   };
 
@@ -1811,7 +1671,7 @@ export default function Dashboard() {
     setRefreshing(true);
     await Promise.all([
       fetchMarketChips(),
-      fetchTrending(),
+      fetchNews(),
       fetchPortfolio(),
       fetchWatchlist(),
       fetchStockPicks()
@@ -1846,7 +1706,7 @@ export default function Dashboard() {
     // PHASE 1: Load most visible content IMMEDIATELY
     // Market chips and trending use cached data so they're instant
     fetchMarketChips();
-    fetchTrending();
+    fetchNews();
 
     // PHASE 2: Load secondary content after a brief delay (50ms)
     // This prevents UI from freezing by spreading out the work
@@ -2721,86 +2581,49 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Trending Section */}
-        <View style={styles.trendingSection}>
+        {/* News Section */}
+        <View style={styles.newsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Trending Now</Text>
+            <Text style={styles.sectionTitle}>Market News</Text>
           </View>
 
-          {trendingLoading ? (
-            <TrendingSkeletonList count={4} />
-          ) : (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false} 
-              contentContainerStyle={styles.trendingScroll}
-            >
-              {liveTrending.map((stock, i) => (
-                <TouchableOpacity 
-                  key={i} 
-                  style={styles.trendingCard}
+          {newsLoading ? (
+            <View style={styles.newsLoadingContainer}>
+              <ActivityIndicator size="small" color="#007AFF" />
+            </View>
+          ) : news.length > 0 ? (
+            <View style={styles.newsContainer}>
+              {news.slice(0, 5).map((item, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.newsCard}
                   onPress={() => {
-                    trackAction(); // Track stock view for app review
-                    router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`);
+                    trackAction();
+                    Linking.openURL(item.url);
                   }}
+                  activeOpacity={0.7}
                 >
-                  <View style={styles.trendingHeader}>
-                    <StockLogo 
-                      symbol={stock.symbol} 
-                      size={Platform.OS === 'android' ? 22 : 26} 
-                    />
-                    <Text style={styles.trendingSymbol} numberOfLines={1}>{stock.symbol}</Text>
-                    <Ionicons
-                      name={(stock.changePercent || 0) >= 0 ? 'trending-up' : 'trending-down'}
-                      size={Platform.OS === 'android' ? 14 : 16}
-                      color={stock.color}
-                    />
+                  <View style={styles.newsContent}>
+                    <View style={styles.newsHeader}>
+                      {item.symbol && (
+                        <View style={styles.newsSymbolBadge}>
+                          <Text style={styles.newsSymbolText}>{item.symbol}</Text>
+                        </View>
+                      )}
+                      <Text style={styles.newsSource}>{item.site}</Text>
+                      <Text style={styles.newsDot}>•</Text>
+                      <Text style={styles.newsTime}>{formatNewsDate(item.publishedDate)}</Text>
+                    </View>
+                    <Text style={styles.newsTitle} numberOfLines={2}>{item.title}</Text>
                   </View>
-                  <MarketTimeLabel isCrypto={false} style={{ marginBottom: 4 }} />
-                  
-                  <AnimatedPrice
-                    value={stock.price}
-                    style={styles.trendingPrice}
-                    flashOnChange={true}
-                    decimals={2}
-            
-                  />
-
-                  <GiftedLineChart
-                    data={interpolateSparkline(stock.data.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.98, (stock.price || 100) * 1.02, stock.price || 100], 18).map(value => ({ value }))}
-                    width={Platform.OS === 'android' ? 90 : chartWidth - 10}
-                    height={Platform.OS === 'android' ? 40 : 45}
-                    curved
-                    areaChart
-                    hideDataPoints
-                    hideRules
-                    hideYAxisText
-                    hideAxesAndRules
-                    disableScroll
-                    initialSpacing={0}
-                    endSpacing={0}
-                    spacing={(Platform.OS === 'android' ? 90 : chartWidth - 10) / 18}
-                    thickness={1.5}
-                    color={stock.color}
-                    startFillColor={stock.color}
-                    endFillColor={stock.color}
-                    startOpacity={0.15}
-                    endOpacity={0.02}
-                    yAxisOffset={0}
-                    maxValue={105}
-                    mostNegativeValue={-5}
-                    animateOnDataChange={false}
-                  />
-                  
-                  <AnimatedChange
-                    value={stock.changePercent}
-                    style={{ ...styles.trendingChange, color: stock.color }}
-                    showArrow={false}
-                    flashOnChange={true}
-                  />
+                  <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
+          ) : (
+            <View style={styles.newsEmptyContainer}>
+              <Text style={styles.newsEmptyText}>No news available</Text>
+            </View>
           )}
         </View>
 
@@ -4180,62 +4003,82 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Trending
-  trendingSection: {
+  // News
+  newsSection: {
     paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
     marginBottom: Platform.OS === 'android' ? 16 : 24,
   },
-  loadingContainer: {
-    height: Platform.OS === 'android' ? 160 : 200,
+  newsLoadingContainer: {
+    height: 100,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  trendingScroll: {
-    paddingRight: Platform.OS === 'android' ? 16 : 20,
+  newsContainer: {
+    gap: Platform.OS === 'android' ? 8 : 10,
   },
-  trendingCard: {
+  newsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.OS === 'android' ? 12 : 16,
-    padding: Platform.OS === 'android' ? 10 : 12,
-    marginRight: Platform.OS === 'android' ? 8 : 12,
-    width: Platform.OS === 'android' ? 110 : chartWidth + 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  trendingHeader: {
+    borderRadius: Platform.OS === 'android' ? 12 : 14,
+    padding: Platform.OS === 'android' ? 12 : 14,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Platform.OS === 'android' ? 4 : 6,
-    gap: Platform.OS === 'android' ? 4 : 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
-  trendingSymbol: {
+  newsContent: {
     flex: 1,
+    marginRight: 8,
+  },
+  newsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  newsSymbolBadge: {
+    backgroundColor: '#007AFF15',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginRight: 4,
+  },
+  newsSymbolText: {
+    fontSize: 11,
     fontWeight: '700',
-    fontSize: Platform.OS === 'android' ? 11 : 15,
+    color: '#007AFF',
+  },
+  newsSource: {
+    fontSize: 12,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  newsDot: {
+    fontSize: 12,
+    color: '#C7C7CC',
+    marginHorizontal: 4,
+  },
+  newsTime: {
+    fontSize: 12,
+    color: '#8E8E93',
+  },
+  newsTitle: {
+    fontSize: Platform.OS === 'android' ? 14 : 15,
+    fontWeight: '600',
     color: '#000',
-    includeFontPadding: false,
-    marginLeft: Platform.OS === 'android' ? 2 : 4,
+    lineHeight: Platform.OS === 'android' ? 20 : 21,
   },
-  trendingPrice: {
-    fontSize: Platform.OS === 'android' ? 13 : 18,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: Platform.OS === 'android' ? 4 : 8,
-    includeFontPadding: false,
+  newsEmptyContainer: {
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  miniChart: {
-    marginVertical: Platform.OS === 'android' ? 2 : 4,
-    marginHorizontal: Platform.OS === 'android' ? -10 : -12,
-  },
-  trendingChange: {
-    fontSize: Platform.OS === 'android' ? 10 : 13,
-    fontWeight: '700',
-    marginTop: Platform.OS === 'android' ? 2 : 4,
-    includeFontPadding: false,
+  newsEmptyText: {
+    fontSize: 14,
+    color: '#8E8E93',
   },
   
   // Modal
