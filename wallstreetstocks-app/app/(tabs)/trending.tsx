@@ -191,7 +191,6 @@ const HeaderCard = memo(({
       <View style={styles.headerCardTop}>
         <View style={styles.headerCardInfo}>
           <Text style={styles.headerCardSymbol}>{item.name}</Text>
-          <MarketTimeLabel isCrypto={false} style={{ marginTop: 2 }} />
           {item.value !== "..." ? (
             <AnimatedPrice
               value={priceValue}
@@ -900,10 +899,6 @@ export default function Trending() {
           />
           <View style={styles.info}>
             <Text style={styles.symbol}>{item.symbol}</Text>
-            <MarketTimeLabel
-              isCrypto={item.symbol?.includes('/') || (item.symbol?.endsWith('USD') && item.symbol?.length <= 10)}
-              style={{ marginTop: 2 }}
-            />
           </View>
         </View>
         <View style={styles.right}>

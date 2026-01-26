@@ -320,10 +320,6 @@ const HeaderCard = memo(({
       <View style={styles.headerCardTop}>
         <View style={styles.headerCardInfo}>
           <Text style={styles.headerCardSymbol}>{item.name}</Text>
-          <MarketTimeLabel
-            isCrypto={item.symbol?.includes('/') || (item.symbol?.endsWith('USD') && item.symbol?.length <= 10)}
-            style={{ marginTop: 2 }}
-          />
           {item.value !== "..." ? (
             <AnimatedPrice
               value={priceValue}
@@ -1748,7 +1744,6 @@ export default function Explore() {
           />
           <View style={styles.itemInfo}>
             <Text style={styles.itemSymbol}>{item.symbol}</Text>
-            <MarketTimeLabel isCrypto={item.symbol?.includes('/') || (item.symbol?.endsWith('USD') && item.symbol?.length <= 10)} style={{ marginTop: 2, marginBottom: 2 }} />
           </View>
         </View>
         <View style={styles.itemRight}>
