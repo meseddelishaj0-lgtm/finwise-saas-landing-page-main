@@ -66,8 +66,12 @@ export default function Referrals() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const APP_STORE_URL = 'https://apps.apple.com/us/app/wallstreetstocks/id6756940110';
+  const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=ai.wallstreetstocks.app';
+
   const handleCopyLink = async () => {
-    await Clipboard.setStringAsync(`https://apps.apple.com/us/app/wallstreetstocks/id6756940110?referral=${referralCode}`);
+    const storeUrl = Platform.OS === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
+    await Clipboard.setStringAsync(`${storeUrl}?referral=${referralCode}`);
     Alert.alert('Copied!', 'Referral link copied to clipboard');
   };
 
@@ -194,8 +198,8 @@ export default function Referrals() {
           <View style={styles.shareLinkContainer}>
             <Text style={styles.shareLinkLabel}>Or share your link:</Text>
             <TouchableOpacity onPress={handleCopyLink}>
-              <Text style={styles.shareLink}>
-                apps.apple.com/app/wallstreetstocks?referral={referralCode}
+              <Text style={styles.shareLink} numberOfLines={1}>
+                {Platform.OS === 'ios' ? 'apps.apple.com' : 'play.google.com'}/...?referral={referralCode}
               </Text>
             </TouchableOpacity>
           </View>
