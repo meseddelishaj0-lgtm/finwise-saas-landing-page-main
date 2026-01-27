@@ -38,7 +38,7 @@ const smartResponses: { keywords: string[]; response: string }[] = [
   },
   {
     keywords: ['subscription', 'premium', 'upgrade', 'plan', 'pricing'],
-    response: "Great question about our subscriptions! We offer three tiers:\n\n- Gold ($9.99/mo): Ad-free, extended screener\n- Platinum ($19.99/mo): AI insights, insider alerts\n- Diamond ($29.99/mo): Premium picks, 1-on-1 support\n\nAll plans include a 7-day free trial. Would you like help upgrading or have questions about a specific plan?",
+    response: "Great question about our subscriptions! We offer three tiers:\n\n- Gold ($4.99/mo): Ad-free, extended screener\n- Platinum ($6.99/mo): AI insights, insider alerts\n- Diamond ($9.99/mo): Premium picks, 1-on-1 support\n\nAll plans include a 7-day free trial. Would you like help upgrading or have questions about a specific plan?",
   },
   {
     keywords: ['cancel', 'unsubscribe', 'stop subscription'],

@@ -55,9 +55,9 @@ const TIER_NAMES: Record<string, string> = {
 };
 
 const TIER_PRICES: Record<string, string> = {
-  gold: '$9.99',
-  platinum: '$19.99',
-  diamond: '$29.99',
+  gold: '$4.99',
+  platinum: '$6.99',
+  diamond: '$9.99',
 };
 
 // Tier order for display

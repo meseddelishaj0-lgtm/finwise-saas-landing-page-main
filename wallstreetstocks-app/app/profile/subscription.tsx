@@ -270,11 +270,11 @@ export default function SubscriptionPage() {
     }
     switch (tierId) {
       case PRODUCT_IDS.GOLD:
-        return "$9.99";
+        return "$4.99";
       case PRODUCT_IDS.PLATINUM:
-        return "$19.99";
+        return "$6.99";
       case PRODUCT_IDS.DIAMOND:
-        return "$29.99";
+        return "$9.99";
       default:
         return "";
     }

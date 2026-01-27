@@ -68,7 +68,7 @@ export default function AboutPremium() {
   const plans = [
     {
       name: 'Gold',
-      price: '$9.99',
+      price: '$4.99',
       period: '/month',
       savings: null,
       color: '#FFD700',
@@ -82,7 +82,7 @@ export default function AboutPremium() {
     },
     {
       name: 'Platinum',
-      price: '$19.99',
+      price: '$6.99',
       period: '/month',
       savings: null,
       popular: true,
@@ -98,7 +98,7 @@ export default function AboutPremium() {
     },
     {
       name: 'Diamond',
-      price: '$29.99',
+      price: '$9.99',
       period: '/month',
       savings: 'Best Value',
       color: '#B9F2FF',
