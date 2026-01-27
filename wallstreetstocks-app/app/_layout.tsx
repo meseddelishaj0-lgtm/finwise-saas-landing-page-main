@@ -2,9 +2,19 @@
 import { useEffect, useRef } from "react";
 import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { View, StatusBar, Platform, AppState } from "react-native";
+import { View, StatusBar, Platform, AppState, LogBox } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Constants from "expo-constants";
+
+// OneSignal for push notifications
+let OneSignal: any = null;
+try {
+  OneSignal = require("react-native-onesignal").default;
+} catch {
+  // Module not available in Expo Go - will work in production builds
+}
+
 // ATT module - only available in production builds, not Expo Go
 let requestTrackingPermissionsAsync: (() => Promise<any>) | null = null;
 try {
@@ -37,6 +47,19 @@ import { initializeSentry } from "../utils/sentry";
 // Initialize Sentry for crash reporting
 initializeSentry();
 
+// Initialize OneSignal for push notifications
+const ONESIGNAL_APP_ID = Constants.expoConfig?.extra?.oneSignalAppId;
+if (OneSignal && ONESIGNAL_APP_ID && ONESIGNAL_APP_ID !== "YOUR_ONESIGNAL_APP_ID") {
+  // Remove this line in production - only for debugging
+  OneSignal.Debug.setLogLevel(6);
+
+  // Initialize OneSignal
+  OneSignal.initialize(ONESIGNAL_APP_ID);
+
+  // Request notification permission (shows iOS prompt)
+  OneSignal.Notifications.requestPermission(true);
+}
+
 // Default symbols to stream - 24/7 crypto for always-live prices + popular stocks
 // Crypto trades 24/7 ensuring live price updates for Apple review anytime
 const DEFAULT_STREAMING_SYMBOLS = [
@@ -51,10 +74,24 @@ const queryClient = new QueryClient();
 
 function AppInitializer({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { initialize, isInitialized } = useSubscription();
+  const { initialize, isInitialized, currentTier } = useSubscription();
   const { initializeReferral, initialized: referralInitialized } = useReferral();
   const appState = useRef(AppState.currentState);
   const trackingRequested = useRef(false);
+
+  // Update OneSignal user tags for segmentation (Gold/Platinum/Diamond targeting)
+  useEffect(() => {
+    if (OneSignal && user?.id) {
+      // Set external user ID for targeting specific users
+      OneSignal.login(user.id.toString());
+
+      // Set tags for segmentation
+      OneSignal.User.addTags({
+        subscription_tier: currentTier || 'free',
+        user_id: user.id.toString(),
+      });
+    }
+  }, [user?.id, currentTier]);
 
   // Request App Tracking Transparency permission on iOS (required for personalized ads)
   // Delay ensures app is fully loaded - iOS ignores ATT requests if called too early

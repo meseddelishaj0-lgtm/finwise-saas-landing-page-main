@@ -2,7 +2,7 @@
   "expo": {
     "name": "wallstreetstocksapp",
     "slug": "wallstreetstocks-app",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/wallstreetstocks.png",
     "scheme": "wallstreetstocksapp",
@@ -162,7 +162,13 @@
           "project": "wallstreetstocks-app"
         }
       ],
-      "expo-tracking-transparency"
+      "expo-tracking-transparency",
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "production"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -171,6 +177,7 @@
     "extra": {
       "apiUrl": "https://www.wallstreetstocks.ai/api",
       "expoClientId": "596401606956-k2basop69e3nib00a4de4hbv2mbkcrvp.apps.googleusercontent.com",
+      "oneSignalAppId": "f964a298-9c86-43a2-bb7f-a9f0cc8dac24",
       "router": {},
       "eas": {
         "projectId": "abc189cc-a5e1-470c-9536-2bf078c4fb73"
