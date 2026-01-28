@@ -18,6 +18,7 @@
       "infoPlist": {
         "NSAppleEventsUsageDescription": "This app uses Apple Sign-In for authentication.",
         "NSPhotoLibraryUsageDescription": "WallStreetStocks needs access to your photo library to let you upload images for community posts and customize your profile picture.",
+        "NSLocationWhenInUseUsageDescription": "WallStreetStocks may use your location to provide localized market data and news relevant to your region.",
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
           "remote-notification",
