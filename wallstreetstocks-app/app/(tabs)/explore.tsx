@@ -1773,6 +1773,8 @@ export default function Explore() {
 
   // Header Cards Section
   const renderHeaderCards = () => {
+    // Don't show header cards for IPO, M&A, Treasury, and Dividends tabs
+    if (['ipo', 'ma', 'treasury', 'dividends'].includes(activeTab)) return null;
     if (headerCards.length === 0 || searchQuery) return null;
 
     return (
