@@ -354,13 +354,18 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     };
   }, []);
 
-  // NOTE: Push notification registration is now handled by OneSignal in _layout.tsx
-  // This useEffect is disabled to prevent conflicts with OneSignal's permission request
-  // useEffect(() => {
-  //   if (user?.id && notificationsAvailable) {
-  //     registerForPushNotifications();
-  //   }
-  // }, [user?.id]);
+  // Register Expo push token after OneSignal has requested permission
+  // Delay ensures OneSignal's permission request (2s) completes first
+  useEffect(() => {
+    if (user?.id && notificationsAvailable) {
+      const timer = setTimeout(() => {
+        // OneSignal requests permission at 2s, we wait 5s to register Expo token
+        // This avoids permission request conflict - we just get the token
+        registerForPushNotifications();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id]);
 
   const value: NotificationContextType = {
     ...state,
