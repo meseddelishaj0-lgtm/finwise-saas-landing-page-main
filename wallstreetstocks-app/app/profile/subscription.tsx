@@ -49,11 +49,16 @@ const _screenWidth = Dimensions.get("window").width;
 
 // Product IDs matching your RevenueCat setup
 const PRODUCT_IDS = {
-  GOLD: "wallstreetstocks.gold.monthly",
-  PLATINUM: "wallstreetstocks.platinum.monthly",
-  DIAMOND: "wallstreetstocks.diamond.monthly",
+  GOLD_MONTHLY: "wallstreetstocks.gold.monthly",
+  GOLD_YEARLY: "wallstreetstocks.gold.yearly",
+  PLATINUM_MONTHLY: "wallstreetstocks.platinum.monthly",
+  PLATINUM_YEARLY: "wallstreetstocks.platinum.yearly",
+  DIAMOND_MONTHLY: "wallstreetstocks.diamond.monthly",
+  DIAMOND_YEARLY: "wallstreetstocks.diamond.yearly",
   LIFETIME: "wallstreetstocks_lifetime",
 };
+
+type BillingPeriod = 'monthly' | 'yearly';
 
 // Entitlement IDs - must match RevenueCat
 const ENTITLEMENT_IDS = {
@@ -73,12 +78,15 @@ const getActiveEntitlement = (activeEntitlements: Record<string, any>): string |
 // Tier configuration
 const TIERS = {
   gold: {
-    id: PRODUCT_IDS.GOLD,
+    monthlyId: PRODUCT_IDS.GOLD_MONTHLY,
+    yearlyId: PRODUCT_IDS.GOLD_YEARLY,
     name: "Gold",
     icon: Award,
     color: "#FFD700",
     bgColor: "#FFFBEB",
     borderColor: "#FFD700",
+    monthlyPrice: "$4.99",
+    yearlyPrice: "$49.99",
     features: [
       { icon: TrendingUp, text: "5 Expert Stock Picks" },
       { icon: Shield, text: "Ad-free experience" },
@@ -88,13 +96,16 @@ const TIERS = {
     ],
   },
   platinum: {
-    id: PRODUCT_IDS.PLATINUM,
+    monthlyId: PRODUCT_IDS.PLATINUM_MONTHLY,
+    yearlyId: PRODUCT_IDS.PLATINUM_YEARLY,
     name: "Platinum",
     icon: Crown,
     color: "#7C3AED",
     bgColor: "#F5F3FF",
     borderColor: "#7C3AED",
     popular: true,
+    monthlyPrice: "$6.99",
+    yearlyPrice: "$69.99",
     features: [
       { icon: Check, text: "Everything in Gold" },
       { icon: TrendingUp, text: "8 Expert Stock Picks" },
@@ -105,12 +116,15 @@ const TIERS = {
     ],
   },
   diamond: {
-    id: PRODUCT_IDS.DIAMOND,
+    monthlyId: PRODUCT_IDS.DIAMOND_MONTHLY,
+    yearlyId: PRODUCT_IDS.DIAMOND_YEARLY,
     name: "Diamond",
     icon: Gem,
     color: "#06B6D4",
     bgColor: "#ECFEFF",
     borderColor: "#06B6D4",
+    monthlyPrice: "$9.99",
+    yearlyPrice: "$99.99",
     features: [
       { icon: Check, text: "Everything in Platinum" },
       { icon: TrendingUp, text: "15 Expert Stock Picks" },
@@ -121,13 +135,16 @@ const TIERS = {
     ],
   },
   lifetime: {
-    id: PRODUCT_IDS.LIFETIME,
+    monthlyId: PRODUCT_IDS.LIFETIME,
+    yearlyId: PRODUCT_IDS.LIFETIME,
     name: "Lifetime",
     icon: Shield,
     color: "#9B59B6",
     bgColor: "#F5F0FF",
     borderColor: "#9B59B6",
     isLifetime: true,
+    monthlyPrice: "$199.99",
+    yearlyPrice: "$199.99",
     features: [
       { icon: Check, text: "All Diamond Features Forever" },
       { icon: Shield, text: "One-time payment" },
@@ -160,6 +177,7 @@ export default function SubscriptionPage() {
   const [restoring, setRestoring] = useState(false);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selectedTier, setSelectedTier] = useState<TierKey>("platinum");
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
   const [_customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [activeSubscription, setActiveSubscription] = useState<string | null>(null);
   const [subscriptionDetails, setSubscriptionDetails] = useState<SubscriptionDetails | null>(null);
@@ -274,40 +292,42 @@ export default function SubscriptionPage() {
     }
   };
 
-  const getPackageForTier = (tierId: string): PurchasesPackage | undefined => {
-    const tierName = tierId.replace("_monthly", "").toLowerCase();
+  // Get product ID for tier based on billing period
+  const getProductIdForTier = (tierKey: TierKey): string => {
+    const tier = TIERS[tierKey];
+    if ("isLifetime" in tier && tier.isLifetime) {
+      return tier.monthlyId;
+    }
+    return billingPeriod === 'yearly' ? tier.yearlyId : tier.monthlyId;
+  };
+
+  const getPackageForTier = (tierKey: TierKey): PurchasesPackage | undefined => {
+    const productId = getProductIdForTier(tierKey);
     return packages.find((pkg) => {
-      const productId = pkg.product.identifier.toLowerCase();
-      return productId.includes(tierName);
+      return pkg.product.identifier.toLowerCase() === productId.toLowerCase();
     });
   };
 
-  const getPrice = (tierId: string): string => {
-    const pkg = getPackageForTier(tierId);
+  const getPrice = (tierKey: TierKey): string => {
+    const pkg = getPackageForTier(tierKey);
     if (pkg) {
       return pkg.product.priceString;
     }
-    switch (tierId) {
-      case PRODUCT_IDS.GOLD:
-        return "$4.99";
-      case PRODUCT_IDS.PLATINUM:
-        return "$6.99";
-      case PRODUCT_IDS.DIAMOND:
-        return "$9.99";
-      case PRODUCT_IDS.LIFETIME:
-        return "$199.99";
-      default:
-        return "";
+    const tier = TIERS[tierKey];
+    if ("isLifetime" in tier && tier.isLifetime) {
+      return tier.monthlyPrice;
     }
+    return billingPeriod === 'yearly' ? tier.yearlyPrice : tier.monthlyPrice;
   };
 
-  const isLifetimeTier = (tierId: string): boolean => {
-    return tierId.toLowerCase().includes('lifetime');
+  const isLifetimeTier = (tierKey: TierKey): boolean => {
+    const tier = TIERS[tierKey];
+    return "isLifetime" in tier && tier.isLifetime === true;
   };
 
   const handlePurchase = async () => {
     const tier = TIERS[selectedTier];
-    const pkg = getPackageForTier(tier.id);
+    const pkg = getPackageForTier(selectedTier);
 
     if (!pkg) {
       Alert.alert(
@@ -362,7 +382,7 @@ export default function SubscriptionPage() {
 
   const handleUpgrade = async () => {
     const tier = TIERS[selectedTier];
-    const pkg = getPackageForTier(tier.id);
+    const pkg = getPackageForTier(selectedTier);
 
     if (!pkg) {
       Alert.alert("Error", "Unable to find subscription package.");
@@ -370,7 +390,7 @@ export default function SubscriptionPage() {
     }
 
     const currentLevel = getCurrentTierLevel();
-    const targetLevel = getTierLevel(tier.id);
+    const targetLevel = getTierLevelByKey(selectedTier);
 
     if (targetLevel <= currentLevel) {
       // Downgrade - need to go to subscription management
@@ -389,9 +409,10 @@ export default function SubscriptionPage() {
     }
 
     // Upgrade
+    const periodText = isLifetimeTier(selectedTier) ? '' : billingPeriod === 'yearly' ? '/year' : '/month';
     Alert.alert(
       "Upgrade Plan",
-      `Upgrade to ${tier.name} for ${getPrice(tier.id)}/month? You'll be charged the prorated difference for the remaining billing period.`,
+      `Upgrade to ${tier.name} for ${getPrice(selectedTier)}${periodText}? You'll be charged the prorated difference for the remaining billing period.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -508,18 +529,21 @@ export default function SubscriptionPage() {
     }
   };
 
-  const isSubscribed = (tierId: string): boolean => {
-    // Get the tier name we're checking for
-    const checkTierName = tierId.replace("wallstreetstocks.", "").replace(".monthly", "").toLowerCase();
-
+  const isSubscribedToTier = (tierKey: TierKey): boolean => {
     // First check subscriptionDetails.tierName (from entitlement - most reliable)
     if (subscriptionDetails?.tierName) {
-      return subscriptionDetails.tierName.toLowerCase() === checkTierName;
+      const currentTier = subscriptionDetails.tierName.toLowerCase();
+      // Lifetime users have access to all tiers
+      if (currentTier === 'lifetime' && tierKey !== 'lifetime') return false;
+      return currentTier === tierKey;
     }
 
     // Fallback to activeSubscription (product ID)
     if (!activeSubscription) return false;
-    return activeSubscription.toLowerCase().includes(checkTierName);
+    const sub = activeSubscription.toLowerCase();
+    // Lifetime check
+    if (sub.includes('lifetime') && tierKey !== 'lifetime') return false;
+    return sub.includes(tierKey);
   };
 
   const getCurrentTierLevel = (): number => {
@@ -542,11 +566,22 @@ export default function SubscriptionPage() {
   };
 
   const getTierLevel = (tierId: string): number => {
-    if (tierId === PRODUCT_IDS.LIFETIME) return 4; // Lifetime is highest tier
-    if (tierId === PRODUCT_IDS.DIAMOND) return 3;
-    if (tierId === PRODUCT_IDS.PLATINUM) return 2;
-    if (tierId === PRODUCT_IDS.GOLD) return 1;
+    const id = tierId.toLowerCase();
+    if (id.includes('lifetime')) return 4;
+    if (id.includes('diamond')) return 3;
+    if (id.includes('platinum')) return 2;
+    if (id.includes('gold')) return 1;
     return 0;
+  };
+
+  const getTierLevelByKey = (tierKey: TierKey): number => {
+    switch (tierKey) {
+      case 'lifetime': return 4;
+      case 'diamond': return 3;
+      case 'platinum': return 2;
+      case 'gold': return 1;
+      default: return 0;
+    }
   };
 
   const getCurrentTierKey = (): TierKey | null => {
@@ -725,12 +760,13 @@ export default function SubscriptionPage() {
     const tier = TIERS[tierKey];
     const Icon = tier.icon;
     const isSelected = selectedTier === tierKey;
-    const isCurrentPlan = isSubscribed(tier.id);
+    const isCurrentPlan = isSubscribedToTier(tierKey);
     const currentLevel = getCurrentTierLevel();
-    const tierLevel = getTierLevel(tier.id);
+    const tierLevel = getTierLevelByKey(tierKey);
     const isUpgrade = activeSubscription && tierLevel > currentLevel;
     const isDowngrade = activeSubscription && tierLevel < currentLevel;
     const isLifetime = "isLifetime" in tier && tier.isLifetime;
+    const showYearlySavings = billingPeriod === 'yearly' && !isLifetime && tierKey === 'platinum';
 
     return (
       <TouchableOpacity
@@ -777,8 +813,10 @@ export default function SubscriptionPage() {
           <View style={styles.tierInfo}>
             <Text style={styles.tierName}>{tier.name}</Text>
             <View style={styles.priceContainer}>
-              <Text style={styles.price}>{getPrice(tier.id)}</Text>
-              <Text style={styles.period}>{isLifetime ? " one-time" : "/month"}</Text>
+              <Text style={styles.price}>{getPrice(tierKey)}</Text>
+              <Text style={styles.period}>
+                {isLifetime ? " one-time" : billingPeriod === 'yearly' ? "/year" : "/month"}
+              </Text>
             </View>
           </View>
           {isSelected && !isCurrentPlan && (
@@ -885,6 +923,37 @@ export default function SubscriptionPage() {
           </View>
         )}
 
+        {/* Billing Period Toggle */}
+        <View style={styles.billingToggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.billingToggleButton,
+              billingPeriod === 'monthly' && styles.billingToggleButtonActive,
+            ]}
+            onPress={() => setBillingPeriod('monthly')}
+          >
+            <Text style={[
+              styles.billingToggleText,
+              billingPeriod === 'monthly' && styles.billingToggleTextActive,
+            ]}>Monthly</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.billingToggleButton,
+              billingPeriod === 'yearly' && styles.billingToggleButtonActive,
+            ]}
+            onPress={() => setBillingPeriod('yearly')}
+          >
+            <Text style={[
+              styles.billingToggleText,
+              billingPeriod === 'yearly' && styles.billingToggleTextActive,
+            ]}>Yearly</Text>
+            <View style={styles.saveBadge}>
+              <Text style={styles.saveBadgeText}>Save 17%</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Tier Cards */}
         <View style={styles.tiersContainer}>
           {renderTierCard("gold")}
@@ -894,12 +963,13 @@ export default function SubscriptionPage() {
         </View>
 
         {/* Action Button */}
-        {!isSubscribed(TIERS[selectedTier].id) && (
+        {!isSubscribedToTier(selectedTier) && (
           <TouchableOpacity
             style={[
               styles.subscribeButton,
               { backgroundColor: TIERS[selectedTier].color },
               purchasing && styles.buttonDisabled,
+              billingPeriod === 'yearly' && !isLifetimeTier(selectedTier) && styles.yearlyButton,
             ]}
             onPress={activeSubscription ? handleUpgrade : handlePurchase}
             activeOpacity={0.8}
@@ -910,16 +980,16 @@ export default function SubscriptionPage() {
             ) : (
               <>
                 <Text style={styles.subscribeButtonText}>
-                  {isLifetimeTier(TIERS[selectedTier].id)
+                  {isLifetimeTier(selectedTier)
                     ? "Get Lifetime Access"
                     : activeSubscription
-                      ? getTierLevel(TIERS[selectedTier].id) > getCurrentTierLevel()
+                      ? getTierLevelByKey(selectedTier) > getCurrentTierLevel()
                         ? `Upgrade to ${TIERS[selectedTier].name}`
                         : `Change to ${TIERS[selectedTier].name}`
                       : `Subscribe to ${TIERS[selectedTier].name}`}
                 </Text>
                 <Text style={styles.subscribePrice}>
-                  {getPrice(TIERS[selectedTier].id)}{isLifetimeTier(TIERS[selectedTier].id) ? " one-time" : "/month"}
+                  {getPrice(selectedTier)}{isLifetimeTier(selectedTier) ? " one-time" : billingPeriod === 'yearly' ? "/year" : "/month"}
                 </Text>
               </>
             )}
@@ -1222,6 +1292,53 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   // Tiers
+  billingToggleContainer: {
+    flexDirection: "row",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  billingToggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 6,
+  },
+  billingToggleButtonActive: {
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  billingToggleText: {
+    color: "#6B7280",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  billingToggleTextActive: {
+    color: "#000000",
+  },
+  saveBadge: {
+    backgroundColor: "#34C759",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  saveBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  yearlyButton: {
+    backgroundColor: "#34C759",
+  },
   tiersContainer: {
     gap: 16,
     marginBottom: 24,

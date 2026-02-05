@@ -63,8 +63,11 @@ export const getActiveEntitlement = (activeEntitlements: Record<string, any>): s
 // Product IDs - Match your App Store Connect products
 export const PRODUCT_IDS = {
   GOLD_MONTHLY: 'wallstreetstocks.gold.monthly',
+  GOLD_YEARLY: 'wallstreetstocks.gold.yearly',
   PLATINUM_MONTHLY: 'wallstreetstocks.platinum.monthly',
+  PLATINUM_YEARLY: 'wallstreetstocks.platinum.yearly',
   DIAMOND_MONTHLY: 'wallstreetstocks.diamond.monthly',
+  DIAMOND_YEARLY: 'wallstreetstocks.diamond.yearly',
   LIFETIME: 'wallstreetstocks_lifetime',
 } as const;
 

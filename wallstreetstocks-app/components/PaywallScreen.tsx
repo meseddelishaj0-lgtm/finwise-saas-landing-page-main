@@ -64,12 +64,23 @@ const TIER_NAMES: Record<string, string> = {
   lifetime: 'Lifetime',
 };
 
-const TIER_PRICES: Record<string, string> = {
+const TIER_PRICES_MONTHLY: Record<string, string> = {
   gold: '$4.99',
   platinum: '$6.99',
   diamond: '$9.99',
+};
+
+const TIER_PRICES_YEARLY: Record<string, string> = {
+  gold: '$49.99',
+  platinum: '$69.99',
+  diamond: '$99.99',
+};
+
+const TIER_PRICES_LIFETIME: Record<string, string> = {
   lifetime: '$199.99',
 };
+
+type BillingPeriod = 'monthly' | 'yearly';
 
 // Tier order for display
 const TIER_ORDER = ['gold', 'platinum', 'diamond', 'lifetime'] as const;
@@ -81,15 +92,26 @@ interface TierCardProps {
   isSelected: boolean;
   onSelect: () => void;
   pkg?: PurchasesPackage;
+  billingPeriod: BillingPeriod;
 }
 
-function TierCard({ tierKey, isSelected, onSelect, pkg }: TierCardProps) {
+function TierCard({ tierKey, isSelected, onSelect, pkg, billingPeriod }: TierCardProps) {
   const tierColor = TIER_COLORS[tierKey];
   const tierName = TIER_NAMES[tierKey];
-  const tierPrice = pkg?.product.priceString || TIER_PRICES[tierKey];
-  const features = TIER_FEATURES[tierKey];
-  const isPopular = tierKey === 'platinum';
   const isLifetime = tierKey === 'lifetime';
+
+  // Determine price based on billing period
+  const getDefaultPrice = () => {
+    if (isLifetime) return TIER_PRICES_LIFETIME.lifetime;
+    return billingPeriod === 'yearly'
+      ? TIER_PRICES_YEARLY[tierKey]
+      : TIER_PRICES_MONTHLY[tierKey];
+  };
+
+  const tierPrice = pkg?.product.priceString || getDefaultPrice();
+  const features = TIER_FEATURES[tierKey];
+  const isPopular = tierKey === 'platinum' && billingPeriod === 'monthly';
+  const isBestValue = tierKey === 'platinum' && billingPeriod === 'yearly';
 
   return (
     <TouchableOpacity
@@ -107,6 +129,11 @@ function TierCard({ tierKey, isSelected, onSelect, pkg }: TierCardProps) {
           <Text style={styles.popularText}>MOST POPULAR</Text>
         </View>
       )}
+      {isBestValue && (
+        <View style={[styles.popularBadge, { backgroundColor: '#34C759' }]}>
+          <Text style={styles.popularText}>SAVE 17%</Text>
+        </View>
+      )}
       {isLifetime && (
         <View style={[styles.popularBadge, { backgroundColor: tierColor }]}>
           <Text style={styles.popularText}>BEST VALUE</Text>
@@ -120,7 +147,9 @@ function TierCard({ tierKey, isSelected, onSelect, pkg }: TierCardProps) {
 
         <View style={styles.priceContainer}>
           <Text style={styles.price}>{tierPrice}</Text>
-          <Text style={styles.period}>{isLifetime ? ' one-time' : '/month'}</Text>
+          <Text style={styles.period}>
+            {isLifetime ? ' one-time' : billingPeriod === 'yearly' ? '/year' : '/month'}
+          </Text>
         </View>
       </View>
 
@@ -156,17 +185,26 @@ export default function PaywallScreen() {
   } = useSubscription();
 
   const [selectedTier, setSelectedTier] = useState<TierKey>('platinum');
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const [isPurchasing, setIsPurchasing] = useState(false);
 
   useEffect(() => {
     loadOfferings();
   }, []);
 
-  // Helper to find package for a tier
-  const getPackageForTier = (tierKey: TierKey): PurchasesPackage | undefined => {
-    return packages.find((pkg) =>
-      pkg.product.identifier.toLowerCase().includes(tierKey)
-    );
+  // Helper to find package for a tier with billing period
+  const getPackageForTier = (tierKey: TierKey, period: BillingPeriod = billingPeriod): PurchasesPackage | undefined => {
+    if (tierKey === 'lifetime') {
+      return packages.find((pkg) =>
+        pkg.product.identifier.toLowerCase().includes('lifetime')
+      );
+    }
+
+    // For monthly/yearly subscriptions, match both tier name and period
+    return packages.find((pkg) => {
+      const id = pkg.product.identifier.toLowerCase();
+      return id.includes(tierKey) && id.includes(period);
+    });
   };
 
   // Get the selected package (if available)
@@ -174,6 +212,17 @@ export default function PaywallScreen() {
 
   // Check if selected tier has a purchasable package
   const canPurchaseSelectedTier = !!selectedPackage;
+
+  // Get price string for display
+  const getDisplayPrice = () => {
+    if (selectedTier === 'lifetime') {
+      return selectedPackage?.product.priceString || TIER_PRICES_LIFETIME.lifetime;
+    }
+    if (billingPeriod === 'yearly') {
+      return selectedPackage?.product.priceString || TIER_PRICES_YEARLY[selectedTier];
+    }
+    return selectedPackage?.product.priceString || TIER_PRICES_MONTHLY[selectedTier];
+  };
 
   const handlePurchase = async () => {
     if (!canPurchaseSelectedTier || !selectedPackage) {
@@ -326,17 +375,58 @@ export default function PaywallScreen() {
               </Text>
             </View>
 
+            {/* Billing Period Toggle */}
+            <View style={styles.billingToggleContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.billingToggleButton,
+                  billingPeriod === 'monthly' && styles.billingToggleButtonActive,
+                ]}
+                onPress={() => setBillingPeriod('monthly')}
+              >
+                <Text style={[
+                  styles.billingToggleText,
+                  billingPeriod === 'monthly' && styles.billingToggleTextActive,
+                ]}>Monthly</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.billingToggleButton,
+                  billingPeriod === 'yearly' && styles.billingToggleButtonActive,
+                ]}
+                onPress={() => setBillingPeriod('yearly')}
+              >
+                <Text style={[
+                  styles.billingToggleText,
+                  billingPeriod === 'yearly' && styles.billingToggleTextActive,
+                ]}>Yearly</Text>
+                <View style={styles.saveBadge}>
+                  <Text style={styles.saveBadgeText}>Save 17%</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.cardsContainer}>
-              {/* Always show all 3 tiers */}
-              {TIER_ORDER.map((tierKey) => (
+              {/* Show tiers based on billing period (exclude lifetime from regular tiers) */}
+              {(['gold', 'platinum', 'diamond'] as TierKey[]).map((tierKey) => (
                 <TierCard
                   key={tierKey}
                   tierKey={tierKey}
                   isSelected={selectedTier === tierKey}
                   onSelect={() => setSelectedTier(tierKey)}
                   pkg={getPackageForTier(tierKey)}
+                  billingPeriod={billingPeriod}
                 />
               ))}
+              {/* Always show lifetime as a separate option */}
+              <TierCard
+                key="lifetime"
+                tierKey="lifetime"
+                isSelected={selectedTier === 'lifetime'}
+                onSelect={() => setSelectedTier('lifetime')}
+                pkg={getPackageForTier('lifetime')}
+                billingPeriod={billingPeriod}
+              />
             </View>
 
             {error && (
@@ -374,6 +464,7 @@ export default function PaywallScreen() {
                 styles.purchaseButton,
                 isPurchasing && styles.purchaseButtonDisabled,
                 selectedTier === 'lifetime' && styles.lifetimePurchaseButton,
+                billingPeriod === 'yearly' && selectedTier !== 'lifetime' && styles.yearlyPurchaseButton,
               ]}
               onPress={handlePurchase}
               disabled={isPurchasing}
@@ -383,8 +474,10 @@ export default function PaywallScreen() {
               ) : (
                 <Text style={styles.purchaseButtonText}>
                   {selectedTier === 'lifetime'
-                    ? `Get Lifetime Access - ${selectedPackage?.product.priceString || TIER_PRICES[selectedTier]}`
-                    : `Subscribe to ${TIER_NAMES[selectedTier]} - ${selectedPackage?.product.priceString || TIER_PRICES[selectedTier]}/mo`
+                    ? `Get Lifetime Access - ${getDisplayPrice()}`
+                    : billingPeriod === 'yearly'
+                      ? `Subscribe to ${TIER_NAMES[selectedTier]} - ${getDisplayPrice()}/yr`
+                      : `Subscribe to ${TIER_NAMES[selectedTier]} - ${getDisplayPrice()}/mo`
                   }
                 </Text>
               )}
@@ -462,6 +555,45 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
   },
+  billingToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+  },
+  billingToggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  billingToggleButtonActive: {
+    backgroundColor: '#333',
+  },
+  billingToggleText: {
+    color: '#888',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  billingToggleTextActive: {
+    color: '#fff',
+  },
+  saveBadge: {
+    backgroundColor: '#34C759',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  saveBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
   cardsContainer: {
     gap: 16,
   },
@@ -498,6 +630,9 @@ const styles = StyleSheet.create({
   },
   lifetimePurchaseButton: {
     backgroundColor: '#9B59B6',
+  },
+  yearlyPurchaseButton: {
+    backgroundColor: '#34C759',
   },
   popularBadge: {
     position: 'absolute',
