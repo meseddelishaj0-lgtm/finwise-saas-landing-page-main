@@ -1,5 +1,7 @@
 // context/NotificationContext.tsx
-// Push notification setup and management using Expo Notifications
+// Push notification handling and display using Expo Notifications
+// NOTE: Permission requests and token registration are handled by OneSignal in _layout.tsx
+// This context only handles notification display and deep link routing
 import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { Platform, AppState, AppStateStatus } from 'react-native';
 import Constants from 'expo-constants';
@@ -71,7 +73,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   const responseListener = useRef<{ remove: () => void } | null>(null);
   const appState = useRef(AppState.currentState);
 
-  // Request notification permissions
+  // Check notification permissions (permission request handled by OneSignal)
   const requestPermissions = async (): Promise<boolean> => {
     if (!notificationsAvailable || !Notifications || !Device) {
       return false;
@@ -82,19 +84,10 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         return false;
       }
 
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
-      const granted = finalStatus === 'granted';
+      // Only check permission status - don't request (OneSignal handles that)
+      const { status } = await Notifications.getPermissionsAsync();
+      const granted = status === 'granted';
       setState(prev => ({ ...prev, isPermissionGranted: granted }));
-
-      if (!granted) {
-      }
 
       return granted;
     } catch (error) {
@@ -170,18 +163,20 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     }
   };
 
-  // Full registration flow
+  // Full registration flow (permission request handled by OneSignal)
   const registerForPushNotifications = async (): Promise<string | null> => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
+      // Just check permission status - OneSignal handles the actual request
       const hasPermission = await requestPermissions();
 
       if (!hasPermission) {
+        // Permission not granted yet - OneSignal will request it
         setState(prev => ({
           ...prev,
           isLoading: false,
-          error: 'Notification permission not granted'
+          error: null // Not an error - OneSignal handles permission
         }));
         return null;
       }
@@ -359,12 +354,13 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     };
   }, []);
 
-  // Register for push notifications when user logs in
-  useEffect(() => {
-    if (user?.id && notificationsAvailable) {
-      registerForPushNotifications();
-    }
-  }, [user?.id]);
+  // NOTE: Push notification registration is now handled by OneSignal in _layout.tsx
+  // This useEffect is disabled to prevent conflicts with OneSignal's permission request
+  // useEffect(() => {
+  //   if (user?.id && notificationsAvailable) {
+  //     registerForPushNotifications();
+  //   }
+  // }, [user?.id]);
 
   const value: NotificationContextType = {
     ...state,
