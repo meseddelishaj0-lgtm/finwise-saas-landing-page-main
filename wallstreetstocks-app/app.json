@@ -92,10 +92,12 @@
       },
       "entitlements": {
         "com.apple.developer.applesignin": [
-          "Default",
           "Default"
         ],
-        "aps-environment": "production"
+        "aps-environment": "production",
+        "com.apple.security.application-groups": [
+          "group.ai.wallstreetstocks.ios.onesignal"
+        ]
       }
     },
     "android": {
