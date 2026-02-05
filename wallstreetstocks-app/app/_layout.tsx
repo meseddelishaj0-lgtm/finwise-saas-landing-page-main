@@ -56,8 +56,7 @@ if (OneSignal && ONESIGNAL_APP_ID && ONESIGNAL_APP_ID !== "YOUR_ONESIGNAL_APP_ID
   // Initialize OneSignal
   OneSignal.initialize(ONESIGNAL_APP_ID);
 
-  // Request notification permission (shows iOS prompt)
-  OneSignal.Notifications.requestPermission(true);
+  // Note: Permission request moved to AppInitializer useEffect for proper timing
 }
 
 // Default symbols to stream - 24/7 crypto for always-live prices + popular stocks
@@ -78,6 +77,21 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   const { initializeReferral, initialized: referralInitialized } = useReferral();
   const appState = useRef(AppState.currentState);
   const trackingRequested = useRef(false);
+
+  // Request OneSignal push notification permission after app is ready
+  const notificationPermissionRequested = useRef(false);
+  useEffect(() => {
+    const requestNotificationPermission = async () => {
+      if (OneSignal && !notificationPermissionRequested.current) {
+        notificationPermissionRequested.current = true;
+        // Delay to ensure app is fully ready - iOS may ignore early requests
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Request notification permission (shows iOS prompt)
+        OneSignal.Notifications.requestPermission(true);
+      }
+    };
+    requestNotificationPermission();
+  }, []);
 
   // Update OneSignal user tags for segmentation (Gold/Platinum/Diamond targeting)
   useEffect(() => {
