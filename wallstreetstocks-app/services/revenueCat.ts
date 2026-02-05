@@ -65,6 +65,7 @@ export const PRODUCT_IDS = {
   GOLD_MONTHLY: 'wallstreetstocks.gold.monthly',
   PLATINUM_MONTHLY: 'wallstreetstocks.platinum.monthly',
   DIAMOND_MONTHLY: 'wallstreetstocks.diamond.monthly',
+  LIFETIME: 'wallstreetstocks_lifetime',
 } as const;
 
 // Subscription tier levels (for comparison)
@@ -255,7 +256,7 @@ export async function restorePurchases(): Promise<{
 
 /**
  * Get subscription tier level for a product or entitlement ID
- * Returns: 0 = free, 1 = gold, 2 = platinum, 3 = diamond
+ * Returns: 0 = free, 1 = gold, 2 = platinum, 3 = diamond/lifetime
  */
 export function getSubscriptionTier(productIdOrEntitlementId: string): number {
   // First check exact match for product IDs
@@ -265,6 +266,10 @@ export function getSubscriptionTier(productIdOrEntitlementId: string): number {
   // Fall back to pattern matching for various product ID and entitlement ID formats
   const lowerId = productIdOrEntitlementId.toLowerCase();
 
+  // Check for lifetime (tier 3 - same as diamond)
+  if (lowerId.includes('lifetime')) {
+    return 3;
+  }
   // Check for diamond (tier 3)
   if (lowerId.includes('diamond') || lowerId === '$rc_annual' || lowerId === 'diamond_access') {
     return 3;
@@ -340,12 +345,21 @@ function getTierNameFromEntitlementOrProduct(entitlementId: string | null, produ
   // Fallback to product ID
   if (productId) {
     const productLower = productId.toLowerCase();
+    if (productLower.includes('lifetime')) return 'Lifetime';
     if (productLower.includes('diamond') || productId === '$rc_annual') return 'Diamond';
     if (productLower.includes('platinum') || productId === '$rc_six_month') return 'Platinum';
     if (productLower.includes('gold') || productId === '$rc_monthly') return 'Gold';
   }
 
   return 'Premium';
+}
+
+/**
+ * Check if a product is a lifetime purchase
+ */
+export function isLifetimePurchase(productId: string | null): boolean {
+  if (!productId) return false;
+  return productId.toLowerCase().includes('lifetime');
 }
 
 /**
@@ -359,6 +373,7 @@ export async function getSubscriptionDetails(): Promise<{
   willRenew: boolean;
   isCanceled: boolean;
   managementUrl: string | null;
+  isLifetime: boolean;
 }> {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
@@ -367,12 +382,14 @@ export async function getSubscriptionDetails(): Promise<{
 
     if (entitlement) {
       const productId = entitlement.productIdentifier;
+      // Check if this is a lifetime purchase
+      const isLifetime = isLifetimePurchase(productId);
       // Use entitlement ID as primary source for tier detection
       const tierName = getTierNameFromEntitlementOrProduct(activeEntitlementId, productId);
 
 
-      // Check if subscription will renew
-      const willRenew = !entitlement.willRenew ? false : entitlement.willRenew;
+      // Check if subscription will renew (lifetime never renews but is always active)
+      const willRenew = isLifetime ? false : (!entitlement.willRenew ? false : entitlement.willRenew);
 
       // Get management URL from RevenueCat
       const managementUrl = customerInfo.managementURL || null;
@@ -381,10 +398,11 @@ export async function getSubscriptionDetails(): Promise<{
         isActive: true,
         productId,
         tierName,
-        expirationDate: entitlement.expirationDate,
+        expirationDate: isLifetime ? null : entitlement.expirationDate,
         willRenew,
-        isCanceled: !willRenew,
+        isCanceled: isLifetime ? false : !willRenew,
         managementUrl,
+        isLifetime,
       };
     }
 
@@ -396,6 +414,7 @@ export async function getSubscriptionDetails(): Promise<{
       willRenew: false,
       isCanceled: false,
       managementUrl: null,
+      isLifetime: false,
     };
   } catch (error) {
     return {
@@ -406,6 +425,7 @@ export async function getSubscriptionDetails(): Promise<{
       willRenew: false,
       isCanceled: false,
       managementUrl: null,
+      isLifetime: false,
     };
   }
 }

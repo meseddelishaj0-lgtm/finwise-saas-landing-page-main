@@ -46,6 +46,7 @@ export interface SubscriptionContextType extends SubscriptionState {
   goldPackage: PurchasesPackage | undefined;
   platinumPackage: PurchasesPackage | undefined;
   diamondPackage: PurchasesPackage | undefined;
+  lifetimePackage: PurchasesPackage | undefined;
 }
 
 const initialState: SubscriptionState = {
@@ -82,6 +83,8 @@ const getTierFromEntitlementOrProduct = (entitlementId: string | null, productId
   // Fallback to product ID
   if (productId) {
     const productLower = productId.toLowerCase();
+    // Check lifetime first (gives diamond-level access)
+    if (productLower.includes('lifetime')) return 'lifetime';
     if (productLower.includes('diamond') || productId === '$rc_annual') return 'diamond';
     if (productLower.includes('platinum') || productId === '$rc_six_month') return 'platinum';
     if (productLower.includes('gold') || productId === '$rc_monthly') return 'gold';
@@ -504,6 +507,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   // Helper function to convert tier string to number
   const tierToNumber = (tier: string | null): number => {
     switch (tier) {
+      case 'lifetime': return 4; // Lifetime is the highest tier (same features as Diamond)
       case 'diamond': return 3;
       case 'platinum': return 2;
       case 'gold': return 1;
@@ -538,6 +542,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const diamondPackage = state.packages.find(p =>
     p.identifier === '$rc_annual' || p.product.identifier.includes('diamond')
   );
+  const lifetimePackage = state.packages.find(p =>
+    p.product.identifier.includes('lifetime')
+  );
 
   const value: SubscriptionContextType = {
     ...state,
@@ -553,6 +560,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     goldPackage,
     platinumPackage,
     diamondPackage,
+    lifetimePackage,
   };
 
   return (
@@ -588,6 +596,7 @@ const defaultContextValue: SubscriptionContextType = {
   goldPackage: undefined,
   platinumPackage: undefined,
   diamondPackage: undefined,
+  lifetimePackage: undefined,
 };
 
 // Custom hook to use subscription context

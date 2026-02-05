@@ -40,28 +40,39 @@ const TIER_FEATURES: Record<string, string[]> = {
     'Insider Trading Data',
     'Research Reports & Portfolio Tools',
   ],
+  lifetime: [
+    'All Diamond Features Forever',
+    'One-time payment',
+    'No recurring charges',
+    'Lifetime updates included',
+    'Priority support forever',
+    'Best value for long-term investors',
+  ],
 };
 
 const TIER_COLORS: Record<string, string> = {
   gold: '#FFD700',
   platinum: '#E5E4E2',
   diamond: '#B9F2FF',
+  lifetime: '#9B59B6',
 };
 
 const TIER_NAMES: Record<string, string> = {
   gold: 'Gold',
   platinum: 'Platinum',
   diamond: 'Diamond',
+  lifetime: 'Lifetime',
 };
 
 const TIER_PRICES: Record<string, string> = {
   gold: '$4.99',
   platinum: '$6.99',
   diamond: '$9.99',
+  lifetime: '$199.99',
 };
 
 // Tier order for display
-const TIER_ORDER = ['gold', 'platinum', 'diamond'] as const;
+const TIER_ORDER = ['gold', 'platinum', 'diamond', 'lifetime'] as const;
 type TierKey = typeof TIER_ORDER[number];
 
 // Universal tier card - works with or without RevenueCat packages
@@ -78,6 +89,7 @@ function TierCard({ tierKey, isSelected, onSelect, pkg }: TierCardProps) {
   const tierPrice = pkg?.product.priceString || TIER_PRICES[tierKey];
   const features = TIER_FEATURES[tierKey];
   const isPopular = tierKey === 'platinum';
+  const isLifetime = tierKey === 'lifetime';
 
   return (
     <TouchableOpacity
@@ -85,6 +97,7 @@ function TierCard({ tierKey, isSelected, onSelect, pkg }: TierCardProps) {
         styles.card,
         isSelected && styles.cardSelected,
         isSelected && { borderColor: tierColor },
+        isLifetime && styles.lifetimeCard,
       ]}
       onPress={onSelect}
       activeOpacity={0.8}
@@ -92,6 +105,11 @@ function TierCard({ tierKey, isSelected, onSelect, pkg }: TierCardProps) {
       {isPopular && (
         <View style={[styles.popularBadge, { backgroundColor: tierColor }]}>
           <Text style={styles.popularText}>MOST POPULAR</Text>
+        </View>
+      )}
+      {isLifetime && (
+        <View style={[styles.popularBadge, { backgroundColor: tierColor }]}>
+          <Text style={styles.popularText}>BEST VALUE</Text>
         </View>
       )}
 
@@ -102,7 +120,7 @@ function TierCard({ tierKey, isSelected, onSelect, pkg }: TierCardProps) {
 
         <View style={styles.priceContainer}>
           <Text style={styles.price}>{tierPrice}</Text>
-          <Text style={styles.period}>/month</Text>
+          <Text style={styles.period}>{isLifetime ? ' one-time' : '/month'}</Text>
         </View>
       </View>
 
@@ -355,6 +373,7 @@ export default function PaywallScreen() {
               style={[
                 styles.purchaseButton,
                 isPurchasing && styles.purchaseButtonDisabled,
+                selectedTier === 'lifetime' && styles.lifetimePurchaseButton,
               ]}
               onPress={handlePurchase}
               disabled={isPurchasing}
@@ -363,7 +382,10 @@ export default function PaywallScreen() {
                 <ActivityIndicator color="#000" />
               ) : (
                 <Text style={styles.purchaseButtonText}>
-                  Subscribe to {TIER_NAMES[selectedTier]} - {selectedPackage?.product.priceString || TIER_PRICES[selectedTier]}/mo
+                  {selectedTier === 'lifetime'
+                    ? `Get Lifetime Access - ${selectedPackage?.product.priceString || TIER_PRICES[selectedTier]}`
+                    : `Subscribe to ${TIER_NAMES[selectedTier]} - ${selectedPackage?.product.priceString || TIER_PRICES[selectedTier]}/mo`
+                  }
                 </Text>
               )}
             </TouchableOpacity>
@@ -469,6 +491,13 @@ const styles = StyleSheet.create({
   },
   cardSelected: {
     borderWidth: 2,
+  },
+  lifetimeCard: {
+    backgroundColor: '#1a1a2e',
+    borderColor: '#9B59B6',
+  },
+  lifetimePurchaseButton: {
+    backgroundColor: '#9B59B6',
   },
   popularBadge: {
     position: 'absolute',

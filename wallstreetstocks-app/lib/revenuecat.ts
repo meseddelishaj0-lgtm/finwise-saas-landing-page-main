@@ -26,6 +26,7 @@ export const PRODUCT_IDS = {
   GOLD_MONTHLY: 'wallstreetstocks.gold.monthly',
   PLATINUM_MONTHLY: 'wallstreetstocks.platinum.monthly',
   DIAMOND_MONTHLY: 'wallstreetstocks.diamond.monthly',
+  LIFETIME: 'wallstreetstocks_lifetime',
 } as const;
 
 // Subscription tier levels
@@ -34,9 +35,10 @@ export const TIER_LEVELS = {
   GOLD: 1,
   PLATINUM: 2,
   DIAMOND: 3,
+  LIFETIME: 4, // Lifetime has highest tier level (same features as Diamond)
 };
 
-export type SubscriptionTier = 'free' | 'gold' | 'platinum' | 'diamond';
+export type SubscriptionTier = 'free' | 'gold' | 'platinum' | 'diamond' | 'lifetime';
 
 // ============================================
 // INITIALIZATION
@@ -125,6 +127,8 @@ export const getSubscriptionTier = (productId: string | null): number => {
   if (!productId) return TIER_LEVELS.FREE;
 
   const id = productId.toLowerCase();
+  // Lifetime is the highest tier (same features as Diamond but permanent)
+  if (id.includes('lifetime')) return TIER_LEVELS.LIFETIME;
   if (id.includes('diamond')) return TIER_LEVELS.DIAMOND;
   if (id.includes('platinum')) return TIER_LEVELS.PLATINUM;
   if (id.includes('gold')) return TIER_LEVELS.GOLD;
@@ -137,6 +141,7 @@ export const getTierName = (productId: string | null): SubscriptionTier => {
   if (!productId) return 'free';
 
   const id = productId.toLowerCase();
+  if (id.includes('lifetime')) return 'lifetime';
   if (id.includes('diamond')) return 'diamond';
   if (id.includes('platinum')) return 'platinum';
   if (id.includes('gold')) return 'gold';
@@ -238,9 +243,16 @@ export const getProductDisplayName = (productId: string | null): string => {
   if (!productId) return 'Free';
 
   const id = productId.toLowerCase();
+  if (id.includes('lifetime')) return 'Lifetime';
   if (id.includes('diamond')) return 'Diamond';
   if (id.includes('platinum')) return 'Platinum';
   if (id.includes('gold')) return 'Gold';
 
   return 'Premium';
+};
+
+// Check if product is a lifetime purchase
+export const isLifetimePurchase = (productId: string | null): boolean => {
+  if (!productId) return false;
+  return productId.toLowerCase().includes('lifetime');
 };

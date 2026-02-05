@@ -14,6 +14,7 @@ export interface TierInfo {
   monthlyPrice: string;
   features: TierFeature[];
   popular?: boolean;
+  isLifetime?: boolean;
 }
 
 export const SUBSCRIPTION_TIERS: TierInfo[] = [

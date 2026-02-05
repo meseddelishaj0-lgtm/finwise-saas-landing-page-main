@@ -52,6 +52,7 @@ const PRODUCT_IDS = {
   GOLD: "wallstreetstocks.gold.monthly",
   PLATINUM: "wallstreetstocks.platinum.monthly",
   DIAMOND: "wallstreetstocks.diamond.monthly",
+  LIFETIME: "wallstreetstocks_lifetime",
 };
 
 // Entitlement IDs - must match RevenueCat
@@ -119,6 +120,23 @@ const TIERS = {
       { icon: BarChart3, text: "Research Reports & Portfolio Tools" },
     ],
   },
+  lifetime: {
+    id: PRODUCT_IDS.LIFETIME,
+    name: "Lifetime",
+    icon: Shield,
+    color: "#9B59B6",
+    bgColor: "#F5F0FF",
+    borderColor: "#9B59B6",
+    isLifetime: true,
+    features: [
+      { icon: Check, text: "All Diamond Features Forever" },
+      { icon: Shield, text: "One-time payment" },
+      { icon: TrendingUp, text: "No recurring charges" },
+      { icon: Zap, text: "Lifetime updates included" },
+      { icon: Headphones, text: "Priority support forever" },
+      { icon: Award, text: "Best value for long-term investors" },
+    ],
+  },
 };
 
 type TierKey = keyof typeof TIERS;
@@ -131,6 +149,7 @@ interface SubscriptionDetails {
   willRenew: boolean;
   isCanceled: boolean;
   managementUrl: string | null;
+  isLifetime?: boolean;
 }
 
 export default function SubscriptionPage() {
@@ -275,9 +294,15 @@ export default function SubscriptionPage() {
         return "$6.99";
       case PRODUCT_IDS.DIAMOND:
         return "$9.99";
+      case PRODUCT_IDS.LIFETIME:
+        return "$199.99";
       default:
         return "";
     }
+  };
+
+  const isLifetimeTier = (tierId: string): boolean => {
+    return tierId.toLowerCase().includes('lifetime');
   };
 
   const handlePurchase = async () => {
@@ -501,6 +526,7 @@ export default function SubscriptionPage() {
     // First check subscriptionDetails.tierName (from entitlement - most reliable)
     if (subscriptionDetails?.tierName) {
       const tierName = subscriptionDetails.tierName.toLowerCase();
+      if (tierName === "lifetime") return 4;
       if (tierName === "diamond") return 3;
       if (tierName === "platinum") return 2;
       if (tierName === "gold") return 1;
@@ -508,6 +534,7 @@ export default function SubscriptionPage() {
     // Fallback to activeSubscription (product ID)
     if (!activeSubscription) return 0;
     const sub = activeSubscription.toLowerCase();
+    if (sub.includes("lifetime")) return 4;
     if (sub.includes("diamond")) return 3;
     if (sub.includes("platinum")) return 2;
     if (sub.includes("gold")) return 1;
@@ -515,6 +542,7 @@ export default function SubscriptionPage() {
   };
 
   const getTierLevel = (tierId: string): number => {
+    if (tierId === PRODUCT_IDS.LIFETIME) return 4; // Lifetime is highest tier
     if (tierId === PRODUCT_IDS.DIAMOND) return 3;
     if (tierId === PRODUCT_IDS.PLATINUM) return 2;
     if (tierId === PRODUCT_IDS.GOLD) return 1;
@@ -525,6 +553,7 @@ export default function SubscriptionPage() {
     // First check subscriptionDetails.tierName (from entitlement - most reliable)
     if (subscriptionDetails?.tierName) {
       const tierName = subscriptionDetails.tierName.toLowerCase();
+      if (tierName === "lifetime") return "lifetime";
       if (tierName === "diamond") return "diamond";
       if (tierName === "platinum") return "platinum";
       if (tierName === "gold") return "gold";
@@ -532,6 +561,7 @@ export default function SubscriptionPage() {
     // Fallback to activeSubscription (product ID)
     if (!activeSubscription) return null;
     const sub = activeSubscription.toLowerCase();
+    if (sub.includes("lifetime")) return "lifetime";
     if (sub.includes("diamond")) return "diamond";
     if (sub.includes("platinum")) return "platinum";
     if (sub.includes("gold")) return "gold";
@@ -565,9 +595,11 @@ export default function SubscriptionPage() {
 
     const tier = TIERS[currentTierKey];
     const Icon = tier.icon;
+    const isLifetime = "isLifetime" in tier && tier.isLifetime;
 
-    // Check if subscription is expiring soon (within 7 days)
+    // Check if subscription is expiring soon (within 7 days) - not applicable for lifetime
     const isExpiringSoon = (() => {
+      if (isLifetime) return false;
       if (!subscriptionDetails.expirationDate || subscriptionDetails.willRenew) return false;
       const expiryDate = new Date(subscriptionDetails.expirationDate);
       // Validate the date is valid
@@ -598,12 +630,26 @@ export default function SubscriptionPage() {
             <Text style={styles.currentSubLabel}>Current Plan</Text>
             <Text style={[styles.currentSubName, { color: tier.color }]}>{tier.name}</Text>
           </View>
-          {subscriptionDetails.isCanceled && (
+          {isLifetime && (
+            <View style={[styles.canceledBadge, { backgroundColor: '#9B59B6' }]}>
+              <Text style={styles.canceledBadgeText}>FOREVER</Text>
+            </View>
+          )}
+          {subscriptionDetails.isCanceled && !isLifetime && (
             <View style={styles.canceledBadge}>
               <Text style={styles.canceledBadgeText}>CANCELED</Text>
             </View>
           )}
         </View>
+
+        {/* Lifetime Success Message */}
+        {isLifetime && (
+          <View style={[styles.expiringWarning, { backgroundColor: '#F0FFF4', borderColor: '#9AE6B4' }]}>
+            <Text style={[styles.expiringWarningText, { color: '#22543D' }]}>
+              🎉 You have lifetime access! Enjoy all premium features forever with no recurring charges.
+            </Text>
+          </View>
+        )}
 
         {/* Expiring Soon Warning */}
         {isExpiringSoon && (
@@ -615,7 +661,7 @@ export default function SubscriptionPage() {
         )}
 
         {/* Canceled Warning */}
-        {subscriptionDetails.isCanceled && !isExpiringSoon && (
+        {subscriptionDetails.isCanceled && !isExpiringSoon && !isLifetime && (
           <View style={styles.canceledWarning}>
             <Text style={styles.canceledWarningText}>
               Your subscription has been canceled. You&apos;ll have access until {formatExpirationDate(subscriptionDetails.expirationDate)}.
@@ -623,48 +669,54 @@ export default function SubscriptionPage() {
           </View>
         )}
 
-        <View style={styles.currentSubDetails}>
-          <View style={styles.detailRow}>
-            <Calendar size={16} color="#666" />
-            <Text style={styles.detailLabel}>
-              {subscriptionDetails.isCanceled ? "Expires" : "Renews"} on:
-            </Text>
-            <Text style={styles.detailValue}>
-              {formatExpirationDate(subscriptionDetails.expirationDate)}
-            </Text>
+        {/* Only show details for non-lifetime subscriptions */}
+        {!isLifetime && (
+          <View style={styles.currentSubDetails}>
+            <View style={styles.detailRow}>
+              <Calendar size={16} color="#666" />
+              <Text style={styles.detailLabel}>
+                {subscriptionDetails.isCanceled ? "Expires" : "Renews"} on:
+              </Text>
+              <Text style={styles.detailValue}>
+                {formatExpirationDate(subscriptionDetails.expirationDate)}
+              </Text>
+            </View>
+
+            <View style={styles.detailRow}>
+              <RefreshCw size={16} color="#666" />
+              <Text style={styles.detailLabel}>Auto-renew:</Text>
+              <Text style={[styles.detailValue, { color: subscriptionDetails.willRenew ? '#34C759' : '#FF3B30' }]}>
+                {subscriptionDetails.willRenew ? "On" : "Off"}
+              </Text>
+            </View>
           </View>
+        )}
 
-          <View style={styles.detailRow}>
-            <RefreshCw size={16} color="#666" />
-            <Text style={styles.detailLabel}>Auto-renew:</Text>
-            <Text style={[styles.detailValue, { color: subscriptionDetails.willRenew ? '#34C759' : '#FF3B30' }]}>
-              {subscriptionDetails.willRenew ? "On" : "Off"}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.currentSubActions}>
-          <TouchableOpacity
-            style={[styles.manageButton, { borderColor: tier.color }]}
-            onPress={handleManageSubscription}
-          >
-            <Settings size={18} color={tier.color} />
-            <Text style={[styles.manageButtonText, { color: tier.color }]}>
-              Manage Subscription
-            </Text>
-            <ExternalLink size={16} color={tier.color} />
-          </TouchableOpacity>
-
-          {!subscriptionDetails.isCanceled && (
+        {/* Only show manage/cancel for non-lifetime subscriptions */}
+        {!isLifetime && (
+          <View style={styles.currentSubActions}>
             <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancelSubscription}
+              style={[styles.manageButton, { borderColor: tier.color }]}
+              onPress={handleManageSubscription}
             >
-              <XCircle size={18} color="#FF3B30" />
-              <Text style={styles.cancelButtonText}>Cancel Subscription</Text>
+              <Settings size={18} color={tier.color} />
+              <Text style={[styles.manageButtonText, { color: tier.color }]}>
+                Manage Subscription
+              </Text>
+              <ExternalLink size={16} color={tier.color} />
             </TouchableOpacity>
-          )}
-        </View>
+
+            {!subscriptionDetails.isCanceled && (
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancelSubscription}
+              >
+                <XCircle size={18} color="#FF3B30" />
+                <Text style={styles.cancelButtonText}>Cancel Subscription</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
     );
   };
@@ -678,6 +730,7 @@ export default function SubscriptionPage() {
     const tierLevel = getTierLevel(tier.id);
     const isUpgrade = activeSubscription && tierLevel > currentLevel;
     const isDowngrade = activeSubscription && tierLevel < currentLevel;
+    const isLifetime = "isLifetime" in tier && tier.isLifetime;
 
     return (
       <TouchableOpacity
@@ -686,6 +739,7 @@ export default function SubscriptionPage() {
           styles.tierCard,
           isSelected && { borderColor: tier.borderColor, borderWidth: 2 },
           isCurrentPlan && styles.currentPlanCard,
+          isLifetime && styles.lifetimeCard,
         ]}
         onPress={() => !isCurrentPlan && setSelectedTier(tierKey)}
         activeOpacity={isCurrentPlan ? 1 : 0.7}
@@ -697,13 +751,19 @@ export default function SubscriptionPage() {
           </View>
         )}
 
+        {isLifetime && !isCurrentPlan && (
+          <View style={[styles.popularBadge, { backgroundColor: tier.color }]}>
+            <Text style={styles.popularText}>BEST VALUE</Text>
+          </View>
+        )}
+
         {isCurrentPlan && (
           <View style={styles.currentBadge}>
             <Text style={styles.currentBadgeText}>CURRENT PLAN</Text>
           </View>
         )}
 
-        {isUpgrade && isSelected && (
+        {isUpgrade && isSelected && !isLifetime && (
           <View style={[styles.upgradeBadge, { backgroundColor: '#34C759' }]}>
             <ArrowUpCircle size={12} color="#FFF" />
             <Text style={styles.upgradeBadgeText}>UPGRADE</Text>
@@ -718,7 +778,7 @@ export default function SubscriptionPage() {
             <Text style={styles.tierName}>{tier.name}</Text>
             <View style={styles.priceContainer}>
               <Text style={styles.price}>{getPrice(tier.id)}</Text>
-              <Text style={styles.period}>/month</Text>
+              <Text style={styles.period}>{isLifetime ? " one-time" : "/month"}</Text>
             </View>
           </View>
           {isSelected && !isCurrentPlan && (
@@ -830,6 +890,7 @@ export default function SubscriptionPage() {
           {renderTierCard("gold")}
           {renderTierCard("platinum")}
           {renderTierCard("diamond")}
+          {renderTierCard("lifetime")}
         </View>
 
         {/* Action Button */}
@@ -849,14 +910,16 @@ export default function SubscriptionPage() {
             ) : (
               <>
                 <Text style={styles.subscribeButtonText}>
-                  {activeSubscription
-                    ? getTierLevel(TIERS[selectedTier].id) > getCurrentTierLevel()
-                      ? `Upgrade to ${TIERS[selectedTier].name}`
-                      : `Change to ${TIERS[selectedTier].name}`
-                    : `Subscribe to ${TIERS[selectedTier].name}`}
+                  {isLifetimeTier(TIERS[selectedTier].id)
+                    ? "Get Lifetime Access"
+                    : activeSubscription
+                      ? getTierLevel(TIERS[selectedTier].id) > getCurrentTierLevel()
+                        ? `Upgrade to ${TIERS[selectedTier].name}`
+                        : `Change to ${TIERS[selectedTier].name}`
+                      : `Subscribe to ${TIERS[selectedTier].name}`}
                 </Text>
                 <Text style={styles.subscribePrice}>
-                  {getPrice(TIERS[selectedTier].id)}/month
+                  {getPrice(TIERS[selectedTier].id)}{isLifetimeTier(TIERS[selectedTier].id) ? " one-time" : "/month"}
                 </Text>
               </>
             )}
@@ -1176,6 +1239,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9F9F9",
     borderColor: "#34C759",
     borderWidth: 2,
+  },
+  lifetimeCard: {
+    backgroundColor: "#FAF5FF",
+    borderColor: "#9B59B6",
   },
   popularBadge: {
     position: "absolute",
