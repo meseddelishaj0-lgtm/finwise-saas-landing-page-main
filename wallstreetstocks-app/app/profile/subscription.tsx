@@ -303,6 +303,7 @@ export default function SubscriptionPage() {
 
   const getPackageForTier = (tierKey: TierKey): PurchasesPackage | undefined => {
     const productId = getProductIdForTier(tierKey);
+
     return packages.find((pkg) => {
       return pkg.product.identifier.toLowerCase() === productId.toLowerCase();
     });
