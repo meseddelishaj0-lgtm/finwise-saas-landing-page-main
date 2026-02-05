@@ -49,14 +49,28 @@ initializeSentry();
 
 // Initialize OneSignal for push notifications
 const ONESIGNAL_APP_ID = Constants.expoConfig?.extra?.oneSignalAppId;
+console.log('[OneSignal] App ID:', ONESIGNAL_APP_ID);
+console.log('[OneSignal] Module loaded:', !!OneSignal);
+
 if (OneSignal && ONESIGNAL_APP_ID && ONESIGNAL_APP_ID !== "YOUR_ONESIGNAL_APP_ID") {
-  // Remove this line in production - only for debugging
+  // Debug logging - remove in production
   OneSignal.Debug.setLogLevel(6);
+
+  console.log('[OneSignal] Initializing...');
 
   // Initialize OneSignal
   OneSignal.initialize(ONESIGNAL_APP_ID);
 
+  console.log('[OneSignal] Initialized successfully');
+
+  // Listen for subscription changes
+  OneSignal.User.pushSubscription.addEventListener('change', (subscription: any) => {
+    console.log('[OneSignal] Subscription changed:', JSON.stringify(subscription, null, 2));
+  });
+
   // Note: Permission request moved to AppInitializer useEffect for proper timing
+} else {
+  console.log('[OneSignal] NOT initialized - missing module or App ID');
 }
 
 // Default symbols to stream - 24/7 crypto for always-live prices + popular stocks
@@ -84,10 +98,18 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     const requestNotificationPermission = async () => {
       if (OneSignal && !notificationPermissionRequested.current) {
         notificationPermissionRequested.current = true;
+        console.log('[OneSignal] Waiting 2s before requesting permission...');
         // Delay to ensure app is fully ready - iOS may ignore early requests
         await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log('[OneSignal] Requesting notification permission...');
         // Request notification permission (shows iOS prompt)
-        OneSignal.Notifications.requestPermission(true);
+        const result = await OneSignal.Notifications.requestPermission(true);
+        console.log('[OneSignal] Permission result:', result);
+
+        // Check subscription status
+        const pushSubscription = OneSignal.User.pushSubscription;
+        console.log('[OneSignal] Push subscription ID:', pushSubscription?.id);
+        console.log('[OneSignal] Push subscription token:', pushSubscription?.token);
       }
     };
     requestNotificationPermission();
