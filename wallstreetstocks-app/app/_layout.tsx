@@ -48,11 +48,13 @@ import { initializeSentry } from "../utils/sentry";
 initializeSentry();
 
 // Initialize OneSignal for push notifications
-const ONESIGNAL_APP_ID = Constants.expoConfig?.extra?.oneSignalAppId;
+// Use config value with hardcoded fallback for production builds
+const ONESIGNAL_APP_ID = Constants.expoConfig?.extra?.oneSignalAppId || 'f964a298-9c86-43a2-bb7f-a9f0cc8dac24';
 console.log('[OneSignal] App ID:', ONESIGNAL_APP_ID);
+console.log('[OneSignal] App ID from config:', Constants.expoConfig?.extra?.oneSignalAppId);
 console.log('[OneSignal] Module loaded:', !!OneSignal);
 
-if (OneSignal && ONESIGNAL_APP_ID && ONESIGNAL_APP_ID !== "YOUR_ONESIGNAL_APP_ID") {
+if (OneSignal && ONESIGNAL_APP_ID) {
   // Debug logging - remove in production
   OneSignal.Debug.setLogLevel(6);
 
