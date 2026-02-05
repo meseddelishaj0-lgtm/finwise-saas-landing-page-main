@@ -21,7 +21,6 @@
         "NSLocationWhenInUseUsageDescription": "WallStreetStocks may use your location to provide localized market data and news relevant to your region.",
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
-          "remote-notification",
           "remote-notification"
         ],
         "GADApplicationIdentifier": "ca-app-pub-7939235723023664~6192758198",
@@ -112,7 +111,6 @@
       "softwareKeyboardLayoutMode": "pan",
       "allowBackup": true,
       "permissions": [
-        "com.google.android.gms.permission.AD_ID",
         "com.google.android.gms.permission.AD_ID"
       ],
       "config": {
@@ -124,6 +122,13 @@
       "favicon": "./assets/images/wallstreetstocks.png"
     },
     "plugins": [
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "production",
+          "devTeam": "3XRZMNTQ4A"
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -165,14 +170,7 @@
           "project": "wallstreetstocks-app"
         }
       ],
-      "expo-tracking-transparency",
-      [
-        "onesignal-expo-plugin",
-        {
-          "mode": "production",
-          "devTeam": "3XRZMNTQ4A"
-        }
-      ]
+      "expo-tracking-transparency"
     ],
     "experiments": {
       "typedRoutes": true,
