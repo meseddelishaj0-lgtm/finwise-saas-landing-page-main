@@ -15,14 +15,6 @@ try {
   // Module not available in Expo Go - will work in production builds
 }
 
-// expo-notifications for permission prompt (uses native iOS API directly)
-let Notifications: any = null;
-try {
-  Notifications = require("expo-notifications");
-} catch {
-  // Module not available
-}
-
 // ATT module - only available in production builds, not Expo Go
 let requestTrackingPermissionsAsync: (() => Promise<any>) | null = null;
 try {
@@ -55,10 +47,9 @@ import { initializeSentry } from "../utils/sentry";
 // Initialize Sentry for crash reporting
 initializeSentry();
 
-// Initialize OneSignal for push notifications
+// Initialize OneSignal JS bridge (native init + permission handled in AppDelegate via withOneSignalAppDelegate plugin)
 const ONESIGNAL_APP_ID = Constants.expoConfig?.extra?.oneSignalAppId || 'f964a298-9c86-43a2-bb7f-a9f0cc8dac24';
 if (OneSignal && ONESIGNAL_APP_ID) {
-  OneSignal.Debug.setLogLevel(6);
   OneSignal.initialize(ONESIGNAL_APP_ID);
 }
 
@@ -92,38 +83,16 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id, currentTier]);
 
-  // Request notification permission first, then ATT, then initialize ads
-  // Sequential to avoid iOS dropping overlapping system prompts
-  const notificationPermissionRequested = useRef(false);
+  // Notification permission is handled natively by OneSignal in AppDelegate (via withOneSignalAppDelegate plugin).
+  // Here we only request ATT and initialize ads after the notification prompt has had time to show.
   useEffect(() => {
     const requestPermissionsSequentially = async () => {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Wait for OneSignal's native notification prompt to complete
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
-      // Step 1: Notification permission via native iOS API (expo-notifications)
-      // OneSignal's requestPermission doesn't work with Expo's Swift AppDelegate,
-      // so we use expo-notifications which hooks in via ExpoAppDelegate subscribers
-      if (!notificationPermissionRequested.current) {
-        notificationPermissionRequested.current = true;
-        try {
-          if (Notifications) {
-            const { status } = await Notifications.requestPermissionsAsync({
-              ios: {
-                allowAlert: true,
-                allowBadge: true,
-                allowSound: true,
-              },
-            });
-            console.log('[Notifications] Permission status:', status);
-          }
-        } catch (e) {
-          console.log('[Notifications] Permission request error:', e);
-        }
-      }
-
-      // Step 2: ATT permission on iOS
+      // Step 1: ATT permission on iOS
       if (Platform.OS === 'ios' && !trackingRequested.current) {
         trackingRequested.current = true;
-        await new Promise(resolve => setTimeout(resolve, 500));
 
         if (requestTrackingPermissionsAsync) {
           try {
@@ -134,7 +103,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Step 3: Initialize ads
+      // Step 2: Initialize ads
       if (mobileAds) {
         try {
           await mobileAds().initialize();
