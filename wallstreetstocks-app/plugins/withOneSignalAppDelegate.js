@@ -47,7 +47,7 @@ function withOneSignalAppDelegate(config) {
     _ application: UIApplication,
     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
   ) {
-    OSNotificationsManager.didRegisterForRemoteNotifications(application, deviceToken: deviceToken)
+    OSNotificationsManager.didRegister(forRemoteNotifications: application, deviceToken: deviceToken)
     super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
   }
 
