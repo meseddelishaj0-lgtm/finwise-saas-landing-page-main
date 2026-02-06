@@ -47,12 +47,11 @@ import { initializeSentry } from "../utils/sentry";
 // Initialize Sentry for crash reporting
 initializeSentry();
 
-// Initialize OneSignal for push notifications (module level - same as working 1.0.5 build)
+// Initialize OneSignal for push notifications
 const ONESIGNAL_APP_ID = Constants.expoConfig?.extra?.oneSignalAppId || 'f964a298-9c86-43a2-bb7f-a9f0cc8dac24';
 if (OneSignal && ONESIGNAL_APP_ID) {
   OneSignal.Debug.setLogLevel(6);
   OneSignal.initialize(ONESIGNAL_APP_ID);
-  OneSignal.Notifications.requestPermission(true);
 }
 
 // Default symbols to stream - 24/7 crypto for always-live prices + popular stocks
@@ -85,12 +84,27 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     }
   }, [user?.id, currentTier]);
 
-  // Request ATT permission and initialize ads
+  // Request notification permission first, then ATT, then initialize ads
+  // Sequential to avoid iOS dropping overlapping system prompts
+  const notificationPermissionRequested = useRef(false);
   useEffect(() => {
-    const initializeAdsWithConsent = async () => {
+    const requestPermissionsSequentially = async () => {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Step 1: Notification permission via OneSignal
+      if (OneSignal && !notificationPermissionRequested.current) {
+        notificationPermissionRequested.current = true;
+        try {
+          await OneSignal.Notifications.requestPermission(true);
+        } catch (e) {
+          // Fall back to native permission request if OneSignal fails
+        }
+      }
+
+      // Step 2: ATT permission on iOS
       if (Platform.OS === 'ios' && !trackingRequested.current) {
         trackingRequested.current = true;
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         if (requestTrackingPermissionsAsync) {
           try {
@@ -99,25 +113,18 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
             // Tracking permission request failed - ads will be non-personalized
           }
         }
+      }
 
-        if (mobileAds) {
-          try {
-            await mobileAds().initialize();
-          } catch {
-            // AdMob initialization failed
-          }
-        }
-      } else if (Platform.OS === 'android') {
-        if (mobileAds) {
-          try {
-            await mobileAds().initialize();
-          } catch {
-            // AdMob initialization failed
-          }
+      // Step 3: Initialize ads
+      if (mobileAds) {
+        try {
+          await mobileAds().initialize();
+        } catch {
+          // AdMob initialization failed
         }
       }
     };
-    initializeAdsWithConsent();
+    requestPermissionsSequentially();
   }, []);
 
   useEffect(() => {
