@@ -15,6 +15,14 @@ try {
   // Module not available in Expo Go - will work in production builds
 }
 
+// expo-notifications for permission prompt (uses native iOS API directly)
+let Notifications: any = null;
+try {
+  Notifications = require("expo-notifications");
+} catch {
+  // Module not available
+}
+
 // ATT module - only available in production builds, not Expo Go
 let requestTrackingPermissionsAsync: (() => Promise<any>) | null = null;
 try {
@@ -91,13 +99,24 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     const requestPermissionsSequentially = async () => {
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Step 1: Notification permission via OneSignal
-      if (OneSignal && !notificationPermissionRequested.current) {
+      // Step 1: Notification permission via native iOS API (expo-notifications)
+      // OneSignal's requestPermission doesn't work with Expo's Swift AppDelegate,
+      // so we use expo-notifications which hooks in via ExpoAppDelegate subscribers
+      if (!notificationPermissionRequested.current) {
         notificationPermissionRequested.current = true;
         try {
-          await OneSignal.Notifications.requestPermission(true);
+          if (Notifications) {
+            const { status } = await Notifications.requestPermissionsAsync({
+              ios: {
+                allowAlert: true,
+                allowBadge: true,
+                allowSound: true,
+              },
+            });
+            console.log('[Notifications] Permission status:', status);
+          }
         } catch (e) {
-          // Fall back to native permission request if OneSignal fails
+          console.log('[Notifications] Permission request error:', e);
         }
       }
 
