@@ -129,6 +129,7 @@
           "devTeam": "3XRZMNTQ4A"
         }
       ],
+      "./plugins/withOneSignalAppDelegate",
       "expo-router",
       [
         "expo-splash-screen",
