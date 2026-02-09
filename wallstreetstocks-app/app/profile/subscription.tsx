@@ -897,7 +897,7 @@ export default function SubscriptionPage() {
             </View>
             <Text style={styles.heroTitle}>Unlock Premium Features</Text>
             <Text style={styles.heroSubtitle}>
-              Get access to advanced analysis tools, AI insights, and exclusive research.
+              Start your 7-day free trial. Cancel anytime.
             </Text>
           </View>
         )}
@@ -987,10 +987,14 @@ export default function SubscriptionPage() {
                       ? getTierLevelByKey(selectedTier) > getCurrentTierLevel()
                         ? `Upgrade to ${TIERS[selectedTier].name}`
                         : `Change to ${TIERS[selectedTier].name}`
-                      : `Subscribe to ${TIERS[selectedTier].name}`}
+                      : `Start 7-Day Free Trial`}
                 </Text>
                 <Text style={styles.subscribePrice}>
-                  {getPrice(selectedTier)}{isLifetimeTier(selectedTier) ? " one-time" : billingPeriod === 'yearly' ? "/year" : "/month"}
+                  {isLifetimeTier(selectedTier)
+                    ? `${getPrice(selectedTier)} one-time`
+                    : activeSubscription
+                      ? `${getPrice(selectedTier)}${billingPeriod === 'yearly' ? "/year" : "/month"}`
+                      : `Then ${getPrice(selectedTier)}${billingPeriod === 'yearly' ? "/year" : "/month"}`}
                 </Text>
               </>
             )}
@@ -1015,7 +1019,7 @@ export default function SubscriptionPage() {
 
         {/* Terms */}
         <Text style={styles.termsText}>
-          Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period. Manage subscriptions in your {Platform.OS === 'ios' ? 'App Store' : 'Play Store'} settings.
+          Free trial available for new subscribers. Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period. Manage subscriptions in your {Platform.OS === 'ios' ? 'App Store' : 'Play Store'} settings.
         </Text>
 
         {/* Links */}

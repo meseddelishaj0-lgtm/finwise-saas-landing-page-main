@@ -371,7 +371,7 @@ export default function PaywallScreen() {
             <View style={styles.heroSection}>
               <Text style={styles.heroTitle}>Unlock Premium Features</Text>
               <Text style={styles.heroSubtitle}>
-                Get access to advanced stock analysis, AI insights, and more.
+                Start your 7-day free trial. Cancel anytime.
               </Text>
             </View>
 
@@ -444,7 +444,7 @@ export default function PaywallScreen() {
 
             <View style={styles.termsContainer}>
               <Text style={styles.termsText}>
-                Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period.
+                7-day free trial for new subscribers. Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period.
               </Text>
               <View style={styles.termsLinks}>
                 <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
@@ -472,14 +472,19 @@ export default function PaywallScreen() {
               {isPurchasing ? (
                 <ActivityIndicator color="#000" />
               ) : (
-                <Text style={styles.purchaseButtonText}>
-                  {selectedTier === 'lifetime'
-                    ? `Get Lifetime Access - ${getDisplayPrice()}`
-                    : billingPeriod === 'yearly'
-                      ? `Subscribe to ${TIER_NAMES[selectedTier]} - ${getDisplayPrice()}/yr`
-                      : `Subscribe to ${TIER_NAMES[selectedTier]} - ${getDisplayPrice()}/mo`
-                  }
-                </Text>
+                <>
+                  <Text style={styles.purchaseButtonText}>
+                    {selectedTier === 'lifetime'
+                      ? `Get Lifetime Access - ${getDisplayPrice()}`
+                      : `Start 7-Day Free Trial`
+                    }
+                  </Text>
+                  {selectedTier !== 'lifetime' && (
+                    <Text style={styles.purchaseButtonSubtext}>
+                      Then {getDisplayPrice()}{billingPeriod === 'yearly' ? '/yr' : '/mo'}
+                    </Text>
+                  )}
+                </>
               )}
             </TouchableOpacity>
 
@@ -751,6 +756,11 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  purchaseButtonSubtext: {
+    color: 'rgba(0, 0, 0, 0.6)',
+    fontSize: 13,
+    marginTop: 2,
   },
   restoreButton: {
     alignItems: 'center',
