@@ -14,7 +14,7 @@ const CRON_SECRET = process.env.CRON_SECRET;
 
 const MAX_NEWS_PER_RUN = 2;
 const RECENCY_WINDOW_MS = 20 * 60 * 1000; // 20 minutes
-const MIN_IMPORTANCE_SCORE = 3;
+const MIN_IMPORTANCE_SCORE = 2;
 
 interface NewsArticle {
   symbol: string;
