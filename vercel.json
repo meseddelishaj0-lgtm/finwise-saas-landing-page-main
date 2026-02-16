@@ -7,6 +7,14 @@
     {
       "path": "/api/cron/cache-warm",
       "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/market-movers",
+      "schedule": "*/30 13-21 * * 1-5"
+    },
+    {
+      "path": "/api/cron/market-news",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

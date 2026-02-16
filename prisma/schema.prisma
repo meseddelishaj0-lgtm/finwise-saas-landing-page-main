@@ -484,3 +484,18 @@ model ScreenerPreset {
 
   @@index([userId])
 }
+
+// Sent notification tracking for deduplication (market movers, news)
+model SentNotification {
+  id             Int      @id @default(autoincrement())
+  type           String   // "market_mover" or "market_news"
+  externalId     String   // Unique key: "{symbol}_{date}_{direction}" or article URL hash
+  title          String
+  sentAt         DateTime @default(now())
+  recipientCount Int?
+  onesignalId    String?
+
+  @@unique([type, externalId])
+  @@index([type])
+  @@index([sentAt])
+}
