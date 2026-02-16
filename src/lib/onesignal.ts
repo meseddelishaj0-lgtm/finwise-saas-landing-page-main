@@ -7,6 +7,7 @@ const ONESIGNAL_API_URL = 'https://api.onesignal.com/notifications';
 
 interface OneSignalNotificationPayload {
   app_id: string;
+  target_channel: string;
   headings: { en: string };
   contents: { en: string };
   data?: Record<string, any>;
@@ -45,6 +46,7 @@ export async function sendNotification(
 
   const body = {
     app_id: ONESIGNAL_APP_ID,
+    target_channel: 'push',
     ...payload,
   };
 
@@ -87,7 +89,7 @@ export async function sendToAllSubscribers(
   }
 ): Promise<OneSignalResponse | null> {
   const payload: Partial<OneSignalNotificationPayload> = {
-    included_segments: ['Subscribed Users'],
+    included_segments: ['Total Subscriptions'],
     headings: { en: title },
     contents: { en: body },
     data,
