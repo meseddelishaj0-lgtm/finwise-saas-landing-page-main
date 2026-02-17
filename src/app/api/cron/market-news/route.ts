@@ -13,7 +13,7 @@ const FMP_API_KEY = process.env.FMP_API_KEY;
 const CRON_SECRET = process.env.CRON_SECRET;
 
 const MAX_NEWS_PER_RUN = 2;
-const RECENCY_WINDOW_MS = 20 * 60 * 1000; // 20 minutes
+const RECENCY_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
 const MIN_IMPORTANCE_SCORE = 2;
 
 interface NewsArticle {
