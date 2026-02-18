@@ -273,6 +273,19 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
             router.push(`/symbol/${data.symbol}/chart` as any);
           }
           break;
+        case 'market_news':
+          if (data.url) {
+            try {
+              const WebBrowser = require('expo-web-browser');
+              WebBrowser.openBrowserAsync(data.url);
+            } catch {}
+          }
+          break;
+        case 'market_mover':
+          if (data.symbol) {
+            router.push(`/symbol/${data.symbol}/chart` as any);
+          }
+          break;
         default:
           router.push('/notifications' as any);
       }

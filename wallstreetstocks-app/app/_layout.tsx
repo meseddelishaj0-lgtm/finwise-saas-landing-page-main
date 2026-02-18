@@ -51,6 +51,22 @@ initializeSentry();
 const ONESIGNAL_APP_ID = Constants.expoConfig?.extra?.oneSignalAppId || 'f964a298-9c86-43a2-bb7f-a9f0cc8dac24';
 if (OneSignal && ONESIGNAL_APP_ID) {
   OneSignal.initialize(ONESIGNAL_APP_ID);
+
+  // Handle notification tap — open article URL in in-app browser or navigate to stock
+  OneSignal.Notifications.addEventListener('click', async (event: any) => {
+    const data = event.notification?.additionalData;
+    if (!data) return;
+
+    if (data.type === 'market_news' && data.url) {
+      try {
+        const WebBrowser = require('expo-web-browser');
+        await WebBrowser.openBrowserAsync(data.url);
+      } catch {}
+    } else if (data.type === 'market_mover' && data.symbol) {
+      const { router } = require('expo-router');
+      router.push(`/symbol/${data.symbol}/chart`);
+    }
+  });
 }
 
 // Default symbols to stream - 24/7 crypto for always-live prices + popular stocks
