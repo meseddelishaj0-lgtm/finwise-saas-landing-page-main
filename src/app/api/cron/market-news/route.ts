@@ -139,12 +139,26 @@ export async function GET(req: NextRequest) {
       .filter(a => a.score >= MIN_IMPORTANCE_SCORE)
       .sort((a, b) => b.score - a.score);
 
+    // Debug: show what we're filtering
+    const recentCount = articles.filter(a => (now - new Date(a.publishedDate).getTime()) <= RECENCY_WINDOW_MS).length;
+    const allScored = articles
+      .filter(a => (now - new Date(a.publishedDate).getTime()) <= RECENCY_WINDOW_MS)
+      .map(a => ({ symbol: a.symbol, score: scoreNewsImportance(a), title: a.title.substring(0, 60) }))
+      .filter(a => a.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+
     if (scoredArticles.length === 0) {
       return NextResponse.json({
         success: true,
         message: 'No important news found',
         sent: 0,
         articlesChecked: articles.length,
+        recentCount,
+        topScored: allScored,
+        serverTime: new Date().toISOString(),
+        oldestArticle: articles[articles.length - 1]?.publishedDate,
+        newestArticle: articles[0]?.publishedDate,
       });
     }
 
