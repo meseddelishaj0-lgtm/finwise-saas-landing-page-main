@@ -81,11 +81,11 @@ const SLIDES: Slide[] = [
 ];
 
 const TRIAL_FEATURES = [
-  { icon: 'sparkles' as const, text: 'AI Stock Analysis & Predictions' },
-  { icon: 'trending-up' as const, text: 'Expert Stock Picks Daily' },
-  { icon: 'analytics' as const, text: 'Advanced Charts & Screeners' },
-  { icon: 'notifications' as const, text: 'Unlimited Price Alerts' },
-  { icon: 'people' as const, text: 'Full Community Access' },
+  { icon: 'sparkles' as const, text: '15 Expert Stock Picks Daily' },
+  { icon: 'analytics' as const, text: 'AI Tools (Analyzer, Compare, Forecast)' },
+  { icon: 'chatbubble-ellipses' as const, text: 'AI Financial Assistant' },
+  { icon: 'eye' as const, text: 'Insider Trading Data' },
+  { icon: 'document-text' as const, text: 'Research Reports & Portfolio Tools' },
   { icon: 'shield-checkmark' as const, text: 'Ad-Free Experience' },
 ];
 
@@ -147,13 +147,13 @@ export default function OnboardingScreen() {
   };
 
   const handleStartTrial = async () => {
-    // Find Platinum monthly package (most popular, default trial)
-    const platinumPkg = packages.find((pkg) => {
+    // Find Diamond monthly package
+    const diamondPkg = packages.find((pkg) => {
       const id = pkg.product.identifier.toLowerCase();
-      return id.includes('platinum') && id.includes('monthly');
+      return id.includes('diamond') && id.includes('monthly');
     });
 
-    if (!platinumPkg) {
+    if (!diamondPkg) {
       // Fallback: go to full paywall screen
       await completeOnboarding();
       router.push('/paywall' as any);
@@ -162,7 +162,7 @@ export default function OnboardingScreen() {
 
     setIsPurchasing(true);
     try {
-      const success = await purchase(platinumPkg);
+      const success = await purchase(diamondPkg);
       if (success) {
         await refreshStatus();
         await completeOnboarding();
@@ -186,7 +186,7 @@ export default function OnboardingScreen() {
           </View>
           <Text style={styles.trialTitle}>Unlock Premium</Text>
           <Text style={styles.trialSubtitle}>
-            Try free for 7 days, then $6.99/mo
+            Try free for 7 days, then $9.99/mo
           </Text>
 
           <View style={styles.trialFeatures}>
@@ -271,7 +271,7 @@ export default function OnboardingScreen() {
             </TouchableOpacity>
 
             <Text style={styles.termsText}>
-              7-day free trial, then $6.99/mo. Cancel anytime.{'\n'}
+              7-day free trial, then $9.99/mo. Cancel anytime.{'\n'}
               <Text style={styles.termsLink} onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>Terms</Text>
               {' & '}
               <Text style={styles.termsLink} onPress={() => Linking.openURL('https://www.wallstreetstocks.ai/privacy')}>Privacy</Text>
