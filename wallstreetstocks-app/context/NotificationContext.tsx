@@ -282,9 +282,10 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           }
           break;
         case 'market_mover':
-          if (data.symbol) {
-            router.push(`/symbol/${data.symbol}/chart` as any);
-          }
+          router.push({
+            pathname: '/(tabs)/trending',
+            params: { initialTab: 'gainers' },
+          } as any);
           break;
         default:
           router.push('/notifications' as any);

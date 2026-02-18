@@ -14,7 +14,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
@@ -237,7 +237,8 @@ const HeaderCard = memo(({
 HeaderCard.displayName = 'HeaderCard';
 
 export default function Trending() {
-  const [activeTab, setActiveTab] = useState<TabType>("trending");
+  const { initialTab } = useLocalSearchParams<{ initialTab?: string }>();
+  const [activeTab, setActiveTab] = useState<TabType>((initialTab as TabType) || "trending");
   const [data, setData] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

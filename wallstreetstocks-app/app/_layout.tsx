@@ -62,9 +62,9 @@ if (OneSignal && ONESIGNAL_APP_ID) {
         const WebBrowser = require('expo-web-browser');
         await WebBrowser.openBrowserAsync(data.url);
       } catch {}
-    } else if (data.type === 'market_mover' && data.symbol) {
+    } else if (data.type === 'market_mover') {
       const { router } = require('expo-router');
-      router.push(`/symbol/${data.symbol}/chart`);
+      router.push({ pathname: '/(tabs)/trending', params: { initialTab: 'gainers' } });
     }
   });
 }
