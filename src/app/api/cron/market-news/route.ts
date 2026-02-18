@@ -71,6 +71,13 @@ function truncate(str: string, maxLen: number): string {
   return str.substring(0, maxLen - 3) + '...';
 }
 
+// FMP publishes dates in US Eastern Time — parse accordingly
+function parseFmpDate(dateStr: string): number {
+  // Convert "2026-02-18 06:42:55" → "2026-02-18T06:42:55-05:00"
+  // Using EST (-05:00); during EDT being off by 1h is fine for recency checks
+  return new Date(dateStr.replace(' ', 'T') + '-05:00').getTime();
+}
+
 // Simple hash for dedup - uses URL as unique identifier
 function hashUrl(url: string): string {
   let hash = 0;
@@ -132,21 +139,12 @@ export async function GET(req: NextRequest) {
     // Filter to recent articles and score them
     const scoredArticles = articles
       .filter(a => {
-        const publishedTime = new Date(a.publishedDate).getTime();
+        const publishedTime = parseFmpDate(a.publishedDate);
         return (now - publishedTime) <= RECENCY_WINDOW_MS;
       })
       .map(a => ({ article: a, score: scoreNewsImportance(a) }))
       .filter(a => a.score >= MIN_IMPORTANCE_SCORE)
       .sort((a, b) => b.score - a.score);
-
-    // Debug: show what we're filtering
-    const recentCount = articles.filter(a => (now - new Date(a.publishedDate).getTime()) <= RECENCY_WINDOW_MS).length;
-    const allScored = articles
-      .filter(a => (now - new Date(a.publishedDate).getTime()) <= RECENCY_WINDOW_MS)
-      .map(a => ({ symbol: a.symbol, score: scoreNewsImportance(a), title: a.title.substring(0, 60) }))
-      .filter(a => a.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
 
     if (scoredArticles.length === 0) {
       return NextResponse.json({
@@ -154,11 +152,6 @@ export async function GET(req: NextRequest) {
         message: 'No important news found',
         sent: 0,
         articlesChecked: articles.length,
-        recentCount,
-        topScored: allScored,
-        serverTime: new Date().toISOString(),
-        oldestArticle: articles[articles.length - 1]?.publishedDate,
-        newestArticle: articles[0]?.publishedDate,
       });
     }
 
