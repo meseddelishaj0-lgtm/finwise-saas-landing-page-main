@@ -113,9 +113,10 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Fetch general market news
+    // Fetch general market news (no-store to bypass Next.js fetch cache)
     const newsRes = await fetch(
-      `https://financialmodelingprep.com/api/v3/stock_news?limit=50&apikey=${FMP_API_KEY}`
+      `https://financialmodelingprep.com/api/v3/stock_news?limit=50&apikey=${FMP_API_KEY}`,
+      { cache: 'no-store' }
     );
     const articles: NewsArticle[] = await newsRes.json();
 

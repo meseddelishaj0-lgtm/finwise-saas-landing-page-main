@@ -48,10 +48,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'FMP_API_KEY not configured' }, { status: 500 });
     }
 
-    // Fetch gainers and losers from FMP
+    // Fetch gainers and losers from FMP (no-store to bypass Next.js fetch cache)
     const [gainersRes, losersRes] = await Promise.all([
-      fetch(`https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey=${FMP_API_KEY}`),
-      fetch(`https://financialmodelingprep.com/api/v3/stock_market/losers?apikey=${FMP_API_KEY}`),
+      fetch(`https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey=${FMP_API_KEY}`, { cache: 'no-store' }),
+      fetch(`https://financialmodelingprep.com/api/v3/stock_market/losers?apikey=${FMP_API_KEY}`, { cache: 'no-store' }),
     ]);
 
     const [gainers, losers]: [MarketMover[], MarketMover[]] = await Promise.all([
