@@ -126,8 +126,8 @@ export default function ProfileSetupScreen() {
       // Refresh the profile context to get updated data
       await refreshProfile();
       
-      // Navigate to main app
-      router.replace('/(tabs)');
+      // Navigate to onboarding for first-time users
+      router.replace('/onboarding');
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to save profile');
     } finally {
@@ -141,9 +141,9 @@ export default function ProfileSetupScreen() {
       'You can set up your profile later in Settings.',
       [
         { text: 'Go Back', style: 'cancel' },
-        { 
-          text: 'Skip', 
-          onPress: () => router.replace('/(tabs)'),
+        {
+          text: 'Skip',
+          onPress: () => router.replace('/onboarding'),
         },
       ]
     );

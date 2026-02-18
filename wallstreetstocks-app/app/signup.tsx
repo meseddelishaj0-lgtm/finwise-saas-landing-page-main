@@ -238,7 +238,7 @@ export default function Signup() {
     setLoading(true);
     try {
       await signup(email, password, name, username);
-      router.replace('/(tabs)');
+      router.replace('/onboarding');
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to create account');
     } finally {

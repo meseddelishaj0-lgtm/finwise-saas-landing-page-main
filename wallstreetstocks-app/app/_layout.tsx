@@ -203,6 +203,12 @@ export default function RootLayout() {
                                       gestureEnabled: false,
                                     }}
                                   />
+                                  <Stack.Screen
+                                    name="onboarding"
+                                    options={{
+                                      gestureEnabled: false,
+                                    }}
+                                  />
                                 </Stack>
                               </View>
                             </ErrorBoundary>
