@@ -19,6 +19,8 @@ import { usePortfolio } from '@/context/PortfolioContext';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 const screenWidth = Dimensions.get('window').width;
 
 interface ChartDataPoint {
@@ -36,6 +38,7 @@ export default function AnalyticsScreen() {
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1M');
   const [chartChange, setChartChange] = useState({ value: 0, percent: 0 });
   const [sp500Change, setSp500Change] = useState({ value: 0, percent: 0 });
+  const [sectorMap, setSectorMap] = useState<Record<string, string>>({});
 
   // Refresh prices when screen comes into focus
   useFocusEffect(
@@ -45,6 +48,34 @@ export default function AnalyticsScreen() {
       fetchSp500AllTimeData();
     }, [])
   );
+
+  // Fetch sector data for holdings from Twelve Data
+  useEffect(() => {
+    if (!currentPortfolio || currentPortfolio.holdings.length === 0) return;
+    const symbols = currentPortfolio.holdings.map(h => h.symbol);
+    const missing = symbols.filter(s => !sectorMap[s]);
+    if (missing.length === 0) return;
+
+    (async () => {
+      try {
+        const newMap: Record<string, string> = { ...sectorMap };
+        // Twelve Data profile supports comma-separated symbols
+        const res = await fetch(
+          `${TWELVE_DATA_URL}/profile?symbol=${missing.join(',')}&apikey=${TWELVE_DATA_API_KEY}`
+        );
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          data.forEach((p: any) => {
+            if (p.symbol && p.sector) newMap[p.symbol] = p.sector;
+          });
+        } else if (data?.symbol && data?.sector) {
+          // Single symbol returns an object, not array
+          newMap[data.symbol] = data.sector;
+        }
+        setSectorMap(newMap);
+      } catch {}
+    })();
+  }, [currentPortfolio?.holdings.length]);
 
   // Load chart data when portfolio changes or time range changes
   useEffect(() => {
@@ -277,6 +308,21 @@ export default function AnalyticsScreen() {
     label: h.symbol,
   }));
 
+  // Sector breakdown data
+  const sectorColors = ['#007AFF', '#34C759', '#FF9500', '#FF3B30', '#AF52DE', '#5AC8FA', '#FFCC00', '#FF2D55', '#30B0C7', '#A2845E'];
+  const sectorTotals: Record<string, number> = {};
+  currentPortfolio.holdings.forEach(h => {
+    const sector = sectorMap[h.symbol] || 'Unknown';
+    sectorTotals[sector] = (sectorTotals[sector] || 0) + h.currentValue;
+  });
+  const sectorEntries = Object.entries(sectorTotals).sort((a, b) => b[1] - a[1]);
+  const sectorPieData = sectorEntries.map(([sector, value], idx) => ({
+    value,
+    color: sectorColors[idx % sectorColors.length],
+    text: `${((value / totalValue) * 100).toFixed(0)}%`,
+    label: sector,
+  }));
+
   // Diversification score (Herfindahl Index)
   const holdingWeights = currentPortfolio.holdings.map(h => h.currentValue / totalValue);
   const herfindahlIndex = holdingWeights.reduce((sum, w) => sum + (w * w), 0);
@@ -421,6 +467,36 @@ export default function AnalyticsScreen() {
             </View>
           </View>
         </View>
+
+        {/* Sector Breakdown */}
+        {sectorPieData.length > 0 && sectorPieData[0].label !== 'Unknown' && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Sector Breakdown</Text>
+            <View style={styles.pieChartContainer}>
+              <PieChart
+                data={sectorPieData}
+                donut
+                radius={80}
+                innerRadius={50}
+                centerLabelComponent={() => (
+                  <View style={styles.pieChartCenter}>
+                    <Text style={styles.pieChartCenterValue}>{sectorEntries.length}</Text>
+                    <Text style={styles.pieChartCenterLabel}>Sectors</Text>
+                  </View>
+                )}
+              />
+              <View style={styles.pieLegend}>
+                {sectorPieData.slice(0, 6).map((item, idx) => (
+                  <View key={idx} style={styles.pieLegendItem}>
+                    <View style={[styles.pieLegendDot, { backgroundColor: item.color }]} />
+                    <Text style={styles.pieLegendText} numberOfLines={1}>{item.label}</Text>
+                    <Text style={styles.pieLegendPercent}>{item.text}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Diversification & Risk Row */}
         <View style={styles.row}>
