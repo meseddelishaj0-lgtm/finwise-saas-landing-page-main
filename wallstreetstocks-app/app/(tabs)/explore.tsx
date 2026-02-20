@@ -1737,7 +1737,7 @@ export default function Explore() {
     // Regular layout for other tabs
     return (
       <TouchableOpacity
-        style={[styles.itemRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+        style={[styles.itemRow, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}
         activeOpacity={0.7}
         onPress={() => router.push(`/symbol/${item.symbol}/chart`)}
       >
@@ -2186,7 +2186,7 @@ export default function Explore() {
           data={displayData}
           renderItem={renderItem}
           keyExtractor={(item, index) => `${item.symbol}-${index}`}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={[styles.listContainer, { backgroundColor: colors.background }]}
           keyboardShouldPersistTaps="handled"
           onScrollBeginDrag={() => Keyboard.dismiss()}
           // Performance optimizations
@@ -2442,7 +2442,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   retryText: { color: "#FF1744", fontWeight: "700", fontSize: 14 },
-  listContainer: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 100, backgroundColor: "#fff" },
+  listContainer: { paddingBottom: 100, backgroundColor: "#fff" },
   sectionTitle: { 
     fontSize: 20, 
     fontWeight: "700", 
@@ -2455,16 +2455,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
   },
   itemLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
   rankBadge: {
