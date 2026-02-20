@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '@/context/ThemeContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
@@ -47,6 +48,7 @@ interface Portfolio {
 }
 
 export default function PortfolioScreen() {
+  const { colors, isDark } = useTheme();
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -177,18 +179,18 @@ export default function PortfolioScreen() {
 
   if (!userId) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Portfolio</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyState}>
-          <Ionicons name="log-in-outline" size={64} color="#8E8E93" />
-          <Text style={styles.emptyTitle}>Sign in Required</Text>
-          <Text style={styles.emptySubtitle}>Please sign in to track your portfolio</Text>
+          <Ionicons name="log-in-outline" size={64} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Sign in Required</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>Please sign in to track your portfolio</Text>
         </View>
       </SafeAreaView>
     );
@@ -196,16 +198,16 @@ export default function PortfolioScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Portfolio</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -215,12 +217,12 @@ export default function PortfolioScreen() {
   const hasHoldings = portfolio && portfolio.holdings.length > 0;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Portfolio</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio</Text>
         <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.addButton}>
           <Ionicons name="add" size={24} color="#007AFF" />
         </TouchableOpacity>
@@ -228,11 +230,11 @@ export default function PortfolioScreen() {
 
       <ScrollView
         style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textSecondary} />}
       >
         {/* Portfolio Summary */}
         {hasHoldings && (
-          <View style={styles.summaryCard}>
+          <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
             <Text style={styles.summaryLabel}>Total Value</Text>
             <Text style={styles.summaryValue}>{formatCurrency(portfolio.totalValue)}</Text>
             <View style={styles.summaryRow}>
@@ -265,23 +267,23 @@ export default function PortfolioScreen() {
         {/* Holdings List */}
         {hasHoldings ? (
           <View style={styles.holdingsSection}>
-            <Text style={styles.sectionTitle}>Holdings ({portfolio.holdings.length})</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Holdings ({portfolio.holdings.length})</Text>
             {portfolio.holdings.map((holding) => (
               <TouchableOpacity
                 key={holding.id}
-                style={styles.holdingCard}
+                style={[styles.holdingCard, { backgroundColor: colors.card }]}
                 onPress={() => router.push(`/symbol/${holding.symbol}`)}
                 onLongPress={() => deleteHolding(holding.id)}
               >
                 <View style={styles.holdingHeader}>
                   <View>
-                    <Text style={styles.holdingSymbol}>{holding.symbol}</Text>
-                    <Text style={styles.holdingName} numberOfLines={1}>
+                    <Text style={[styles.holdingSymbol, { color: colors.text }]}>{holding.symbol}</Text>
+                    <Text style={[styles.holdingName, { color: colors.textSecondary }]} numberOfLines={1}>
                       {holding.name || holding.symbol}
                     </Text>
                   </View>
                   <View style={styles.holdingValue}>
-                    <Text style={styles.holdingPrice}>
+                    <Text style={[styles.holdingPrice, { color: colors.text }]}>
                       {formatCurrency(holding.marketValue || 0)}
                     </Text>
                     <Text
@@ -294,23 +296,23 @@ export default function PortfolioScreen() {
                     </Text>
                   </View>
                 </View>
-                <View style={styles.holdingDetails}>
+                <View style={[styles.holdingDetails, { borderTopColor: colors.border }]}>
                   <View style={styles.holdingDetail}>
-                    <Text style={styles.detailLabel}>Shares</Text>
-                    <Text style={styles.detailValue}>{holding.shares.toFixed(2)}</Text>
+                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Shares</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>{holding.shares.toFixed(2)}</Text>
                   </View>
                   <View style={styles.holdingDetail}>
-                    <Text style={styles.detailLabel}>Avg Cost</Text>
-                    <Text style={styles.detailValue}>{formatCurrency(holding.avgCost)}</Text>
+                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Avg Cost</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>{formatCurrency(holding.avgCost)}</Text>
                   </View>
                   <View style={styles.holdingDetail}>
-                    <Text style={styles.detailLabel}>Current</Text>
-                    <Text style={styles.detailValue}>
+                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Current</Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>
                       {formatCurrency(holding.currentPrice || 0)}
                     </Text>
                   </View>
                   <View style={styles.holdingDetail}>
-                    <Text style={styles.detailLabel}>Today</Text>
+                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Today</Text>
                     <Text
                       style={[
                         styles.detailValue,
@@ -323,17 +325,17 @@ export default function PortfolioScreen() {
                 </View>
               </TouchableOpacity>
             ))}
-            <Text style={styles.hintText}>Long press a holding to delete</Text>
+            <Text style={[styles.hintText, { color: colors.textTertiary }]}>Long press a holding to delete</Text>
           </View>
         ) : (
           <View style={styles.emptyHoldings}>
-            <Ionicons name="pie-chart-outline" size={64} color="#8E8E93" />
-            <Text style={styles.emptyTitle}>No Holdings Yet</Text>
-            <Text style={styles.emptySubtitle}>
+            <Ionicons name="pie-chart-outline" size={64} color={colors.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Holdings Yet</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
               Add stocks to track your portfolio performance
             </Text>
             <TouchableOpacity
-              style={styles.addFirstButton}
+              style={[styles.addFirstButton, { backgroundColor: colors.primary }]}
               onPress={() => setShowAddModal(true)}
             >
               <Ionicons name="add-circle" size={20} color="#fff" />
@@ -346,20 +348,20 @@ export default function PortfolioScreen() {
       {/* Add Holding Modal */}
       <Modal visible={showAddModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Stock</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Add Stock</Text>
               <TouchableOpacity onPress={() => setShowAddModal(false)}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Symbol</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Symbol</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
                 placeholder="AAPL"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textTertiary}
                 value={newHolding.symbol}
                 onChangeText={(text) => setNewHolding({ ...newHolding, symbol: text.toUpperCase() })}
                 autoCapitalize="characters"
@@ -367,11 +369,11 @@ export default function PortfolioScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Number of Shares</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Number of Shares</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
                 placeholder="10"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textTertiary}
                 value={newHolding.shares}
                 onChangeText={(text) => setNewHolding({ ...newHolding, shares: text })}
                 keyboardType="decimal-pad"
@@ -379,11 +381,11 @@ export default function PortfolioScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Average Cost per Share</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>Average Cost per Share</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
                 placeholder="150.00"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textTertiary}
                 value={newHolding.avgCost}
                 onChangeText={(text) => setNewHolding({ ...newHolding, avgCost: text })}
                 keyboardType="decimal-pad"
@@ -391,7 +393,7 @@ export default function PortfolioScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.submitButton, addingHolding && styles.submitButtonDisabled]}
+              style={[styles.submitButton, { backgroundColor: colors.primary }, addingHolding && styles.submitButtonDisabled]}
               onPress={addHolding}
               disabled={addingHolding}
             >

@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '@/context/ThemeContext';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -35,6 +36,7 @@ interface PriceAlert {
 
 export default function PriceAlerts() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -199,23 +201,23 @@ export default function PriceAlerts() {
     const isActive = item.isActive && !isTriggered;
 
     return (
-      <View style={[styles.alertItem, isTriggered && styles.triggeredAlert]}>
+      <View style={[styles.alertItem, { backgroundColor: colors.card, borderBottomColor: isDark ? colors.border : '#F0F0F0' }, isTriggered && (isDark ? { backgroundColor: '#2C2A1A' } : styles.triggeredAlert)]}>
         <TouchableOpacity
           style={styles.alertContent}
           onPress={() => router.push(`/symbol/${item.symbol}/chart` as any)}
         >
           <View style={styles.symbolContainer}>
-            <Text style={styles.symbol}>{item.symbol}</Text>
+            <Text style={[styles.symbol, { color: colors.text }]}>{item.symbol}</Text>
             {isTriggered && (
               <View style={styles.triggeredBadge}>
                 <Text style={styles.triggeredText}>Triggered</Text>
               </View>
             )}
           </View>
-          <Text style={styles.alertCondition}>
+          <Text style={[styles.alertCondition, { color: colors.textSecondary }]}>
             {item.direction === 'above' ? 'Above' : 'Below'} ${item.targetPrice.toFixed(2)}
           </Text>
-          <Text style={styles.alertDate}>
+          <Text style={[styles.alertDate, { color: colors.textTertiary }]}>
             Created {new Date(item.createdAt).toLocaleDateString()}
           </Text>
         </TouchableOpacity>
@@ -223,13 +225,13 @@ export default function PriceAlerts() {
         <View style={styles.alertActions}>
           {!isTriggered && (
             <TouchableOpacity
-              style={[styles.toggleButton, isActive && styles.activeToggle]}
+              style={[styles.toggleButton, isActive && (isDark ? { backgroundColor: '#2C2A1A', borderRadius: 8 } : styles.activeToggle)]}
               onPress={() => toggleAlert(item)}
             >
               <Ionicons
                 name={isActive ? 'notifications' : 'notifications-off'}
                 size={20}
-                color={isActive ? '#FFD700' : '#999'}
+                color={isActive ? '#FFD700' : colors.textTertiary}
               />
             </TouchableOpacity>
           )}
@@ -249,13 +251,13 @@ export default function PriceAlerts() {
   const inactiveAlerts = alerts.filter(a => !a.isActive && !a.isTriggered);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5E5' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Price Alerts</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Price Alerts</Text>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => setShowCreateModal(true)}
@@ -268,9 +270,9 @@ export default function PriceAlerts() {
         <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
       ) : alerts.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="notifications-outline" size={64} color="#CCC" />
-          <Text style={styles.emptyTitle}>No price alerts yet</Text>
-          <Text style={styles.emptySubtitle}>
+          <Ionicons name="notifications-outline" size={64} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No price alerts yet</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
             Create an alert to get notified when a stock reaches your target price
           </Text>
           <TouchableOpacity
@@ -292,9 +294,9 @@ export default function PriceAlerts() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             activeAlerts.length > 0 ? (
-              <View style={styles.sectionHeader}>
+              <View style={[styles.sectionHeader, { backgroundColor: isDark ? colors.surface : '#F8F8F8' }]}>
                 <Ionicons name="notifications" size={16} color="#FFD700" />
-                <Text style={styles.sectionTitle}>
+                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
                   {activeAlerts.length} Active Alert{activeAlerts.length !== 1 ? 's' : ''}
                 </Text>
               </View>
@@ -314,38 +316,41 @@ export default function PriceAlerts() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create Price Alert</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Create Price Alert</Text>
               <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                <Ionicons name="close" size={24} color="#000" />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.inputLabel}>Stock Symbol</Text>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Stock Symbol</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#E5E5E5', color: colors.text }]}
               placeholder="e.g., AAPL, TSLA, NVDA"
+              placeholderTextColor={colors.textTertiary}
               value={symbol}
               onChangeText={setSymbol}
               autoCapitalize="characters"
               autoCorrect={false}
             />
 
-            <Text style={styles.inputLabel}>Target Price</Text>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Target Price</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#E5E5E5', color: colors.text }]}
               placeholder="e.g., 150.00"
+              placeholderTextColor={colors.textTertiary}
               value={targetPrice}
               onChangeText={setTargetPrice}
               keyboardType="decimal-pad"
             />
 
-            <Text style={styles.inputLabel}>Alert When Price Goes</Text>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Alert When Price Goes</Text>
             <View style={styles.directionContainer}>
               <TouchableOpacity
                 style={[
                   styles.directionButton,
+                  { borderColor: isDark ? colors.border : '#E5E5E5' },
                   direction === 'above' && styles.selectedDirection,
                 ]}
                 onPress={() => setDirection('above')}
@@ -358,6 +363,7 @@ export default function PriceAlerts() {
                 <Text
                   style={[
                     styles.directionText,
+                    { color: colors.text },
                     direction === 'above' && styles.selectedDirectionText,
                   ]}
                 >
@@ -367,6 +373,7 @@ export default function PriceAlerts() {
               <TouchableOpacity
                 style={[
                   styles.directionButton,
+                  { borderColor: isDark ? colors.border : '#E5E5E5' },
                   direction === 'below' && styles.selectedDirectionBelow,
                 ]}
                 onPress={() => setDirection('below')}
@@ -379,6 +386,7 @@ export default function PriceAlerts() {
                 <Text
                   style={[
                     styles.directionText,
+                    { color: colors.text },
                     direction === 'below' && styles.selectedDirectionText,
                   ]}
                 >

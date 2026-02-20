@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { useTheme } from '@/context/ThemeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -51,6 +52,7 @@ interface OtherUser {
 }
 
 export default function ConversationScreen() {
+  const { colors, isDark } = useTheme();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
@@ -311,7 +313,7 @@ export default function ConversationScreen() {
     return (
       <View>
         {showDate && (
-          <Text style={styles.dateHeader}>{formatDate(item.createdAt)}</Text>
+          <Text style={[styles.dateHeader, { color: colors.textSecondary }]}>{formatDate(item.createdAt)}</Text>
         )}
         <TouchableOpacity
           style={[styles.messageContainer, isMe ? styles.myMessage : styles.theirMessage]}
@@ -321,7 +323,7 @@ export default function ConversationScreen() {
         >
           <View style={[
             styles.messageBubble,
-            isMe ? styles.myBubble : styles.theirBubble,
+            isMe ? styles.myBubble : [styles.theirBubble, { backgroundColor: colors.surface }],
             item.imageUrl && styles.imageBubble
           ]}>
             {item.imageUrl && (
@@ -340,11 +342,11 @@ export default function ConversationScreen() {
               </TouchableOpacity>
             )}
             {item.content ? (
-              <Text style={[styles.messageText, isMe ? styles.myText : styles.theirText]}>
+              <Text style={[styles.messageText, isMe ? styles.myText : [styles.theirText, { color: colors.text }]]}>
                 {item.content}
               </Text>
             ) : null}
-            <Text style={[styles.messageTime, isMe ? styles.myTime : styles.theirTime]}>
+            <Text style={[styles.messageTime, isMe ? styles.myTime : [styles.theirTime, { color: colors.textSecondary }]]}>
               {formatTime(item.createdAt)}
             </Text>
           </View>
@@ -355,26 +357,26 @@ export default function ConversationScreen() {
 
   if (!userId) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Messages</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyState}>
-          <Text>Please sign in to view messages</Text>
+          <Text style={{ color: colors.text }}>Please sign in to view messages</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.background : '#F2F2F7' }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         {otherUser && (
           <TouchableOpacity
@@ -384,22 +386,22 @@ export default function ConversationScreen() {
             {otherUser.profileImage ? (
               <Image source={{ uri: otherUser.profileImage }} style={styles.headerAvatar} />
             ) : (
-              <View style={styles.headerAvatarPlaceholder}>
-                <Text style={styles.headerAvatarText}>
+              <View style={[styles.headerAvatarPlaceholder, { backgroundColor: isDark ? colors.surface : '#E5E5EA' }]}>
+                <Text style={[styles.headerAvatarText, { color: colors.textSecondary }]}>
                   {(otherUser.name || otherUser.username || 'U')[0].toUpperCase()}
                 </Text>
               </View>
             )}
             <View>
               <View style={styles.headerNameRow}>
-                <Text style={styles.headerTitle}>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>
                   {otherUser.name || otherUser.username}
                 </Text>
                 {otherUser.isVerified && (
                   <Ionicons name="checkmark-circle" size={14} color="#007AFF" style={{ marginLeft: 4 }} />
                 )}
               </View>
-              <Text style={styles.headerUsername}>@{otherUser.username}</Text>
+              <Text style={[styles.headerUsername, { color: colors.textSecondary }]}>@{otherUser.username}</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -413,7 +415,7 @@ export default function ConversationScreen() {
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
           <FlatList
@@ -429,7 +431,7 @@ export default function ConversationScreen() {
 
         {/* Selected Image Preview */}
         {selectedImage && (
-          <View style={styles.imagePreviewContainer}>
+          <View style={[styles.imagePreviewContainer, { backgroundColor: colors.background, borderTopColor: isDark ? colors.border : '#E5E5EA' }]}>
             <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
             <TouchableOpacity
               style={styles.removeImageButton}
@@ -440,14 +442,14 @@ export default function ConversationScreen() {
           </View>
         )}
 
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { backgroundColor: colors.background, borderTopColor: isDark ? colors.border : '#E5E5EA' }]}>
           <TouchableOpacity style={styles.attachButton} onPress={pickImage}>
-            <Ionicons name="image-outline" size={24} color="#007AFF" />
+            <Ionicons name="image-outline" size={24} color={colors.primary} />
           </TouchableOpacity>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
             placeholder="Type a message..."
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={message}
             onChangeText={setMessage}
             multiline

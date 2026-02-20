@@ -21,6 +21,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
 import { FLATLIST_PERFORMANCE_PROPS, ITEM_HEIGHTS } from '@/components/OptimizedListItems';
+import { useTheme } from '@/context/ThemeContext';
 
 const DELETE_BUTTON_WIDTH = 80;
 const CONVERSATION_ITEM_HEIGHT = 89; // Fixed height for getItemLayout optimization
@@ -67,6 +68,7 @@ interface SearchUser {
 }
 
 export default function MessagesScreen() {
+  const { colors, isDark } = useTheme();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -325,7 +327,7 @@ export default function MessagesScreen() {
         overshootRight={false}
       >
         <TouchableOpacity
-          style={styles.conversationItem}
+          style={[styles.conversationItem, { backgroundColor: colors.card }]}
           onPress={() => router.push(`/messages/${item.id}`)}
           onLongPress={() => deleteConversation(item.id)}
           delayLongPress={500}
@@ -335,19 +337,19 @@ export default function MessagesScreen() {
             {item.otherUser.profileImage ? (
               <Image source={{ uri: item.otherUser.profileImage }} style={styles.avatar} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>
+              <View style={[styles.avatarPlaceholder, { backgroundColor: isDark ? colors.surface : '#E5E5EA' }]}>
+                <Text style={[styles.avatarText, { color: colors.textSecondary }]}>
                   {(item.otherUser.name || item.otherUser.username || 'U')[0].toUpperCase()}
                 </Text>
               </View>
             )}
-            {item.unreadCount > 0 && <View style={styles.unreadBadge} />}
+            {item.unreadCount > 0 && <View style={[styles.unreadBadge, { borderColor: colors.card }]} />}
           </View>
 
           <View style={styles.conversationContent}>
             <View style={styles.conversationHeader}>
               <View style={styles.nameRow}>
-                <Text style={styles.userName} numberOfLines={1}>
+                <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
                   {item.otherUser.name || item.otherUser.username}
                 </Text>
                 {item.otherUser.isVerified && (
@@ -355,23 +357,23 @@ export default function MessagesScreen() {
                 )}
               </View>
               {item.lastMessage && (
-                <Text style={styles.time}>{formatTime(item.lastMessage.createdAt)}</Text>
+                <Text style={[styles.time, { color: colors.textSecondary }]}>{formatTime(item.lastMessage.createdAt)}</Text>
               )}
             </View>
             {item.lastMessage ? (
               <Text
-                style={[styles.lastMessage, item.unreadCount > 0 && styles.unreadMessage]}
+                style={[styles.lastMessage, { color: colors.textSecondary }, item.unreadCount > 0 && { color: colors.text, fontWeight: '500' }]}
                 numberOfLines={1}
               >
                 {item.lastMessage.isFromMe && 'You: '}
                 {item.lastMessage.content || '[Image]'}
               </Text>
             ) : (
-              <Text style={styles.noMessage}>Start a conversation</Text>
+              <Text style={[styles.noMessage, { color: colors.textSecondary }]}>Start a conversation</Text>
             )}
           </View>
 
-          <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary || colors.textSecondary} />
         </TouchableOpacity>
       </Swipeable>
     );
@@ -379,44 +381,44 @@ export default function MessagesScreen() {
 
   if (!userId) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Messages</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyState}>
-          <Ionicons name="log-in-outline" size={64} color="#8E8E93" />
-          <Text style={styles.emptyTitle}>Sign in Required</Text>
-          <Text style={styles.emptySubtitle}>Please sign in to access messages</Text>
+          <Ionicons name="log-in-outline" size={64} color={colors.textSecondary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Sign in Required</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>Please sign in to access messages</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Messages</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
         <TouchableOpacity onPress={openNewMessageModal} style={styles.newMessageButton}>
-          <Ionicons name="create-outline" size={24} color="#007AFF" />
+          <Ionicons name="create-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : conversations.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="chatbubbles-outline" size={64} color="#8E8E93" />
-          <Text style={styles.emptyTitle}>No Messages Yet</Text>
-          <Text style={styles.emptySubtitle}>
+          <Ionicons name="chatbubbles-outline" size={64} color={colors.textSecondary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No Messages Yet</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
             Tap the compose button to start a conversation
           </Text>
           <TouchableOpacity style={styles.startMessageButton} onPress={openNewMessageModal}>
@@ -431,8 +433,8 @@ export default function MessagesScreen() {
           keyExtractor={(item) => item.id.toString()}
           getItemLayout={getConversationLayout}
           {...FLATLIST_PERFORMANCE_PROPS}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textSecondary} />}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: isDark ? colors.border : '#E5E5EA' }]} />}
           contentContainerStyle={styles.listContent}
         />
       )}
@@ -444,40 +446,40 @@ export default function MessagesScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setNewMessageModal(false)}
       >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
             <TouchableOpacity onPress={() => setNewMessageModal(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={[styles.cancelText, { color: colors.primary }]}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>New Message</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>New Message</Text>
             <View style={{ width: 60 }} />
           </View>
 
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#8E8E93" />
+          <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
+            <Ionicons name="search" size={20} color={colors.textSecondary} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: colors.text }]}
               placeholder="Search by name or username..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
           </View>
 
           {searchLoading ? (
             <View style={styles.searchLoadingContainer}>
-              <ActivityIndicator size="small" color="#007AFF" />
+              <ActivityIndicator size="small" color={colors.primary} />
             </View>
           ) : searchQuery.length > 0 && searchResults.length === 0 ? (
             <View style={styles.noResultsContainer}>
-              <Ionicons name="person-outline" size={48} color="#C7C7CC" />
-              <Text style={styles.noResultsText}>No users found</Text>
+              <Ionicons name="person-outline" size={48} color={colors.textTertiary || colors.textSecondary} />
+              <Text style={[styles.noResultsText, { color: colors.textSecondary }]}>No users found</Text>
             </View>
           ) : (
             <FlatList
@@ -485,7 +487,7 @@ export default function MessagesScreen() {
               keyExtractor={(item) => item.id.toString()}
               ListHeaderComponent={
                 searchQuery.length === 0 && suggestedUsers.length > 0 ? (
-                  <Text style={styles.sectionHeader}>Suggested</Text>
+                  <Text style={[styles.sectionHeader, { color: colors.textSecondary, backgroundColor: colors.surface }]}>Suggested</Text>
                 ) : null
               }
               renderItem={({ item }) => (
@@ -497,21 +499,21 @@ export default function MessagesScreen() {
                     {item.profileImage ? (
                       <Image source={{ uri: item.profileImage }} style={styles.userAvatar} />
                     ) : (
-                      <View style={styles.userAvatarPlaceholder}>
-                        <Text style={styles.userAvatarText}>
+                      <View style={[styles.userAvatarPlaceholder, { backgroundColor: isDark ? colors.surface : '#E5E5EA' }]}>
+                        <Text style={[styles.userAvatarText, { color: colors.textSecondary }]}>
                           {getDisplayName(item)[0].toUpperCase()}
                         </Text>
                       </View>
                     )}
                   </View>
                   <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{getDisplayName(item)}</Text>
-                    <Text style={styles.userHandle}>@{getHandle(item)}</Text>
+                    <Text style={[styles.userName, { color: colors.text }]}>{getDisplayName(item)}</Text>
+                    <Text style={[styles.userHandle, { color: colors.textSecondary }]}>@{getHandle(item)}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary || colors.textSecondary} />
                 </TouchableOpacity>
               )}
-              ItemSeparatorComponent={() => <View style={styles.userSeparator} />}
+              ItemSeparatorComponent={() => <View style={[styles.userSeparator, { backgroundColor: isDark ? colors.border : '#E5E5EA' }]} />}
               contentContainerStyle={styles.userListContent}
             />
           )}

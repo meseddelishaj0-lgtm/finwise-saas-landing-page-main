@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '@/context/ThemeContext';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -37,6 +38,7 @@ interface Notification {
 
 export default function Notifications() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -183,7 +185,11 @@ export default function Notifications() {
 
     return (
       <TouchableOpacity
-        style={[styles.notificationItem, !item.isRead && styles.unreadNotification]}
+        style={[
+          styles.notificationItem,
+          { backgroundColor: colors.background, borderBottomColor: colors.borderLight },
+          !item.isRead && { backgroundColor: isDark ? colors.surface : '#F0F8FF' },
+        ]}
         onPress={() => handleNotificationPress(item)}
         activeOpacity={0.7}
       >
@@ -202,31 +208,31 @@ export default function Notifications() {
             ) : item.fromUser?.profileImage ? (
               <Image source={{ uri: item.fromUser.profileImage }} style={styles.avatar} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
+              <View style={[styles.avatarPlaceholder, { backgroundColor: colors.primary }]}>
                 <Text style={styles.avatarInitial}>
                   {item.fromUser?.name?.[0]?.toUpperCase() || '?'}
                 </Text>
               </View>
             )}
             <View style={styles.textContainer}>
-              <Text style={styles.notificationText}>
+              <Text style={[styles.notificationText, { color: colors.textSecondary }]}>
                 {isPriceAlert ? (
                   item.message
                 ) : (
                   <>
-                    <Text style={styles.username}>{item.fromUser?.name || 'Someone'}</Text>
+                    <Text style={[styles.username, { color: colors.text }]}>{item.fromUser?.name || 'Someone'}</Text>
                     {' '}{item.message}
                   </>
                 )}
               </Text>
-              <Text style={styles.timeText}>{formatTimeAgo(item.createdAt)}</Text>
+              <Text style={[styles.timeText, { color: colors.textTertiary }]}>{formatTimeAgo(item.createdAt)}</Text>
             </View>
           </View>
 
           {/* Post Preview */}
           {item.post && (
-            <View style={styles.postPreview}>
-              <Text style={styles.postPreviewText} numberOfLines={2}>
+            <View style={[styles.postPreview, { backgroundColor: isDark ? colors.borderLight : '#F5F5F5' }]}>
+              <Text style={[styles.postPreviewText, { color: colors.textSecondary }]} numberOfLines={2}>
                 {item.post.title}
               </Text>
             </View>
@@ -234,7 +240,7 @@ export default function Notifications() {
         </View>
 
         {/* Unread Dot */}
-        {!item.isRead && <View style={styles.unreadDot} />}
+        {!item.isRead && <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />}
       </TouchableOpacity>
     );
   };
@@ -242,27 +248,27 @@ export default function Notifications() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
         {unreadCount > 0 && (
           <TouchableOpacity onPress={markAllAsRead} style={styles.markAllButton}>
-            <Text style={styles.markAllText}>Mark all read</Text>
+            <Text style={[styles.markAllText, { color: colors.primary }]}>Mark all read</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
       ) : notifications.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="notifications-outline" size={64} color="#CCC" />
-          <Text style={styles.emptyTitle}>No notifications yet</Text>
-          <Text style={styles.emptySubtitle}>
+          <Ionicons name="notifications-outline" size={64} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No notifications yet</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
             When someone likes, comments, or mentions you, you&apos;ll see it here
           </Text>
         </View>
@@ -272,7 +278,7 @@ export default function Notifications() {
           renderItem={renderNotification}
           keyExtractor={(item) => item.id.toString()}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.textSecondary} />
           }
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}

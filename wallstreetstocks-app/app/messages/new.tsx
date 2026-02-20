@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import { useTheme } from '@/context/ThemeContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -41,6 +42,7 @@ interface Message {
 }
 
 export default function NewConversationScreen() {
+  const { colors, isDark } = useTheme();
   const { recipientId } = useLocalSearchParams<{ recipientId: string }>();
   const [recipient, setRecipient] = useState<RecipientUser | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -217,11 +219,11 @@ export default function NewConversationScreen() {
 
     return (
       <View style={[styles.messageContainer, isMe ? styles.myMessage : styles.theirMessage]}>
-        <View style={[styles.messageBubble, isMe ? styles.myBubble : styles.theirBubble]}>
-          <Text style={[styles.messageText, isMe ? styles.myText : styles.theirText]}>
+        <View style={[styles.messageBubble, isMe ? styles.myBubble : [styles.theirBubble, { backgroundColor: colors.surface }]]}>
+          <Text style={[styles.messageText, isMe ? styles.myText : [styles.theirText, { color: colors.text }]]}>
             {item.content}
           </Text>
-          <Text style={[styles.messageTime, isMe ? styles.myTime : styles.theirTime]}>
+          <Text style={[styles.messageTime, isMe ? styles.myTime : [styles.theirTime, { color: colors.textSecondary }]]}>
             {formatTime(item.createdAt)}
           </Text>
         </View>
@@ -231,52 +233,52 @@ export default function NewConversationScreen() {
 
   if (!userId) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>New Message</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>New Message</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>Please sign in to send messages</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Please sign in to send messages</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.background : '#F2F2F7' }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         {loading ? (
-          <ActivityIndicator size="small" color="#007AFF" />
+          <ActivityIndicator size="small" color={colors.primary} />
         ) : recipient ? (
           <View style={styles.headerUser}>
             {recipient.profileImage ? (
               <Image source={{ uri: recipient.profileImage }} style={styles.headerAvatar} />
             ) : (
-              <View style={styles.headerAvatarPlaceholder}>
-                <Text style={styles.headerAvatarText}>
+              <View style={[styles.headerAvatarPlaceholder, { backgroundColor: isDark ? colors.surface : '#E5E5EA' }]}>
+                <Text style={[styles.headerAvatarText, { color: colors.textSecondary }]}>
                   {getDisplayName(recipient)[0].toUpperCase()}
                 </Text>
               </View>
             )}
             <View>
               <View style={styles.headerNameRow}>
-                <Text style={styles.headerTitle}>{getDisplayName(recipient)}</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>{getDisplayName(recipient)}</Text>
                 {recipient.isVerified && (
                   <Ionicons name="checkmark-circle" size={14} color="#007AFF" style={{ marginLeft: 4 }} />
                 )}
               </View>
-              <Text style={styles.headerUsername}>@{getHandle(recipient)}</Text>
+              <Text style={[styles.headerUsername, { color: colors.textSecondary }]}>@{getHandle(recipient)}</Text>
             </View>
           </View>
         ) : (
-          <Text style={styles.headerTitle}>New Message</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>New Message</Text>
         )}
         <View style={{ width: 40 }} />
       </View>
@@ -294,16 +296,16 @@ export default function NewConversationScreen() {
                   {recipient.profileImage ? (
                     <Image source={{ uri: recipient.profileImage }} style={styles.recipientAvatar} />
                   ) : (
-                    <View style={styles.recipientAvatarPlaceholder}>
-                      <Text style={styles.recipientAvatarText}>
+                    <View style={[styles.recipientAvatarPlaceholder, { backgroundColor: isDark ? colors.surface : '#E5E5EA' }]}>
+                      <Text style={[styles.recipientAvatarText, { color: colors.textSecondary }]}>
                         {getDisplayName(recipient)[0].toUpperCase()}
                       </Text>
                     </View>
                   )}
-                  <Text style={styles.recipientName}>{getDisplayName(recipient)}</Text>
-                  <Text style={styles.recipientHandle}>@{getHandle(recipient)}</Text>
+                  <Text style={[styles.recipientName, { color: colors.text }]}>{getDisplayName(recipient)}</Text>
+                  <Text style={[styles.recipientHandle, { color: colors.textSecondary }]}>@{getHandle(recipient)}</Text>
                 </View>
-                <Text style={styles.newConversationHint}>
+                <Text style={[styles.newConversationHint, { color: colors.textSecondary }]}>
                   Send a message to start the conversation
                 </Text>
               </>
@@ -322,7 +324,7 @@ export default function NewConversationScreen() {
 
         {/* Selected Image Preview */}
         {selectedImage && (
-          <View style={styles.imagePreviewContainer}>
+          <View style={[styles.imagePreviewContainer, { backgroundColor: colors.background, borderTopColor: isDark ? colors.border : '#E5E5EA' }]}>
             <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
             <TouchableOpacity
               style={styles.removeImageButton}
@@ -333,14 +335,14 @@ export default function NewConversationScreen() {
           </View>
         )}
 
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { backgroundColor: colors.background, borderTopColor: isDark ? colors.border : '#E5E5EA' }]}>
           <TouchableOpacity style={styles.attachButton} onPress={pickImage}>
-            <Ionicons name="image-outline" size={24} color="#007AFF" />
+            <Ionicons name="image-outline" size={24} color={colors.primary} />
           </TouchableOpacity>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
             placeholder="Type a message..."
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={message}
             onChangeText={setMessage}
             multiline
