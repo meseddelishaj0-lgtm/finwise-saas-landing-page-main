@@ -2348,7 +2348,7 @@ export default function CommunityPage() {
             {/* Gold Feature - AI Stock Analysis */}
             <TouchableOpacity
               style={[
-                styles.premiumCard,
+                styles.premiumCard, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' },
                 canAccess(FEATURE_TIERS.BASIC_ANALYSIS) && styles.premiumCardUnlocked,
               ]}
               onPress={() => {
@@ -2375,7 +2375,7 @@ export default function CommunityPage() {
             {/* Platinum Feature - Real-time Alerts */}
             <TouchableOpacity
               style={[
-                styles.premiumCard,
+                styles.premiumCard, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' },
                 canAccess(FEATURE_TIERS.REALTIME_ALERTS) && styles.premiumCardUnlocked,
               ]}
               onPress={() => {
@@ -2402,7 +2402,7 @@ export default function CommunityPage() {
             {/* Diamond Feature - Research Reports */}
             <TouchableOpacity
               style={[
-                styles.premiumCard,
+                styles.premiumCard, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' },
                 canAccess(FEATURE_TIERS.RESEARCH_REPORTS) && styles.premiumCardUnlocked,
               ]}
               onPress={() => {
@@ -2429,7 +2429,7 @@ export default function CommunityPage() {
             {/* Diamond Feature - Portfolio Optimization */}
             <TouchableOpacity
               style={[
-                styles.premiumCard,
+                styles.premiumCard, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' },
                 canAccess(FEATURE_TIERS.PORTFOLIO_OPTIMIZATION) && styles.premiumCardUnlocked,
               ]}
               onPress={() => {
