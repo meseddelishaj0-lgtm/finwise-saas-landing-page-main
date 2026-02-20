@@ -1344,7 +1344,7 @@ export default function Screener() {
 
       {/* All Filters Modal */}
       <Modal visible={showAllFilters} animationType="slide" onRequestClose={() => setShowAllFilters(false)}>
-        <SafeAreaView style={styles.fullModalContainer} edges={['top', 'bottom']}>
+        <SafeAreaView style={styles.fullModalContainer} edges={['bottom']}>
           <View style={styles.fullModalHeader}>
             <TouchableOpacity onPress={() => setShowAllFilters(false)} style={styles.fullModalCloseBtn}>
               <Ionicons name="close" size={28} color="#000" />
@@ -1737,7 +1737,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 60,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
     backgroundColor: '#fff',
