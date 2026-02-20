@@ -1962,7 +1962,7 @@ export default function Dashboard() {
               {liveMarketIndices.map((index) => (
                 <TouchableOpacity
                   key={index.symbol}
-                  style={[styles.indexCard, { backgroundColor: colors.card }]}
+                  style={[styles.indexCard, { backgroundColor: isDark ? colors.card : '#F6F6F8' }]}
                   onPress={() => router.push(`/symbol/${encodeURIComponent(index.symbol)}/chart`)}
                 >
                   <View style={styles.indexCardHeader}>
@@ -2001,7 +2001,7 @@ export default function Dashboard() {
         </View>
 
         {/* Enhanced Portfolio Section */}
-        <View style={[styles.portfolioSection, { backgroundColor: colors.card }]}>
+        <View style={[styles.portfolioSection, { backgroundColor: isDark ? colors.card : '#F6F6F8' }]}>
           <View style={styles.portfolioTopRow}>
             <View style={styles.portfolioSelectorContainer}>
               <TouchableOpacity
@@ -2091,7 +2091,7 @@ export default function Dashboard() {
             const chartSpacing = Math.max(2, (portfolioChartWidth - 40) / smoothedChartData.length);
 
             return (
-            <View style={[styles.portfolioChartContainer, { backgroundColor: isDark ? colors.card : colors.background }]}>
+            <View style={[styles.portfolioChartContainer, { backgroundColor: isDark ? colors.card : '#F6F6F8' }]}>
               <GiftedLineChart
                 areaChart
                 data={smoothedChartData}
