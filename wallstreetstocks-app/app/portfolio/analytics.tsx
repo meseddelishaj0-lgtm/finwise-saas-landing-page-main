@@ -75,7 +75,7 @@ export default function AnalyticsScreen() {
         setSectorMap(newMap);
       } catch {}
     })();
-  }, [currentPortfolio?.holdings.length]);
+  }, [currentPortfolio?.holdings.map(h => h.symbol).join(',')]);
 
   // Load chart data when portfolio changes or time range changes
   useEffect(() => {
