@@ -275,7 +275,7 @@ export default function MenuPage() {
       >
         {/* Profile Card */}
         <TouchableOpacity
-          style={[styles.profileCard, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}
+          style={[styles.profileCard, { backgroundColor: isDark ? colors.card : '#F5F5F7', shadowOpacity: isDark ? 0 : 0.05 }]}
           onPress={() => router.push('/profile/my-profile')}
           activeOpacity={0.7}
         >
@@ -323,7 +323,7 @@ export default function MenuPage() {
         {menuSections.map((section, sectionIndex) => (
           <View key={sectionIndex} style={styles.section}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
-            <View style={[styles.sectionContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.sectionContent, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}>
               {section.items.map((item, itemIndex) => (
                 <TouchableOpacity
                   key={itemIndex}
@@ -374,7 +374,7 @@ export default function MenuPage() {
 
         {/* Sign Out Button */}
         <View style={styles.section}>
-          <View style={[styles.sectionContent, { backgroundColor: colors.card }]}>
+          <View style={[styles.sectionContent, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}>
             <TouchableOpacity
               style={[styles.menuItem, styles.menuItemLast]}
               onPress={handleSignOut}
