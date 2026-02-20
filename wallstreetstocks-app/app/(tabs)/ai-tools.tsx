@@ -767,7 +767,7 @@ Always remind users that this is educational information, not financial advice.`
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
+        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? 'transparent' : colors.borderLight }]}>
           <View style={styles.headerContent}>
             <View style={styles.headerIconBg}>
               <Ionicons name="sparkles" size={28} color="#007AFF" />
@@ -780,7 +780,7 @@ Always remind users that this is educational information, not financial advice.`
         </View>
 
         {/* Tab Selector */}
-        <View style={styles.tabContainer}>
+        <View style={[styles.tabContainer, { backgroundColor: colors.background, borderBottomColor: isDark ? 'transparent' : '#E5E5EA' }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {[
               { key: 'analyzer', icon: 'analytics', label: 'Analyzer', isDiamond: true },
@@ -856,11 +856,11 @@ Always remind users that this is educational information, not financial advice.`
             ) : (
             <>
             {/* Search Card */}
-            <View style={[styles.searchCard, { backgroundColor: colors.background }]}>
+            <View style={[styles.searchCard, { backgroundColor: colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3, borderRadius: isDark ? 0 : 20 }]}>
               <Text style={[styles.searchTitle, { color: colors.text }]}>Stock Analyzer</Text>
               <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>DCF Valuation & AI-Powered Analysis</Text>
 
-              <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : colors.border }]}>
                 <Ionicons name="search" size={20} color={colors.textTertiary} />
                 <TextInput
                   style={[styles.searchInput, { color: colors.text }]}
@@ -900,7 +900,7 @@ Always remind users that this is educational information, not financial advice.`
                   {QUICK_PICKS.map((symbol) => (
                     <TouchableOpacity
                       key={symbol}
-                      style={[styles.quickPickChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                      style={[styles.quickPickChip, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : colors.border }]}
                       onPress={() => handleAnalyze(symbol)}
                     >
                       <Text style={styles.quickPickText}>{symbol}</Text>
@@ -1187,16 +1187,16 @@ Always remind users that this is educational information, not financial advice.`
             ) : (
             <>
             {/* Search Card */}
-            <View style={[styles.searchCard, { backgroundColor: colors.background }]}>
+            <View style={[styles.searchCard, { backgroundColor: colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3, borderRadius: isDark ? 0 : 20 }]}>
               <Text style={[styles.searchTitle, { color: colors.text }]}>Stock Comparison</Text>
               <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>Side-by-side analysis with DCF valuation</Text>
 
               <View style={styles.compareInputRow}>
                 <View style={styles.compareInputWrapper}>
-                  <View style={[styles.compareInputBox, compareTicker1 && styles.compareInputBoxActive]}>
+                  <View style={[styles.compareInputBox, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' }, compareTicker1 && styles.compareInputBoxActive]}>
                     <Ionicons name="business" size={18} color={compareTicker1 ? '#007AFF' : '#8E8E93'} />
                     <TextInput
-                      style={[styles.compareInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                      style={[styles.compareInput, { backgroundColor: 'transparent', color: colors.text }]}
                       placeholder="AAPL"
                       placeholderTextColor={colors.textTertiary}
                       value={compareTicker1}
@@ -1213,10 +1213,10 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
 
                 <View style={styles.compareInputWrapper}>
-                  <View style={[styles.compareInputBox, compareTicker2 && styles.compareInputBoxActive]}>
+                  <View style={[styles.compareInputBox, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' }, compareTicker2 && styles.compareInputBoxActive]}>
                     <Ionicons name="business" size={18} color={compareTicker2 ? '#FF9500' : '#8E8E93'} />
                     <TextInput
-                      style={[styles.compareInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
+                      style={[styles.compareInput, { backgroundColor: 'transparent', color: colors.text }]}
                       placeholder="MSFT"
                       placeholderTextColor={colors.textTertiary}
                       value={compareTicker2}
@@ -1253,7 +1253,7 @@ Always remind users that this is educational information, not financial advice.`
                   ].map(([t1, t2], idx) => (
                     <TouchableOpacity
                       key={idx}
-                      style={[styles.quickCompareChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                      style={[styles.quickCompareChip, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : colors.border }]}
                       onPress={() => { setCompareTicker1(t1); setCompareTicker2(t2); }}
                     >
                       <Text style={styles.quickCompareText}>{t1} vs {t2}</Text>
@@ -1503,11 +1503,11 @@ Always remind users that this is educational information, not financial advice.`
             ) : (
             <>
             {/* Search Card */}
-            <View style={[styles.searchCard, { backgroundColor: colors.background }]}>
+            <View style={[styles.searchCard, { backgroundColor: colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3, borderRadius: isDark ? 0 : 20 }]}>
               <Text style={[styles.searchTitle, { color: colors.text }]}>AI Price Forecast</Text>
               <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>3-6 month price targets & probability analysis</Text>
 
-              <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : colors.border }]}>
                 <Ionicons name="telescope" size={20} color={colors.textTertiary} />
                 <TextInput
                   style={[styles.searchInput, { color: colors.text }]}
@@ -1547,7 +1547,7 @@ Always remind users that this is educational information, not financial advice.`
                   {['TSLA', 'NVDA', 'AAPL', 'META', 'AMD', 'AMZN'].map((sym) => (
                     <TouchableOpacity
                       key={sym}
-                      style={[styles.quickPickChip, { backgroundColor: colors.surface, borderColor: '#5856D620' }]}
+                      style={[styles.quickPickChip, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#5856D620' }]}
                       onPress={() => handleForecast(sym)}
                     >
                       <Text style={[styles.quickPickText, { color: '#5856D6' }]}>{sym}</Text>
@@ -1953,7 +1953,7 @@ Always remind users that this is educational information, not financial advice.`
 
             {/* Input Area */}
             <View style={[styles.chatInputArea, { backgroundColor: colors.background }]}>
-              <View style={[styles.chatInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.chatInputWrapper, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : colors.border }]}>
                 <TextInput
                   style={[styles.chatTextInput, { color: colors.text }]}
                   placeholder="Ask about stocks, trading strategies..."
