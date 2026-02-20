@@ -11,6 +11,7 @@ import {
   StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from '@/context/ThemeContext';
 
 interface TrendingItem {
   symbol: string;
@@ -20,6 +21,7 @@ interface TrendingItem {
 }
 
 export default function Trending() {
+  const { colors, isDark } = useTheme();
   const [trending, setTrending] = useState<TrendingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,12 +91,12 @@ export default function Trending() {
   };
 
   const renderItem = ({ item, index }: { item: TrendingItem; index: number }) => (
-    <View style={styles.row}>
+    <View style={[styles.row, { backgroundColor: colors.card, borderBottomColor: isDark ? colors.border : '#eef2f7' }]}>
       <View style={styles.left}>
-        <Text style={styles.rank}>{index + 1}</Text>
+        <Text style={[styles.rank, { color: colors.textTertiary }]}>{index + 1}</Text>
         <View>
-          <Text style={styles.symbol}>{item.symbol}</Text>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text style={[styles.symbol, { color: colors.text }]}>{item.symbol}</Text>
+          <Text style={[styles.name, { color: colors.textSecondary }]} numberOfLines={1}>
             {item.companyName}
           </Text>
         </View>
@@ -105,10 +107,10 @@ export default function Trending() {
 
   if (loading && trending.length === 0) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.header}>
-          <Text style={styles.title}>Trending</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+        <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: isDark ? colors.border : '#e5e7eb' }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Trending</Text>
         </View>
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#2563eb" />
@@ -119,10 +121,10 @@ export default function Trending() {
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.header}>
-          <Text style={styles.title}>Trending</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+        <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: isDark ? colors.border : '#e5e7eb' }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Trending</Text>
         </View>
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
@@ -132,12 +134,12 @@ export default function Trending() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.card} />
 
       {/* Fixed Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Trending</Text>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: isDark ? colors.border : '#e5e7eb' }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Trending</Text>
 
         {/* Market Chips */}
         <ScrollView
@@ -145,31 +147,31 @@ export default function Trending() {
           showsHorizontalScrollIndicator={false}
           style={styles.chipsRow}
         >
-          <View style={styles.chip}>
-            <Text style={styles.chipText}>DIA</Text>
+          <View style={[styles.chip, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.chipText, { color: colors.text }]}>DIA</Text>
             <Text style={styles.chipChange}>↓ 0.92%</Text>
           </View>
-          <View style={styles.chip}>
-            <Text style={styles.chipText}>SPY</Text>
+          <View style={[styles.chip, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.chipText, { color: colors.text }]}>SPY</Text>
             <Text style={styles.chipChange}>↓ 0.86%</Text>
           </View>
-          <View style={styles.chip}>
-            <Text style={styles.chipText}>QQQ</Text>
+          <View style={[styles.chip, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.chipText, { color: colors.text }]}>QQQ</Text>
             <Text style={styles.chipChange}>↓ 0.87%</Text>
           </View>
         </ScrollView>
 
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           View the top symbols with the most trending streams right now. Refreshes every 5 minutes.
         </Text>
 
         {/* Tabs */}
         <View style={styles.tabs}>
           <Text style={styles.tabActive}>Trending</Text>
-          <Text style={styles.tabInactive}>Most Active</Text>
-          <Text style={styles.tabInactive}>Watchers</Text>
-          <Text style={styles.tabInactive}>Most Bullish</Text>
-          <Text style={styles.tabInactive}>Most Bearish</Text>
+          <Text style={[styles.tabInactive, { color: colors.textSecondary }]}>Most Active</Text>
+          <Text style={[styles.tabInactive, { color: colors.textSecondary }]}>Watchers</Text>
+          <Text style={[styles.tabInactive, { color: colors.textSecondary }]}>Most Bullish</Text>
+          <Text style={[styles.tabInactive, { color: colors.textSecondary }]}>Most Bearish</Text>
         </View>
       </View>
 

@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function HouseRules() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   const coreRules = [
     {
@@ -107,33 +109,33 @@ export default function HouseRules() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>House Rules</Text>
+        <Text style={[styles.title, { color: colors.text }]}>House Rules</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroIconContainer}>
+        <View style={[styles.heroSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
+          <View style={[styles.heroIconContainer, { backgroundColor: colors.card }]}>
             <Ionicons name="home" size={40} color="#007AFF" />
           </View>
-          <Text style={styles.heroTitle}>Our Community Standards</Text>
-          <Text style={styles.heroSubtitle}>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>Our Community Standards</Text>
+          <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
             These rules help us maintain a safe, informative, and respectful space for all investors
           </Text>
         </View>
 
         {/* Core Rules */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>The 8 Golden Rules</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>The 8 Golden Rules</Text>
           {coreRules.map((rule, index) => (
-            <View key={index} style={styles.ruleCard}>
+            <View key={index} style={[styles.ruleCard, { backgroundColor: colors.card }]}>
               <View style={styles.ruleHeader}>
                 <View style={[styles.ruleNumber, { backgroundColor: rule.color }]}>
                   <Text style={styles.ruleNumberText}>{rule.number}</Text>
@@ -142,19 +144,19 @@ export default function HouseRules() {
                   <Ionicons name={rule.icon as any} size={22} color={rule.color} />
                 </View>
               </View>
-              <Text style={styles.ruleTitle}>{rule.title}</Text>
-              <Text style={styles.ruleDescription}>{rule.description}</Text>
+              <Text style={[styles.ruleTitle, { color: colors.text }]}>{rule.title}</Text>
+              <Text style={[styles.ruleDescription, { color: colors.textSecondary }]}>{rule.description}</Text>
             </View>
           ))}
         </View>
 
         {/* Do's and Don'ts */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Reference</Text>
-          
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Reference</Text>
+
           <View style={styles.dosAndDontsContainer}>
             {/* Don'ts */}
-            <View style={[styles.listCard, styles.dontsCard]}>
+            <View style={[styles.listCard, styles.dontsCard, { backgroundColor: isDark ? '#2A1010' : '#fff5f5', borderColor: isDark ? '#5A2020' : '#ffdddd' }]}>
               <View style={styles.listHeader}>
                 <Ionicons name="close-circle" size={24} color="#FF3B30" />
                 <Text style={[styles.listTitle, { color: '#FF3B30' }]}>Don&apos;t</Text>
@@ -162,13 +164,13 @@ export default function HouseRules() {
               {quickDonts.map((item, index) => (
                 <View key={index} style={styles.listItem}>
                   <View style={[styles.bulletDot, { backgroundColor: '#FF3B30' }]} />
-                  <Text style={styles.listItemText}>{item}</Text>
+                  <Text style={[styles.listItemText, { color: colors.textSecondary }]}>{item}</Text>
                 </View>
               ))}
             </View>
 
             {/* Do's */}
-            <View style={[styles.listCard, styles.dosCard]}>
+            <View style={[styles.listCard, styles.dosCard, { backgroundColor: isDark ? '#0A2A10' : '#f0fff4', borderColor: isDark ? '#1A4A20' : '#d4edda' }]}>
               <View style={styles.listHeader}>
                 <Ionicons name="checkmark-circle" size={24} color="#34C759" />
                 <Text style={[styles.listTitle, { color: '#34C759' }]}>Do</Text>
@@ -176,7 +178,7 @@ export default function HouseRules() {
               {quickDos.map((item, index) => (
                 <View key={index} style={styles.listItem}>
                   <View style={[styles.bulletDot, { backgroundColor: '#34C759' }]} />
-                  <Text style={styles.listItemText}>{item}</Text>
+                  <Text style={[styles.listItemText, { color: colors.textSecondary }]}>{item}</Text>
                 </View>
               ))}
             </View>
@@ -185,33 +187,33 @@ export default function HouseRules() {
 
         {/* Enforcement */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Enforcement</Text>
-          <Text style={styles.enforcementIntro}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Enforcement</Text>
+          <Text style={[styles.enforcementIntro, { color: colors.textSecondary }]}>
             We take violations seriously. Here&apos;s what happens when rules are broken:
           </Text>
-          
-          <View style={styles.penaltiesContainer}>
+
+          <View style={[styles.penaltiesContainer, { backgroundColor: colors.card }]}>
             {penalties.map((penalty, index) => (
               <View key={index} style={styles.penaltyRow}>
                 <View style={[styles.penaltyIcon, { backgroundColor: `${penalty.color}15` }]}>
                   <Ionicons name={penalty.icon as any} size={20} color={penalty.color} />
                 </View>
                 <View style={styles.penaltyContent}>
-                  <Text style={styles.penaltyOffense}>{penalty.offense}</Text>
+                  <Text style={[styles.penaltyOffense, { color: colors.textSecondary }]}>{penalty.offense}</Text>
                   <Text style={[styles.penaltyAction, { color: penalty.color }]}>{penalty.action}</Text>
                 </View>
                 {index < penalties.length - 1 && (
-                  <Ionicons name="arrow-forward" size={16} color="#ccc" style={styles.penaltyArrow} />
+                  <Ionicons name="arrow-forward" size={16} color={colors.textTertiary} style={styles.penaltyArrow} />
                 )}
               </View>
             ))}
           </View>
 
-          <View style={styles.appealBox}>
+          <View style={[styles.appealBox, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
             <Ionicons name="hand-left-outline" size={24} color="#007AFF" />
             <View style={styles.appealContent}>
               <Text style={styles.appealTitle}>Appeals Process</Text>
-              <Text style={styles.appealText}>
+              <Text style={[styles.appealText, { color: colors.textSecondary }]}>
                 Think we made a mistake? You can appeal any moderation decision within 14 days by contacting support.
               </Text>
             </View>
@@ -219,10 +221,10 @@ export default function HouseRules() {
         </View>
 
         {/* Report Section */}
-        <View style={styles.reportSection}>
+        <View style={[styles.reportSection, { backgroundColor: isDark ? '#2A1010' : '#fff5f5', borderColor: isDark ? '#5A2020' : '#ffdddd' }]}>
           <Ionicons name="flag" size={28} color="#FF3B30" />
-          <Text style={styles.reportTitle}>See a Violation?</Text>
-          <Text style={styles.reportText}>
+          <Text style={[styles.reportTitle, { color: colors.text }]}>See a Violation?</Text>
+          <Text style={[styles.reportText, { color: colors.textSecondary }]}>
             Help keep our community safe by reporting content that breaks these rules.
           </Text>
           <TouchableOpacity 
@@ -234,17 +236,17 @@ export default function HouseRules() {
         </View>
 
         {/* Disclaimer */}
-        <View style={styles.disclaimer}>
-          <Text style={styles.disclaimerText}>
-            These rules may be updated from time to time. Continued use of the platform constitutes 
+        <View style={[styles.disclaimer, { backgroundColor: isDark ? colors.surface : '#f5f5f5' }]}>
+          <Text style={[styles.disclaimerText, { color: colors.textTertiary }]}>
+            These rules may be updated from time to time. Continued use of the platform constitutes
             acceptance of any changes. For detailed legal terms, please see our Terms of Service.
           </Text>
           <TouchableOpacity onPress={() => router.push('/profile/terms' as any)}>
-            <Text style={styles.disclaimerLink}>View Terms of Service →</Text>
+            <Text style={styles.disclaimerLink}>View Terms of Service</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.lastUpdated}>Last updated: January 2025</Text>
+        <Text style={[styles.lastUpdated, { color: colors.textTertiary }]}>Last updated: January 2025</Text>
 
         <View style={{ height: 40 }} />
       </ScrollView>

@@ -20,6 +20,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
 import { useUserProfile } from "@/context/UserProfileContext";
 import { SubscriptionBadgeInline } from "@/components/SubscriptionBadge";
+import { useTheme } from "@/context/ThemeContext";
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -57,6 +58,7 @@ interface Post {
 
 export default function PersonalInfoScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const { user: authUser } = useAuth();
   const { profile: userProfile, loading: profileLoading, getDisplayName, getUsername, getHandle } = useUserProfile();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -230,35 +232,35 @@ export default function PersonalInfoScreen() {
   const displayLikes = userProfile?._count?.likes ?? 0;
 
   const renderPost = (item: Post) => (
-    <TouchableOpacity key={item.id} style={styles.postItem} activeOpacity={0.7}>
-      <Text style={styles.postContent}>{item.content}</Text>
+    <TouchableOpacity key={item.id} style={[styles.postItem, { borderBottomColor: isDark ? colors.border : '#F0F0F0' }]} activeOpacity={0.7}>
+      <Text style={[styles.postContent, { color: colors.text }]}>{item.content}</Text>
       {item.mediaUrl && (
         <Image source={{ uri: item.mediaUrl }} style={styles.postMedia} />
       )}
-      <Text style={styles.postTime}>{formatTimeAgo(item.createdAt)}</Text>
+      <Text style={[styles.postTime, { color: colors.textTertiary }]}>{formatTimeAgo(item.createdAt)}</Text>
     </TouchableOpacity>
   );
 
   if (loading || profileLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header - Floating over banner */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+        <TouchableOpacity onPress={() => router.back()} style={[styles.headerButton, { backgroundColor: isDark ? 'rgba(30,30,30,0.95)' : 'rgba(255,255,255,0.95)' }]}>
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.editButton}
+          style={[styles.editButton, { backgroundColor: isDark ? 'rgba(30,30,30,0.95)' : 'rgba(255,255,255,0.95)', borderColor: isDark ? colors.border : '#E0E0E0' }]}
           onPress={() => router.push("/profile/edit-profile")}
         >
-          <Text style={styles.editButtonText}>Edit Profile</Text>
+          <Text style={[styles.editButtonText, { color: colors.text }]}>Edit Profile</Text>
         </TouchableOpacity>
       </View>
 
@@ -287,9 +289,9 @@ export default function PersonalInfoScreen() {
         <View style={styles.profileImageWrapper}>
           <TouchableOpacity onPress={pickProfileImage} activeOpacity={0.9}>
             {displayAvatar ? (
-              <Image source={{ uri: displayAvatar }} style={styles.profileImage} />
+              <Image source={{ uri: displayAvatar }} style={[styles.profileImage, { borderColor: colors.background }]} />
             ) : (
-              <View style={styles.profileImagePlaceholder}>
+              <View style={[styles.profileImagePlaceholder, { borderColor: colors.background }]}>
                 <Text style={styles.profileInitials}>{getInitials(displayName)}</Text>
               </View>
             )}
@@ -299,20 +301,20 @@ export default function PersonalInfoScreen() {
         {/* Profile Info */}
         <View style={styles.profileInfo}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={styles.userName}>{displayName}</Text>
+            <Text style={[styles.userName, { color: colors.text }]}>{displayName}</Text>
             <SubscriptionBadgeInline tier={userProfile?.subscriptionTier as any} />
           </View>
-          <Text style={styles.userHandle}>@{displayUsername}</Text>
+          <Text style={[styles.userHandle, { color: colors.textSecondary }]}>@{displayUsername}</Text>
 
           {/* Bio */}
-          <Text style={styles.bio}>{displayBio}</Text>
+          <Text style={[styles.bio, { color: colors.text }]}>{displayBio}</Text>
 
           {/* Location & Website */}
           <View style={styles.metaRow}>
             {displayLocation && (
               <View style={styles.metaItem}>
-                <Ionicons name="location-outline" size={16} color="#666" />
-                <Text style={styles.metaText}>{displayLocation}</Text>
+                <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+                <Text style={[styles.metaText, { color: colors.textSecondary }]}>{displayLocation}</Text>
               </View>
             )}
             {displayWebsite && (
@@ -336,31 +338,31 @@ export default function PersonalInfoScreen() {
           {/* Stats */}
           <View style={styles.statsRow}>
             <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statNumber}>{formatNumber(displayPosts)}</Text>
-              <Text style={styles.statLabel}>Posts</Text>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{formatNumber(displayPosts)}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Posts</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statNumber}>{formatNumber(displayFollowers)}</Text>
-              <Text style={styles.statLabel}>Followers</Text>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{formatNumber(displayFollowers)}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Followers</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statNumber}>{formatNumber(displayFollowing)}</Text>
-              <Text style={styles.statLabel}>Following</Text>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{formatNumber(displayFollowing)}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Following</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem}>
-              <Text style={styles.statNumber}>{formatNumber(displayLikes)}</Text>
-              <Text style={styles.statLabel}>Likes</Text>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{formatNumber(displayLikes)}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Likes</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Tabs */}
-        <View style={styles.tabsContainer}>
+        <View style={[styles.tabsContainer, { borderBottomColor: isDark ? colors.border : '#E0E0E0' }]}>
           <TouchableOpacity
             style={[styles.tab, activeTab === "posts" && styles.activeTab]}
             onPress={() => setActiveTab("posts")}
           >
-            <Text style={[styles.tabText, activeTab === "posts" && styles.activeTabText]}>
+            <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === "posts" && styles.activeTabText]}>
               Posts
             </Text>
           </TouchableOpacity>
@@ -368,7 +370,7 @@ export default function PersonalInfoScreen() {
             style={[styles.tab, activeTab === "replies" && styles.activeTab]}
             onPress={() => setActiveTab("replies")}
           >
-            <Text style={[styles.tabText, activeTab === "replies" && styles.activeTabText]}>
+            <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === "replies" && styles.activeTabText]}>
               Replies
             </Text>
           </TouchableOpacity>
@@ -376,7 +378,7 @@ export default function PersonalInfoScreen() {
             style={[styles.tab, activeTab === "media" && styles.activeTab]}
             onPress={() => setActiveTab("media")}
           >
-            <Text style={[styles.tabText, activeTab === "media" && styles.activeTabText]}>
+            <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === "media" && styles.activeTabText]}>
               Media
             </Text>
           </TouchableOpacity>
@@ -384,7 +386,7 @@ export default function PersonalInfoScreen() {
             style={[styles.tab, activeTab === "likes" && styles.activeTab]}
             onPress={() => setActiveTab("likes")}
           >
-            <Text style={[styles.tabText, activeTab === "likes" && styles.activeTabText]}>
+            <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === "likes" && styles.activeTabText]}>
               Likes
             </Text>
           </TouchableOpacity>
@@ -396,9 +398,9 @@ export default function PersonalInfoScreen() {
             posts.map((post) => renderPost(post))
           ) : (
             <View style={styles.emptyPosts}>
-              <Ionicons name="document-text-outline" size={48} color="#ccc" />
-              <Text style={styles.emptyPostsTitle}>No posts yet</Text>
-              <Text style={styles.emptyPostsSubtitle}>
+              <Ionicons name="document-text-outline" size={48} color={isDark ? colors.textTertiary : '#ccc'} />
+              <Text style={[styles.emptyPostsTitle, { color: colors.text }]}>No posts yet</Text>
+              <Text style={[styles.emptyPostsSubtitle, { color: colors.textSecondary }]}>
                 Share your thoughts with the community
               </Text>
             </View>

@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function Privacy() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   const sections = [
     {
@@ -140,32 +142,32 @@ For privacy-related inquiries, please include "Privacy Inquiry" in your email su
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Privacy Policy</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Privacy Policy</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroIcon}>
+        <View style={[styles.heroSection, { backgroundColor: isDark ? colors.surface : '#f8f9fa', borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}>
+          <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
             <Ionicons name="shield-checkmark" size={36} color="#34C759" />
           </View>
-          <Text style={styles.heroTitle}>Your Privacy Matters</Text>
-          <Text style={styles.effectiveDate}>Last Updated: January 1, 2025</Text>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>Your Privacy Matters</Text>
+          <Text style={[styles.effectiveDate, { color: colors.textSecondary }]}>Last Updated: January 1, 2025</Text>
         </View>
 
         {/* Important Notice */}
-        <View style={styles.importantNotice}>
+        <View style={[styles.importantNotice, { backgroundColor: isDark ? '#0A2A10' : '#f0fff4', borderColor: isDark ? '#1A4A20' : '#d4edda' }]}>
           <Ionicons name="lock-closed" size={24} color="#34C759" />
           <View style={styles.noticeContent}>
-            <Text style={styles.noticeTitle}>We Don&apos;t Sell Your Data</Text>
-            <Text style={styles.noticeText}>
+            <Text style={[styles.noticeTitle, { color: isDark ? '#4ADE80' : '#155724' }]}>We Don&apos;t Sell Your Data</Text>
+            <Text style={[styles.noticeText, { color: isDark ? '#4ADE80' : '#155724' }]}>
               WallStreetStocks.ai does not sell, rent, or trade your personal information
               to third parties for their marketing purposes.
             </Text>
@@ -173,13 +175,13 @@ For privacy-related inquiries, please include "Privacy Inquiry" in your email su
         </View>
 
         {/* Table of Contents */}
-        <View style={styles.tocSection}>
-          <Text style={styles.tocTitle}>Contents</Text>
+        <View style={[styles.tocSection, { backgroundColor: isDark ? colors.surface : '#f5f5f5' }]}>
+          <Text style={[styles.tocTitle, { color: colors.text }]}>Contents</Text>
           <View style={styles.tocList}>
             {sections.map((section, index) => (
               <TouchableOpacity key={section.id} style={styles.tocItem}>
                 <Text style={styles.tocNumber}>{index + 1}.</Text>
-                <Text style={styles.tocText}>{section.title.replace(/^\d+\.\s/, '')}</Text>
+                <Text style={[styles.tocText, { color: colors.textSecondary }]}>{section.title.replace(/^\d+\.\s/, '')}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -187,17 +189,17 @@ For privacy-related inquiries, please include "Privacy Inquiry" in your email su
 
         {/* Sections */}
         {sections.map((section) => (
-          <View key={section.id} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-            <Text style={styles.sectionContent}>{section.content}</Text>
+          <View key={section.id} style={[styles.section, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{section.title}</Text>
+            <Text style={[styles.sectionContent, { color: colors.textSecondary }]}>{section.content}</Text>
           </View>
         ))}
 
         {/* Agreement Box */}
-        <View style={styles.agreementBox}>
+        <View style={[styles.agreementBox, { backgroundColor: isDark ? '#0A2A10' : '#f0fff4', borderColor: isDark ? '#1A4A20' : '#d4edda' }]}>
           <Ionicons name="checkmark-circle" size={32} color="#34C759" />
-          <Text style={styles.agreementTitle}>Your Privacy is Protected</Text>
-          <Text style={styles.agreementText}>
+          <Text style={[styles.agreementTitle, { color: colors.text }]}>Your Privacy is Protected</Text>
+          <Text style={[styles.agreementText, { color: colors.textSecondary }]}>
             By using WallStreetStocks, you acknowledge that you have read and understood
             this Privacy Policy and agree to the collection and use of information in
             accordance with this policy.
@@ -205,9 +207,9 @@ For privacy-related inquiries, please include "Privacy Inquiry" in your email su
         </View>
 
         {/* Contact */}
-        <View style={styles.contactSection}>
-          <Text style={styles.contactTitle}>Questions?</Text>
-          <Text style={styles.contactText}>
+        <View style={[styles.contactSection, { borderTopColor: isDark ? colors.border : '#f0f0f0' }]}>
+          <Text style={[styles.contactTitle, { color: colors.text }]}>Questions?</Text>
+          <Text style={[styles.contactText, { color: colors.textSecondary }]}>
             If you have questions about this Privacy Policy, please contact us:
           </Text>
           <Text style={styles.contactEmail}>wallstreetstocks@outlook.com</Text>
@@ -221,26 +223,26 @@ For privacy-related inquiries, please include "Privacy Inquiry" in your email su
 
         {/* Related Links */}
         <View style={styles.relatedSection}>
-          <Text style={styles.relatedTitle}>Related Documents</Text>
+          <Text style={[styles.relatedTitle, { color: colors.text }]}>Related Documents</Text>
           <TouchableOpacity
-            style={styles.relatedLink}
+            style={[styles.relatedLink, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
             onPress={() => router.push('/profile/terms' as any)}
           >
             <Ionicons name="document-text-outline" size={20} color="#007AFF" />
-            <Text style={styles.relatedLinkText}>Terms of Service</Text>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+            <Text style={[styles.relatedLinkText, { color: colors.text }]}>Terms of Service</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.relatedLink}
+            style={[styles.relatedLink, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
             onPress={() => router.push('/profile/house-rules' as any)}
           >
             <Ionicons name="shield-outline" size={20} color="#007AFF" />
-            <Text style={styles.relatedLinkText}>House Rules</Text>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+            <Text style={[styles.relatedLinkText, { color: colors.text }]}>House Rules</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.copyright}>
+        <Text style={[styles.copyright, { color: colors.textTertiary }]}>
           © 2025 WallStreetStocks, Inc. All rights reserved.
         </Text>
 

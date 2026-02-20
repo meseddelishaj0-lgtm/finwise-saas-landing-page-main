@@ -15,12 +15,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '@/context/ThemeContext';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://finwise-saas-landing-page-main.vercel.app';
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { colors, isDark } = useTheme();
   const [confirmText, setConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -79,15 +81,15 @@ export default function DeleteAccountScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
         <View style={styles.titleContainer}>
@@ -106,52 +108,52 @@ export default function DeleteAccountScreen() {
         </View>
 
         {/* Warning Title */}
-        <Text style={styles.warningTitle}>Delete Your Account?</Text>
-        <Text style={styles.warningSubtitle}>
+        <Text style={[styles.warningTitle, { color: colors.text }]}>Delete Your Account?</Text>
+        <Text style={[styles.warningSubtitle, { color: colors.textSecondary }]}>
           This action is permanent and cannot be undone.
         </Text>
 
         {/* Consequences List */}
-        <View style={styles.consequencesList}>
-          <Text style={styles.consequencesTitle}>What happens when you delete your account:</Text>
+        <View style={[styles.consequencesList, { backgroundColor: isDark ? '#2A1010' : '#FFF5F5', borderColor: isDark ? '#5C2020' : '#FF3B3020' }]}>
+          <Text style={[styles.consequencesTitle, { color: colors.text }]}>What happens when you delete your account:</Text>
 
           <View style={styles.consequenceItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.consequenceText}>All your personal data will be permanently deleted</Text>
+            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>All your personal data will be permanently deleted</Text>
           </View>
 
           <View style={styles.consequenceItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.consequenceText}>Your watchlists and saved stocks will be removed</Text>
+            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>Your watchlists and saved stocks will be removed</Text>
           </View>
 
           <View style={styles.consequenceItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.consequenceText}>Your community posts and comments will be deleted</Text>
+            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>Your community posts and comments will be deleted</Text>
           </View>
 
           <View style={styles.consequenceItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.consequenceText}>Your referral history and rewards will be lost</Text>
+            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>Your referral history and rewards will be lost</Text>
           </View>
 
           <View style={styles.consequenceItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.consequenceText}>You will not be able to recover this account</Text>
+            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>You will not be able to recover this account</Text>
           </View>
         </View>
 
         {/* Confirmation Input */}
         <View style={styles.confirmSection}>
-          <Text style={styles.confirmLabel}>
+          <Text style={[styles.confirmLabel, { color: colors.text }]}>
             Type <Text style={styles.deleteWord}>DELETE</Text> to confirm:
           </Text>
           <TextInput
-            style={styles.confirmInput}
+            style={[styles.confirmInput, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#ddd', color: colors.text }]}
             value={confirmText}
             onChangeText={setConfirmText}
             placeholder="Type DELETE here"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textTertiary}
             autoCapitalize="characters"
             autoCorrect={false}
           />

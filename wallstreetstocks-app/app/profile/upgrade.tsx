@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 type PlanId = 'basic' | 'pro' | 'elite';
 type BillingCycle = 'monthly' | 'yearly';
 
 export default function Upgrade() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('pro');
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('yearly');
 
@@ -124,41 +126,41 @@ export default function Upgrade() {
   const selectedPlanData = plans[selectedPlan];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="close" size={28} color="black" />
+          <Ionicons name="close" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Choose Your Plan</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Choose Your Plan</Text>
         <View style={{ width: 28 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>Unlock Premium Research</Text>
-          <Text style={styles.heroSubtitle}>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>Unlock Premium Research</Text>
+          <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
             Get advanced tools, AI insights, and real-time data to make smarter investment decisions
           </Text>
         </View>
 
         {/* Billing Toggle */}
         <View style={styles.billingToggleContainer}>
-          <View style={styles.billingToggle}>
+          <View style={[styles.billingToggle, { backgroundColor: colors.surface }]}>
             <TouchableOpacity
-              style={[styles.billingOption, billingCycle === 'monthly' && styles.billingOptionActive]}
+              style={[styles.billingOption, billingCycle === 'monthly' && [styles.billingOptionActive, { backgroundColor: colors.card }]]}
               onPress={() => setBillingCycle('monthly')}
             >
-              <Text style={[styles.billingOptionText, billingCycle === 'monthly' && styles.billingOptionTextActive]}>
+              <Text style={[styles.billingOptionText, { color: colors.textSecondary }, billingCycle === 'monthly' && [styles.billingOptionTextActive, { color: colors.text }]]}>
                 Monthly
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.billingOption, billingCycle === 'yearly' && styles.billingOptionActive]}
+              style={[styles.billingOption, billingCycle === 'yearly' && [styles.billingOptionActive, { backgroundColor: colors.card }]]}
               onPress={() => setBillingCycle('yearly')}
             >
-              <Text style={[styles.billingOptionText, billingCycle === 'yearly' && styles.billingOptionTextActive]}>
+              <Text style={[styles.billingOptionText, { color: colors.textSecondary }, billingCycle === 'yearly' && [styles.billingOptionTextActive, { color: colors.text }]]}>
                 Yearly
               </Text>
               <View style={styles.saveBadge}>
@@ -175,6 +177,7 @@ export default function Upgrade() {
               key={plan.id}
               style={[
                 styles.planCard,
+                { backgroundColor: colors.card, borderColor: isDark ? colors.border : '#e5e5e5' },
                 selectedPlan === plan.id && styles.planCardSelected,
                 selectedPlan === plan.id && { borderColor: plan.color },
               ]}
@@ -186,17 +189,18 @@ export default function Upgrade() {
                   <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
                 </View>
               )}
-              
+
               <View style={styles.planHeader}>
                 <View style={[styles.planIcon, { backgroundColor: `${plan.color}20` }]}>
                   <Ionicons name={plan.icon as any} size={24} color={plan.color} />
                 </View>
                 <View style={styles.planInfo}>
-                  <Text style={styles.planName}>{plan.name}</Text>
-                  <Text style={styles.planDescription}>{plan.description}</Text>
+                  <Text style={[styles.planName, { color: colors.text }]}>{plan.name}</Text>
+                  <Text style={[styles.planDescription, { color: colors.textSecondary }]}>{plan.description}</Text>
                 </View>
                 <View style={[
                   styles.radioOuter,
+                  { borderColor: isDark ? colors.border : '#ddd' },
                   selectedPlan === plan.id && { borderColor: plan.color }
                 ]}>
                   {selectedPlan === plan.id && (
@@ -206,10 +210,10 @@ export default function Upgrade() {
               </View>
 
               <View style={styles.planPricing}>
-                <Text style={styles.planPrice}>${getPrice(plan).toFixed(2)}</Text>
-                <Text style={styles.planPeriod}>/month</Text>
+                <Text style={[styles.planPrice, { color: colors.text }]}>${getPrice(plan).toFixed(2)}</Text>
+                <Text style={[styles.planPeriod, { color: colors.textSecondary }]}>/month</Text>
                 {billingCycle === 'yearly' && (
-                  <Text style={styles.billedText}>billed annually</Text>
+                  <Text style={[styles.billedText, { color: colors.textTertiary }]}>billed annually</Text>
                 )}
               </View>
 
@@ -227,7 +231,7 @@ export default function Upgrade() {
 
         {/* Features Comparison */}
         <View style={styles.featuresSection}>
-          <Text style={styles.featuresSectionTitle}>
+          <Text style={[styles.featuresSectionTitle, { color: colors.text }]}>
             {selectedPlanData.name} Features
           </Text>
           <View style={styles.featuresList}>
@@ -236,11 +240,12 @@ export default function Upgrade() {
                 <Ionicons
                   name={feature.included ? 'checkmark-circle' : 'close-circle'}
                   size={22}
-                  color={feature.included ? '#34C759' : '#ccc'}
+                  color={feature.included ? '#34C759' : (isDark ? colors.border : '#ccc')}
                 />
                 <Text style={[
                   styles.featureText,
-                  !feature.included && styles.featureTextDisabled
+                  { color: colors.text },
+                  !feature.included && { color: colors.textTertiary }
                 ]}>
                   {feature.text}
                 </Text>
@@ -256,63 +261,63 @@ export default function Upgrade() {
         </TouchableOpacity>
 
         {/* Trust Badges */}
-        <View style={styles.trustSection}>
+        <View style={[styles.trustSection, { borderColor: isDark ? colors.border : '#f0f0f0' }]}>
           <View style={styles.trustBadge}>
             <Ionicons name="shield-checkmark" size={20} color="#34C759" />
-            <Text style={styles.trustText}>Secure Payment</Text>
+            <Text style={[styles.trustText, { color: colors.textSecondary }]}>Secure Payment</Text>
           </View>
           <View style={styles.trustBadge}>
             <Ionicons name="refresh" size={20} color="#007AFF" />
-            <Text style={styles.trustText}>Cancel Anytime</Text>
+            <Text style={[styles.trustText, { color: colors.textSecondary }]}>Cancel Anytime</Text>
           </View>
           <View style={styles.trustBadge}>
             <Ionicons name="card" size={20} color="#FF9500" />
-            <Text style={styles.trustText}>7-Day Trial</Text>
+            <Text style={[styles.trustText, { color: colors.textSecondary }]}>7-Day Trial</Text>
           </View>
         </View>
 
         {/* Testimonial */}
-        <View style={styles.testimonialCard}>
+        <View style={[styles.testimonialCard, { backgroundColor: colors.card }]}>
           <View style={styles.testimonialStars}>
             {[1, 2, 3, 4, 5].map((star) => (
               <Ionicons key={star} name="star" size={16} color="#FFD700" />
             ))}
           </View>
-          <Text style={styles.testimonialText}>
+          <Text style={[styles.testimonialText, { color: colors.text }]}>
             &quot;The AI insights alone are worth the subscription. I&apos;ve discovered so many great research opportunities!&quot;
           </Text>
-          <Text style={styles.testimonialAuthor}>— Michael R., Pro Member</Text>
+          <Text style={[styles.testimonialAuthor, { color: colors.textSecondary }]}>— Michael R., Pro Member</Text>
         </View>
 
         {/* FAQ */}
         <View style={styles.faqSection}>
-          <Text style={styles.faqTitle}>Common Questions</Text>
-          
+          <Text style={[styles.faqTitle, { color: colors.text }]}>Common Questions</Text>
+
           <View style={styles.faqItem}>
-            <Text style={styles.faqQuestion}>Can I cancel anytime?</Text>
-            <Text style={styles.faqAnswer}>
+            <Text style={[styles.faqQuestion, { color: colors.text }]}>Can I cancel anytime?</Text>
+            <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>
               Yes! You can cancel your subscription at any time. You&apos;ll continue to have access until the end of your billing period.
             </Text>
           </View>
-          
+
           <View style={styles.faqItem}>
-            <Text style={styles.faqQuestion}>Is there a free trial?</Text>
-            <Text style={styles.faqAnswer}>
+            <Text style={[styles.faqQuestion, { color: colors.text }]}>Is there a free trial?</Text>
+            <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>
               Yes, all plans include a 7-day free trial. You won&apos;t be charged until the trial ends.
             </Text>
           </View>
-          
+
           <View style={styles.faqItem}>
-            <Text style={styles.faqQuestion}>Can I switch plans?</Text>
-            <Text style={styles.faqAnswer}>
+            <Text style={[styles.faqQuestion, { color: colors.text }]}>Can I switch plans?</Text>
+            <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>
               Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect on your next billing cycle.
             </Text>
           </View>
         </View>
 
         {/* Disclaimer */}
-        <Text style={styles.disclaimer}>
-          WallStreetStocks is a research and information platform only. We do not provide trading, 
+        <Text style={[styles.disclaimer, { color: colors.textTertiary }]}>
+          WallStreetStocks is a research and information platform only. We do not provide trading,
           brokerage services, or financial advice. Subscription provides access to premium research tools and data.
         </Text>
 
@@ -320,15 +325,15 @@ export default function Upgrade() {
       </ScrollView>
 
       {/* Fixed Bottom CTA */}
-      <View style={styles.bottomCTA}>
+      <View style={[styles.bottomCTA, { backgroundColor: colors.background, borderTopColor: isDark ? colors.border : '#f0f0f0' }]}>
         <View style={styles.ctaPriceContainer}>
-          <Text style={styles.ctaPlanName}>{selectedPlanData.name}</Text>
+          <Text style={[styles.ctaPlanName, { color: colors.textSecondary }]}>{selectedPlanData.name}</Text>
           <View style={styles.ctaPriceRow}>
-            <Text style={styles.ctaPrice}>${getPrice(selectedPlanData).toFixed(2)}</Text>
-            <Text style={styles.ctaPeriod}>/{billingCycle === 'yearly' ? 'mo' : 'month'}</Text>
+            <Text style={[styles.ctaPrice, { color: colors.text }]}>${getPrice(selectedPlanData).toFixed(2)}</Text>
+            <Text style={[styles.ctaPeriod, { color: colors.textSecondary }]}>/{billingCycle === 'yearly' ? 'mo' : 'month'}</Text>
           </View>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.subscribeButton, { backgroundColor: selectedPlanData.color === '#FFD700' ? '#007AFF' : selectedPlanData.color }]}
           onPress={handleSubscribe}
         >

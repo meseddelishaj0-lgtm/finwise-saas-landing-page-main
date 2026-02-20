@@ -13,6 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { ChevronLeft, Star, ExternalLink, Heart, ThumbsUp } from "lucide-react-native";
 import * as StoreReview from "expo-store-review";
+import { useTheme } from '@/context/ThemeContext';
 
 // App Store and Play Store IDs
 const APP_STORE_ID = "6743493377"; // Apple App Store ID
@@ -20,6 +21,7 @@ const PLAY_STORE_ID = "ai.wallstreetstocks.app"; // Google Play Store package na
 
 export default function RateUsPage() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const [selectedRating, setSelectedRating] = useState(0);
   const [hasRated, setHasRated] = useState(false);
 
@@ -122,26 +124,26 @@ export default function RateUsPage() {
 
   if (hasRated) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            onPress={() => router.back()} 
+        <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
             style={styles.backButton}
             activeOpacity={0.7}
           >
             <ChevronLeft size={28} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Rate Us</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Rate Us</Text>
           <View style={styles.headerRight} />
         </View>
 
         <View style={styles.thankYouContainer}>
-          <View style={styles.heartIconCircle}>
+          <View style={[styles.heartIconCircle, { backgroundColor: isDark ? '#3A1010' : '#FFF0F0' }]}>
             <Heart size={64} color="#FF3B30" fill="#FF3B30" />
           </View>
-          <Text style={styles.thankYouTitle}>Thank You!</Text>
-          <Text style={styles.thankYouText}>
+          <Text style={[styles.thankYouTitle, { color: colors.text }]}>Thank You!</Text>
+          <Text style={[styles.thankYouText, { color: colors.textSecondary }]}>
             Your feedback means the world to us. We&apos;re constantly working to make WallStreetStocks the best stock research app for you.
           </Text>
           <TouchableOpacity
@@ -157,75 +159,75 @@ export default function RateUsPage() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
+        <TouchableOpacity
+          onPress={() => router.back()}
           style={styles.backButton}
           activeOpacity={0.7}
         >
           <ChevronLeft size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Rate Us</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Rate Us</Text>
         <View style={styles.headerRight} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Icon Section */}
         <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
+          <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.surface : '#F0F8FF' }]}>
             <Star size={48} color="#007AFF" fill="#007AFF" />
           </View>
         </View>
 
         {/* Title & Description */}
-        <Text style={styles.title}>Enjoying WallStreetStocks?</Text>
-        <Text style={styles.description}>
+        <Text style={[styles.title, { color: colors.text }]}>Enjoying WallStreetStocks?</Text>
+        <Text style={[styles.description, { color: colors.textSecondary }]}>
           Your rating helps other investors discover our app and helps us continue improving your experience.
         </Text>
 
         {/* Star Rating */}
         <View style={styles.ratingSection}>
           {renderStars()}
-          <Text style={styles.ratingText}>{getRatingText()}</Text>
+          <Text style={[styles.ratingText, { color: colors.textSecondary }]}>{getRatingText()}</Text>
         </View>
 
         {/* Benefits Section */}
-        <View style={styles.benefitsSection}>
-          <Text style={styles.benefitsTitle}>Why Rate Us?</Text>
-          
+        <View style={[styles.benefitsSection, { backgroundColor: colors.card }]}>
+          <Text style={[styles.benefitsTitle, { color: colors.text }]}>Why Rate Us?</Text>
+
           <View style={styles.benefitItem}>
-            <View style={styles.benefitIcon}>
+            <View style={[styles.benefitIcon, { backgroundColor: colors.surface }]}>
               <ThumbsUp size={20} color="#007AFF" />
             </View>
             <View style={styles.benefitContent}>
-              <Text style={styles.benefitText}>
+              <Text style={[styles.benefitText, { color: colors.text }]}>
                 Help fellow investors find quality research tools
               </Text>
             </View>
           </View>
 
           <View style={styles.benefitItem}>
-            <View style={styles.benefitIcon}>
+            <View style={[styles.benefitIcon, { backgroundColor: colors.surface }]}>
               <Heart size={20} color="#FF3B30" />
             </View>
             <View style={styles.benefitContent}>
-              <Text style={styles.benefitText}>
+              <Text style={[styles.benefitText, { color: colors.text }]}>
                 Support our small team in building great features
               </Text>
             </View>
           </View>
 
           <View style={styles.benefitItem}>
-            <View style={styles.benefitIcon}>
+            <View style={[styles.benefitIcon, { backgroundColor: colors.surface }]}>
               <Star size={20} color="#FFD700" fill="#FFD700" />
             </View>
             <View style={styles.benefitContent}>
-              <Text style={styles.benefitText}>
+              <Text style={[styles.benefitText, { color: colors.text }]}>
                 Your feedback shapes future updates
               </Text>
             </View>
@@ -254,7 +256,7 @@ export default function RateUsPage() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Text style={styles.skipButtonText}>Maybe Later</Text>
+          <Text style={[styles.skipButtonText, { color: colors.textTertiary }]}>Maybe Later</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

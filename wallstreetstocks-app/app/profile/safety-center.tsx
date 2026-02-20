@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function SafetyCenter() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   const safetyFeatures = [
     {
@@ -76,39 +78,39 @@ export default function SafetyCenter() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Safety Center</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Safety Center</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroIcon}>
+        <View style={[styles.heroSection, { backgroundColor: isDark ? colors.surface : '#f0fff4' }]}>
+          <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
             <Ionicons name="shield-checkmark" size={48} color="#34C759" />
           </View>
-          <Text style={styles.heroTitle}>Your Safety Matters</Text>
-          <Text style={styles.heroSubtitle}>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>Your Safety Matters</Text>
+          <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
             We&apos;re committed to keeping you and your investments safe
           </Text>
         </View>
 
         {/* Safety Features */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Security Features</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Security Features</Text>
           <View style={styles.featuresGrid}>
             {safetyFeatures.map((feature, index) => (
-              <View key={index} style={styles.featureCard}>
+              <View key={index} style={[styles.featureCard, { backgroundColor: colors.card }]}>
                 <View style={[styles.featureIcon, { backgroundColor: `${feature.color}15` }]}>
                   <Ionicons name={feature.icon as any} size={28} color={feature.color} />
                 </View>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureDescription}>{feature.description}</Text>
+                <Text style={[styles.featureTitle, { color: colors.text }]}>{feature.title}</Text>
+                <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>{feature.description}</Text>
               </View>
             ))}
           </View>
@@ -116,15 +118,15 @@ export default function SafetyCenter() {
 
         {/* Safety Tips */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Safety Tips</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Safety Tips</Text>
           {safetyTips.map((tip, index) => (
-            <View key={index} style={styles.tipCard}>
+            <View key={index} style={[styles.tipCard, { backgroundColor: colors.card }]}>
               <View style={styles.tipNumber}>
                 <Text style={styles.tipNumberText}>{index + 1}</Text>
               </View>
               <View style={styles.tipContent}>
-                <Text style={styles.tipTitle}>{tip.title}</Text>
-                <Text style={styles.tipDescription}>{tip.description}</Text>
+                <Text style={[styles.tipTitle, { color: colors.text }]}>{tip.title}</Text>
+                <Text style={[styles.tipDescription, { color: colors.textSecondary }]}>{tip.description}</Text>
               </View>
             </View>
           ))}
@@ -132,28 +134,28 @@ export default function SafetyCenter() {
 
         {/* Report & Block */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Report & Block</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Report & Block</Text>
           {reportOptions.map((option, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.reportRow}
+              style={[styles.reportRow, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
               onPress={() => router.push(option.route as any)}
             >
               <View style={styles.reportLeft}>
                 <Ionicons name={option.icon as any} size={24} color="#FF3B30" />
-                <Text style={styles.reportText}>{option.title}</Text>
+                <Text style={[styles.reportText, { color: colors.text }]}>{option.title}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Emergency Contact */}
-        <View style={styles.emergencySection}>
+        <View style={[styles.emergencySection, { backgroundColor: isDark ? '#2A1010' : '#fff5f5', borderColor: isDark ? '#5A2020' : '#ffcccc' }]}>
           <Ionicons name="call" size={24} color="#FF3B30" />
           <View style={styles.emergencyContent}>
             <Text style={styles.emergencyTitle}>Need Immediate Help?</Text>
-            <Text style={styles.emergencyText}>
+            <Text style={[styles.emergencyText, { color: colors.textSecondary }]}>
               If you believe your account has been compromised, contact our security team immediately.
             </Text>
           </View>

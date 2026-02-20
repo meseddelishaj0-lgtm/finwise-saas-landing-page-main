@@ -14,9 +14,11 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { ChevronLeft, MessageSquare, Send, Smartphone } from "lucide-react-native";
+import { useTheme } from '@/context/ThemeContext';
 
 export default function TextFriendPage() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [customMessage, setCustomMessage] = useState(
     "Hey! Check out WallStreetStocks - it's an awesome app for stock research and market analysis. Download it here: https://wallstreetstocks.app"
@@ -83,78 +85,78 @@ export default function TextFriendPage() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => router.back()} 
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
+        <TouchableOpacity
+          onPress={() => router.back()}
           style={styles.backButton}
           activeOpacity={0.7}
         >
           <ChevronLeft size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Text to a Friend</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Text to a Friend</Text>
         <View style={styles.headerRight} />
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
           {/* Icon Section */}
           <View style={styles.iconContainer}>
-            <View style={styles.iconCircle}>
+            <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.surface : '#F0F8FF' }]}>
               <MessageSquare size={48} color="#007AFF" />
             </View>
           </View>
 
           {/* Title & Description */}
-          <Text style={styles.title}>Share WallStreetStocks</Text>
-          <Text style={styles.description}>
+          <Text style={[styles.title, { color: colors.text }]}>Share WallStreetStocks</Text>
+          <Text style={[styles.description, { color: colors.textSecondary }]}>
             Know someone who&apos;d love to stay on top of the markets? Send them a text and help them discover WallStreetStocks!
           </Text>
 
           {/* Phone Number Input */}
           <View style={styles.inputSection}>
-            <Text style={styles.inputLabel}>Friend&apos;s Phone Number (Optional)</Text>
-            <View style={styles.phoneInputContainer}>
-              <Smartphone size={20} color="#8E8E93" style={styles.phoneIcon} />
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Friend&apos;s Phone Number (Optional)</Text>
+            <View style={[styles.phoneInputContainer, { backgroundColor: colors.surface }]}>
+              <Smartphone size={20} color={colors.textTertiary} style={styles.phoneIcon} />
               <TextInput
-                style={styles.phoneInput}
+                style={[styles.phoneInput, { color: colors.text }]}
                 placeholder="(555) 123-4567"
-                placeholderTextColor="#C7C7CC"
+                placeholderTextColor={colors.textTertiary}
                 value={phoneNumber}
                 onChangeText={handlePhoneChange}
                 keyboardType="phone-pad"
                 maxLength={14}
               />
             </View>
-            <Text style={styles.inputHint}>
+            <Text style={[styles.inputHint, { color: colors.textTertiary }]}>
               Leave blank to choose a contact from your messages
             </Text>
           </View>
 
           {/* Message Preview */}
           <View style={styles.inputSection}>
-            <Text style={styles.inputLabel}>Message</Text>
-            <View style={styles.messageContainer}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>Message</Text>
+            <View style={[styles.messageContainer, { backgroundColor: colors.surface }]}>
               <TextInput
-                style={styles.messageInput}
+                style={[styles.messageInput, { color: colors.text }]}
                 multiline
                 numberOfLines={4}
                 value={customMessage}
                 onChangeText={setCustomMessage}
                 placeholder="Enter your message..."
-                placeholderTextColor="#C7C7CC"
+                placeholderTextColor={colors.textTertiary}
                 textAlignVertical="top"
               />
             </View>
-            <Text style={styles.characterCount}>
+            <Text style={[styles.characterCount, { color: colors.textTertiary }]}>
               {customMessage.length}/300
             </Text>
           </View>
@@ -170,7 +172,7 @@ export default function TextFriendPage() {
           </TouchableOpacity>
 
           {/* Info Text */}
-          <Text style={styles.infoText}>
+          <Text style={[styles.infoText, { color: colors.textTertiary }]}>
             This will open your default messaging app with the message pre-filled.
           </Text>
         </ScrollView>

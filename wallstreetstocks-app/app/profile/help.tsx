@@ -11,9 +11,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function Help() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   const helpItems = [
     { 
@@ -79,20 +81,20 @@ export default function Help() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Help</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Help</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <Text style={styles.quickActionsTitle}>Need immediate help?</Text>
+        <View style={[styles.quickActionsContainer, { backgroundColor: colors.surface, borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}>
+          <Text style={[styles.quickActionsTitle, { color: colors.text }]}>Need immediate help?</Text>
           <View style={styles.quickActionsRow}>
             {quickActions.map((action, index) => (
               <TouchableOpacity
@@ -110,59 +112,59 @@ export default function Help() {
               >
                 <View style={[styles.quickActionIcon, { backgroundColor: `${action.color}15` }]}>
                   {action.isX ? (
-                    <Text style={styles.xLogo}>𝕏</Text>
+                    <Text style={[styles.xLogo, { color: colors.text }]}>𝕏</Text>
                   ) : (
                     <Ionicons name={action.icon as any} size={22} color={action.color} />
                   )}
                 </View>
-                <Text style={styles.quickActionLabel}>{action.label}</Text>
+                <Text style={[styles.quickActionLabel, { color: colors.textSecondary }]}>{action.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* Main Help Items */}
-        <Text style={styles.sectionTitle}>Support & Resources</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support & Resources</Text>
 
         {helpItems.map((item, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.row}
+            style={[styles.row, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
             onPress={() => router.push(item.route as any)}
           >
             <View style={styles.rowLeft}>
-              <View style={styles.iconContainer}>
+              <View style={[styles.iconContainer, { backgroundColor: isDark ? `${colors.primary}20` : '#f0f8ff' }]}>
                 <Ionicons name={item.icon as any} size={22} color="#007AFF" />
               </View>
               <View style={styles.rowTextContainer}>
-                <Text style={styles.rowText}>{item.title}</Text>
-                <Text style={styles.rowSubtitle}>{item.subtitle}</Text>
+                <Text style={[styles.rowText, { color: colors.text }]}>{item.title}</Text>
+                <Text style={[styles.rowSubtitle, { color: colors.textTertiary }]}>{item.subtitle}</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
         ))}
 
         {/* App Info Footer */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { borderTopColor: isDark ? colors.border : '#f0f0f0' }]}>
           <View style={styles.appInfo}>
-            <Text style={styles.appName}>WallStreetStocks</Text>
-            <Text style={styles.version}>Version 1.0.0 (Build 100)</Text>
+            <Text style={[styles.appName, { color: colors.text }]}>WallStreetStocks</Text>
+            <Text style={[styles.version, { color: colors.textTertiary }]}>Version 1.0.0 (Build 100)</Text>
           </View>
-          <Text style={styles.copyright}>© 2025 WallStreetStocks. All rights reserved.</Text>
-          
+          <Text style={[styles.copyright, { color: colors.textTertiary }]}>© 2025 WallStreetStocks. All rights reserved.</Text>
+
           <View style={styles.socialLinks}>
             <TouchableOpacity
-              style={styles.socialButton}
+              style={[styles.socialButton, { backgroundColor: colors.surface }]}
               onPress={() => Linking.openURL('https://x.com/wallstreet66666')}
             >
-              <Text style={styles.xLogoSmall}>𝕏</Text>
+              <Text style={[styles.xLogoSmall, { color: colors.textSecondary }]}>𝕏</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.socialButton}
+              style={[styles.socialButton, { backgroundColor: colors.surface }]}
               onPress={() => Linking.openURL('https://instagram.com/wallstreetstocks')}
             >
-              <Ionicons name="logo-instagram" size={20} color="#666" />
+              <Ionicons name="logo-instagram" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>

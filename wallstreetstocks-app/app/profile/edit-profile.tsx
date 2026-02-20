@@ -20,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/lib/auth';
 import { useUserProfile } from '@/context/UserProfileContext';
+import { useTheme } from '@/context/ThemeContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
@@ -61,7 +62,8 @@ export default function EditProfile() {
   const router = useRouter();
   const { user: authUser, setUserData } = useAuth();
   const { updateProfile: updateUserProfile } = useUserProfile();
-  
+  const { colors, isDark } = useTheme();
+
   // Form State
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
@@ -346,15 +348,15 @@ export default function EditProfile() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0', backgroundColor: colors.background }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="close" size={24} color="black" />
+          <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Edit Profile</Text>
-        <TouchableOpacity 
-          onPress={handleSave} 
+        <Text style={[styles.title, { color: colors.text }]}>Edit Profile</Text>
+        <TouchableOpacity
+          onPress={handleSave}
           style={[styles.saveHeaderButton, saving && styles.saveHeaderButtonDisabled]}
           disabled={saving}
         >
@@ -371,20 +373,20 @@ export default function EditProfile() {
           <ActivityIndicator size="large" color="#007AFF" />
         </View>
       ) : (
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          
+
           {/* Banner Image */}
           <TouchableOpacity onPress={pickBanner} style={styles.bannerContainer}>
             {bannerImage ? (
               <Image source={{ uri: bannerImage }} style={styles.bannerImage} />
             ) : (
-              <View style={styles.bannerPlaceholder}>
-                <Ionicons name="camera" size={32} color="#999" />
-                <Text style={styles.bannerPlaceholderText}>Change Banner</Text>
+              <View style={[styles.bannerPlaceholder, { backgroundColor: isDark ? colors.surface : '#E5E5E5' }]}>
+                <Ionicons name="camera" size={32} color={colors.textTertiary} />
+                <Text style={[styles.bannerPlaceholderText, { color: colors.textTertiary }]}>Change Banner</Text>
               </View>
             )}
             <View style={styles.bannerOverlay}>
@@ -396,10 +398,10 @@ export default function EditProfile() {
           <View style={styles.avatarWrapper}>
             <TouchableOpacity onPress={pickAvatar} style={styles.avatarContainer}>
               {avatar ? (
-                <Image source={{ uri: avatar }} style={styles.avatar} />
+                <Image source={{ uri: avatar }} style={[styles.avatar, { borderColor: colors.background }]} />
               ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="person" size={40} color="#999" />
+                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.surface, borderColor: colors.background }]}>
+                  <Ionicons name="person" size={40} color={colors.textTertiary} />
                 </View>
               )}
               <View style={styles.avatarOverlay}>
@@ -409,26 +411,26 @@ export default function EditProfile() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Name</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={name}
               onChangeText={setName}
               placeholder="Enter your full name"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Username</Text>
-            <View style={styles.usernameInputContainer}>
-              <Text style={styles.usernamePrefix}>@</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Username</Text>
+            <View style={[styles.usernameInputContainer, { borderColor: isDark ? colors.border : '#e5e5e5', backgroundColor: colors.surface }]}>
+              <Text style={[styles.usernamePrefix, { color: colors.textSecondary }]}>@</Text>
               <TextInput
-                style={[styles.input, styles.usernameInput, usernameError ? styles.inputError : null]}
+                style={[styles.input, styles.usernameInput, { color: colors.text }, usernameError ? styles.inputError : null]}
                 value={username}
                 onChangeText={handleUsernameChange}
                 placeholder="Choose a username"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.textTertiary}
                 autoCapitalize="none"
                 autoCorrect={false}
                 maxLength={20}
@@ -437,18 +439,18 @@ export default function EditProfile() {
             {usernameError ? (
               <Text style={styles.errorText}>{usernameError}</Text>
             ) : (
-              <Text style={styles.helperText}>Letters, numbers, and underscores only</Text>
+              <Text style={[styles.helperText, { color: colors.textTertiary }]}>Letters, numbers, and underscores only</Text>
             )}
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Bio</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Bio</Text>
             <TextInput
-              style={[styles.input, styles.bioInput]}
+              style={[styles.input, styles.bioInput, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={bio}
               onChangeText={setBio}
               placeholder="Tell us about yourself..."
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
@@ -456,43 +458,43 @@ export default function EditProfile() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Location</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Location</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={location}
               onChangeText={setLocation}
               placeholder="e.g. New York, USA"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Website</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Website</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={website}
               onChangeText={setWebsite}
               placeholder="e.g. yoursite.com"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               autoCapitalize="none"
               keyboardType="url"
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Email Address</Text>
             <TextInput
-              style={[styles.input, styles.emailInput]}
+              style={[styles.input, styles.emailInput, { backgroundColor: isDark ? colors.surface : '#f0f0f0', color: colors.textSecondary, borderColor: isDark ? colors.border : '#e5e5e5' }]}
               value={email}
               editable={false}
               placeholder="Email"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
             />
-            <Text style={styles.helperText}>Email cannot be changed (used for sign-in)</Text>
+            <Text style={[styles.helperText, { color: colors.textTertiary }]}>Email cannot be changed (used for sign-in)</Text>
           </View>
 
-          <TouchableOpacity 
-            style={[styles.saveButton, saving && styles.saveButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.saveButtonDisabled, { backgroundColor: isDark ? colors.primary : '#000' }]}
             onPress={handleSave}
             disabled={saving}
           >

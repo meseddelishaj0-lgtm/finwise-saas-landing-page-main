@@ -12,10 +12,12 @@ import {
 import { LogOut, ChevronLeft, AlertCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function SignOutScreen() {
   const router = useRouter();
   const { logout } = useAuth();
+  const { colors, isDark } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleSignOut = async () => {
@@ -28,25 +30,25 @@ export default function SignOutScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#eee' }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <ChevronLeft size={28} color="#000" />
+          <ChevronLeft size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Sign Out</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Sign Out</Text>
         <View style={{ width: 28 }} />
       </View>
 
       {/* Body */}
       <View style={styles.content}>
-        <View style={styles.iconCircle}>
+        <View style={[styles.iconCircle, { backgroundColor: isDark ? '#3A1010' : '#ffebeb' }]}>
           <LogOut size={48} color="#FF3B30" />
         </View>
 
-        <Text style={styles.title}>Sign Out of WallStreetStocks?</Text>
-        <Text style={styles.subtitle}>
-          You’ll need to log in again next time you open the app.
+        <Text style={[styles.title, { color: colors.text }]}>Sign Out of WallStreetStocks?</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          You'll need to log in again next time you open the app.
         </Text>
 
         <TouchableOpacity style={styles.signOutButton} onPress={() => setModalVisible(true)}>
@@ -62,19 +64,19 @@ export default function SignOutScreen() {
       {/* Confirmation Modal */}
       <Modal transparent visible={modalVisible} animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
+          <View style={[styles.modal, { backgroundColor: colors.card }]}>
             <AlertCircle size={48} color="#FF3B30" style={{ marginBottom: 16 }} />
-            <Text style={styles.modalTitle}>Sign Out?</Text>
-            <Text style={styles.modalMessage}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Sign Out?</Text>
+            <Text style={[styles.modalMessage, { color: colors.textSecondary }]}>
               Are you sure you want to sign out?
             </Text>
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
-                style={[styles.modalBtn, styles.cancelBtn]}
+                style={[styles.modalBtn, styles.cancelBtn, { backgroundColor: colors.surface }]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+                <Text style={[styles.cancelBtnText, { color: colors.text }]}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -160,4 +162,3 @@ const styles = StyleSheet.create({
   confirmBtn: { backgroundColor: '#FF3B30' },
   confirmBtnText: { color: '#fff', fontWeight: '600' },
 });
-

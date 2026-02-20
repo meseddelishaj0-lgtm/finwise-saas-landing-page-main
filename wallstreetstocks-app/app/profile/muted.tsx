@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/lib/auth';
 import { getMutedUserDetails, unmuteUser } from '@/services/communityApi';
+import { useTheme } from '@/context/ThemeContext';
 
 const AVATAR_COLORS = [
   '#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a',
@@ -34,6 +35,7 @@ interface MutedUser {
 export default function Muted() {
   const router = useRouter();
   const { user: authUser } = useAuth();
+  const { colors, isDark } = useTheme();
   const [mutedUsers, setMutedUsers] = useState<MutedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -141,8 +143,8 @@ export default function Muted() {
           </View>
         )}
         <View style={styles.userDetails}>
-          <Text style={styles.userName}>{item.name || item.email?.split('@')[0]}</Text>
-          <Text style={styles.mutedDate}>Muted {formatDate(item.mutedAt)}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{item.name || item.email?.split('@')[0]}</Text>
+          <Text style={[styles.mutedDate, { color: colors.textTertiary }]}>Muted {formatDate(item.mutedAt)}</Text>
         </View>
       </View>
       <TouchableOpacity
@@ -160,16 +162,16 @@ export default function Muted() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Muted Accounts</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Muted Accounts</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -179,9 +181,9 @@ export default function Muted() {
         </View>
       ) : mutedUsers.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="volume-mute-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyTitle}>No Muted Users</Text>
-          <Text style={styles.emptySubtitle}>
+          <Ionicons name="volume-mute-outline" size={64} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No Muted Users</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
             When you mute someone, they&apos;ll appear here
           </Text>
         </View>
@@ -194,7 +196,7 @@ export default function Muted() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: isDark ? colors.border : '#f0f0f0' }]} />}
         />
       )}
     </SafeAreaView>

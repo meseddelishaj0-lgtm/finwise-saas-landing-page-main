@@ -17,6 +17,7 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useTheme } from "@/context/ThemeContext";
 
 type MenuItem = {
   label: string;
@@ -37,6 +38,7 @@ export default function MenuPage() {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const { currentTier } = useSubscription();
+  const { colors, isDark } = useTheme();
 
   const handleSignOut = () => {
     Alert.alert(
@@ -256,13 +258,13 @@ export default function MenuPage() {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Menu</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Menu</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -273,7 +275,7 @@ export default function MenuPage() {
       >
         {/* Profile Card */}
         <TouchableOpacity
-          style={styles.profileCard}
+          style={[styles.profileCard, { backgroundColor: colors.card, shadowOpacity: isDark ? 0 : 0.05 }]}
           onPress={() => router.push('/profile/my-profile')}
           activeOpacity={0.7}
         >
@@ -293,8 +295,8 @@ export default function MenuPage() {
                 <ActivityIndicator size="small" color="#007AFF" />
               ) : (
                 <>
-                  <Text style={styles.profileName}>{getDisplayName()}</Text>
-                  <Text style={styles.profileEmail}>{user?.email || 'Not signed in'}</Text>
+                  <Text style={[styles.profileName, { color: colors.text }]}>{getDisplayName()}</Text>
+                  <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user?.email || 'Not signed in'}</Text>
                 </>
               )}
             </View>
@@ -304,16 +306,16 @@ export default function MenuPage() {
               <Ionicons
                 name={!currentTier || currentTier === 'free' ? 'person' : 'diamond'}
                 size={14}
-                color={!currentTier || currentTier === 'free' ? '#8E8E93' : tierBadge.color === '#FFD700' ? '#B8860B' : '#333'}
+                color={!currentTier || currentTier === 'free' ? '#8E8E93' : tierBadge.color === '#FFD700' ? '#B8860B' : isDark ? '#FFF' : '#333'}
               />
               <Text style={[
                 styles.tierBadgeText,
-                { color: !currentTier || currentTier === 'free' ? '#8E8E93' : tierBadge.color === '#FFD700' ? '#B8860B' : '#333' }
+                { color: !currentTier || currentTier === 'free' ? '#8E8E93' : tierBadge.color === '#FFD700' ? '#B8860B' : isDark ? '#FFF' : '#333' }
               ]}>
                 {tierBadge.text}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+            <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </View>
         </TouchableOpacity>
 
@@ -321,12 +323,13 @@ export default function MenuPage() {
         {menuSections.map((section, sectionIndex) => (
           <View key={sectionIndex} style={styles.section}>
             <Text style={styles.sectionTitle}>{section.title}</Text>
-            <View style={styles.sectionContent}>
+            <View style={[styles.sectionContent, { backgroundColor: colors.card }]}>
               {section.items.map((item, itemIndex) => (
                 <TouchableOpacity
                   key={itemIndex}
                   style={[
                     styles.menuItem,
+                    { borderBottomColor: isDark ? colors.border : '#E5E5EA' },
                     itemIndex === section.items.length - 1 && styles.menuItemLast,
                   ]}
                   onPress={() => {
@@ -349,7 +352,7 @@ export default function MenuPage() {
                         color={item.color || "#8E8E93"}
                       />
                     </View>
-                    <Text style={styles.menuLabel}>
+                    <Text style={[styles.menuLabel, { color: colors.text }]}>
                       {item.label}
                     </Text>
                   </View>
@@ -361,7 +364,7 @@ export default function MenuPage() {
                         </Text>
                       </View>
                     )}
-                    <Ionicons name="chevron-forward" size={18} color="#C7C7CC" />
+                    <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -371,7 +374,7 @@ export default function MenuPage() {
 
         {/* Sign Out Button */}
         <View style={styles.section}>
-          <View style={styles.sectionContent}>
+          <View style={[styles.sectionContent, { backgroundColor: colors.card }]}>
             <TouchableOpacity
               style={[styles.menuItem, styles.menuItemLast]}
               onPress={handleSignOut}
@@ -381,18 +384,18 @@ export default function MenuPage() {
                 <View style={[styles.iconContainer, { backgroundColor: '#FF3B3015' }]}>
                   <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
                 </View>
-                <Text style={[styles.menuLabel, { color: "#FF3B30" }]}>
+                <Text style={[styles.menuLabel, { color: colors.text }, { color: "#FF3B30" }]}>
                   Sign Out
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#C7C7CC" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Version Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerTitle}>WallStreetStocks</Text>
+          <Text style={[styles.footerTitle, { color: colors.text }]}>WallStreetStocks</Text>
           <Text style={styles.version}>Version 1.0.0</Text>
           <Text style={styles.copyright}>Made with in New York</Text>
         </View>

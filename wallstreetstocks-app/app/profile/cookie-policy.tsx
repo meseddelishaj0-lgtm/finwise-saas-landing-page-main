@@ -10,9 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function CookiePolicy() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   const cookieTypes = [
     {
@@ -42,60 +44,60 @@ export default function CookiePolicy() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Cookie Policy</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Cookie Policy</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Intro */}
-        <View style={styles.section}>
-          <Text style={styles.lastUpdated}>Last Updated: January 2025</Text>
-          
-          <Text style={styles.paragraph}>
+        <View style={[styles.section, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
+          <Text style={[styles.lastUpdated, { color: colors.textSecondary }]}>Last Updated: January 2025</Text>
+
+          <Text style={[styles.paragraph, { color: colors.textSecondary }]}>
             This Cookie Policy explains how WallStreetStocks (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) uses cookies
             and similar tracking technologies when you use our mobile application and services.
           </Text>
         </View>
 
         {/* What Are Cookies */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What Are Cookies?</Text>
-          <Text style={styles.paragraph}>
-            Cookies are small text files that are stored on your device when you use our app. 
-            They help us provide you with a better experience by remembering your preferences, 
+        <View style={[styles.section, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>What Are Cookies?</Text>
+          <Text style={[styles.paragraph, { color: colors.textSecondary }]}>
+            Cookies are small text files that are stored on your device when you use our app.
+            They help us provide you with a better experience by remembering your preferences,
             keeping you logged in, and understanding how you use our services.
           </Text>
-          <Text style={styles.paragraph}>
-            In mobile apps, we use similar technologies such as device identifiers, local storage, 
+          <Text style={[styles.paragraph, { color: colors.textSecondary }]}>
+            In mobile apps, we use similar technologies such as device identifiers, local storage,
             and SDKs that function similarly to cookies on websites.
           </Text>
         </View>
 
         {/* Types of Cookies */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Types of Cookies We Use</Text>
-          
+        <View style={[styles.section, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Types of Cookies We Use</Text>
+
           {cookieTypes.map((cookie, index) => (
-            <View key={index} style={styles.cookieCard}>
+            <View key={index} style={[styles.cookieCard, { backgroundColor: colors.card }]}>
               <View style={styles.cookieHeader}>
-                <Text style={styles.cookieTitle}>{cookie.title}</Text>
+                <Text style={[styles.cookieTitle, { color: colors.text }]}>{cookie.title}</Text>
                 {cookie.required && (
                   <View style={styles.requiredBadge}>
                     <Text style={styles.requiredText}>Required</Text>
                   </View>
                 )}
               </View>
-              <Text style={styles.cookieDescription}>{cookie.description}</Text>
-              <View style={styles.examplesList}>
-                <Text style={styles.examplesTitle}>Examples:</Text>
+              <Text style={[styles.cookieDescription, { color: colors.textSecondary }]}>{cookie.description}</Text>
+              <View style={[styles.examplesList, { backgroundColor: isDark ? colors.surface : '#fff' }]}>
+                <Text style={[styles.examplesTitle, { color: colors.textSecondary }]}>Examples:</Text>
                 {cookie.examples.map((example, i) => (
-                  <Text key={i} style={styles.exampleItem}>• {example}</Text>
+                  <Text key={i} style={[styles.exampleItem, { color: colors.textTertiary }]}>• {example}</Text>
                 ))}
               </View>
             </View>
@@ -103,61 +105,61 @@ export default function CookiePolicy() {
         </View>
 
         {/* How We Use Cookies */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How We Use Cookies</Text>
-          
+        <View style={[styles.section, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>How We Use Cookies</Text>
+
           <View style={styles.useCase}>
             <Ionicons name="person-outline" size={24} color="#007AFF" />
             <View style={styles.useCaseContent}>
-              <Text style={styles.useCaseTitle}>Authentication</Text>
-              <Text style={styles.useCaseText}>Keep you logged in securely across sessions</Text>
+              <Text style={[styles.useCaseTitle, { color: colors.text }]}>Authentication</Text>
+              <Text style={[styles.useCaseText, { color: colors.textSecondary }]}>Keep you logged in securely across sessions</Text>
             </View>
           </View>
-          
+
           <View style={styles.useCase}>
             <Ionicons name="settings-outline" size={24} color="#007AFF" />
             <View style={styles.useCaseContent}>
-              <Text style={styles.useCaseTitle}>Preferences</Text>
-              <Text style={styles.useCaseText}>Remember your settings and customizations</Text>
+              <Text style={[styles.useCaseTitle, { color: colors.text }]}>Preferences</Text>
+              <Text style={[styles.useCaseText, { color: colors.textSecondary }]}>Remember your settings and customizations</Text>
             </View>
           </View>
-          
+
           <View style={styles.useCase}>
             <Ionicons name="analytics-outline" size={24} color="#007AFF" />
             <View style={styles.useCaseContent}>
-              <Text style={styles.useCaseTitle}>Analytics</Text>
-              <Text style={styles.useCaseText}>Understand usage patterns to improve the app</Text>
+              <Text style={[styles.useCaseTitle, { color: colors.text }]}>Analytics</Text>
+              <Text style={[styles.useCaseText, { color: colors.textSecondary }]}>Understand usage patterns to improve the app</Text>
             </View>
           </View>
-          
+
           <View style={styles.useCase}>
             <Ionicons name="shield-outline" size={24} color="#007AFF" />
             <View style={styles.useCaseContent}>
-              <Text style={styles.useCaseTitle}>Security</Text>
-              <Text style={styles.useCaseText}>Detect and prevent fraudulent activity</Text>
+              <Text style={[styles.useCaseTitle, { color: colors.text }]}>Security</Text>
+              <Text style={[styles.useCaseText, { color: colors.textSecondary }]}>Detect and prevent fraudulent activity</Text>
             </View>
           </View>
         </View>
 
         {/* Third-Party Cookies */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Third-Party Services</Text>
-          <Text style={styles.paragraph}>
+        <View style={[styles.section, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Third-Party Services</Text>
+          <Text style={[styles.paragraph, { color: colors.textSecondary }]}>
             We work with trusted third-party partners who may also set cookies or use similar 
             technologies when you use our app. These include:
           </Text>
           <View style={styles.thirdPartyList}>
-            <Text style={styles.thirdPartyItem}>• Analytics providers (e.g., Firebase, Mixpanel)</Text>
-            <Text style={styles.thirdPartyItem}>• Advertising networks</Text>
-            <Text style={styles.thirdPartyItem}>• Payment processors</Text>
-            <Text style={styles.thirdPartyItem}>• Customer support tools</Text>
+            <Text style={[styles.thirdPartyItem, { color: colors.textSecondary }]}>• Analytics providers (e.g., Firebase, Mixpanel)</Text>
+            <Text style={[styles.thirdPartyItem, { color: colors.textSecondary }]}>• Advertising networks</Text>
+            <Text style={[styles.thirdPartyItem, { color: colors.textSecondary }]}>• Payment processors</Text>
+            <Text style={[styles.thirdPartyItem, { color: colors.textSecondary }]}>• Customer support tools</Text>
           </View>
         </View>
 
         {/* Managing Cookies */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Managing Your Preferences</Text>
-          <Text style={styles.paragraph}>
+        <View style={[styles.section, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Managing Your Preferences</Text>
+          <Text style={[styles.paragraph, { color: colors.textSecondary }]}>
             You can manage your cookie preferences at any time through the app settings. 
             Note that disabling certain cookies may affect the functionality of the app.
           </Text>
@@ -172,9 +174,9 @@ export default function CookiePolicy() {
         </View>
 
         {/* Contact */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Questions?</Text>
-          <Text style={styles.paragraph}>
+        <View style={[styles.section, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Questions?</Text>
+          <Text style={[styles.paragraph, { color: colors.textSecondary }]}>
             If you have any questions about our use of cookies or this policy, please contact us at:
           </Text>
           <Text style={styles.contactEmail}>privacy@wallstreetstocks.com</Text>

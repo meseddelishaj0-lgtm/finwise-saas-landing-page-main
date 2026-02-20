@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserDisplayName, getUserHandle } from '@/context/UserProfileContext';
+import { useTheme } from '@/context/ThemeContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
@@ -82,6 +83,7 @@ function Avatar({ user, size = 80 }: { user: User | null | undefined; size?: num
 
 export default function UserProfile() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -189,25 +191,25 @@ export default function UserProfile() {
 
   const renderPost = ({ item }: { item: Post }) => (
     <TouchableOpacity
-      style={styles.postItem}
+      style={[styles.postItem, { borderBottomColor: isDark ? colors.border : '#F0F0F0' }]}
       onPress={() => router.push(`/post/${item.id}` as any)}
     >
-      {item.title && <Text style={styles.postTitle}>{item.title}</Text>}
-      <Text style={styles.postContent} numberOfLines={3}>
+      {item.title && <Text style={[styles.postTitle, { color: colors.text }]}>{item.title}</Text>}
+      <Text style={[styles.postContent, { color: colors.textSecondary }]} numberOfLines={3}>
         {item.content}
       </Text>
       {item.ticker && (
-        <View style={styles.tickerBadge}>
-          <Text style={styles.tickerText}>${item.ticker}</Text>
+        <View style={[styles.tickerBadge, { backgroundColor: isDark ? '#1A3A1A' : '#E8F5E9' }]}>
+          <Text style={[styles.tickerText, { color: isDark ? '#4CAF50' : '#2E7D32' }]}>${item.ticker}</Text>
         </View>
       )}
       <View style={styles.postMeta}>
-        <Text style={styles.postTime}>{formatTimeAgo(item.createdAt)}</Text>
+        <Text style={[styles.postTime, { color: colors.textTertiary }]}>{formatTimeAgo(item.createdAt)}</Text>
         <View style={styles.postStats}>
-          <Ionicons name="heart-outline" size={14} color="#666" />
-          <Text style={styles.statText}>{item.likes}</Text>
-          <Ionicons name="chatbubble-outline" size={14} color="#666" style={{ marginLeft: 12 }} />
-          <Text style={styles.statText}>{item.commentCount}</Text>
+          <Ionicons name="heart-outline" size={14} color={colors.textSecondary} />
+          <Text style={[styles.statText, { color: colors.textSecondary }]}>{item.likes}</Text>
+          <Ionicons name="chatbubble-outline" size={14} color={colors.textSecondary} style={{ marginLeft: 12 }} />
+          <Text style={[styles.statText, { color: colors.textSecondary }]}>{item.commentCount}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -215,12 +217,12 @@ export default function UserProfile() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#E5E5E5' }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
           <View style={{ width: 24 }} />
         </View>
         <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
@@ -230,16 +232,16 @@ export default function UserProfile() {
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#E5E5E5' }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>User not found</Text>
+          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>User not found</Text>
         </View>
       </SafeAreaView>
     );
@@ -248,13 +250,13 @@ export default function UserProfile() {
   const isOwnProfile = currentUserId === user.id;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#E5E5E5' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -269,18 +271,18 @@ export default function UserProfile() {
             {user.bannerImage ? (
               <Image source={{ uri: user.bannerImage }} style={styles.banner} />
             ) : (
-              <View style={[styles.banner, { backgroundColor: '#E0E0E0' }]} />
+              <View style={[styles.banner, { backgroundColor: isDark ? colors.surface : '#E0E0E0' }]} />
             )}
 
             {/* Profile Info */}
-            <View style={styles.profileSection}>
-              <View style={styles.avatarContainer}>
+            <View style={[styles.profileSection, { borderBottomColor: isDark ? colors.border : '#E5E5E5' }]}>
+              <View style={[styles.avatarContainer, { borderColor: colors.background }]}>
                 <Avatar user={user} size={80} />
               </View>
 
               {!isOwnProfile && (
                 <TouchableOpacity
-                  style={[styles.followButton, user.isFollowing && styles.followingButton]}
+                  style={[styles.followButton, user.isFollowing && [styles.followingButton, { backgroundColor: colors.background, borderColor: '#007AFF' }]]}
                   onPress={handleFollow}
                   disabled={followLoading}
                 >
@@ -296,44 +298,44 @@ export default function UserProfile() {
                 </TouchableOpacity>
               )}
 
-              <Text style={styles.userName}>{getUserDisplayName(user)}</Text>
-              <Text style={styles.userHandle}>@{getUserHandle(user)}</Text>
+              <Text style={[styles.userName, { color: colors.text }]}>{getUserDisplayName(user)}</Text>
+              <Text style={[styles.userHandle, { color: colors.textSecondary }]}>@{getUserHandle(user)}</Text>
 
-              {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
+              {user.bio && <Text style={[styles.bio, { color: colors.text }]}>{user.bio}</Text>}
 
               {user.location && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="location-outline" size={16} color="#666" />
-                  <Text style={styles.infoText}>{user.location}</Text>
+                  <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+                  <Text style={[styles.infoText, { color: colors.textSecondary }]}>{user.location}</Text>
                 </View>
               )}
 
               {/* Stats */}
               <View style={styles.statsRow}>
                 <View style={styles.stat}>
-                  <Text style={styles.statNumber}>{user._count?.posts || 0}</Text>
-                  <Text style={styles.statLabel}>Posts</Text>
+                  <Text style={[styles.statNumber, { color: colors.text }]}>{user._count?.posts || 0}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Posts</Text>
                 </View>
                 <View style={styles.stat}>
-                  <Text style={styles.statNumber}>{user._count?.followers || 0}</Text>
-                  <Text style={styles.statLabel}>Followers</Text>
+                  <Text style={[styles.statNumber, { color: colors.text }]}>{user._count?.followers || 0}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Followers</Text>
                 </View>
                 <View style={styles.stat}>
-                  <Text style={styles.statNumber}>{user._count?.following || 0}</Text>
-                  <Text style={styles.statLabel}>Following</Text>
+                  <Text style={[styles.statNumber, { color: colors.text }]}>{user._count?.following || 0}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Following</Text>
                 </View>
               </View>
             </View>
 
             {/* Posts Header */}
-            <View style={styles.postsHeader}>
-              <Text style={styles.postsTitle}>Posts</Text>
+            <View style={[styles.postsHeader, { borderBottomColor: isDark ? colors.border : '#E5E5E5' }]}>
+              <Text style={[styles.postsTitle, { color: colors.text }]}>Posts</Text>
             </View>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.noPosts}>
-            <Text style={styles.noPostsText}>No posts yet</Text>
+            <Text style={[styles.noPostsText, { color: colors.textTertiary }]}>No posts yet</Text>
           </View>
         }
         contentContainerStyle={{ paddingBottom: 20 }}

@@ -43,6 +43,7 @@ import {
   formatExpirationDate,
 } from "@/services/revenueCat";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useTheme } from "@/context/ThemeContext";
 
 // Screen dimensions for responsive layout
 const _screenWidth = Dimensions.get("window").width;
@@ -171,6 +172,7 @@ interface SubscriptionDetails {
 
 export default function SubscriptionPage() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const { refreshStatus: refreshGlobalSubscription } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -609,13 +611,13 @@ export default function SubscriptionPage() {
     if (!isExpired) return null;
 
     return (
-      <View style={styles.expiredBanner}>
-        <View style={styles.expiredIconContainer}>
+      <View style={[styles.expiredBanner, { backgroundColor: isDark ? '#2A1010' : '#FFF3F3', borderColor: isDark ? '#5A2020' : '#FFCDD2' }]}>
+        <View style={[styles.expiredIconContainer, { backgroundColor: isDark ? '#3A1515' : '#FFEBEE' }]}>
           <XCircle size={24} color="#FF3B30" />
         </View>
         <View style={styles.expiredContent}>
           <Text style={styles.expiredTitle}>Subscription Expired</Text>
-          <Text style={styles.expiredSubtitle}>
+          <Text style={[styles.expiredSubtitle, { color: colors.textSecondary }]}>
             Your subscription has expired. Resubscribe to continue enjoying premium features.
           </Text>
         </View>
@@ -657,13 +659,13 @@ export default function SubscriptionPage() {
     };
 
     return (
-      <View style={[styles.currentSubCard, { borderColor: tier.color }]}>
+      <View style={[styles.currentSubCard, { borderColor: tier.color, backgroundColor: colors.card }]}>
         <View style={styles.currentSubHeader}>
-          <View style={[styles.currentSubIcon, { backgroundColor: tier.bgColor }]}>
+          <View style={[styles.currentSubIcon, { backgroundColor: isDark ? `${tier.color}20` : tier.bgColor }]}>
             <Icon size={24} color={tier.color} />
           </View>
           <View style={styles.currentSubInfo}>
-            <Text style={styles.currentSubLabel}>Current Plan</Text>
+            <Text style={[styles.currentSubLabel, { color: colors.textSecondary }]}>Current Plan</Text>
             <Text style={[styles.currentSubName, { color: tier.color }]}>{tier.name}</Text>
           </View>
           {isLifetime && (
@@ -707,20 +709,20 @@ export default function SubscriptionPage() {
 
         {/* Only show details for non-lifetime subscriptions */}
         {!isLifetime && (
-          <View style={styles.currentSubDetails}>
+          <View style={[styles.currentSubDetails, { backgroundColor: isDark ? colors.surface : '#F8F9FA' }]}>
             <View style={styles.detailRow}>
-              <Calendar size={16} color="#666" />
-              <Text style={styles.detailLabel}>
+              <Calendar size={16} color={colors.textSecondary} />
+              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
                 {subscriptionDetails.isCanceled ? "Expires" : "Renews"} on:
               </Text>
-              <Text style={styles.detailValue}>
+              <Text style={[styles.detailValue, { color: colors.text }]}>
                 {formatExpirationDate(subscriptionDetails.expirationDate)}
               </Text>
             </View>
 
             <View style={styles.detailRow}>
-              <RefreshCw size={16} color="#666" />
-              <Text style={styles.detailLabel}>Auto-renew:</Text>
+              <RefreshCw size={16} color={colors.textSecondary} />
+              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Auto-renew:</Text>
               <Text style={[styles.detailValue, { color: subscriptionDetails.willRenew ? '#34C759' : '#FF3B30' }]}>
                 {subscriptionDetails.willRenew ? "On" : "Off"}
               </Text>
@@ -774,9 +776,10 @@ export default function SubscriptionPage() {
         key={tierKey}
         style={[
           styles.tierCard,
+          { backgroundColor: colors.card, borderColor: isDark ? colors.border : '#E5E5EA' },
           isSelected && { borderColor: tier.borderColor, borderWidth: 2 },
-          isCurrentPlan && styles.currentPlanCard,
-          isLifetime && styles.lifetimeCard,
+          isCurrentPlan && [styles.currentPlanCard, { backgroundColor: isDark ? colors.surface : '#F9F9F9' }],
+          isLifetime && { backgroundColor: isDark ? `${tier.color}15` : '#FAF5FF', borderColor: tier.color },
         ]}
         onPress={() => !isCurrentPlan && setSelectedTier(tierKey)}
         activeOpacity={isCurrentPlan ? 1 : 0.7}
@@ -808,14 +811,14 @@ export default function SubscriptionPage() {
         )}
 
         <View style={styles.tierHeader}>
-          <View style={[styles.tierIconContainer, { backgroundColor: tier.bgColor }]}>
+          <View style={[styles.tierIconContainer, { backgroundColor: isDark ? `${tier.color}20` : tier.bgColor }]}>
             <Icon size={28} color={tier.color} />
           </View>
           <View style={styles.tierInfo}>
-            <Text style={styles.tierName}>{tier.name}</Text>
+            <Text style={[styles.tierName, { color: colors.text }]}>{tier.name}</Text>
             <View style={styles.priceContainer}>
-              <Text style={styles.price}>{getPrice(tierKey)}</Text>
-              <Text style={styles.period}>
+              <Text style={[styles.price, { color: colors.text }]}>{getPrice(tierKey)}</Text>
+              <Text style={[styles.period, { color: colors.textSecondary }]}>
                 {isLifetime ? " one-time" : billingPeriod === 'yearly' ? "/year" : "/month"}
               </Text>
             </View>
@@ -833,15 +836,15 @@ export default function SubscriptionPage() {
             return (
               <View key={index} style={styles.featureRow}>
                 <FeatureIcon size={16} color={tier.color} />
-                <Text style={styles.featureText}>{feature.text}</Text>
+                <Text style={[styles.featureText, { color: colors.textSecondary }]}>{feature.text}</Text>
               </View>
             );
           })}
         </View>
 
         {isDowngrade && isSelected && (
-          <View style={styles.downgradeWarning}>
-            <Text style={styles.downgradeText}>
+          <View style={[styles.downgradeWarning, { backgroundColor: isDark ? '#2A1A00' : '#FFF3CD' }]}>
+            <Text style={[styles.downgradeText, { color: isDark ? '#FFB84D' : '#856404' }]}>
               This is a downgrade from your current plan
             </Text>
           </View>
@@ -852,29 +855,29 @@ export default function SubscriptionPage() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ChevronLeft size={28} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Subscription</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Subscription</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Subscription</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Subscription</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -892,11 +895,11 @@ export default function SubscriptionPage() {
         {/* Hero Section - Only show for non-subscribers */}
         {!activeSubscription && (
           <View style={styles.heroSection}>
-            <View style={styles.heroIconContainer}>
+            <View style={[styles.heroIconContainer, { backgroundColor: isDark ? colors.surface : '#F0F8FF' }]}>
               <Zap size={40} color="#007AFF" />
             </View>
-            <Text style={styles.heroTitle}>Unlock Premium Features</Text>
-            <Text style={styles.heroSubtitle}>
+            <Text style={[styles.heroTitle, { color: colors.text }]}>Unlock Premium Features</Text>
+            <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
               Start your 7-day free trial. Cancel anytime.
             </Text>
           </View>
@@ -905,10 +908,10 @@ export default function SubscriptionPage() {
         {/* Change/Upgrade Plan Section */}
         {activeSubscription && (
           <View style={styles.changePlanSection}>
-            <Text style={styles.changePlanTitle}>
+            <Text style={[styles.changePlanTitle, { color: colors.text }]}>
               {getCurrentTierLevel() < 3 ? "Upgrade Your Plan" : "Change Plan"}
             </Text>
-            <Text style={styles.changePlanSubtitle}>
+            <Text style={[styles.changePlanSubtitle, { color: colors.textSecondary }]}>
               Select a different plan to upgrade or change your subscription
             </Text>
           </View>
@@ -916,8 +919,8 @@ export default function SubscriptionPage() {
 
         {/* Debug Info */}
         {packages.length === 0 && (
-          <View style={styles.debugContainer}>
-            <Text style={styles.debugText}>
+          <View style={[styles.debugContainer, { backgroundColor: isDark ? '#2A1A00' : '#FFF3CD', borderColor: isDark ? '#5A3A00' : '#FFE69C' }]}>
+            <Text style={[styles.debugText, { color: isDark ? '#FFB84D' : '#856404' }]}>
               ⚠️ No subscription packages loaded.{"\n"}
               Your products may still be under review.
             </Text>
@@ -925,29 +928,31 @@ export default function SubscriptionPage() {
         )}
 
         {/* Billing Period Toggle */}
-        <View style={styles.billingToggleContainer}>
+        <View style={[styles.billingToggleContainer, { backgroundColor: isDark ? colors.surface : '#F3F4F6' }]}>
           <TouchableOpacity
             style={[
               styles.billingToggleButton,
-              billingPeriod === 'monthly' && styles.billingToggleButtonActive,
+              billingPeriod === 'monthly' && [styles.billingToggleButtonActive, { backgroundColor: colors.card }],
             ]}
             onPress={() => setBillingPeriod('monthly')}
           >
             <Text style={[
               styles.billingToggleText,
-              billingPeriod === 'monthly' && styles.billingToggleTextActive,
+              { color: colors.textSecondary },
+              billingPeriod === 'monthly' && { color: colors.text },
             ]}>Monthly</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
               styles.billingToggleButton,
-              billingPeriod === 'yearly' && styles.billingToggleButtonActive,
+              billingPeriod === 'yearly' && [styles.billingToggleButtonActive, { backgroundColor: colors.card }],
             ]}
             onPress={() => setBillingPeriod('yearly')}
           >
             <Text style={[
               styles.billingToggleText,
-              billingPeriod === 'yearly' && styles.billingToggleTextActive,
+              { color: colors.textSecondary },
+              billingPeriod === 'yearly' && { color: colors.text },
             ]}>Yearly</Text>
             <View style={styles.saveBadge}>
               <Text style={styles.saveBadgeText}>Save 17%</Text>
@@ -1018,7 +1023,7 @@ export default function SubscriptionPage() {
         </TouchableOpacity>
 
         {/* Terms */}
-        <Text style={styles.termsText}>
+        <Text style={[styles.termsText, { color: colors.textTertiary }]}>
           Free trial available for new subscribers. Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period. Manage subscriptions in your {Platform.OS === 'ios' ? 'App Store' : 'Play Store'} settings.
         </Text>
 
@@ -1027,7 +1032,7 @@ export default function SubscriptionPage() {
           <TouchableOpacity onPress={() => router.push("/profile/terms")}>
             <Text style={styles.linkText}>Terms of Service</Text>
           </TouchableOpacity>
-          <Text style={styles.linkDivider}>•</Text>
+          <Text style={[styles.linkDivider, { color: colors.textTertiary }]}>•</Text>
           <TouchableOpacity onPress={() => router.push("/profile/privacy")}>
             <Text style={styles.linkText}>Privacy Policy</Text>
           </TouchableOpacity>

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '@/context/ThemeContext';
 
 const CHAT_HISTORY_KEY = 'live_chat_history';
 
@@ -113,6 +114,7 @@ const getSmartResponse = (userMessage: string): string => {
 
 export default function LiveChat() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -227,11 +229,11 @@ export default function LiveChat() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.background : '#f5f5f5' }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
         <View style={styles.headerCenter}>
@@ -239,16 +241,16 @@ export default function LiveChat() {
             <Ionicons name="headset" size={20} color="#fff" />
           </View>
           <View>
-            <Text style={styles.headerTitle}>Support Chat</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Support Chat</Text>
             <View style={styles.statusContainer}>
               <View style={[styles.statusDot, { backgroundColor: isOnline ? '#34C759' : '#FF3B30' }]} />
-              <Text style={styles.statusText}>{isOnline ? 'Online' : 'Offline'}</Text>
+              <Text style={[styles.statusText, { color: colors.textSecondary }]}>{isOnline ? 'Online' : 'Offline'}</Text>
             </View>
           </View>
         </View>
 
         <TouchableOpacity onPress={clearChat} style={styles.menuButton}>
-          <Ionicons name="trash-outline" size={22} color="#666" />
+          <Ionicons name="trash-outline" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -280,18 +282,18 @@ export default function LiveChat() {
               <View
                 style={[
                   styles.messageBubble,
-                  message.sender === 'user' ? styles.userMessage : styles.agentMessage
+                  message.sender === 'user' ? styles.userMessage : [styles.agentMessage, { backgroundColor: colors.card }]
                 ]}
               >
                 <Text style={[
                   styles.messageText,
-                  message.sender === 'user' ? styles.userMessageText : styles.agentMessageText
+                  message.sender === 'user' ? styles.userMessageText : [styles.agentMessageText, { color: colors.text }]
                 ]}>
                   {message.text}
                 </Text>
                 <Text style={[
                   styles.messageTime,
-                  message.sender === 'user' ? styles.userMessageTime : styles.agentMessageTime
+                  message.sender === 'user' ? styles.userMessageTime : [styles.agentMessageTime, { color: colors.textTertiary }]
                 ]}>
                   {formatTime(message.timestamp)}
                 </Text>
@@ -305,7 +307,7 @@ export default function LiveChat() {
               <View style={styles.agentAvatarSmall}>
                 <Ionicons name="headset" size={14} color="#fff" />
               </View>
-              <View style={[styles.messageBubble, styles.agentMessage, styles.typingBubble]}>
+              <View style={[styles.messageBubble, styles.agentMessage, styles.typingBubble, { backgroundColor: colors.card }]}>
                 <View style={styles.typingIndicator}>
                   <View style={[styles.typingDot, styles.typingDot1]} />
                   <View style={[styles.typingDot, styles.typingDot2]} />
@@ -318,13 +320,13 @@ export default function LiveChat() {
 
         {/* Quick Replies */}
         {messages.length <= 1 && (
-          <View style={styles.quickRepliesContainer}>
-            <Text style={styles.quickRepliesTitle}>Quick Questions</Text>
+          <View style={[styles.quickRepliesContainer, { backgroundColor: colors.card, borderTopColor: isDark ? colors.border : '#e5e5e5' }]}>
+            <Text style={[styles.quickRepliesTitle, { color: colors.textSecondary }]}>Quick Questions</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {quickReplies.map((reply) => (
                 <TouchableOpacity
                   key={reply.id}
-                  style={styles.quickReplyButton}
+                  style={[styles.quickReplyButton, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}
                   onPress={() => handleQuickReply(reply)}
                 >
                   <Text style={styles.quickReplyText}>{reply.text}</Text>
@@ -335,11 +337,11 @@ export default function LiveChat() {
         )}
 
         {/* Input Area */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: isDark ? colors.border : '#e5e5e5' }]}>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, { backgroundColor: isDark ? colors.surface : '#f5f5f5', color: colors.text }]}
             placeholder="Type your message..."
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textTertiary}
             value={inputText}
             onChangeText={setInputText}
             multiline
@@ -348,14 +350,14 @@ export default function LiveChat() {
             blurOnSubmit={false}
           />
           <TouchableOpacity
-            style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+            style={[styles.sendButton, !inputText.trim() && [styles.sendButtonDisabled, { backgroundColor: isDark ? colors.surface : '#e5e5e5' }]]}
             onPress={() => sendMessage()}
             disabled={!inputText.trim()}
           >
             <Ionicons
               name="send"
               size={20}
-              color={inputText.trim() ? '#fff' : '#ccc'}
+              color={inputText.trim() ? '#fff' : isDark ? colors.textTertiary : '#ccc'}
             />
           </TouchableOpacity>
         </View>

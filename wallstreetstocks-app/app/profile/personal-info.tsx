@@ -18,10 +18,12 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function PersonalInfo() {
   const router = useRouter();
   const { user } = useAuth();
+  const { colors, isDark } = useTheme();
 
   // Form State - Initialize empty, load from storage/user
   const [name, setName] = useState('');
@@ -83,30 +85,30 @@ export default function PersonalInfo() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Personal Info</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Personal Info</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          
+
           {/* Avatar */}
           <View style={styles.avatarContainer}>
             <TouchableOpacity onPress={pickImage}>
               {avatar ? (
-                <Image source={{ uri: avatar }} style={styles.avatar} />
+                <Image source={{ uri: avatar }} style={[styles.avatar, { borderColor: colors.background }]} />
               ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="person" size={40} color="#999" />
+                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.surface, borderColor: colors.background }]}>
+                  <Ionicons name="person" size={40} color={colors.textTertiary} />
                 </View>
               )}
             </TouchableOpacity>
@@ -116,36 +118,36 @@ export default function PersonalInfo() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Full Name</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Full Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={name}
               onChangeText={setName}
               placeholder="Enter your full name"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Username</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Username</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={username}
               onChangeText={setUsername}
               placeholder="Enter username"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               autoCapitalize="none"
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Bio</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Bio</Text>
             <TextInput
-              style={[styles.input, styles.bioInput]}
+              style={[styles.input, styles.bioInput, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={bio}
               onChangeText={setBio}
               placeholder="Tell us about yourself..."
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
@@ -153,42 +155,42 @@ export default function PersonalInfo() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Location</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Location</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={location}
               onChangeText={setLocation}
               placeholder="e.g. New York, USA"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Email Address</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={email}
               onChangeText={setEmail}
               placeholder="Enter email"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               keyboardType="email-address"
               autoCapitalize="none"
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Phone Number</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Phone Number</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={phone}
               onChangeText={setPhone}
               placeholder="Enter phone number"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               keyboardType="phone-pad"
             />
           </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <TouchableOpacity style={[styles.saveButton, { backgroundColor: isDark ? colors.primary : '#000' }]} onPress={handleSave}>
             <Text style={styles.saveButtonText}>Save Changes</Text>
           </TouchableOpacity>
 

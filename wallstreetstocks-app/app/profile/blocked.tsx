@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/lib/auth';
 import { getBlockedUserDetails, unblockUser } from '@/services/communityApi';
+import { useTheme } from '@/context/ThemeContext';
 
 const AVATAR_COLORS = [
   '#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a',
@@ -34,6 +35,7 @@ interface BlockedUser {
 export default function Blocked() {
   const router = useRouter();
   const { user: authUser } = useAuth();
+  const { colors, isDark } = useTheme();
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -141,8 +143,8 @@ export default function Blocked() {
           </View>
         )}
         <View style={styles.userDetails}>
-          <Text style={styles.userName}>{item.name || item.email?.split('@')[0]}</Text>
-          <Text style={styles.blockedDate}>Blocked {formatDate(item.blockedAt)}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{item.name || item.email?.split('@')[0]}</Text>
+          <Text style={[styles.blockedDate, { color: colors.textTertiary }]}>Blocked {formatDate(item.blockedAt)}</Text>
         </View>
       </View>
       <TouchableOpacity
@@ -160,16 +162,16 @@ export default function Blocked() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Blocked Accounts</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Blocked Accounts</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -179,9 +181,9 @@ export default function Blocked() {
         </View>
       ) : blockedUsers.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="shield-checkmark-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyTitle}>No Blocked Users</Text>
-          <Text style={styles.emptySubtitle}>
+          <Ionicons name="shield-checkmark-outline" size={64} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No Blocked Users</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
             When you block someone, they&apos;ll appear here
           </Text>
         </View>
@@ -194,7 +196,7 @@ export default function Blocked() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: isDark ? colors.border : '#f0f0f0' }]} />}
         />
       )}
     </SafeAreaView>

@@ -13,9 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function ContactUs() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -73,47 +75,47 @@ export default function ContactUs() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Contact Us</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Contact Us</Text>
         <View style={{ width: 44 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroIcon}>
+        <View style={[styles.heroSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
+          <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
             <Ionicons name="headset" size={40} color="#007AFF" />
           </View>
-          <Text style={styles.heroTitle}>We&apos;re Here to Help</Text>
-          <Text style={styles.heroSubtitle}>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>We&apos;re Here to Help</Text>
+          <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
             Our support team is available to assist you with any questions or concerns
           </Text>
         </View>
 
         {/* Contact Methods */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Get in Touch</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Get in Touch</Text>
           <View style={styles.contactGrid}>
             {contactMethods.map((method, index) => (
               <TouchableOpacity
                 key={index}
-                style={styles.contactCard}
+                style={[styles.contactCard, { backgroundColor: colors.card }]}
                 onPress={method.action}
               >
                 <View style={[styles.contactIcon, { backgroundColor: `${method.color}15` }]}>
                   <Ionicons name={method.icon as any} size={24} color={method.color} />
                 </View>
-                <Text style={styles.contactTitle}>{method.title}</Text>
-                <Text style={styles.contactSubtitle}>{method.subtitle}</Text>
+                <Text style={[styles.contactTitle, { color: colors.text }]}>{method.title}</Text>
+                <Text style={[styles.contactSubtitle, { color: colors.textSecondary }]}>{method.subtitle}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -121,19 +123,19 @@ export default function ContactUs() {
 
         {/* Quick FAQs */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Answers</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Answers</Text>
           {faqs.map((faq, index) => (
             <TouchableOpacity
               key={index}
-              style={styles.faqRow}
+              style={[styles.faqRow, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
               onPress={() => router.push(faq.route as any)}
             >
               <Ionicons name="help-circle-outline" size={22} color="#007AFF" />
-              <Text style={styles.faqText}>{faq.question}</Text>
-              <Ionicons name="chevron-forward" size={20} color="#ccc" />
+              <Text style={[styles.faqText, { color: colors.text }]}>{faq.question}</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
             </TouchableOpacity>
           ))}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.viewAllButton}
             onPress={() => router.push('/profile/help-center' as any)}
           >
@@ -143,25 +145,25 @@ export default function ContactUs() {
 
         {/* Contact Form */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Send us a Message</Text>
-          
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Send us a Message</Text>
+
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Name *</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>Name *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               placeholder="Your name"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               value={name}
               onChangeText={setName}
             />
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Email *</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>Email *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               placeholder="your@email.com"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
@@ -170,22 +172,22 @@ export default function ContactUs() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Subject</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>Subject</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               placeholder="What's this about?"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               value={subject}
               onChangeText={setSubject}
             />
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>Message *</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>Message *</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               placeholder="How can we help you?"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               multiline
               numberOfLines={5}
               textAlignVertical="top"
@@ -202,8 +204,8 @@ export default function ContactUs() {
 
         {/* Response Time */}
         <View style={styles.responseSection}>
-          <Ionicons name="time-outline" size={24} color="#666" />
-          <Text style={styles.responseText}>
+          <Ionicons name="time-outline" size={24} color={colors.textSecondary} />
+          <Text style={[styles.responseText, { color: colors.textSecondary }]}>
             Average response time: <Text style={styles.responseHighlight}>Under 24 hours</Text>
           </Text>
         </View>

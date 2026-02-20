@@ -10,9 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function CommunityGuidelines() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   const guidelines = [
     {
@@ -74,25 +76,25 @@ export default function CommunityGuidelines() {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Community Guidelines</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Community Guidelines</Text>
         <View style={{ width: 44 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Intro */}
-        <View style={styles.introSection}>
-          <Text style={styles.introTitle}>Building a Better Community Together</Text>
-          <Text style={styles.introText}>
+        <View style={[styles.introSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
+          <Text style={[styles.introTitle, { color: colors.text }]}>Building a Better Community Together</Text>
+          <Text style={[styles.introText, { color: colors.textSecondary }]}>
             Our community guidelines help create a safe, informative, and respectful environment 
             for all investors to learn, share, and grow together.
           </Text>
@@ -100,15 +102,15 @@ export default function CommunityGuidelines() {
 
         {/* Core Guidelines */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Core Guidelines</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Core Guidelines</Text>
           {guidelines.map((guideline, index) => (
-            <View key={index} style={styles.guidelineCard}>
+            <View key={index} style={[styles.guidelineCard, { backgroundColor: colors.card }]}>
               <View style={[styles.guidelineIcon, { backgroundColor: `${guideline.color}15` }]}>
                 <Ionicons name={guideline.icon as any} size={24} color={guideline.color} />
               </View>
               <View style={styles.guidelineContent}>
-                <Text style={styles.guidelineTitle}>{guideline.title}</Text>
-                <Text style={styles.guidelineDescription}>{guideline.description}</Text>
+                <Text style={[styles.guidelineTitle, { color: colors.text }]}>{guideline.title}</Text>
+                <Text style={[styles.guidelineDescription, { color: colors.textSecondary }]}>{guideline.description}</Text>
               </View>
             </View>
           ))}
@@ -116,12 +118,12 @@ export default function CommunityGuidelines() {
 
         {/* Prohibited Content */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Prohibited Content</Text>
-          <View style={styles.prohibitedCard}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Prohibited Content</Text>
+          <View style={[styles.prohibitedCard, { backgroundColor: isDark ? '#2A1010' : '#fff5f5', borderColor: isDark ? '#5A2020' : '#ffcccc' }]}>
             {prohibitedContent.map((item, index) => (
               <View key={index} style={styles.prohibitedItem}>
                 <Ionicons name="close-circle" size={20} color="#FF3B30" />
-                <Text style={styles.prohibitedText}>{item}</Text>
+                <Text style={[styles.prohibitedText, { color: colors.text }]}>{item}</Text>
               </View>
             ))}
           </View>
@@ -129,8 +131,8 @@ export default function CommunityGuidelines() {
 
         {/* Consequences */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Enforcement</Text>
-          <Text style={styles.enforcementIntro}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Enforcement</Text>
+          <Text style={[styles.enforcementIntro, { color: colors.textSecondary }]}>
             Violations of these guidelines may result in the following actions:
           </Text>
           {consequences.map((item, index) => (
@@ -138,16 +140,16 @@ export default function CommunityGuidelines() {
               <View style={[styles.consequenceLevel, { backgroundColor: `${item.color}15` }]}>
                 <Text style={[styles.consequenceLevelText, { color: item.color }]}>{item.level}</Text>
               </View>
-              <Text style={styles.consequenceDescription}>{item.description}</Text>
+              <Text style={[styles.consequenceDescription, { color: colors.textSecondary }]}>{item.description}</Text>
             </View>
           ))}
         </View>
 
         {/* Reporting */}
-        <View style={styles.reportSection}>
+        <View style={[styles.reportSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
           <Ionicons name="flag" size={32} color="#007AFF" />
-          <Text style={styles.reportTitle}>See Something? Report It.</Text>
-          <Text style={styles.reportText}>
+          <Text style={[styles.reportTitle, { color: colors.text }]}>See Something? Report It.</Text>
+          <Text style={[styles.reportText, { color: colors.textSecondary }]}>
             Help us keep the community safe by reporting content that violates these guidelines.
           </Text>
           <TouchableOpacity 
@@ -159,7 +161,7 @@ export default function CommunityGuidelines() {
         </View>
 
         {/* Last Updated */}
-        <Text style={styles.lastUpdated}>Last updated: January 2025</Text>
+        <Text style={[styles.lastUpdated, { color: colors.textTertiary }]}>Last updated: January 2025</Text>
 
         <View style={{ height: 40 }} />
       </ScrollView>

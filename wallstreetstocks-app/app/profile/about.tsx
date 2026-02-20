@@ -11,24 +11,26 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function About() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   const currentYear = new Date().getFullYear();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>About</Text>
+        <Text style={[styles.title, { color: colors.text }]}>About</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -37,29 +39,29 @@ export default function About() {
           {/* Logo / App Name */}
           <View style={styles.logoContainer}>
             <Text style={styles.logo}>🚀</Text>
-            <Text style={styles.appName}>Wallstreetstocks</Text>
-            <Text style={styles.tagline}>Connect, Share, Inspire</Text>
+            <Text style={[styles.appName, { color: colors.text }]}>Wallstreetstocks</Text>
+            <Text style={[styles.tagline, { color: colors.textSecondary }]}>Connect, Share, Inspire</Text>
           </View>
 
           {/* Version */}
-          <View style={styles.versionBox}>
-            <Text style={styles.versionLabel}>Version</Text>
-            <Text style={styles.versionNumber}>1.0.0</Text>
+          <View style={[styles.versionBox, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.versionLabel, { color: colors.textTertiary }]}>Version</Text>
+            <Text style={[styles.versionNumber, { color: colors.text }]}>1.0.0</Text>
           </View>
 
           {/* Description */}
-          <Text style={styles.description}>
-            Welcome to Wallstreetstocks — the next-generation social platform built for real connections, 
+          <Text style={[styles.description, { color: colors.textSecondary }]}>
+            Welcome to Wallstreetstocks — the next-generation social platform built for real connections,
             authentic expression, and meaningful conversations.
           </Text>
 
-          <Text style={styles.description}>
-            We believe in a world where everyone has a voice, privacy is respected, and communities thrive. 
+          <Text style={[styles.description, { color: colors.textSecondary }]}>
+            We believe in a world where everyone has a voice, privacy is respected, and communities thrive.
             Our mission is to bring people closer together through technology that puts you first.
           </Text>
 
           {/* Features */}
-          <Text style={styles.sectionTitle}>What We Offer</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>What We Offer</Text>
           <View style={styles.featureList}>
             {[
               'Real-time global conversations',
@@ -71,65 +73,65 @@ export default function About() {
             ].map((feature, index) => (
               <View key={index} style={styles.featureItem}>
                 <Text style={styles.checkmark}>✓</Text>
-                <Text style={styles.featureText}>{feature}</Text>
+                <Text style={[styles.featureText, { color: colors.text }]}>{feature}</Text>
               </View>
             ))}
           </View>
 
           {/* Team / Credit */}
-          <Text style={styles.sectionTitle}>Made With ❤️ By</Text>
-          <Text style={styles.madeBy}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Made With ❤️ By</Text>
+          <Text style={[styles.madeBy, { color: colors.textSecondary }]}>
             An independent developer passionate about building better social experiences.
           </Text>
 
           {/* Links */}
           <View style={styles.linksContainer}>
             <TouchableOpacity
-              style={styles.linkButton}
+              style={[styles.linkButton, { backgroundColor: colors.surface }]}
               onPress={() => Linking.openURL('https://x.com/wallstreet66666')}
             >
-              <Text style={styles.xLogo}>𝕏</Text>
-              <Text style={styles.linkText}>Follow us on X</Text>
+              <Text style={[styles.xLogo, { color: colors.text }]}>𝕏</Text>
+              <Text style={[styles.linkText, { color: colors.text }]}>Follow us on X</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.linkButton}
+              style={[styles.linkButton, { backgroundColor: colors.surface }]}
               onPress={() => Linking.openURL('https://tiktok.com/wallstreetstocks1')}
             >
-              <Ionicons name="logo-tiktok" size={20} color="#000" />
-              <Text style={styles.linkText}>TikTok</Text>
+              <Ionicons name="logo-tiktok" size={20} color={colors.text} />
+              <Text style={[styles.linkText, { color: colors.text }]}>TikTok</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.linkButton}
+              style={[styles.linkButton, { backgroundColor: colors.surface }]}
               onPress={() => Linking.openURL('mailto:wallstreetstocks@outlook.com')}
             >
-              <Ionicons name="mail-outline" size={20} color="#666" />
-              <Text style={styles.linkText}>wallstreetstocks@outlook.com</Text>
+              <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
+              <Text style={[styles.linkText, { color: colors.text }]}>wallstreetstocks@outlook.com</Text>
             </TouchableOpacity>
           </View>
 
           {/* Financial Disclaimer */}
-          <View style={styles.disclaimerContainer}>
-            <Text style={styles.disclaimerTitle}>Important Disclaimer</Text>
-            <Text style={styles.disclaimerText}>
+          <View style={[styles.disclaimerContainer, { backgroundColor: isDark ? '#2C2700' : '#FFF9E6', borderColor: isDark ? '#5C4D00' : '#FFE4A0' }]}>
+            <Text style={[styles.disclaimerTitle, { color: isDark ? '#FFD700' : '#B8860B' }]}>Important Disclaimer</Text>
+            <Text style={[styles.disclaimerText, { color: colors.textSecondary }]}>
               Wallstreetstocks is for informational and educational purposes only.
               The information provided does not constitute investment advice, financial advice,
               trading advice, or any other sort of advice, and you should not treat any of the
               app&apos;s content as such.
             </Text>
-            <Text style={styles.disclaimerText}>
+            <Text style={[styles.disclaimerText, { color: colors.textSecondary }]}>
               We do not recommend that any securities should be bought, sold, or held by you.
               Nothing on this app should be taken as a recommendation to buy, sell, or hold any
               particular cryptocurrency, stock, or security. Do conduct your own due diligence
               and consult your financial advisor before making any investment decisions.
             </Text>
-            <Text style={styles.disclaimerText}>
+            <Text style={[styles.disclaimerText, { color: colors.textSecondary }]}>
               Stock prices and market data displayed may be delayed or contain inaccuracies.
               Real-time quotes are provided &quot;as is&quot; without warranty of any kind. Historical
               performance is not indicative of future results.
             </Text>
-            <Text style={styles.disclaimerText}>
+            <Text style={[styles.disclaimerText, { color: colors.textSecondary }]}>
               By using this app, you acknowledge that you are solely responsible for your own
               investment decisions and that Wallstreetstocks shall not be liable for any losses
               or damages arising from your use of the information provided.
@@ -138,10 +140,10 @@ export default function About() {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.copyright}>
+            <Text style={[styles.copyright, { color: colors.textTertiary }]}>
               © {currentYear} Wallstreetstocks. All rights reserved.
             </Text>
-            <Text style={styles.finalLine}>
+            <Text style={[styles.finalLine, { color: colors.textSecondary }]}>
               Thank you for being part of our journey 🌟
             </Text>
           </View>

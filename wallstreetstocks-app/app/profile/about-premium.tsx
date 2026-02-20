@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function AboutPremium() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
 
   const premiumFeatures = [
     {
@@ -133,43 +135,43 @@ export default function AboutPremium() {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Premium</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Premium</Text>
         <View style={{ width: 44 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero */}
-        <View style={styles.heroSection}>
-          <View style={styles.heroIcon}>
+        <View style={[styles.heroSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
+          <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
             <Ionicons name="diamond" size={48} color="#007AFF" />
           </View>
-          <Text style={styles.heroTitle}>Unlock Your Trading Potential</Text>
-          <Text style={styles.heroSubtitle}>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>Unlock Your Trading Potential</Text>
+          <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
             Join thousands of traders using Premium tools to make smarter investment decisions
           </Text>
         </View>
 
         {/* Features */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Premium Features</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Premium Features</Text>
           <View style={styles.featuresGrid}>
             {premiumFeatures.map((feature, index) => (
-              <View key={index} style={styles.featureCard}>
+              <View key={index} style={[styles.featureCard, { backgroundColor: colors.card }]}>
                 <View style={[styles.featureIcon, { backgroundColor: `${feature.color}15` }]}>
                   <Ionicons name={feature.icon as any} size={24} color={feature.color} />
                 </View>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureDescription}>{feature.description}</Text>
+                <Text style={[styles.featureTitle, { color: colors.text }]}>{feature.title}</Text>
+                <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>{feature.description}</Text>
               </View>
             ))}
           </View>
@@ -177,13 +179,14 @@ export default function AboutPremium() {
 
         {/* Pricing */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Choose Your Plan</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Choose Your Plan</Text>
           <View style={styles.plansVerticalContainer}>
             {plans.map((plan, index) => (
               <TouchableOpacity
                 key={index}
                 style={[
                   styles.planCardVertical,
+                  { backgroundColor: colors.card },
                   plan.popular && styles.popularPlanVertical,
                   { borderColor: plan.color }
                 ]}
@@ -199,21 +202,21 @@ export default function AboutPremium() {
                     <Text style={styles.tierBadgeText}>{plan.name}</Text>
                   </View>
                   <View style={styles.priceRow}>
-                    <Text style={styles.planPrice}>{plan.price}</Text>
-                    <Text style={styles.planPeriod}>{plan.period}</Text>
+                    <Text style={[styles.planPrice, { color: colors.text }]}>{plan.price}</Text>
+                    <Text style={[styles.planPeriod, { color: colors.textSecondary }]}>{plan.period}</Text>
                   </View>
                 </View>
                 <View style={styles.planFeatures}>
                   {plan.features.map((feature, idx) => (
                     <View key={idx} style={styles.planFeatureRow}>
                       <Ionicons name="checkmark-circle" size={16} color={plan.color} />
-                      <Text style={styles.planFeatureText}>{feature}</Text>
+                      <Text style={[styles.planFeatureText, { color: colors.text }]}>{feature}</Text>
                     </View>
                   ))}
                 </View>
                 {plan.savings && (
                   <View style={[styles.savingsBadge, { backgroundColor: `${plan.color}30` }]}>
-                    <Text style={[styles.savingsText, { color: '#000' }]}>{plan.savings}</Text>
+                    <Text style={[styles.savingsText, { color: colors.text }]}>{plan.savings}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -223,11 +226,11 @@ export default function AboutPremium() {
 
         {/* FAQs */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Frequently Asked Questions</Text>
           {faqs.map((faq, index) => (
             <View key={index} style={styles.faqItem}>
-              <Text style={styles.faqQuestion}>{faq.question}</Text>
-              <Text style={styles.faqAnswer}>{faq.answer}</Text>
+              <Text style={[styles.faqQuestion, { color: colors.text }]}>{faq.question}</Text>
+              <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>{faq.answer}</Text>
             </View>
           ))}
         </View>

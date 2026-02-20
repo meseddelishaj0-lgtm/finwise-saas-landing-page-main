@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
+import { useTheme } from '@/context/ThemeContext';
 import Constants from 'expo-constants';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://finwise-saas-landing-page-main.vercel.app';
@@ -23,6 +24,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://finwise-saas-la
 export default function ReportProblem() {
   const router = useRouter();
   const { user } = useAuth();
+  const { colors, isDark } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [email, setEmail] = useState('');
@@ -94,17 +96,17 @@ export default function ReportProblem() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#f0f0f0' }]}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="arrow-back" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Report a Problem</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Report a Problem</Text>
         <TouchableOpacity onPress={handleSubmit} disabled={isSubmitting}>
           {isSubmitting ? (
             <ActivityIndicator size="small" color="#007AFF" />
@@ -121,22 +123,23 @@ export default function ReportProblem() {
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Category Selection */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>What&apos;s the issue?</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>What&apos;s the issue?</Text>
             <View style={styles.categoriesGrid}>
               {categories.map((category) => (
                 <TouchableOpacity
                   key={category.id}
                   style={[
                     styles.categoryCard,
+                    { backgroundColor: colors.surface },
                     selectedCategory === category.id && styles.categorySelected,
-                    selectedCategory === category.id && { borderColor: category.color },
+                    selectedCategory === category.id && { borderColor: category.color, backgroundColor: colors.card },
                   ]}
                   onPress={() => setSelectedCategory(category.id)}
                 >
                   <View style={[styles.categoryIcon, { backgroundColor: `${category.color}15` }]}>
                     <Ionicons name={category.icon as any} size={24} color={category.color} />
                   </View>
-                  <Text style={styles.categoryLabel}>{category.label}</Text>
+                  <Text style={[styles.categoryLabel, { color: colors.textSecondary }]}>{category.label}</Text>
                   {selectedCategory === category.id && (
                     <View style={[styles.checkmark, { backgroundColor: category.color }]}>
                       <Ionicons name="checkmark" size={14} color="#fff" />
@@ -149,47 +152,47 @@ export default function ReportProblem() {
 
           {/* Description */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Describe the problem</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Describe the problem</Text>
             <TextInput
-              style={styles.textArea}
+              style={[styles.textArea, { backgroundColor: colors.surface, color: colors.text }]}
               placeholder="Please provide as much detail as possible. What were you trying to do? What happened instead?"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               multiline
               numberOfLines={6}
               textAlignVertical="top"
               value={description}
               onChangeText={setDescription}
             />
-            <Text style={styles.charCount}>{description.length}/1000</Text>
+            <Text style={[styles.charCount, { color: colors.textTertiary }]}>{description.length}/1000</Text>
           </View>
 
           {/* Contact Email */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Contact email (optional)</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Contact email (optional)</Text>
             <TextInput
-              style={styles.emailInput}
+              style={[styles.emailInput, { backgroundColor: colors.surface, color: colors.text }]}
               placeholder="your@email.com"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
               onChangeText={setEmail}
             />
-            <Text style={styles.emailHint}>
+            <Text style={[styles.emailHint, { color: colors.textTertiary }]}>
               Provide your email if you&apos;d like us to follow up on your report.
             </Text>
           </View>
 
           {/* Device Info */}
-          <View style={styles.deviceInfoSection}>
-            <Text style={styles.deviceInfoTitle}>Device Information</Text>
-            <Text style={styles.deviceInfoText}>
+          <View style={[styles.deviceInfoSection, { backgroundColor: isDark ? colors.surface : '#f5f5f5' }]}>
+            <Text style={[styles.deviceInfoTitle, { color: colors.textSecondary }]}>Device Information</Text>
+            <Text style={[styles.deviceInfoText, { color: colors.textTertiary }]}>
               The following information will be included to help us diagnose the issue:
             </Text>
             <View style={styles.deviceInfoList}>
-              <Text style={styles.deviceInfoItem}>• App version: 1.0.0</Text>
-              <Text style={styles.deviceInfoItem}>• Device: {Platform.OS === 'ios' ? 'iPhone' : 'Android'}</Text>
-              <Text style={styles.deviceInfoItem}>• OS version: {Platform.Version}</Text>
+              <Text style={[styles.deviceInfoItem, { color: colors.textTertiary }]}>• App version: 1.0.0</Text>
+              <Text style={[styles.deviceInfoItem, { color: colors.textTertiary }]}>• Device: {Platform.OS === 'ios' ? 'iPhone' : 'Android'}</Text>
+              <Text style={[styles.deviceInfoItem, { color: colors.textTertiary }]}>• OS version: {Platform.Version}</Text>
             </View>
           </View>
 
