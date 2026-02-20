@@ -37,6 +37,7 @@ import { marketDataService } from '@/services/marketDataService';
 import { IndicesSkeletonList, WatchlistSkeletonList } from '@/components/SkeletonLoader';
 import StockLogo from '@/components/StockLogo';
 import { useAppReview } from '@/hooks/useAppReview';
+import { useTheme } from '@/context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -317,6 +318,7 @@ const POPULAR_STOCKS_WS = [
 ];
 
 export default function Dashboard() {
+  const { colors, isDark } = useTheme();
   const router = useRouter();
   const { isPremium, currentTier } = useSubscription();
   const { subscribe: wsSubscribe, isConnected: wsConnected } = useWebSocket();
@@ -1825,18 +1827,18 @@ export default function Dashboard() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Floating + Button */}
       <TouchableOpacity style={styles.fab} onPress={() => setAddStockModal(true)}>
         <Ionicons name="add" size={32} color="#fff" />
       </TouchableOpacity>
 
       <ScrollView
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
         }
         onScrollBeginDrag={() => {
           setShowFilterDropdown(false);
@@ -1844,21 +1846,21 @@ export default function Dashboard() {
         }}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
           <TouchableOpacity
-            style={styles.menuButton}
+            style={[styles.menuButton, { borderColor: colors.border }]}
             onPress={() => router.push('/menu')}
           >
-            <Text style={styles.menu}>Menu</Text>
+            <Text style={[styles.menu, { color: colors.text }]}>Menu</Text>
           </TouchableOpacity>
 
           <View style={styles.searchWrapper}>
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIconHeader} />
+            <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Ionicons name="search" size={20} color={colors.textTertiary} style={styles.searchIconHeader} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search stocks, ETFs, bonds..."
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
                 onChangeText={(text) => {
                   setSearchQuery(text);
@@ -1881,14 +1883,14 @@ export default function Dashboard() {
                     setShowSearchDropdown(false);
                   }}
                 >
-                  <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                  <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               )}
             </View>
 
             {/* Search Dropdown */}
             {showSearchDropdown && searchResults.length > 0 && (
-              <View style={styles.searchDropdown}>
+              <View style={[styles.searchDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <ScrollView 
                   style={styles.searchScrollView}
                   keyboardShouldPersistTaps="handled"
@@ -1896,7 +1898,7 @@ export default function Dashboard() {
                   {searchResults.map((result, index) => (
                     <TouchableOpacity
                       key={index}
-                      style={styles.searchResultItem}
+                      style={[styles.searchResultItem, { borderBottomColor: colors.borderLight }]}
                       onPress={() => {
                         setSearchQuery('');
                         setShowSearchDropdown(false);
@@ -1904,13 +1906,13 @@ export default function Dashboard() {
                       }}
                     >
                       <View style={styles.searchResultLeft}>
-                        <Text style={styles.searchResultSymbol}>{result.symbol}</Text>
-                        <Text style={styles.searchResultName} numberOfLines={1}>
+                        <Text style={[styles.searchResultSymbol, { color: colors.text }]}>{result.symbol}</Text>
+                        <Text style={[styles.searchResultName, { color: colors.textTertiary }]} numberOfLines={1}>
                           {result.name}
                         </Text>
                       </View>
                       <View style={styles.searchResultRight}>
-                        <Text style={styles.searchResultExchange}>{result.exchangeShortName}</Text>
+                        <Text style={[styles.searchResultExchange, { color: colors.textSecondary }]}>{result.exchangeShortName}</Text>
                       </View>
                     </TouchableOpacity>
                   ))}
@@ -1920,7 +1922,7 @@ export default function Dashboard() {
           </View>
 
           <TouchableOpacity onPress={() => router.push('/messages')} style={styles.messagesIconContainer}>
-            <Ionicons name="chatbubble-ellipses-outline" size={26} color="#007AFF" />
+            <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.primary} />
             {unreadMessagesCount > 0 && (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadBadgeText}>
@@ -1934,7 +1936,7 @@ export default function Dashboard() {
         {/* Connection Status Banner - Shows during initial connection */}
         {!wsConnected && (
           <View style={styles.connectionBanner}>
-            <ActivityIndicator size="small" color="#007AFF" />
+            <ActivityIndicator size="small" color={colors.primary} />
             <Text style={styles.connectionText}>Connecting to live markets...</Text>
           </View>
         )}
@@ -1943,7 +1945,7 @@ export default function Dashboard() {
         <View style={styles.indicesSection}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>Market Overview</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Market Overview</Text>
               <CryptoLiveIndicator />
             </View>
             <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 4 }} />
@@ -1960,7 +1962,7 @@ export default function Dashboard() {
               {liveMarketIndices.map((index) => (
                 <TouchableOpacity
                   key={index.symbol}
-                  style={styles.indexCard}
+                  style={[styles.indexCard, { backgroundColor: colors.card }]}
                   onPress={() => router.push(`/symbol/${encodeURIComponent(index.symbol)}/chart`)}
                 >
                   <View style={styles.indexCardHeader}>
@@ -1969,14 +1971,14 @@ export default function Dashboard() {
                       size={Platform.OS === 'android' ? 24 : 28} 
                       style={{ marginRight: Platform.OS === 'android' ? 6 : 8 }}
                     />
-                    <Text style={styles.indexSymbol}>{index.symbol.replace('/USD', '')}</Text>
+                    <Text style={[styles.indexSymbol, { color: colors.text }]}>{index.symbol.replace('/USD', '')}</Text>
                   </View>
-                  <Text style={styles.indexName} numberOfLines={1}>{index.name}</Text>
+                  <Text style={[styles.indexName, { color: colors.textTertiary }]} numberOfLines={1}>{index.name}</Text>
                   <AnimatedPrice
                     value={index.price}
                     prefix="$"
                     decimals={index.price >= 1000 ? 0 : index.price >= 100 ? 1 : 2}
-                    style={styles.indexPrice}
+                    style={{ ...styles.indexPrice, color: colors.text }}
                     flashOnChange={true}
                   />
                   <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
@@ -1999,23 +2001,23 @@ export default function Dashboard() {
         </View>
 
         {/* Enhanced Portfolio Section */}
-        <View style={styles.portfolioSection}>
+        <View style={[styles.portfolioSection, { backgroundColor: colors.card }]}>
           <View style={styles.portfolioTopRow}>
             <View style={styles.portfolioSelectorContainer}>
               <TouchableOpacity
-                style={styles.portfolioDropdown}
+                style={[styles.portfolioDropdown, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 onPress={() => setShowPortfolioDropdown(!showPortfolioDropdown)}
               >
                 <Text style={styles.portfolioDropdownText} numberOfLines={1}>
                   {currentPortfolio?.name || 'Select Portfolio'}
                 </Text>
-                <Ionicons name="chevron-down" size={20} color="#007AFF" />
+                <Ionicons name="chevron-down" size={20} color={colors.primary} />
               </TouchableOpacity>
               <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 4 }} />
 
               {/* Portfolio Dropdown Menu */}
               {showPortfolioDropdown && (
-                <View style={styles.portfolioDropdownMenu}>
+                <View style={[styles.portfolioDropdownMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   {userPortfolios.map((p) => (
                     <TouchableOpacity
                       key={p.id}
@@ -2035,7 +2037,7 @@ export default function Dashboard() {
                         {p.name}
                       </Text>
                       {p.id === selectedPortfolioId && (
-                        <Ionicons name="checkmark" size={18} color="#007AFF" />
+                        <Ionicons name="checkmark" size={18} color={colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -2047,7 +2049,7 @@ export default function Dashboard() {
                       setShowCreatePortfolioModal(true);
                     }}
                   >
-                    <Ionicons name="add-circle-outline" size={18} color="#007AFF" />
+                    <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
                     <Text style={styles.portfolioDropdownAddText}>Create New Portfolio</Text>
                   </TouchableOpacity>
                 </View>
@@ -2056,25 +2058,25 @@ export default function Dashboard() {
 
             <View style={styles.portfolioActions}>
               <TouchableOpacity
-                style={styles.portfolioOptionsButton}
+                style={[styles.portfolioOptionsButton, { backgroundColor: colors.surface }]}
                 onPress={() => {
                   setEditingPortfolioName(currentPortfolio?.name || '');
                   setShowPortfolioOptionsModal(true);
                 }}
               >
-                <Ionicons name="ellipsis-horizontal" size={20} color="#8E8E93" />
+                <Ionicons name="ellipsis-horizontal" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.addIconButton}
                 onPress={() => setAddStockModal(true)}
               >
-                <Ionicons name="add" size={24} color="#007AFF" />
+                <Ionicons name="add" size={24} color={colors.primary} />
               </TouchableOpacity>
             </View>
           </View>
           
           <View style={styles.portfolioValueSection}>
-            <Text style={styles.portfolioValue}>
+            <Text style={[styles.portfolioValue, { color: colors.text }]}>
               ${(livePortfolioData?.totalValue || contextCurrentPortfolio?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
             <Text style={[styles.portfolioChange, { color: (livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? "#00C853" : "#FF3B30" }]}>
@@ -2166,7 +2168,7 @@ export default function Dashboard() {
                   ))}
                 </ScrollView>
                 <TouchableOpacity style={styles.expandButton}>
-                  <Ionicons name="expand-outline" size={20} color="#8E8E93" />
+                  <Ionicons name="expand-outline" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -2175,20 +2177,20 @@ export default function Dashboard() {
 
           {/* Holdings List */}
           {(livePortfolioData?.holdings || contextCurrentPortfolio?.holdings || []).length > 0 && (
-            <View style={styles.holdingsList}>
+            <View style={[styles.holdingsList, { borderTopColor: colors.borderLight }]}>
               <View style={styles.holdingsTitleRow}>
-                <Text style={styles.holdingsTitle}>Holdings</Text>
+                <Text style={[styles.holdingsTitle, { color: colors.text }]}>Holdings</Text>
                 <TouchableOpacity
                   style={styles.addHoldingButton}
                   onPress={() => setAddStockModal(true)}
                 >
-                  <Ionicons name="add-circle-outline" size={24} color="#007AFF" />
+                  <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
                 </TouchableOpacity>
               </View>
               {(livePortfolioData?.holdings || contextCurrentPortfolio?.holdings || []).map((holding: any, idx: number) => (
                 <TouchableOpacity
                   key={idx}
-                  style={styles.holdingRow}
+                  style={[styles.holdingRow, { borderBottomColor: colors.borderLight }]}
                   onPress={() => handleHoldingPress(holding)}
                 >
                   <View style={styles.holdingLeft}>
@@ -2198,14 +2200,14 @@ export default function Dashboard() {
                       style={styles.holdingLogo}
                     />
                     <View>
-                      <Text style={styles.holdingSymbol}>{formatSymbolDisplay(holding.symbol)}</Text>
-                      <Text style={styles.holdingShares}>
+                      <Text style={[styles.holdingSymbol, { color: colors.text }]}>{formatSymbolDisplay(holding.symbol)}</Text>
+                      <Text style={[styles.holdingShares, { color: colors.textTertiary }]}>
                         {holding.shares} shares • ${(holding.avgCost || 0).toFixed(2)} avg
                       </Text>
                     </View>
                   </View>
                   <View style={styles.holdingRight}>
-                    <Text style={styles.holdingValue}>
+                    <Text style={[styles.holdingValue, { color: colors.text }]}>
                       ${(holding.currentValue || 0).toFixed(2)}
                     </Text>
                     <Text style={[styles.holdingGain, { color: (holding.gain || 0) >= 0 ? "#34C759" : "#FF3B30" }]}>
@@ -2220,10 +2222,10 @@ export default function Dashboard() {
           {(!contextCurrentPortfolio || contextCurrentPortfolio.holdings.length === 0) && (
             <View style={styles.emptyPortfolio}>
               <View style={styles.emptyIconContainer}>
-                <Ionicons name="pie-chart-outline" size={48} color="#007AFF" />
+                <Ionicons name="pie-chart-outline" size={48} color={colors.primary} />
               </View>
-              <Text style={styles.emptyText}>Start Building Your Portfolio</Text>
-              <Text style={styles.emptySubtext}>Tap the + button to add your first stock</Text>
+              <Text style={[styles.emptyText, { color: colors.text }]}>Start Building Your Portfolio</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Tap the + button to add your first stock</Text>
             </View>
           )}
 
@@ -2240,30 +2242,30 @@ export default function Dashboard() {
 
             return (
               <TouchableOpacity
-                style={styles.analyticsPreviewCard}
+                style={[styles.analyticsPreviewCard, { backgroundColor: colors.card }]}
                 onPress={() => router.push('/portfolio/analytics')}
                 activeOpacity={0.7}
               >
                 <View style={styles.analyticsPreviewHeader}>
                   <View style={styles.analyticsPreviewIconContainer}>
-                    <Ionicons name="analytics" size={24} color="#007AFF" />
+                    <Ionicons name="analytics" size={24} color={colors.primary} />
                   </View>
                   <View style={styles.analyticsPreviewTitleContainer}>
-                    <Text style={styles.analyticsPreviewTitle}>Portfolio Analytics</Text>
-                    <Text style={styles.analyticsPreviewSubtitle}>View detailed insights</Text>
+                    <Text style={[styles.analyticsPreviewTitle, { color: colors.text }]}>Portfolio Analytics</Text>
+                    <Text style={[styles.analyticsPreviewSubtitle, { color: colors.textTertiary }]}>View detailed insights</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
                 </View>
-                <View style={styles.analyticsPreviewStats}>
+                <View style={[styles.analyticsPreviewStats, { backgroundColor: colors.surface }]}>
                   <View style={styles.analyticsPreviewStat}>
-                    <Text style={styles.analyticsPreviewStatLabel}>Total P&L</Text>
+                    <Text style={[styles.analyticsPreviewStatLabel, { color: colors.textTertiary }]}>Total P&L</Text>
                     <Text style={[styles.analyticsPreviewStatValue, { color: totalGain >= 0 ? '#34C759' : '#FF3B30' }]}>
                       {totalGain >= 0 ? '+' : ''}{totalGainPercent.toFixed(2)}%
                     </Text>
                   </View>
                   <View style={styles.analyticsPreviewDivider} />
                   <View style={styles.analyticsPreviewStat}>
-                    <Text style={styles.analyticsPreviewStatLabel}>Diversification</Text>
+                    <Text style={[styles.analyticsPreviewStatLabel, { color: colors.textTertiary }]}>Diversification</Text>
                     <Text style={[styles.analyticsPreviewStatValue, {
                       color: diversificationScore >= 70 ? '#34C759' : diversificationScore >= 40 ? '#FF9500' : '#FF3B30'
                     }]}>
@@ -2272,7 +2274,7 @@ export default function Dashboard() {
                   </View>
                   <View style={styles.analyticsPreviewDivider} />
                   <View style={styles.analyticsPreviewStat}>
-                    <Text style={styles.analyticsPreviewStatLabel}>Holdings</Text>
+                    <Text style={[styles.analyticsPreviewStatLabel, { color: colors.textTertiary }]}>Holdings</Text>
                     <Text style={styles.analyticsPreviewStatValue}>{holdings.length}</Text>
                   </View>
                 </View>
@@ -2282,16 +2284,16 @@ export default function Dashboard() {
         </View>
 
         {/* Watchlist Section */}
-        <View style={styles.watchlistSection}>
+        <View style={[styles.watchlistSection, { backgroundColor: colors.card }]}>
           <View style={styles.watchlistHeader}>
             <View style={styles.watchlistHeaderLeft}>
               <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>Watchlist</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Watchlist</Text>
                 <TouchableOpacity
                   style={styles.addWatchlistButtonHeader}
                   onPress={() => setWatchlistModal(true)}
                 >
-                  <Ionicons name="add-circle-outline" size={24} color="#8E8E93" />
+                  <Ionicons name="add-circle-outline" size={24} color={colors.textTertiary} />
                 </TouchableOpacity>
               </View>
               <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 2 }} />
@@ -2300,17 +2302,17 @@ export default function Dashboard() {
               {/* Filter Dropdown */}
               <View style={styles.dropdownContainer}>
                 <TouchableOpacity 
-                  style={styles.filterButton}
+                  style={[styles.filterButton, { backgroundColor: colors.surface }]}
                   onPress={() => {
                     setShowFilterDropdown(!showFilterDropdown);
                     setShowSortDropdown(false);
                   }}
                 >
-                  <Text style={styles.filterButtonText}>{watchlistFilter}</Text>
-                  <Ionicons name="chevron-down" size={16} color="#8E8E93" />
+                  <Text style={[styles.filterButtonText, { color: colors.text }]}>{watchlistFilter}</Text>
+                  <Ionicons name="chevron-down" size={16} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {showFilterDropdown && (
-                  <View style={styles.dropdownMenu}>
+                  <View style={[styles.dropdownMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
                     {(['All', 'Gainers', 'Losers'] as const).map((option) => (
                       <TouchableOpacity
                         key={option}
@@ -2330,7 +2332,7 @@ export default function Dashboard() {
                           {option}
                         </Text>
                         {watchlistFilter === option && (
-                          <Ionicons name="checkmark" size={16} color="#007AFF" />
+                          <Ionicons name="checkmark" size={16} color={colors.primary} />
                         )}
                       </TouchableOpacity>
                     ))}
@@ -2341,14 +2343,14 @@ export default function Dashboard() {
               {/* Sort Dropdown */}
               <View style={styles.dropdownContainer}>
                 <TouchableOpacity 
-                  style={styles.filterButton}
+                  style={[styles.filterButton, { backgroundColor: colors.surface }]}
                   onPress={() => {
                     setShowSortDropdown(!showSortDropdown);
                     setShowFilterDropdown(false);
                   }}
                 >
-                  <Text style={styles.filterButtonText}>{watchlistSort}</Text>
-                  <Ionicons name="chevron-down" size={16} color="#8E8E93" />
+                  <Text style={[styles.filterButtonText, { color: colors.text }]}>{watchlistSort}</Text>
+                  <Ionicons name="chevron-down" size={16} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {showSortDropdown && (
                   <View style={[styles.dropdownMenu, styles.dropdownMenuRight]}>
@@ -2371,7 +2373,7 @@ export default function Dashboard() {
                           {option}
                         </Text>
                         {watchlistSort === option && (
-                          <Ionicons name="checkmark" size={16} color="#007AFF" />
+                          <Ionicons name="checkmark" size={16} color={colors.primary} />
                         )}
                       </TouchableOpacity>
                     ))}
@@ -2386,10 +2388,10 @@ export default function Dashboard() {
           ) : liveWatchlistData.length === 0 ? (
             <View style={styles.emptyWatchlist}>
               <View style={styles.emptyWatchlistIconContainer}>
-                <Ionicons name="star-outline" size={40} color="#007AFF" />
+                <Ionicons name="star-outline" size={40} color={colors.primary} />
               </View>
-              <Text style={styles.emptyWatchlistText}>Your watchlist is empty</Text>
-              <Text style={styles.emptyWatchlistSubtext}>Add stocks to track their performance</Text>
+              <Text style={[styles.emptyWatchlistText, { color: colors.text }]}>Your watchlist is empty</Text>
+              <Text style={[styles.emptyWatchlistSubtext, { color: colors.textTertiary }]}>Add stocks to track their performance</Text>
               <TouchableOpacity 
                 style={styles.addFirstButton}
                 onPress={() => setWatchlistModal(true)}
@@ -2400,8 +2402,8 @@ export default function Dashboard() {
             </View>
           ) : filteredWatchlist.length === 0 ? (
             <View style={styles.emptyWatchlist}>
-              <Text style={styles.emptyWatchlistText}>No {watchlistFilter.toLowerCase()} found</Text>
-              <Text style={styles.emptyWatchlistSubtext}>Try changing your filter</Text>
+              <Text style={[styles.emptyWatchlistText, { color: colors.text }]}>No {watchlistFilter.toLowerCase()} found</Text>
+              <Text style={[styles.emptyWatchlistSubtext, { color: colors.textTertiary }]}>Try changing your filter</Text>
             </View>
           ) : (
             <View style={styles.watchlistList}>
@@ -2413,7 +2415,7 @@ export default function Dashboard() {
                 return (
                 <TouchableOpacity
                   key={stock.symbol}
-                  style={styles.watchlistRow}
+                  style={[styles.watchlistRow, { borderBottomColor: colors.borderLight }]}
                   onPress={() => {
                     trackAction(); // Track stock view for app review
                     router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`);
@@ -2427,7 +2429,7 @@ export default function Dashboard() {
                       style={styles.watchlistLogo}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.watchlistRowSymbol} numberOfLines={1}>{formatSymbolDisplay(stock.symbol)}</Text>
+                      <Text style={[styles.watchlistRowSymbol, { color: colors.text }]} numberOfLines={1}>{formatSymbolDisplay(stock.symbol)}</Text>
                     </View>
                   </View>
                   
@@ -2462,7 +2464,7 @@ export default function Dashboard() {
                   <View style={styles.watchlistRowRight}>
                     <AnimatedPrice
                       value={stock.price}
-                      style={styles.watchlistRowPrice}
+                      style={{ ...styles.watchlistRowPrice, color: colors.text }}
                       flashOnChange={true}
                       decimals={2}
                     />
@@ -2487,7 +2489,7 @@ export default function Dashboard() {
         {/* Stock Picks Section */}
         <View style={styles.stockPicksSection}>
           <TouchableOpacity
-            style={styles.stockPicksCard}
+            style={[styles.stockPicksCard, { backgroundColor: colors.card }]}
             onPress={() => router.push('/premium/stock-picks')}
             activeOpacity={0.9}
           >
@@ -2498,8 +2500,8 @@ export default function Dashboard() {
                   <Ionicons name="trophy" size={20} color="#FFD700" />
                 </View>
                 <View>
-                  <Text style={styles.stockPicksTitle}>Stock Picks</Text>
-                  <Text style={styles.stockPicksSubtitle}>
+                  <Text style={[styles.stockPicksTitle, { color: colors.text }]}>Stock Picks</Text>
+                  <Text style={[styles.stockPicksSubtitle, { color: colors.textTertiary }]}>
                     {isPremium
                       ? `${currentTier === 'gold' ? '5' : currentTier === 'platinum' ? '8' : '15'} expert picks`
                       : 'Expert curated selections'}
@@ -2561,7 +2563,7 @@ export default function Dashboard() {
                       </>
                     ) : (
                       <View style={styles.pickLockedOverlay}>
-                        <Ionicons name="lock-closed" size={14} color="#8E8E93" />
+                        <Ionicons name="lock-closed" size={14} color={colors.textTertiary} />
                       </View>
                     )}
                   </View>
@@ -2574,7 +2576,7 @@ export default function Dashboard() {
               <Text style={styles.stockPicksCTAText}>
                 {isPremium ? 'View All Picks' : 'Unlock Stock Picks'}
               </Text>
-              <Ionicons name="chevron-forward" size={18} color="#007AFF" />
+              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
             </View>
           </TouchableOpacity>
         </View>
@@ -2582,19 +2584,19 @@ export default function Dashboard() {
         {/* News Section */}
         <View style={styles.newsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Market News</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Market News</Text>
           </View>
 
           {newsLoading ? (
             <View style={styles.newsLoadingContainer}>
-              <ActivityIndicator size="small" color="#007AFF" />
+              <ActivityIndicator size="small" color={colors.primary} />
             </View>
           ) : news.length > 0 ? (
             <View style={styles.newsContainer}>
               {news.slice(0, 5).map((item, i) => (
                 <TouchableOpacity
                   key={i}
-                  style={styles.newsCard}
+                  style={[styles.newsCard, { backgroundColor: colors.card }]}
                   onPress={async () => {
                     trackAction();
                     await WebBrowser.openBrowserAsync(item.url);
@@ -2608,13 +2610,13 @@ export default function Dashboard() {
                           <Text style={styles.newsSymbolText}>{item.symbol}</Text>
                         </View>
                       )}
-                      <Text style={styles.newsSource}>{item.site}</Text>
+                      <Text style={[styles.newsSource, { color: colors.textTertiary }]}>{item.site}</Text>
                       <Text style={styles.newsDot}>•</Text>
-                      <Text style={styles.newsTime}>{formatNewsDate(item.publishedDate)}</Text>
+                      <Text style={[styles.newsTime, { color: colors.textTertiary }]}>{formatNewsDate(item.publishedDate)}</Text>
                     </View>
-                    <Text style={styles.newsTitle} numberOfLines={2}>{item.title}</Text>
+                    <Text style={[styles.newsTitle, { color: colors.text }]} numberOfLines={2}>{item.title}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+                  <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -2646,26 +2648,26 @@ export default function Dashboard() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.borderLight }]}>
               <View>
-                <Text style={styles.modalTitle}>Add Stock</Text>
-                <Text style={styles.modalSubtitle}>Add to your portfolio</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Add Stock</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>Add to your portfolio</Text>
               </View>
               <TouchableOpacity onPress={() => {
                 setAddStockModal(false);
                 setStockSearchResults([]);
                 setShowStockSearchDropdown(false);
               }}>
-                <Ionicons name="close-circle" size={32} color="#999" />
+                <Ionicons name="close-circle" size={32} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalForm}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Stock Symbol</Text>
-                <View style={styles.watchlistSearchContainer}>
-                  <Ionicons name="search" size={20} color="#8E8E93" style={{ marginRight: 8 }} />
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Stock Symbol</Text>
+                <View style={[styles.watchlistSearchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Ionicons name="search" size={20} color={colors.textTertiary} style={{ marginRight: 8 }} />
                   <TextInput
                     style={styles.watchlistSearchInput}
                     placeholder="Search by symbol or company name"
@@ -2685,7 +2687,7 @@ export default function Dashboard() {
                       setNewStockSymbol('');
                       setShowStockSearchDropdown(false);
                     }}>
-                      <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                      <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -2715,7 +2717,7 @@ export default function Dashboard() {
                           </View>
                           <View style={styles.watchlistSearchResultRight}>
                             <View style={styles.addBadge}>
-                              <Ionicons name="add" size={16} color="#007AFF" />
+                              <Ionicons name="add" size={16} color={colors.primary} />
                             </View>
                           </View>
                         </TouchableOpacity>
@@ -2727,9 +2729,9 @@ export default function Dashboard() {
 
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.inputLabel}>Shares</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Shares</Text>
                   <TextInput
-                    style={styles.modalInput}
+                    style={[styles.modalInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
                     placeholder="10"
                     placeholderTextColor="#999"
                     value={newStockShares}
@@ -2740,9 +2742,9 @@ export default function Dashboard() {
                 </View>
 
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={styles.inputLabel}>Avg Cost ($)</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Avg Cost ($)</Text>
                   <TextInput
-                    style={styles.modalInput}
+                    style={[styles.modalInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
                     placeholder="150.00"
                     placeholderTextColor="#999"
                     value={newStockAvgCost}
@@ -2787,26 +2789,26 @@ export default function Dashboard() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.borderLight }]}>
               <View>
-                <Text style={styles.modalTitle}>Add to Watchlist</Text>
-                <Text style={styles.modalSubtitle}>Track stocks you&apos;re interested in</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Add to Watchlist</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>Track stocks you&apos;re interested in</Text>
               </View>
               <TouchableOpacity onPress={() => {
                 setWatchlistModal(false);
                 setWatchlistSymbol('');
                 setShowWatchlistSearchDropdown(false);
               }}>
-                <Ionicons name="close-circle" size={32} color="#999" />
+                <Ionicons name="close-circle" size={32} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalForm}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Search Stock</Text>
-                <View style={styles.watchlistSearchContainer}>
-                  <Ionicons name="search" size={20} color="#8E8E93" style={{ marginRight: 8 }} />
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Search Stock</Text>
+                <View style={[styles.watchlistSearchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Ionicons name="search" size={20} color={colors.textTertiary} style={{ marginRight: 8 }} />
                   <TextInput
                     style={styles.watchlistSearchInput}
                     placeholder="Search by symbol or company name"
@@ -2826,7 +2828,7 @@ export default function Dashboard() {
                       setWatchlistSymbol('');
                       setShowWatchlistSearchDropdown(false);
                     }}>
-                      <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                      <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -2858,7 +2860,7 @@ export default function Dashboard() {
                               </View>
                             ) : (
                               <View style={styles.addBadge}>
-                                <Ionicons name="add" size={16} color="#007AFF" />
+                                <Ionicons name="add" size={16} color={colors.primary} />
                               </View>
                             )}
                           </View>
@@ -2871,7 +2873,7 @@ export default function Dashboard() {
 
               {/* Popular Stocks Quick Add */}
               <View style={styles.quickAddSection}>
-                <Text style={styles.quickAddTitle}>Popular Stocks</Text>
+                <Text style={[styles.quickAddTitle, { color: colors.textTertiary }]}>Popular Stocks</Text>
                 <View style={styles.quickAddGrid}>
                   {['AAPL', 'GOOGL', 'TSLA', 'AMZN', 'NVDA', 'META'].map((symbol) => (
                     <TouchableOpacity
@@ -2934,7 +2936,7 @@ export default function Dashboard() {
             setSelectedHolding(null);
           }}
         >
-          <View style={styles.holdingOptionsContent}>
+          <View style={[styles.holdingOptionsContent, { backgroundColor: colors.card }]}>
             {selectedHolding && (
               <>
                 <View style={styles.holdingOptionsHeader}>
@@ -2944,22 +2946,22 @@ export default function Dashboard() {
                     style={{ marginRight: 14 }}
                   />
                   <View>
-                    <Text style={styles.holdingOptionsSymbol}>{formatSymbolDisplay(selectedHolding.symbol)}</Text>
-                    <Text style={styles.holdingOptionsShares}>
+                    <Text style={[styles.holdingOptionsSymbol, { color: colors.text }]}>{formatSymbolDisplay(selectedHolding.symbol)}</Text>
+                    <Text style={[styles.holdingOptionsShares, { color: colors.textTertiary }]}>
                       {selectedHolding.shares} shares • ${(selectedHolding.avgCost || 0).toFixed(2)} avg
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.holdingOptionsStats}>
-                  <View style={styles.holdingOptionsStat}>
-                    <Text style={styles.holdingOptionsStatLabel}>Current Value</Text>
-                    <Text style={styles.holdingOptionsStatValue}>
+                  <View style={[styles.holdingOptionsStat, { backgroundColor: colors.surface }]}>
+                    <Text style={[styles.holdingOptionsStatLabel, { color: colors.textTertiary }]}>Current Value</Text>
+                    <Text style={[styles.holdingOptionsStatValue, { color: colors.text }]}>
                       ${selectedHolding.currentValue?.toFixed(2) || '0.00'}
                     </Text>
                   </View>
-                  <View style={styles.holdingOptionsStat}>
-                    <Text style={styles.holdingOptionsStatLabel}>Total Gain/Loss</Text>
+                  <View style={[styles.holdingOptionsStat, { backgroundColor: colors.surface }]}>
+                    <Text style={[styles.holdingOptionsStatLabel, { color: colors.textTertiary }]}>Total Gain/Loss</Text>
                     <Text style={[
                       styles.holdingOptionsStatValue,
                       { color: (selectedHolding.gain || 0) >= 0 ? '#34C759' : '#FF3B30' }
@@ -2977,7 +2979,7 @@ export default function Dashboard() {
                       router.push(`/symbol/${encodeURIComponent(selectedHolding.symbol)}/chart`);
                     }}
                   >
-                    <Ionicons name="stats-chart" size={24} color="#007AFF" />
+                    <Ionicons name="stats-chart" size={24} color={colors.primary} />
                     <Text style={styles.holdingOptionButtonText}>View Chart</Text>
                   </TouchableOpacity>
 
@@ -2999,7 +3001,7 @@ export default function Dashboard() {
                 </View>
 
                 <TouchableOpacity
-                  style={styles.holdingOptionsCancelButton}
+                  style={[styles.holdingOptionsCancelButton, { backgroundColor: colors.surface }]}
                   onPress={() => {
                     setHoldingOptionsModal(false);
                     setSelectedHolding(null);
@@ -3024,16 +3026,16 @@ export default function Dashboard() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.borderLight }]}>
               <View>
-                <Text style={styles.modalTitle}>Edit Holding</Text>
-                <Text style={styles.modalSubtitle}>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Holding</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>
                   {editingHolding ? `Update ${editingHolding.symbol} position` : ''}
                 </Text>
               </View>
               <TouchableOpacity onPress={handleCloseEditModal}>
-                <Ionicons name="close-circle" size={32} color="#999" />
+                <Ionicons name="close-circle" size={32} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
@@ -3045,15 +3047,15 @@ export default function Dashboard() {
                     size={50} 
                     style={{ marginRight: 14 }}
                   />
-                  <Text style={styles.editHoldingSymbol}>{formatSymbolDisplay(editingHolding.symbol)}</Text>
+                  <Text style={[styles.editHoldingSymbol, { color: colors.text }]}>{formatSymbolDisplay(editingHolding.symbol)}</Text>
                 </View>
               )}
 
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.inputLabel}>Shares</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Shares</Text>
                   <TextInput
-                    style={styles.modalInput}
+                    style={[styles.modalInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
                     placeholder="10"
                     placeholderTextColor="#999"
                     value={editShares}
@@ -3064,9 +3066,9 @@ export default function Dashboard() {
                 </View>
 
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={styles.inputLabel}>Avg Cost ($)</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Avg Cost ($)</Text>
                   <TextInput
-                    style={styles.modalInput}
+                    style={[styles.modalInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
                     placeholder="150.00"
                     placeholderTextColor="#999"
                     value={editAvgCost}
@@ -3110,12 +3112,12 @@ export default function Dashboard() {
         >
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-              <View style={styles.createPortfolioModalContent}>
-                <Text style={styles.createPortfolioTitle}>Create New Portfolio</Text>
+              <View style={[styles.createPortfolioModalContent, { backgroundColor: colors.card }]}>
+                <Text style={[styles.createPortfolioTitle, { color: colors.text }]}>Create New Portfolio</Text>
                 <TextInput
-                  style={styles.createPortfolioInput}
+                  style={[styles.createPortfolioInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
                   placeholder="Portfolio name"
-                  placeholderTextColor="#8E8E93"
+                  placeholderTextColor={colors.textTertiary}
                   value={newPortfolioName}
                   onChangeText={setNewPortfolioName}
                   autoFocus
@@ -3152,22 +3154,22 @@ export default function Dashboard() {
         onRequestClose={() => setShowPortfolioOptionsModal(false)}
       >
         <View style={styles.portfolioOptionsOverlay}>
-          <View style={styles.portfolioOptionsContent}>
+          <View style={[styles.portfolioOptionsContent, { backgroundColor: colors.card }]}>
             <View style={styles.portfolioOptionsHeader}>
-              <Text style={styles.portfolioOptionsTitle}>Portfolio Settings</Text>
+              <Text style={[styles.portfolioOptionsTitle, { color: colors.text }]}>Portfolio Settings</Text>
               <TouchableOpacity onPress={() => setShowPortfolioOptionsModal(false)}>
-                <Ionicons name="close" size={24} color="#8E8E93" />
+                <Ionicons name="close" size={24} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.portfolioOptionsSection}>
-              <Text style={styles.portfolioOptionsLabel}>Portfolio Name</Text>
+              <Text style={[styles.portfolioOptionsLabel, { color: colors.textTertiary }]}>Portfolio Name</Text>
               <TextInput
-                style={styles.portfolioOptionsInput}
+                style={[styles.portfolioOptionsInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
                 value={editingPortfolioName}
                 onChangeText={setEditingPortfolioName}
                 placeholder="Enter name"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textTertiary}
               />
             </View>
 

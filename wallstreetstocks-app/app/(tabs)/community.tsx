@@ -29,6 +29,7 @@ import TrendingTickers from '@/components/TrendingTickers';
 import { FEATURE_TIERS } from '@/components/PremiumFeatureGate';
 import { SubscriptionBadgeInline } from '@/components/SubscriptionBadge';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
+import { useTheme } from '@/context/ThemeContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -424,6 +425,7 @@ interface Notification {
 }
 
 export default function CommunityPage() {
+  const { colors, isDark } = useTheme();
   const navRouter = useRouter();
   const searchParams = useLocalSearchParams<{ openPostId?: string; openUserId?: string }>();
   const { user: authUser } = useAuth();
@@ -2189,16 +2191,16 @@ export default function CommunityPage() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Community</Text>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Community</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity 
             style={styles.headerButton}
             onPress={() => setSearchModal(true)}
           >
-            <Ionicons name="search" size={24} color="#000" />
+            <Ionicons name="search" size={24} color={colors.text} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -2209,7 +2211,7 @@ export default function CommunityPage() {
               handleMarkNotificationsRead();
             }}
           >
-            <Ionicons name="notifications-outline" size={24} color="#000" />
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
             {unreadCount > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -2229,7 +2231,7 @@ export default function CommunityPage() {
               }
             }}
           >
-            <Ionicons name="person-circle-outline" size={26} color="#000" />
+            <Ionicons name="person-circle-outline" size={26} color={colors.text} />
           </TouchableOpacity>
 
         </View>
@@ -2237,7 +2239,7 @@ export default function CommunityPage() {
 
       {/* Posts List */}
       <ScrollView
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.postsContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -2248,7 +2250,7 @@ export default function CommunityPage() {
               loadPosts(); // Direct API call to /api/posts
               fetchSuggestedUsers();
             }}
-            tintColor="#007AFF"
+            tintColor={colors.primary}
           />
         }
       >
@@ -2277,7 +2279,7 @@ export default function CommunityPage() {
                     onPress={() => handleDismissSuggested(user.id)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="close" size={16} color="#8E8E93" />
+                    <Ionicons name="close" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                   
                   <TouchableOpacity 
@@ -2358,11 +2360,11 @@ export default function CommunityPage() {
               }}
             >
               <View style={[styles.premiumIconContainer, { backgroundColor: '#FFD700' }]}>
-                <Ionicons name="analytics" size={24} color="#000" />
+                <Ionicons name="analytics" size={24} color={colors.text} />
               </View>
               {!canAccess(FEATURE_TIERS.BASIC_ANALYSIS) && (
                 <View style={[styles.premiumBadge, { backgroundColor: '#FFD700' }]}>
-                  <Ionicons name="lock-closed" size={10} color="#000" />
+                  <Ionicons name="lock-closed" size={10} color={colors.text} />
                   <Text style={styles.premiumBadgeText}>Gold</Text>
                 </View>
               )}
@@ -2385,11 +2387,11 @@ export default function CommunityPage() {
               }}
             >
               <View style={[styles.premiumIconContainer, { backgroundColor: '#E5E4E2' }]}>
-                <Ionicons name="notifications" size={24} color="#000" />
+                <Ionicons name="notifications" size={24} color={colors.text} />
               </View>
               {!canAccess(FEATURE_TIERS.REALTIME_ALERTS) && (
                 <View style={[styles.premiumBadge, { backgroundColor: '#E5E4E2' }]}>
-                  <Ionicons name="lock-closed" size={10} color="#000" />
+                  <Ionicons name="lock-closed" size={10} color={colors.text} />
                   <Text style={styles.premiumBadgeText}>Platinum</Text>
                 </View>
               )}
@@ -2412,11 +2414,11 @@ export default function CommunityPage() {
               }}
             >
               <View style={[styles.premiumIconContainer, { backgroundColor: '#B9F2FF' }]}>
-                <Ionicons name="document-text" size={24} color="#000" />
+                <Ionicons name="document-text" size={24} color={colors.text} />
               </View>
               {!canAccess(FEATURE_TIERS.RESEARCH_REPORTS) && (
                 <View style={[styles.premiumBadge, { backgroundColor: '#B9F2FF' }]}>
-                  <Ionicons name="lock-closed" size={10} color="#000" />
+                  <Ionicons name="lock-closed" size={10} color={colors.text} />
                   <Text style={styles.premiumBadgeText}>Diamond</Text>
                 </View>
               )}
@@ -2439,11 +2441,11 @@ export default function CommunityPage() {
               }}
             >
               <View style={[styles.premiumIconContainer, { backgroundColor: '#B9F2FF' }]}>
-                <Ionicons name="pie-chart" size={24} color="#000" />
+                <Ionicons name="pie-chart" size={24} color={colors.text} />
               </View>
               {!canAccess(FEATURE_TIERS.PORTFOLIO_OPTIMIZATION) && (
                 <View style={[styles.premiumBadge, { backgroundColor: '#B9F2FF' }]}>
-                  <Ionicons name="lock-closed" size={10} color="#000" />
+                  <Ionicons name="lock-closed" size={10} color={colors.text} />
                   <Text style={styles.premiumBadgeText}>Diamond</Text>
                 </View>
               )}
@@ -2454,7 +2456,7 @@ export default function CommunityPage() {
         </View>
 
         {posts.map((post) => (
-          <View key={post.id} style={styles.postCard}>
+          <View key={post.id} style={[styles.postCard, { backgroundColor: colors.card, borderBottomColor: colors.borderLight }]}>
             {/* Post Header */}
             <View style={styles.postHeader}>
               <Avatar 
@@ -2496,13 +2498,13 @@ export default function CommunityPage() {
                 onPress={() => handleOpenPostOptions(post)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="ellipsis-horizontal" size={20} color="#8E8E93" />
+                <Ionicons name="ellipsis-horizontal" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
             {/* Post Title */}
             {post.title && post.title !== post.content && (
-              <Text style={styles.postTitle}>{post.title}</Text>
+              <Text style={[styles.postTitle, { color: colors.text }]}>{post.title}</Text>
             )}
 
             {/* Post Content */}
@@ -2510,7 +2512,7 @@ export default function CommunityPage() {
               content={post.content}
               onTickerPress={handleTickerPress}
               onMentionPress={handleMentionPress}
-              style={styles.postContent}
+              style={[styles.postContent, { color: colors.text }]}
             />
 
             {/* Ticker Pills */}
@@ -2519,7 +2521,7 @@ export default function CommunityPage() {
                 {post.tickers.map((ticker) => (
                   <TouchableOpacity
                     key={ticker}
-                    style={styles.tickerPill}
+                    style={[styles.tickerPill, { backgroundColor: isDark ? "rgba(0,122,255,0.15)" : "#E3F2FD" }]}
                     onPress={() => handleTickerPress(ticker)}
                   >
                     <Text style={styles.tickerPillText}>${ticker}</Text>
@@ -2546,7 +2548,7 @@ export default function CommunityPage() {
 
             {/* Sentiment Voting */}
             {post.sentiment && (
-              <View style={styles.sentimentContainer}>
+              <View style={[styles.sentimentContainer, { borderTopColor: colors.borderLight }]}>
                 <TouchableOpacity
                   style={[
                     styles.sentimentButton,
@@ -2601,7 +2603,7 @@ export default function CommunityPage() {
             {/* Post Actions */}
             <View style={styles.postActions}>
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton]}
                 onPress={() => handleLikePost(post.id)}
               >
                 <Ionicons
@@ -2615,24 +2617,24 @@ export default function CommunityPage() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton]}
                 onPress={() => handleOpenComments(post)}
               >
-                <Ionicons name="chatbubble-outline" size={20} color="#8E8E93" />
-                <Text style={styles.actionText}>{post._count?.comments || 0}</Text>
+                <Ionicons name="chatbubble-outline" size={20} color={colors.textTertiary} />
+                <Text style={[styles.actionText, { color: colors.textSecondary }]}>{post._count?.comments || 0}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton]}
                 onPress={() => handleSharePost(post)}
               >
-                <Ionicons name="share-outline" size={22} color="#8E8E93" />
+                <Ionicons name="share-outline" size={22} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {/* Delete button - only show for own posts */}
               {post.userId === getUserId() && (
                 <TouchableOpacity
-                  style={styles.actionButton}
+                  style={[styles.actionButton]}
                   onPress={() => handleDeletePost(post.id)}
                 >
                   <Ionicons name="trash-outline" size={20} color="#FF3B30" />
@@ -2644,7 +2646,7 @@ export default function CommunityPage() {
 
         {posts.length === 0 && !loading && (
           <View style={styles.emptyState}>
-            <Ionicons name="chatbubbles-outline" size={64} color="#C7C7CC" />
+            <Ionicons name="chatbubbles-outline" size={64} color={colors.textTertiary} />
             <Text style={styles.emptyTitle}>No posts yet</Text>
             <Text style={styles.emptySubtitle}>Be the first to share something!</Text>
             <TouchableOpacity 
@@ -2665,7 +2667,7 @@ export default function CommunityPage() {
         onPress={openCreatePostModal}
         activeOpacity={0.8}
       >
-        <Ionicons name="add" size={32} color="#000" />
+        <Ionicons name="add" size={32} color={colors.text} />
       </TouchableOpacity>
 
       {/* PROFILE MODAL */}
@@ -2681,14 +2683,14 @@ export default function CommunityPage() {
               onPress={() => setProfileModal(false)}
               style={styles.profileCloseButton}
             >
-              <Ionicons name="close" size={28} color="#000" />
+              <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.profileHeaderTitle}>Profile</Text>
             <View style={{ width: 44 }} />
           </View>
 
           <ScrollView
-            style={styles.profileContent}
+            style={[styles.profileContent, { backgroundColor: colors.card }]}
             showsVerticalScrollIndicator={false}
           >
             {/* Show loading state while fetching fresh profile data */}
@@ -2718,12 +2720,12 @@ export default function CommunityPage() {
               <Text style={styles.profileEmail}>@{getUserHandle(selectedProfile)}</Text>
 
               {selectedProfile?.bio && (
-                <Text style={styles.profileBio}>{selectedProfile.bio}</Text>
+                <Text style={[styles.profileBio, { color: colors.textSecondary }]}>{selectedProfile.bio}</Text>
               )}
 
               {selectedProfile?.createdAt && (
                 <View style={styles.profileJoinDate}>
-                  <Ionicons name="calendar-outline" size={14} color="#8E8E93" />
+                  <Ionicons name="calendar-outline" size={14} color={colors.textTertiary} />
                   <Text style={styles.profileJoinDateText}>
                     Joined {formatJoinDate(selectedProfile.createdAt)}
                   </Text>
@@ -2825,7 +2827,7 @@ export default function CommunityPage() {
                       );
                     }}
                   >
-                    <Ionicons name="ellipsis-horizontal" size={22} color="#8E8E93" />
+                    <Ionicons name="ellipsis-horizontal" size={22} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -2907,7 +2909,7 @@ export default function CommunityPage() {
                           </Text>
                         </View>
                         <View style={styles.profilePostStat}>
-                          <Ionicons name="chatbubble-outline" size={16} color="#8E8E93" />
+                          <Ionicons name="chatbubble-outline" size={16} color={colors.textTertiary} />
                           <Text style={styles.profilePostStatText}>{post._count?.comments || 0}</Text>
                         </View>
                         {/* Delete button - only show for own posts */}
@@ -2925,7 +2927,7 @@ export default function CommunityPage() {
                 ))
               ) : (
                 <View style={styles.noProfilePosts}>
-                  <Ionicons name="document-text-outline" size={48} color="#C7C7CC" />
+                  <Ionicons name="document-text-outline" size={48} color={colors.textTertiary} />
                   <Text style={styles.noProfilePostsText}>No posts yet</Text>
                 </View>
               )}
@@ -2980,7 +2982,7 @@ export default function CommunityPage() {
             <TextInput
               style={styles.titleInput}
               placeholder="Title (optional)"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textTertiary}
               value={newPostTitle}
               onChangeText={setNewPostTitle}
               maxLength={100}
@@ -2990,7 +2992,7 @@ export default function CommunityPage() {
             <TextInput
               style={styles.contentInput}
               placeholder="What's happening in the markets?"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textTertiary}
               multiline
               value={newPostContent}
               onChangeText={setNewPostContent}
@@ -2998,11 +3000,11 @@ export default function CommunityPage() {
 
             {/* Ticker Input */}
             <View style={styles.tickerInputContainer}>
-              <Ionicons name="pricetag-outline" size={20} color="#8E8E93" />
+              <Ionicons name="pricetag-outline" size={20} color={colors.textTertiary} />
               <TextInput
                 style={styles.tickerInput}
                 placeholder="Add ticker (e.g., AAPL)"
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textTertiary}
                 value={newPostTicker}
                 onChangeText={(text) => setNewPostTicker(text.toUpperCase())}
                 autoCapitalize="characters"
@@ -3052,21 +3054,21 @@ export default function CommunityPage() {
         <View style={styles.modalContainer}>
           <View style={styles.searchHeader}>
             <TouchableOpacity onPress={() => setSearchModal(false)}>
-              <Ionicons name="arrow-back" size={26} color="#000" />
+              <Ionicons name="arrow-back" size={26} color={colors.text} />
             </TouchableOpacity>
             <View style={styles.searchInputContainer}>
-              <Ionicons name="search" size={18} color="#8E8E93" />
+              <Ionicons name="search" size={18} color={colors.textTertiary} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search posts, tickers..."
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoFocus
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                  <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -3103,7 +3105,7 @@ export default function CommunityPage() {
               ))
             ) : searchQuery.length > 0 ? (
               <View style={styles.noResults}>
-                <Ionicons name="search-outline" size={48} color="#C7C7CC" />
+                <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
                 <Text style={styles.noResultsText}>No results found</Text>
               </View>
             ) : null}
@@ -3121,7 +3123,7 @@ export default function CommunityPage() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setNotificationsModal(false)}>
-              <Ionicons name="close" size={28} color="#000" />
+              <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Notifications</Text>
             <View style={{ width: 28 }} />
@@ -3143,7 +3145,7 @@ export default function CommunityPage() {
                 >
                   <Avatar user={notif.fromUser} size={44} />
                   <View style={styles.notificationContent}>
-                    <Text style={styles.notificationText}>
+                    <Text style={[styles.notificationText, { color: colors.text }]}>
                       <Text style={styles.notificationUsername}>
                         {getDisplayName(notif.fromUser)}
                       </Text>
@@ -3152,13 +3154,13 @@ export default function CommunityPage() {
                       {notif.type === 'follow' && ' started following you'}
                       {notif.type === 'mention' && ' mentioned you'}
                     </Text>
-                    <Text style={styles.notificationTime}>{formatTimeAgo(notif.createdAt)}</Text>
+                    <Text style={[styles.notificationTime, { color: colors.textTertiary }]}>{formatTimeAgo(notif.createdAt)}</Text>
                   </View>
                 </TouchableOpacity>
               ))
             ) : (
               <View style={styles.emptyNotifications}>
-                <Ionicons name="notifications-outline" size={48} color="#C7C7CC" />
+                <Ionicons name="notifications-outline" size={48} color={colors.textTertiary} />
                 <Text style={styles.emptyTitle}>No notifications</Text>
               </View>
             )}
@@ -3180,7 +3182,7 @@ export default function CommunityPage() {
         >
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setCommentsModal(false)}>
-              <Ionicons name="close" size={28} color="#000" />
+              <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Comments</Text>
             <View style={{ width: 28 }} />
@@ -3188,7 +3190,7 @@ export default function CommunityPage() {
 
           <ScrollView style={styles.commentsList} keyboardShouldPersistTaps="handled">
             {selectedPost && (
-              <View style={styles.originalPost}>
+              <View style={[styles.originalPost, { borderBottomColor: colors.borderLight }]}>
                 <View style={styles.postHeader}>
                   <Avatar 
                     user={selectedPost.user} 
@@ -3212,8 +3214,8 @@ export default function CommunityPage() {
                     <Text style={styles.timestamp}>{formatTimeAgo(selectedPost.createdAt)}</Text>
                   </TouchableOpacity>
                 </View>
-                {selectedPost.title && <Text style={styles.postTitle}>{selectedPost.title}</Text>}
-                <Text style={styles.postContent}>{selectedPost.content}</Text>
+                {selectedPost.title && <Text style={[styles.postTitle, { color: colors.text }]}>{selectedPost.title}</Text>}
+                <Text style={[styles.postContent, { color: colors.text }]}>{selectedPost.content}</Text>
                 {(selectedPost.mediaUrl || selectedPost.image) && (
                   <TouchableOpacity
                     activeOpacity={0.9}
@@ -3231,17 +3233,17 @@ export default function CommunityPage() {
 
                 {/* Post Insights */}
                 {postInsights && (
-                  <View style={styles.postInsights}>
+                  <View style={[styles.postInsights, { borderTopColor: colors.border }]}>
                     <View style={styles.insightItem}>
-                      <Ionicons name="eye-outline" size={16} color="#666" />
-                      <Text style={styles.insightText}>
+                      <Ionicons name="eye-outline" size={16} color={colors.textSecondary} />
+                      <Text style={[styles.insightText, { color: colors.textSecondary }]}>
                         {postInsights.totalViews} {postInsights.totalViews === 1 ? 'view' : 'views'}
                       </Text>
                     </View>
                     {postInsights.uniqueViewers > 0 && (
                       <View style={styles.insightItem}>
-                        <Ionicons name="people-outline" size={16} color="#666" />
-                        <Text style={styles.insightText}>
+                        <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
+                        <Text style={[styles.insightText, { color: colors.textSecondary }]}>
                           {postInsights.uniqueViewers} {postInsights.uniqueViewers === 1 ? 'viewer' : 'viewers'}
                         </Text>
                       </View>
@@ -3265,7 +3267,7 @@ export default function CommunityPage() {
                     }}
                   />
                   <View style={styles.commentContent}>
-                    <View style={styles.commentBubble}>
+                    <View style={[styles.commentBubble, { backgroundColor: colors.surface }]}>
                       <TouchableOpacity
                         onPress={() => {
                           setCommentsModal(false);
@@ -3274,16 +3276,16 @@ export default function CommunityPage() {
                         activeOpacity={0.7}
                         style={styles.commentUserRow}
                       >
-                        <Text style={styles.commentUsername}>
+                        <Text style={[styles.commentUsername, { color: colors.text }]}>
                           {getUserDisplayName(comment.user!)}
                         </Text>
                         <SubscriptionBadgeInline tier={comment.user?.subscriptionTier as any} />
-                        <Text style={styles.commentHandle}>@{getUserHandle(comment.user!)}</Text>
+                        <Text style={[styles.commentHandle, { color: colors.textTertiary }]}>@{getUserHandle(comment.user!)}</Text>
                       </TouchableOpacity>
-                      <Text style={styles.commentText}>{comment.content}</Text>
+                      <Text style={[styles.commentText, { color: colors.text }]}>{comment.content}</Text>
                     </View>
                     <View style={styles.commentMeta}>
-                      <Text style={styles.commentTime}>{formatTimeAgo(comment.createdAt)}</Text>
+                      <Text style={[styles.commentTime, { color: colors.textTertiary }]}>{formatTimeAgo(comment.createdAt)}</Text>
                       <TouchableOpacity
                         style={styles.commentLikeButton}
                         onPress={() => handleLikeComment(comment.id)}
@@ -3300,7 +3302,7 @@ export default function CommunityPage() {
                         onPress={() => handleOpenCommentOptions(comment)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
-                        <Ionicons name="ellipsis-horizontal" size={16} color="#8E8E93" />
+                        <Ionicons name="ellipsis-horizontal" size={16} color={colors.textTertiary} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -3308,18 +3310,18 @@ export default function CommunityPage() {
               ))
             ) : (
               <View style={styles.noComments}>
-                <Text style={styles.noCommentsText}>No comments yet. Be the first!</Text>
+                <Text style={[styles.noCommentsText, { color: colors.textTertiary }]}>No comments yet. Be the first!</Text>
               </View>
             )}
           </ScrollView>
 
-          <View style={styles.commentInputContainer}>
+          <View style={[styles.commentInputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
             <Avatar user={authUser as User | null | undefined} size={36} />
-            <View style={styles.commentInputWrapper}>
+            <View style={[styles.commentInputWrapper, { backgroundColor: colors.surface }]}>
               <TextInput
-                style={styles.commentInput}
+                style={[styles.commentInput, { color: colors.text }]}
                 placeholder="Add a comment..."
-                placeholderTextColor="#8E8E93"
+                placeholderTextColor={colors.textTertiary}
                 value={newComment}
                 onChangeText={setNewComment}
                 multiline
@@ -3356,16 +3358,16 @@ export default function CommunityPage() {
           activeOpacity={1}
           onPress={() => setPostOptionsModal(false)}
         >
-          <View style={styles.optionsModalContainer}>
+          <View style={[styles.optionsModalContainer, { backgroundColor: colors.card }]}>
             {/* User Info Header */}
             {selectedPostForOptions?.user && (
-              <View style={styles.optionsUserHeader}>
+              <View style={[styles.optionsUserHeader, { borderBottomColor: colors.borderLight }]}>
                 <Avatar user={selectedPostForOptions.user} size={40} />
                 <View style={styles.optionsUserInfo}>
-                  <Text style={styles.optionsUserName}>
+                  <Text style={[styles.optionsUserName, { color: colors.text }]}>
                     {getUserDisplayName(selectedPostForOptions.user)}
                   </Text>
-                  <Text style={styles.optionsUserHandle}>
+                  <Text style={[styles.optionsUserHandle, { color: colors.textTertiary }]}>
                     @{getUserHandle(selectedPostForOptions.user)}
                   </Text>
                 </View>
@@ -3376,77 +3378,77 @@ export default function CommunityPage() {
             <View style={styles.optionsList}>
               {/* Share Option */}
               <TouchableOpacity
-                style={styles.optionItem}
+                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
                 onPress={handleShareFromOptions}
               >
                 <View style={[styles.optionIconContainer, { backgroundColor: '#E3F2FD' }]}>
                   <Ionicons name="share-outline" size={20} color="#2196F3" />
                 </View>
-                <Text style={styles.optionText}>Share Post</Text>
-                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                <Text style={[styles.optionText, { color: colors.text }]}>Share Post</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {/* Copy Link Option */}
               <TouchableOpacity
-                style={styles.optionItem}
+                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
                 onPress={handleCopyLink}
               >
                 <View style={[styles.optionIconContainer, { backgroundColor: '#E8EAF6' }]}>
                   <Ionicons name="link-outline" size={20} color="#5C6BC0" />
                 </View>
-                <Text style={styles.optionText}>Copy Link</Text>
-                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                <Text style={[styles.optionText, { color: colors.text }]}>Copy Link</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {/* Not Interested Option */}
               <TouchableOpacity
-                style={styles.optionItem}
+                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
                 onPress={handleNotInterested}
               >
                 <View style={[styles.optionIconContainer, { backgroundColor: '#F5F5F5' }]}>
                   <Ionicons name="eye-off-outline" size={20} color="#757575" />
                 </View>
-                <Text style={styles.optionText}>Not Interested</Text>
-                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                <Text style={[styles.optionText, { color: colors.text }]}>Not Interested</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {/* Divider */}
-              <View style={styles.optionsDivider} />
+              <View style={[styles.optionsDivider, { backgroundColor: colors.borderLight }]} />
 
               {/* Follow Option */}
               <TouchableOpacity
-                style={styles.optionItem}
+                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
                 onPress={handleFollowFromOptions}
               >
                 <View style={[styles.optionIconContainer, { backgroundColor: '#E8F5E9' }]}>
                   <Ionicons name="person-add-outline" size={20} color="#4CAF50" />
                 </View>
-                <Text style={styles.optionText}>Follow @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                <Text style={[styles.optionText, { color: colors.text }]}>Follow @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {/* Mute Option */}
               <TouchableOpacity
-                style={styles.optionItem}
+                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
                 onPress={handleMuteUser}
               >
                 <View style={[styles.optionIconContainer, { backgroundColor: '#FFF3E0' }]}>
                   <Ionicons name="volume-mute-outline" size={20} color="#FF9800" />
                 </View>
-                <Text style={styles.optionText}>Mute @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                <Text style={[styles.optionText, { color: colors.text }]}>Mute @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {/* Block Option */}
               <TouchableOpacity
-                style={styles.optionItem}
+                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
                 onPress={handleBlockUser}
               >
                 <View style={[styles.optionIconContainer, { backgroundColor: '#FFEBEE' }]}>
                   <Ionicons name="ban-outline" size={20} color="#F44336" />
                 </View>
-                <Text style={styles.optionText}>Block @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                <Text style={[styles.optionText, { color: colors.text }]}>Block @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {/* Report Option */}
@@ -3458,13 +3460,13 @@ export default function CommunityPage() {
                   <Ionicons name="flag-outline" size={20} color="#E91E63" />
                 </View>
                 <Text style={[styles.optionText, { color: '#E91E63' }]}>Report Post</Text>
-                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
             {/* Cancel Button */}
             <TouchableOpacity 
-              style={styles.optionsCancelButton}
+              style={[styles.optionsCancelButton, { backgroundColor: colors.surface }]}
               onPress={() => setPostOptionsModal(false)}
             >
               <Text style={styles.optionsCancelText}>Cancel</Text>
@@ -3485,16 +3487,16 @@ export default function CommunityPage() {
           activeOpacity={1}
           onPress={() => setCommentOptionsModal(false)}
         >
-          <View style={styles.optionsModalContainer}>
+          <View style={[styles.optionsModalContainer, { backgroundColor: colors.card }]}>
             {/* User Info Header */}
             {selectedCommentForOptions?.user && (
-              <View style={styles.optionsUserHeader}>
+              <View style={[styles.optionsUserHeader, { borderBottomColor: colors.borderLight }]}>
                 <Avatar user={selectedCommentForOptions.user} size={40} />
                 <View style={styles.optionsUserInfo}>
-                  <Text style={styles.optionsUserName}>
+                  <Text style={[styles.optionsUserName, { color: colors.text }]}>
                     {getUserDisplayName(selectedCommentForOptions.user)}
                   </Text>
-                  <Text style={styles.optionsUserHandle}>
+                  <Text style={[styles.optionsUserHandle, { color: colors.textTertiary }]}>
                     @{getUserHandle(selectedCommentForOptions.user)}
                   </Text>
                 </View>
@@ -3505,26 +3507,26 @@ export default function CommunityPage() {
             <View style={styles.optionsList}>
               {/* Mute Option */}
               <TouchableOpacity
-                style={styles.optionItem}
+                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
                 onPress={handleMuteCommentUser}
               >
                 <View style={[styles.optionIconContainer, { backgroundColor: '#FFF3E0' }]}>
                   <Ionicons name="volume-mute-outline" size={20} color="#FF9800" />
                 </View>
-                <Text style={styles.optionText}>Mute @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                <Text style={[styles.optionText, { color: colors.text }]}>Mute @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {/* Block Option */}
               <TouchableOpacity
-                style={styles.optionItem}
+                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
                 onPress={handleBlockCommentUser}
               >
                 <View style={[styles.optionIconContainer, { backgroundColor: '#FFEBEE' }]}>
                   <Ionicons name="ban-outline" size={20} color="#F44336" />
                 </View>
-                <Text style={styles.optionText}>Block @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                <Text style={[styles.optionText, { color: colors.text }]}>Block @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
               {/* Report Option */}
@@ -3536,13 +3538,13 @@ export default function CommunityPage() {
                   <Ionicons name="flag-outline" size={20} color="#E91E63" />
                 </View>
                 <Text style={[styles.optionText, { color: '#E91E63' }]}>Report Comment</Text>
-                <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
             {/* Cancel Button */}
             <TouchableOpacity
-              style={styles.optionsCancelButton}
+              style={[styles.optionsCancelButton, { backgroundColor: colors.surface }]}
               onPress={() => setCommentOptionsModal(false)}
             >
               <Text style={styles.optionsCancelText}>Cancel</Text>
@@ -3561,18 +3563,18 @@ export default function CommunityPage() {
         <View style={styles.modalContainer}>
           <View style={styles.giphyHeader}>
             <TouchableOpacity onPress={() => setGiphyModal(false)}>
-              <Ionicons name="close" size={28} color="#000" />
+              <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.giphyTitle}>Choose a GIF</Text>
             <View style={{ width: 28 }} />
           </View>
 
           <View style={styles.giphySearchContainer}>
-            <Ionicons name="search" size={18} color="#8E8E93" />
+            <Ionicons name="search" size={18} color={colors.textTertiary} />
             <TextInput
               style={styles.giphySearchInput}
               placeholder="Search GIFs..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textTertiary}
               value={giphySearch}
               onChangeText={(text) => {
                 setGiphySearch(text);
@@ -3585,7 +3587,7 @@ export default function CommunityPage() {
                 setGiphySearch('');
                 searchGiphy('');
               }}>
-                <Ionicons name="close-circle" size={20} color="#8E8E93" />
+                <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             )}
           </View>

@@ -22,6 +22,7 @@ import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import StockLogo from '@/components/StockLogo';
+import { useTheme } from '@/context/ThemeContext';
 import { FLATLIST_PERFORMANCE_PROPS } from '@/components/OptimizedListItems';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
@@ -530,6 +531,7 @@ const HeatMapTile = ({
 };
 
 export default function Screener() {
+  const { colors, isDark } = useTheme();
   const router = useRouter();
   const { canAccess } = usePremiumFeature();
   const hasPlatinumAccess = canAccess(FEATURE_TIERS.SCREENER_FILTERS);
@@ -1091,17 +1093,17 @@ export default function Screener() {
     return (
       <TouchableOpacity
         key={filter.id}
-        style={[styles.filterChip, isActive && styles.filterChipActive, isLocked && styles.filterChipPremium]}
+        style={[styles.filterChip, { backgroundColor: colors.card, borderColor: colors.border }, isActive && styles.filterChipActive, isLocked && styles.filterChipPremium]}
         onPress={() => isLocked ? handlePremiumPress() : setActiveFilterModal(filter)}
       >
-        <Ionicons name={filter.icon as any} size={16} color={isActive ? '#fff' : isLocked ? '#E5E4E2' : '#666'} />
-        <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive, isLocked && styles.filterChipTextPremium]} numberOfLines={1}>
+        <Ionicons name={filter.icon as any} size={16} color={isActive ? '#fff' : isLocked ? '#E5E4E2' : colors.textSecondary} />
+        <Text style={[styles.filterChipText, { color: colors.text }, isActive && styles.filterChipTextActive, isLocked && styles.filterChipTextPremium]} numberOfLines={1}>
           {isActive ? filters[filter.id] : filter.label}
         </Text>
         {isLocked ? (
           <Ionicons name="lock-closed" size={12} color="#E5E4E2" />
         ) : (
-          <Ionicons name="chevron-down" size={14} color={isActive ? '#fff' : '#999'} />
+          <Ionicons name="chevron-down" size={14} color={isActive ? '#fff' : colors.textTertiary} />
         )}
       </TouchableOpacity>
     );
@@ -1111,38 +1113,39 @@ export default function Screener() {
     const isPositive = item.change >= 0;
     const isEven = index % 2 === 0;
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[
-          styles.stockItem, 
-          isEven ? styles.stockItemEven : styles.stockItemOdd
-        ]} 
-        activeOpacity={0.7} 
+          styles.stockItem,
+          { borderBottomColor: colors.borderLight },
+          isEven ? { backgroundColor: colors.background } : { backgroundColor: colors.surface }
+        ]}
+        activeOpacity={0.7}
         onPress={() => handleStockPress(item.symbol)}
       >
         <View style={styles.stockLeft}>
-          <StockLogo 
-            symbol={item.symbol} 
-            size={Platform.OS === 'android' ? 36 : 40} 
+          <StockLogo
+            symbol={item.symbol}
+            size={Platform.OS === 'android' ? 36 : 40}
             style={{ marginRight: Platform.OS === 'android' ? 10 : 12 }}
           />
           <View style={styles.stockInfo}>
             <View style={styles.stockSymbolRow}>
-              <Text style={styles.stockSymbol}>{item.symbol}</Text>
-              {item.sector ? <View style={styles.sectorBadge}><Text style={styles.sectorText} numberOfLines={1}>{item.sector.length > 10 ? item.sector.substring(0, 10) + '..' : item.sector}</Text></View> : null}
+              <Text style={[styles.stockSymbol, { color: colors.text }]}>{item.symbol}</Text>
+              {item.sector ? <View style={[styles.sectorBadge, { backgroundColor: colors.borderLight }]}><Text style={[styles.sectorText, { color: colors.textSecondary }]} numberOfLines={1}>{item.sector.length > 10 ? item.sector.substring(0, 10) + '..' : item.sector}</Text></View> : null}
             </View>
-            <Text style={styles.stockName} numberOfLines={1}>{item.name}</Text>
+            <Text style={[styles.stockName, { color: colors.textSecondary }]} numberOfLines={1}>{item.name}</Text>
           </View>
         </View>
         <View style={styles.stockMiddle}>
-          <Text style={styles.stockMetricLabel}>Mkt Cap</Text>
-          <Text style={styles.stockMetricValue}>{formatMarketCap(item.marketCap)}</Text>
+          <Text style={[styles.stockMetricLabel, { color: colors.textTertiary }]}>Mkt Cap</Text>
+          <Text style={[styles.stockMetricValue, { color: colors.text }]}>{formatMarketCap(item.marketCap)}</Text>
         </View>
         <View style={styles.stockMiddle}>
-          <Text style={styles.stockMetricLabel}>P/E</Text>
-          <Text style={styles.stockMetricValue}>{item.pe ? item.pe.toFixed(1) : 'N/A'}</Text>
+          <Text style={[styles.stockMetricLabel, { color: colors.textTertiary }]}>P/E</Text>
+          <Text style={[styles.stockMetricValue, { color: colors.text }]}>{item.pe ? item.pe.toFixed(1) : 'N/A'}</Text>
         </View>
         <View style={styles.stockRight}>
-          <Text style={styles.stockPrice}>${item.price ? item.price.toFixed(2) : '0.00'}</Text>
+          <Text style={[styles.stockPrice, { color: colors.text }]}>${item.price ? item.price.toFixed(2) : '0.00'}</Text>
           <View style={[styles.changeContainer, isPositive ? styles.changePositive : styles.changeNegative]}>
             <Ionicons name={isPositive ? 'caret-up' : 'caret-down'} size={12} color={isPositive ? '#00C853' : '#FF5252'} />
             <Text style={[styles.changeText, isPositive ? styles.changeTextPositive : styles.changeTextNegative]}>{Math.abs(item.changePercent || 0).toFixed(2)}%</Text>
@@ -1150,7 +1153,7 @@ export default function Screener() {
         </View>
       </TouchableOpacity>
     );
-  }, [handleStockPress]);
+  }, [handleStockPress, colors]);
 
   const sortOptions = [
     { key: 'marketCap', label: 'Mkt Cap' },
@@ -1172,53 +1175,53 @@ export default function Screener() {
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Screener</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Screener</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton} onPress={() => setShowAllFilters(true)}>
-            <Ionicons name="options" size={24} color="#000" />
-            {activeFilterCount > 0 && <View style={styles.headerBadge}><Text style={styles.headerBadgeText}>{activeFilterCount}</Text></View>}
+            <Ionicons name="options" size={24} color={colors.text} />
+            {activeFilterCount > 0 && <View style={[styles.headerBadge, { backgroundColor: colors.primary }]}><Text style={styles.headerBadgeText}>{activeFilterCount}</Text></View>}
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={handleBookmarkPress}>
-            <Ionicons name={savedPresets.length > 0 ? "bookmark" : "bookmark-outline"} size={24} color={savedPresets.length > 0 ? "#007AFF" : "#000"} />
+            <Ionicons name={savedPresets.length > 0 ? "bookmark" : "bookmark-outline"} size={24} color={savedPresets.length > 0 ? colors.primary : colors.text} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#999" />
+      <View style={[styles.searchContainer, { backgroundColor: colors.background }]}>
+        <View style={[styles.searchBar, { backgroundColor: colors.surface }]}>
+          <Ionicons name="search" size={20} color={colors.textTertiary} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="Search by name or symbol..."
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textTertiary}
             value={searchQuery}
             onChangeText={handleSearchChange}
             onFocus={() => searchQuery && setShowSearchResults(true)}
           />
-          {searchLoading && <ActivityIndicator size="small" color="#007AFF" style={{ marginRight: 8 }} />}
+          {searchLoading && <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />}
           {searchQuery.length > 0 && !searchLoading && (
             <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchResults([]); setShowSearchResults(false); }}>
-              <Ionicons name="close-circle" size={20} color="#999" />
+              <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
             </TouchableOpacity>
           )}
         </View>
 
         {/* Search Results Dropdown */}
         {showSearchResults && searchResults.length > 0 && (
-          <View style={styles.searchResultsDropdown}>
+          <View style={[styles.searchResultsDropdown, { backgroundColor: colors.card }]}>
             {searchResults.map((item, index) => (
               <TouchableOpacity
                 key={`${item.symbol}-${index}`}
-                style={styles.searchResultItem}
+                style={[styles.searchResultItem, { borderBottomColor: colors.borderLight }]}
                 onPress={() => handleSearchResultSelect(item.symbol)}
               >
                 <View style={styles.searchResultLeft}>
-                  <Text style={styles.searchResultSymbol}>{item.symbol}</Text>
-                  <Text style={styles.searchResultName} numberOfLines={1}>{item.name}</Text>
+                  <Text style={[styles.searchResultSymbol, { color: colors.text }]}>{item.symbol}</Text>
+                  <Text style={[styles.searchResultName, { color: colors.textSecondary }]} numberOfLines={1}>{item.name}</Text>
                 </View>
-                <Text style={styles.searchResultExchange}>{item.exchangeShortName}</Text>
+                <Text style={[styles.searchResultExchange, { color: colors.textTertiary, backgroundColor: colors.surface }]}>{item.exchangeShortName}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -1246,14 +1249,14 @@ export default function Screener() {
 
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(activePreset, filters); }} />}>
         <View style={styles.section}>
-          <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Quick Screens</Text></View>
+          <View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Screens</Text></View>
           <FlatList data={presets} renderItem={renderPreset} keyExtractor={item => item.id} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presetList} />
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.filterTitleRow}>
-              <Text style={styles.sectionTitle}>Filters</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Filters</Text>
               {activeFilterCount > 0 && <View style={styles.filterCountBadge}><Text style={styles.filterCountText}>{activeFilterCount}</Text></View>}
             </View>
             {activeFilterCount > 0 && <TouchableOpacity onPress={() => { setFilters({}); setActivePreset(null); fetchData(null, {}); }}><Text style={styles.clearText}>Clear All</Text></TouchableOpacity>}
@@ -1261,8 +1264,8 @@ export default function Screener() {
           
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryTabs} contentContainerStyle={styles.categoryTabsContent}>
             {categoryTabs.map(tab => (
-              <TouchableOpacity key={tab.key} style={[styles.categoryTab, selectedCategory === tab.key && styles.categoryTabActive]} onPress={() => setSelectedCategory(tab.key)}>
-                <Text style={[styles.categoryTabText, selectedCategory === tab.key && styles.categoryTabTextActive]}>{tab.label}</Text>
+              <TouchableOpacity key={tab.key} style={[styles.categoryTab, { backgroundColor: colors.card, borderColor: colors.border }, selectedCategory === tab.key && styles.categoryTabActive]} onPress={() => setSelectedCategory(tab.key)}>
+                <Text style={[styles.categoryTabText, { color: colors.textSecondary }, selectedCategory === tab.key && styles.categoryTabTextActive]}>{tab.label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -1274,20 +1277,20 @@ export default function Screener() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Results</Text>
-            <Text style={styles.resultCount}>{filteredResults.length} stocks</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Results</Text>
+            <Text style={[styles.resultCount, { color: colors.textSecondary }]}>{filteredResults.length} stocks</Text>
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortContainer} contentContainerStyle={styles.sortContent}>
             {sortOptions.map(sort => (
-              <TouchableOpacity key={sort.key} style={[styles.sortButton, sortBy === sort.key && styles.sortButtonActive]} onPress={() => handleSort(sort.key)}>
-                <Text style={[styles.sortButtonText, sortBy === sort.key && styles.sortButtonTextActive]}>{sort.label}</Text>
-                {sortBy === sort.key && <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color="#007AFF" />}
+              <TouchableOpacity key={sort.key} style={[styles.sortButton, { backgroundColor: colors.card }, sortBy === sort.key && { backgroundColor: isDark ? 'rgba(10,132,255,0.15)' : '#E8F2FF' }]} onPress={() => handleSort(sort.key)}>
+                <Text style={[styles.sortButtonText, { color: colors.textSecondary }, sortBy === sort.key && { color: colors.primary }]}>{sort.label}</Text>
+                {sortBy === sort.key && <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color={colors.primary} />}
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          {loading && !refreshing && <View style={styles.loadingContainer}><ActivityIndicator size="large" color="#007AFF" /><Text style={styles.loadingText}>Loading stocks...</Text></View>}
+          {loading && !refreshing && <View style={styles.loadingContainer}><ActivityIndicator size="large" color={colors.primary} /><Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading stocks...</Text></View>}
           
           {error && !loading && (
             <View style={styles.errorContainer}>
@@ -1311,9 +1314,9 @@ export default function Screener() {
               />
             ) : (
               <View style={styles.emptyContainer}>
-                <Ionicons name="search" size={48} color="#CCC" />
-                <Text style={styles.emptyText}>No stocks found</Text>
-                <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
+                <Ionicons name="search" size={48} color={colors.borderLight} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No stocks found</Text>
+                <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Try adjusting your filters</Text>
               </View>
             )
           )}
@@ -1324,16 +1327,16 @@ export default function Screener() {
       {/* Filter Selection Modal */}
       <Modal visible={activeFilterModal !== null} transparent animationType="slide" onRequestClose={() => setActiveFilterModal(null)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setActiveFilterModal(null)}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>{activeFilterModal?.label}</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{activeFilterModal?.label}</Text>
             <ScrollView style={styles.modalOptions}>
               {activeFilterModal?.options.map(option => {
                 const isSelected = filters[activeFilterModal.id] === option || (option === 'Any' && !filters[activeFilterModal.id]);
                 return (
-                  <TouchableOpacity key={option} style={[styles.modalOption, isSelected && styles.modalOptionSelected]} onPress={() => handleFilterSelect(activeFilterModal.id, option)}>
-                    <Text style={[styles.modalOptionText, isSelected && styles.modalOptionTextSelected]}>{option}</Text>
-                    {isSelected && <Ionicons name="checkmark" size={20} color="#007AFF" />}
+                  <TouchableOpacity key={option} style={[styles.modalOption, { borderBottomColor: colors.borderLight }, isSelected && { backgroundColor: isDark ? 'rgba(10,132,255,0.1)' : '#F8F9FF' }]} onPress={() => handleFilterSelect(activeFilterModal.id, option)}>
+                    <Text style={[styles.modalOptionText, { color: colors.text }, isSelected && { color: colors.primary, fontWeight: '600' }]}>{option}</Text>
+                    {isSelected && <Ionicons name="checkmark" size={20} color={colors.primary} />}
                   </TouchableOpacity>
                 );
               })}
@@ -1344,12 +1347,12 @@ export default function Screener() {
 
       {/* All Filters Modal */}
       <Modal visible={showAllFilters} animationType="slide" onRequestClose={() => setShowAllFilters(false)}>
-        <SafeAreaView style={styles.fullModalContainer} edges={['bottom']}>
-          <View style={styles.fullModalHeader}>
+        <SafeAreaView style={[styles.fullModalContainer, { backgroundColor: colors.surface }]} edges={['bottom']}>
+          <View style={[styles.fullModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={() => setShowAllFilters(false)} style={styles.fullModalCloseBtn}>
-              <Ionicons name="close" size={28} color="#000" />
+              <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
-            <Text style={styles.fullModalTitle}>All Filters</Text>
+            <Text style={[styles.fullModalTitle, { color: colors.text }]}>All Filters</Text>
             <TouchableOpacity onPress={() => { setFilters({}); }} style={styles.fullModalResetBtn}>
               <Text style={styles.resetText}>Reset</Text>
             </TouchableOpacity>
@@ -1361,7 +1364,7 @@ export default function Screener() {
           >
             {Object.entries(categoryLabels).map(([category, label]) => (
               <View key={category} style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>{label}</Text>
+                <Text style={[styles.filterSectionTitle, { color: colors.text }]}>{label}</Text>
                 <View style={styles.filterGrid}>
                   {filterCategories.filter(f => f.category === category).map(filter => {
                     const isActive = filters[filter.id] && filters[filter.id] !== 'Any';
@@ -1371,7 +1374,7 @@ export default function Screener() {
                         key={filter.id}
                         style={[
                           styles.filterGridItem,
-                          { width: FILTER_ITEM_WIDTH },
+                          { width: FILTER_ITEM_WIDTH, backgroundColor: colors.card, borderColor: colors.border },
                           isActive && styles.filterGridItemActive,
                           isLocked && styles.filterGridItemPremium
                         ]}
@@ -1381,13 +1384,14 @@ export default function Screener() {
                         <View style={styles.filterGridIconRow}>
                           <View style={[
                             styles.filterGridIconBg,
+                            { backgroundColor: colors.surface },
                             isActive && styles.filterGridIconBgActive,
                             isLocked && styles.filterGridIconBgPremium
                           ]}>
                             <Ionicons
                               name={filter.icon as any}
                               size={20}
-                              color={isActive ? '#007AFF' : isLocked ? '#FFD700' : '#666'}
+                              color={isActive ? colors.primary : isLocked ? '#FFD700' : colors.textSecondary}
                             />
                           </View>
                           {isLocked && (
@@ -1399,6 +1403,7 @@ export default function Screener() {
                         <Text
                           style={[
                             styles.filterGridLabel,
+                            { color: colors.text },
                             isActive && styles.filterGridLabelActive,
                             isLocked && styles.filterGridLabelPremium
                           ]}
@@ -1414,7 +1419,7 @@ export default function Screener() {
                             <Ionicons name="checkmark-circle" size={14} color="#007AFF" />
                           </View>
                         ) : (
-                          <Text style={styles.filterGridHint}>Tap to select</Text>
+                          <Text style={[styles.filterGridHint, { color: colors.textTertiary }]}>Tap to select</Text>
                         )}
                       </TouchableOpacity>
                     );
@@ -1424,9 +1429,9 @@ export default function Screener() {
             ))}
             <View style={{ height: 20 }} />
           </ScrollView>
-          <View style={styles.fullModalFooter}>
+          <View style={[styles.fullModalFooter, { backgroundColor: colors.background, borderTopColor: colors.border }]}>
             <TouchableOpacity
-              style={[styles.applyButton, activeFilterCount === 0 && styles.applyButtonDisabled]}
+              style={[styles.applyButton, { backgroundColor: colors.primary }, activeFilterCount === 0 && styles.applyButtonDisabled]}
               onPress={() => { setShowAllFilters(false); fetchData(null, filters); }}
             >
               <Ionicons name="search" size={20} color="#fff" />
@@ -1493,11 +1498,11 @@ export default function Screener() {
       {/* Saved Presets Modal */}
       <Modal visible={showSavedPresetsModal} animationType="slide" transparent onRequestClose={() => setShowSavedPresetsModal(false)}>
         <View style={styles.savedPresetsOverlay}>
-          <View style={styles.savedPresetsContainer}>
+          <View style={[styles.savedPresetsContainer, { backgroundColor: colors.background }]}>
             <View style={styles.savedPresetsHeader}>
-              <Text style={styles.savedPresetsTitle}>Saved Presets</Text>
+              <Text style={[styles.savedPresetsTitle, { color: colors.text }]}>Saved Presets</Text>
               <TouchableOpacity onPress={() => setShowSavedPresetsModal(false)}>
-                <Ionicons name="close" size={24} color="#000" />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
@@ -1591,14 +1596,14 @@ export default function Screener() {
       {/* Save Preset Modal */}
       <Modal visible={showSavePresetModal} animationType="fade" transparent onRequestClose={() => setShowSavePresetModal(false)}>
         <View style={styles.savePresetOverlay}>
-          <View style={styles.savePresetContainer}>
-            <Text style={styles.savePresetTitle}>Save Filter Preset</Text>
-            <Text style={styles.savePresetSubtitle}>Give your {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} a name</Text>
+          <View style={[styles.savePresetContainer, { backgroundColor: colors.background }]}>
+            <Text style={[styles.savePresetTitle, { color: colors.text }]}>Save Filter Preset</Text>
+            <Text style={[styles.savePresetSubtitle, { color: colors.textSecondary }]}>Give your {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} a name</Text>
 
             <TextInput
-              style={styles.presetNameInput}
+              style={[styles.presetNameInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
               placeholder="e.g., High Growth Tech Stocks"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               value={newPresetName}
               onChangeText={setNewPresetName}
               autoFocus

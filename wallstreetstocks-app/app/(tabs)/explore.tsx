@@ -27,6 +27,7 @@ import { useWebSocket } from "@/context/WebSocketContext";
 import { InlineAdBanner } from "@/components/AdBanner";
 import { marketDataService } from "@/services/marketDataService";
 import StockLogo from "@/components/StockLogo";
+import { useTheme } from "@/context/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
@@ -160,6 +161,7 @@ const YieldCurveChart = ({
   width?: number;
   height?: number;
 }) => {
+  const { colors, isDark } = useTheme();
   if (!data || data.length < 2) return null;
 
   const padding = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -209,7 +211,7 @@ const YieldCurveChart = ({
         <Path
           key={`grid-${i}`}
           d={`M ${padding.left} ${padding.top + chartHeight * pct} L ${width - padding.right} ${padding.top + chartHeight * pct}`}
-          stroke="#e5e7eb"
+          stroke={colors.border}
           strokeWidth={1}
           strokeDasharray="4,4"
         />
@@ -233,7 +235,7 @@ const YieldCurveChart = ({
         <React.Fragment key={`point-${i}`}>
           <Path
             d={`M ${point.x - 4} ${point.y} A 4 4 0 1 1 ${point.x + 4} ${point.y} A 4 4 0 1 1 ${point.x - 4} ${point.y}`}
-            fill="#fff"
+            fill={colors.background}
             stroke={curveColor}
             strokeWidth={2}
           />
@@ -258,19 +260,22 @@ const TreasuryRateCard = ({
   isSelected: boolean;
   onPress: () => void;
 }) => {
+  const { colors, isDark } = useTheme();
   return (
     <TouchableOpacity
       style={[
         styles.treasuryRateCard,
         isSelected && styles.treasuryRateCardSelected,
+        !isSelected && { backgroundColor: colors.card },
+        isSelected && { backgroundColor: isDark ? '#1a3a5c' : '#f0f9ff' },
       ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text style={[styles.treasuryRateCardTenor, isSelected && styles.treasuryRateCardTenorSelected]}>
+      <Text style={[styles.treasuryRateCardTenor, isSelected && styles.treasuryRateCardTenorSelected, !isSelected && { color: colors.textSecondary }]}>
         {label}
       </Text>
-      <Text style={[styles.treasuryRateCardValue, isSelected && styles.treasuryRateCardValueSelected]}>
+      <Text style={[styles.treasuryRateCardValue, isSelected && styles.treasuryRateCardValueSelected, !isSelected && { color: colors.text }]}>
         {rate?.toFixed(2)}%
       </Text>
       {change && (
@@ -305,6 +310,7 @@ const HeaderCard = memo(({
   onPress: () => void;
   showSparkline?: boolean;
 }) => {
+  const { colors, isDark } = useTheme();
   const priceValue = item.value !== "..." ? Number(item.value) : 0;
   const changeValue = parseFloat(item.change) || 0;
 
@@ -312,23 +318,24 @@ const HeaderCard = memo(({
     <TouchableOpacity
       style={[
         styles.headerCard,
-        item.isPositive ? styles.headerCardPositive : styles.headerCardNegative
+        item.isPositive ? styles.headerCardPositive : styles.headerCardNegative,
+        { backgroundColor: item.isPositive ? (isDark ? 'rgba(0,200,83,0.1)' : '#f0fdf4') : (isDark ? 'rgba(255,23,68,0.1)' : '#fef2f2'), borderColor: item.isPositive ? (isDark ? 'rgba(0,200,83,0.3)' : '#bbf7d0') : (isDark ? 'rgba(255,23,68,0.3)' : '#fecaca') }
       ]}
       activeOpacity={0.7}
       onPress={onPress}
     >
       <View style={styles.headerCardTop}>
         <View style={styles.headerCardInfo}>
-          <Text style={styles.headerCardSymbol}>{item.name}</Text>
+          <Text style={[styles.headerCardSymbol, { color: colors.textSecondary }]}>{item.name}</Text>
           {item.value !== "..." ? (
             <AnimatedPrice
               value={priceValue}
-              style={styles.headerCardPrice}
+              style={{ ...styles.headerCardPrice, color: colors.text }}
               flashOnChange={true}
               decimals={2}
             />
           ) : (
-            <Text style={styles.headerCardPrice}>$...</Text>
+            <Text style={[styles.headerCardPrice, { color: colors.text }]}>$...</Text>
           )}
         </View>
         {showSparkline && (
@@ -368,6 +375,7 @@ const HeaderCard = memo(({
 HeaderCard.displayName = 'HeaderCard';
 
 export default function Explore() {
+  const { colors, isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>("stocks");
   const [stockRegion, setStockRegion] = useState<StockRegion>("us");
   const [searchQuery, setSearchQuery] = useState("");
@@ -1543,7 +1551,7 @@ export default function Explore() {
     if (activeTab === "ma") {
       return (
         <TouchableOpacity
-          style={styles.maCard}
+          style={[styles.maCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           activeOpacity={0.7}
           onPress={() => item.symbol !== "N/A" && router.push(`/symbol/${item.symbol}/chart`)}
         >
@@ -1553,8 +1561,8 @@ export default function Explore() {
                 <Ionicons name="business" size={18} color="#3b82f6" />
               </View>
               <View style={styles.maCompanyInfo}>
-                <Text style={styles.maCompanyLabel}>Acquirer</Text>
-                <Text style={styles.maCompanyName} numberOfLines={2}>
+                <Text style={[styles.maCompanyLabel, { color: colors.textSecondary }]}>Acquirer</Text>
+                <Text style={[styles.maCompanyName, { color: colors.text }]} numberOfLines={2}>
                   {item.acquirerCompany || "Unknown Acquirer"}
                 </Text>
               </View>
@@ -1571,18 +1579,18 @@ export default function Explore() {
                 <Ionicons name="business-outline" size={18} color="#ec4899" />
               </View>
               <View style={styles.maCompanyInfo}>
-                <Text style={styles.maCompanyLabel}>Target</Text>
-                <Text style={styles.maCompanyName} numberOfLines={2}>
+                <Text style={[styles.maCompanyLabel, { color: colors.textSecondary }]}>Target</Text>
+                <Text style={[styles.maCompanyName, { color: colors.text }]} numberOfLines={2}>
                   {item.targetCompany || "Unknown Target"}
                 </Text>
               </View>
             </View>
           </View>
           
-          <View style={styles.maBottomSection}>
+          <View style={[styles.maBottomSection, { borderTopColor: colors.borderLight }]}>
             <View style={styles.maBottomItem}>
-              <Text style={styles.maBottomLabel}>Deal Date</Text>
-              <Text style={styles.maBottomValue}>
+              <Text style={[styles.maBottomLabel, { color: colors.textSecondary }]}>Deal Date</Text>
+              <Text style={[styles.maBottomValue, { color: colors.text }]}>
                 {item.dealDate && item.dealDate !== "N/A" 
                   ? new Date(item.dealDate).toLocaleDateString('en-US', { 
                       month: 'short', 
@@ -1593,8 +1601,8 @@ export default function Explore() {
               </Text>
             </View>
             <View style={styles.maBottomItem}>
-              <Text style={styles.maBottomLabel}>Deal Value</Text>
-              <Text style={styles.maBottomValue}>
+              <Text style={[styles.maBottomLabel, { color: colors.textSecondary }]}>Deal Value</Text>
+              <Text style={[styles.maBottomValue, { color: colors.text }]}>
                 {item.dealValue && item.dealValue !== "N/A" && item.dealValue !== "Undisclosed"
                   ? (typeof item.dealValue === 'number' 
                     ? `$${(item.dealValue / 1e9).toFixed(2)}B` 
@@ -1613,7 +1621,7 @@ export default function Explore() {
       
       return (
         <TouchableOpacity
-          style={styles.ipoCard}
+          style={[styles.ipoCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           activeOpacity={0.7}
           onPress={() => router.push(`/symbol/${item.symbol}/chart`)}
         >
@@ -1624,11 +1632,11 @@ export default function Explore() {
               style={{ marginRight: Platform.OS === 'android' ? 10 : 12 }}
             />
             <View style={styles.ipoLeft}>
-              <Text style={styles.ipoCompany} numberOfLines={1}>{item.name}</Text>
+              <Text style={[styles.ipoCompany, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
               <View style={styles.ipoMetaRow}>
                 <Text style={styles.ipoSymbol}>{item.symbol}</Text>
                 <Text style={styles.ipoDot}>•</Text>
-                <Text style={styles.ipoExchange}>{item.exchange}</Text>
+                <Text style={[styles.ipoExchange, { color: colors.textSecondary }]}>{item.exchange}</Text>
               </View>
             </View>
             <View style={[styles.ipoStatusBadge, { backgroundColor: `${statusColor}20` }]}>
@@ -1636,10 +1644,10 @@ export default function Explore() {
             </View>
           </View>
           
-          <View style={styles.ipoDetails}>
+          <View style={[styles.ipoDetails, { borderTopColor: colors.borderLight }]}>
             <View style={styles.ipoDetailItem}>
-              <Text style={styles.ipoDetailLabel}>IPO Date</Text>
-              <Text style={styles.ipoDetailValue}>
+              <Text style={[styles.ipoDetailLabel, { color: colors.textSecondary }]}>IPO Date</Text>
+              <Text style={[styles.ipoDetailValue, { color: colors.text }]}>
                 {item.ipoDate ? new Date(item.ipoDate).toLocaleDateString('en-US', { 
                   month: 'short', 
                   day: 'numeric',
@@ -1648,8 +1656,8 @@ export default function Explore() {
               </Text>
             </View>
             <View style={styles.ipoDetailItem}>
-              <Text style={styles.ipoDetailLabel}>Price</Text>
-              <Text style={styles.ipoDetailValue}>{item.priceRange}</Text>
+              <Text style={[styles.ipoDetailLabel, { color: colors.textSecondary }]}>Price</Text>
+              <Text style={[styles.ipoDetailValue, { color: colors.text }]}>{item.priceRange}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -1662,7 +1670,7 @@ export default function Explore() {
       
       return (
         <TouchableOpacity
-          style={styles.dividendCard}
+          style={[styles.dividendCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           activeOpacity={0.7}
           onPress={() => router.push(`/symbol/${item.symbol}/chart`)}
         >
@@ -1674,12 +1682,12 @@ export default function Explore() {
             />
             <View style={styles.dividendLeft}>
               <View style={styles.dividendSymbolRow}>
-                <Text style={styles.dividendSymbol}>{item.symbol}</Text>
+                <Text style={[styles.dividendSymbol, { color: colors.text }]}>{item.symbol}</Text>
                 <View style={[styles.dividendFreqBadge]}>
                   <Text style={styles.dividendFreqText}>{item.frequency}</Text>
                 </View>
               </View>
-              <Text style={styles.dividendCompany} numberOfLines={1}>{item.name}</Text>
+              <Text style={[styles.dividendCompany, { color: colors.textSecondary }]} numberOfLines={1}>{item.name}</Text>
             </View>
             <View style={styles.dividendRight}>
               <View style={[styles.dividendYieldBadge, { backgroundColor: `${yieldColor}15` }]}>
@@ -1692,16 +1700,16 @@ export default function Explore() {
             </View>
           </View>
           
-          <View style={styles.dividendDetails}>
+          <View style={[styles.dividendDetails, { borderTopColor: colors.borderLight }]}>
             <View style={styles.dividendDetailItem}>
-              <Text style={styles.dividendDetailLabel}>Dividend</Text>
-              <Text style={styles.dividendDetailValue}>
+              <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>Dividend</Text>
+              <Text style={[styles.dividendDetailValue, { color: colors.text }]}>
                 ${(item.dividend || 0).toFixed(2)}
               </Text>
             </View>
             <View style={styles.dividendDetailItem}>
-              <Text style={styles.dividendDetailLabel}>Payment</Text>
-              <Text style={styles.dividendDetailValue}>
+              <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>Payment</Text>
+              <Text style={[styles.dividendDetailValue, { color: colors.text }]}>
                 {item.paymentDate && item.paymentDate !== "N/A" 
                   ? new Date(item.paymentDate).toLocaleDateString('en-US', { 
                       month: 'short', 
@@ -1711,8 +1719,8 @@ export default function Explore() {
               </Text>
             </View>
             <View style={styles.dividendDetailItem}>
-              <Text style={styles.dividendDetailLabel}>Ex-Date</Text>
-              <Text style={styles.dividendDetailValue}>
+              <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>Ex-Date</Text>
+              <Text style={[styles.dividendDetailValue, { color: colors.text }]}>
                 {item.recordDate && item.recordDate !== "N/A" 
                   ? new Date(item.recordDate).toLocaleDateString('en-US', { 
                       month: 'short', 
@@ -1729,13 +1737,13 @@ export default function Explore() {
     // Regular layout for other tabs
     return (
       <TouchableOpacity
-        style={styles.itemRow}
+        style={[styles.itemRow, { backgroundColor: colors.card, borderColor: colors.border }]}
         activeOpacity={0.7}
         onPress={() => router.push(`/symbol/${item.symbol}/chart`)}
       >
         <View style={styles.itemLeft}>
-          <View style={styles.rankBadge}>
-            <Text style={styles.itemRank}>{index + 1}</Text>
+          <View style={[styles.rankBadge, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.itemRank, { color: colors.textSecondary }]}>{index + 1}</Text>
           </View>
           <StockLogo 
             symbol={item.symbol} 
@@ -1743,13 +1751,13 @@ export default function Explore() {
             style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
           />
           <View style={styles.itemInfo}>
-            <Text style={styles.itemSymbol}>{item.symbol}</Text>
+            <Text style={[styles.itemSymbol, { color: colors.text }]}>{item.symbol}</Text>
           </View>
         </View>
         <View style={styles.itemRight}>
           <AnimatedPrice
             value={item.price}
-            style={styles.itemPrice}
+            style={{ ...styles.itemPrice, color: colors.text }}
             flashOnChange={true}
             decimals={2}
           />
@@ -1798,31 +1806,31 @@ export default function Explore() {
 
   if (loading && data.length === 0) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor="#fff" />
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#00C853" />
-          <Text style={styles.loadingText}>Loading markets...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading markets...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor="#fff" />
 
       {/* Header with Search */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
         <View style={styles.headerLeft}>
-          <Text style={styles.headerTitle}>Explore</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Explore</Text>
         </View>
         <View style={styles.headerRight}>
           {showSearch ? (
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={18} color="#666" style={styles.searchIcon} />
+            <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
+              <Ionicons name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search markets..."
                 placeholderTextColor="#666"
                 value={searchQuery}
@@ -1839,28 +1847,28 @@ export default function Explore() {
                   setSearchQuery("");
                   setSearchResults([]);
                 }}>
-                  <Ionicons name="close-circle" size={20} color="#666" />
+                  <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
               ) : null}
             </View>
           ) : (
-            <TouchableOpacity onPress={() => setShowSearch(true)} style={styles.searchButton}>
-              <Ionicons name="search" size={22} color="#111827" />
+            <TouchableOpacity onPress={() => setShowSearch(true)} style={[styles.searchButton, { backgroundColor: colors.surface }]}>
+              <Ionicons name="search" size={22} color={colors.text} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
       {/* Sticky Tabs */}
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {(["stocks", "crypto", "etf", "bonds", "treasury", "ipo", "ma", "dividends"] as Tab[]).map((tab) => (
             <TouchableOpacity
               key={tab}
               onPress={() => handleTabChange(tab)}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
+              style={[styles.tab, activeTab === tab && styles.tabActive, activeTab !== tab && { backgroundColor: colors.surface }, activeTab === tab && { backgroundColor: isDark ? '#fff' : '#111827' }]}
             >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive, activeTab !== tab && { color: colors.textSecondary }, activeTab === tab && { color: isDark ? '#000' : '#fff' }]}>
                 {tab === "stocks" ? "Stocks" :
                  tab === "crypto" ? "Crypto" :
                  tab === "etf" ? "ETFs" :
@@ -1876,7 +1884,7 @@ export default function Explore() {
 
       {/* Region Selector for Stocks */}
       {activeTab === "stocks" && (
-        <View style={styles.regionBar}>
+        <View style={[styles.regionBar, { backgroundColor: colors.background }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {([
               { key: "us", label: "US", subLabel: "S&P 500", icon: "flag" },
@@ -1886,15 +1894,15 @@ export default function Explore() {
               <TouchableOpacity
                 key={region.key}
                 onPress={() => setStockRegion(region.key)}
-                style={[styles.regionChip, stockRegion === region.key && styles.regionChipActive]}
+                style={[styles.regionChip, stockRegion === region.key && styles.regionChipActive, stockRegion !== region.key && { backgroundColor: colors.surface }]}
               >
                 <Ionicons
                   name={region.icon as any}
                   size={14}
-                  color={stockRegion === region.key ? "#fff" : "#666"}
+                  color={stockRegion === region.key ? "#fff" : colors.textSecondary}
                 />
                 <View>
-                  <Text style={[styles.regionText, stockRegion === region.key && styles.regionTextActive]}>
+                  <Text style={[styles.regionText, stockRegion === region.key && styles.regionTextActive, stockRegion !== region.key && { color: colors.textSecondary }]}>
                     {region.label}
                   </Text>
                   {stockRegion === region.key && (
@@ -1939,15 +1947,15 @@ export default function Explore() {
           {treasuryLoading ? (
             <View style={styles.treasuryLoadingState}>
               <ActivityIndicator size="large" color="#00C853" />
-              <Text style={styles.emptyText}>Loading treasury rates...</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Loading treasury rates...</Text>
             </View>
           ) : treasuryRates ? (
             <>
               {/* Header Section */}
               <View style={styles.treasuryHeader}>
                 <View>
-                  <Text style={styles.treasuryMainTitle}>US Treasury Yields</Text>
-                  <Text style={styles.treasuryDateText}>
+                  <Text style={[styles.treasuryMainTitle, { color: colors.text }]}>US Treasury Yields</Text>
+                  <Text style={[styles.treasuryDateText, { color: colors.textSecondary }]}>
                     {new Date(treasuryRates.date).toLocaleDateString('en-US', {
                       weekday: 'short',
                       month: 'short',
@@ -1956,7 +1964,7 @@ export default function Explore() {
                     })}
                   </Text>
                 </View>
-                <TouchableOpacity onPress={fetchTreasuryRates} style={styles.treasuryRefreshBtn}>
+                <TouchableOpacity onPress={fetchTreasuryRates} style={[styles.treasuryRefreshBtn, { backgroundColor: colors.card }]}>
                   <Ionicons name="refresh" size={20} color="#007AFF" />
                 </TouchableOpacity>
               </View>
@@ -1989,9 +1997,9 @@ export default function Explore() {
                 </View>
 
                 <View style={styles.treasuryHeroSmallCards}>
-                  <View style={styles.treasuryHeroCardSmall}>
-                    <Text style={styles.treasuryHeroSmallLabel}>2-Year</Text>
-                    <Text style={styles.treasuryHeroSmallRate}>{treasuryRates.year2?.toFixed(2)}%</Text>
+                  <View style={[styles.treasuryHeroCardSmall, { backgroundColor: colors.card }]}>
+                    <Text style={[styles.treasuryHeroSmallLabel, { color: colors.textSecondary }]}>2-Year</Text>
+                    <Text style={[styles.treasuryHeroSmallRate, { color: colors.text }]}>{treasuryRates.year2?.toFixed(2)}%</Text>
                     {getRateChange("year2") && (
                       <View style={[
                         styles.treasuryHeroSmallChange,
@@ -2008,9 +2016,9 @@ export default function Explore() {
                       </View>
                     )}
                   </View>
-                  <View style={styles.treasuryHeroCardSmall}>
-                    <Text style={styles.treasuryHeroSmallLabel}>30-Year</Text>
-                    <Text style={styles.treasuryHeroSmallRate}>{treasuryRates.year30?.toFixed(2)}%</Text>
+                  <View style={[styles.treasuryHeroCardSmall, { backgroundColor: colors.card }]}>
+                    <Text style={[styles.treasuryHeroSmallLabel, { color: colors.textSecondary }]}>30-Year</Text>
+                    <Text style={[styles.treasuryHeroSmallRate, { color: colors.text }]}>{treasuryRates.year30?.toFixed(2)}%</Text>
                     {getRateChange("year30") && (
                       <View style={[
                         styles.treasuryHeroSmallChange,
@@ -2043,7 +2051,7 @@ export default function Explore() {
                       color={getYieldSpread()!.isInverted ? "#FF6B6B" : "#00C853"}
                     />
                     <View>
-                      <Text style={styles.yieldSpreadLabel}>2Y-10Y Spread</Text>
+                      <Text style={[styles.yieldSpreadLabel, { color: colors.text }]}>2Y-10Y Spread</Text>
                       <Text style={styles.yieldSpreadSubLabel}>
                         {getYieldSpread()!.isInverted ? "Inverted Curve" : "Normal Curve"}
                       </Text>
@@ -2059,9 +2067,9 @@ export default function Explore() {
               )}
 
               {/* Yield Curve Chart */}
-              <View style={styles.yieldCurveSection}>
+              <View style={[styles.yieldCurveSection, { backgroundColor: colors.card }]}>
                 <View style={styles.yieldCurveTitleRow}>
-                  <Text style={styles.yieldCurveTitle}>Yield Curve</Text>
+                  <Text style={[styles.yieldCurveTitle, { color: colors.text }]}>Yield Curve</Text>
                   <View style={styles.yieldCurveLegend}>
                     <View style={[styles.yieldCurveLegendDot, { backgroundColor: "#00C853" }]} />
                     <Text style={styles.yieldCurveLegendText}>Normal</Text>
@@ -2081,7 +2089,7 @@ export default function Explore() {
               </View>
 
               {/* All Rates Grid */}
-              <Text style={styles.treasurySectionTitle}>All Maturities</Text>
+              <Text style={[styles.treasurySectionTitle, { color: colors.text }]}>All Maturities</Text>
 
               {/* Short-Term */}
               <View style={styles.treasuryRateSection}>
@@ -2089,7 +2097,7 @@ export default function Explore() {
                   <View style={[styles.treasuryRateSectionIcon, { backgroundColor: "#dbeafe" }]}>
                     <Ionicons name="time-outline" size={16} color="#3b82f6" />
                   </View>
-                  <Text style={styles.treasuryRateSectionTitle}>Short-Term</Text>
+                  <Text style={[styles.treasuryRateSectionTitle, { color: colors.textSecondary }]}>Short-Term</Text>
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.treasuryRateCardsRow}>
@@ -2107,7 +2115,7 @@ export default function Explore() {
                   <View style={[styles.treasuryRateSectionIcon, { backgroundColor: "#dcfce7" }]}>
                     <Ionicons name="calendar-outline" size={16} color="#00C853" />
                   </View>
-                  <Text style={styles.treasuryRateSectionTitle}>Medium-Term</Text>
+                  <Text style={[styles.treasuryRateSectionTitle, { color: colors.textSecondary }]}>Medium-Term</Text>
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.treasuryRateCardsRow}>
@@ -2125,7 +2133,7 @@ export default function Explore() {
                   <View style={[styles.treasuryRateSectionIcon, { backgroundColor: "#fef3c7" }]}>
                     <Ionicons name="trending-up" size={16} color="#f59e0b" />
                   </View>
-                  <Text style={styles.treasuryRateSectionTitle}>Long-Term</Text>
+                  <Text style={[styles.treasuryRateSectionTitle, { color: colors.textSecondary }]}>Long-Term</Text>
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.treasuryRateCardsRow}>
@@ -2138,25 +2146,25 @@ export default function Explore() {
 
               {/* Info Cards */}
               <View style={styles.treasuryInfoSection}>
-                <View style={styles.treasuryInfoCardNew}>
-                  <View style={styles.treasuryInfoIconBox}>
+                <View style={[styles.treasuryInfoCardNew, { backgroundColor: colors.card }]}>
+                  <View style={[styles.treasuryInfoIconBox, { backgroundColor: colors.surface }]}>
                     <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
                   </View>
                   <View style={styles.treasuryInfoContent}>
-                    <Text style={styles.treasuryInfoTitle}>What is the Yield Curve?</Text>
-                    <Text style={styles.treasuryInfoText}>
+                    <Text style={[styles.treasuryInfoTitle, { color: colors.text }]}>What is the Yield Curve?</Text>
+                    <Text style={[styles.treasuryInfoText, { color: colors.textSecondary }]}>
                       The yield curve shows interest rates across different maturities. A normal curve slopes upward (longer terms = higher rates). An inverted curve can signal recession concerns.
                     </Text>
                   </View>
                 </View>
 
-                <View style={styles.treasuryInfoCardNew}>
-                  <View style={styles.treasuryInfoIconBox}>
+                <View style={[styles.treasuryInfoCardNew, { backgroundColor: colors.card }]}>
+                  <View style={[styles.treasuryInfoIconBox, { backgroundColor: colors.surface }]}>
                     <Ionicons name="stats-chart-outline" size={20} color="#3b82f6" />
                   </View>
                   <View style={styles.treasuryInfoContent}>
-                    <Text style={styles.treasuryInfoTitle}>Key Benchmarks</Text>
-                    <Text style={styles.treasuryInfoText}>
+                    <Text style={[styles.treasuryInfoTitle, { color: colors.text }]}>Key Benchmarks</Text>
+                    <Text style={[styles.treasuryInfoText, { color: colors.textSecondary }]}>
                       The 10-year yield influences mortgage rates and is a key economic indicator. The 2Y-10Y spread is watched closely for recession signals.
                     </Text>
                   </View>
@@ -2165,8 +2173,8 @@ export default function Explore() {
             </>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="alert-circle" size={64} color="#e5e7eb" />
-              <Text style={styles.emptyText}>Unable to load treasury rates</Text>
+              <Ionicons name="alert-circle" size={64} color={colors.border} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Unable to load treasury rates</Text>
               <TouchableOpacity onPress={fetchTreasuryRates} style={styles.treasuryRetryBtn}>
                 <Text style={styles.treasuryRetryText}>Retry</Text>
               </TouchableOpacity>
@@ -2192,19 +2200,19 @@ export default function Explore() {
               searchLoading ? (
                 <View style={styles.emptyState}>
                   <ActivityIndicator size="large" color="#00C853" />
-                  <Text style={styles.emptyText}>Searching...</Text>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Searching...</Text>
                 </View>
               ) : (
                 <View style={styles.emptyState}>
-                  <Ionicons name="search" size={64} color="#e5e7eb" />
-                  <Text style={styles.emptyText}>No results for &quot;{searchQuery}&quot;</Text>
-                  <Text style={styles.emptySubtext}>Try another symbol or company name</Text>
+                  <Ionicons name="search" size={64} color={colors.border} />
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No results for &quot;{searchQuery}&quot;</Text>
+                  <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Try another symbol or company name</Text>
                 </View>
               )
             ) : (
               <View style={styles.emptyState}>
                 <ActivityIndicator size="large" color="#00C853" />
-                <Text style={styles.emptyText}>No data available</Text>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No data available</Text>
               </View>
             )
           }
@@ -2215,7 +2223,7 @@ export default function Explore() {
 
               {/* Section Title */}
               {!searchQuery && data.length > 0 ? (
-                <Text style={styles.sectionTitle}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   {activeTab === "stocks" ? "Most Active" :
                    activeTab === "crypto" ? "Top Cryptos" :
                    activeTab === "etf" ? "Popular ETFs" :
@@ -2224,7 +2232,7 @@ export default function Explore() {
                    activeTab === "ma" ? "Latest M&A Deals" : "Top Dividend Stocks"}
                 </Text>
               ) : searchQuery ? (
-                <Text style={styles.sectionTitle}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   Search Results
                 </Text>
               ) : null}

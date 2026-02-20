@@ -38,7 +38,7 @@ import { NotificationProvider } from "../context/NotificationContext";
 import { ReferralProvider, useReferral } from "../context/ReferralContext";
 import { WebSocketProvider } from "../context/WebSocketContext";
 import { PortfolioProvider } from "../context/PortfolioContext";
-import { ThemeProvider } from "../context/ThemeContext";
+import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useAuth } from "@/lib/auth";
 import { preloadAppData } from "../utils/preload";
 import { ErrorBoundary } from "../components/ErrorBoundary";
@@ -160,6 +160,47 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function ThemedApp() {
+  const { colors, isDark } = useTheme();
+
+  return (
+    <ErrorBoundary>
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <StatusBar
+          barStyle={isDark ? "light-content" : "dark-content"}
+          backgroundColor={colors.background}
+          translucent={Platform.OS === 'android'}
+        />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          {/* Disable swipe back on tabs to prevent exiting app */}
+          <Stack.Screen
+            name="(tabs)"
+            options={{
+              gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="index"
+            options={{
+              gestureEnabled: false,
+            }}
+          />
+          <Stack.Screen
+            name="onboarding"
+            options={{
+              gestureEnabled: false,
+            }}
+          />
+        </Stack>
+      </View>
+    </ErrorBoundary>
+  );
+}
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -178,40 +219,7 @@ export default function RootLayout() {
                           initialSymbols={DEFAULT_STREAMING_SYMBOLS}
                         >
                           <AppInitializer>
-                            <ErrorBoundary>
-                              <View style={{ flex: 1, backgroundColor: "black" }}>
-                                <StatusBar
-                                  barStyle="light-content"
-                                  backgroundColor="black"
-                                  translucent={Platform.OS === 'android'}
-                                />
-                                <Stack
-                                  screenOptions={{
-                                    headerShown: false,
-                                  }}
-                                >
-                                  {/* Disable swipe back on tabs to prevent exiting app */}
-                                  <Stack.Screen
-                                    name="(tabs)"
-                                    options={{
-                                      gestureEnabled: false,
-                                    }}
-                                  />
-                                  <Stack.Screen
-                                    name="index"
-                                    options={{
-                                      gestureEnabled: false,
-                                    }}
-                                  />
-                                  <Stack.Screen
-                                    name="onboarding"
-                                    options={{
-                                      gestureEnabled: false,
-                                    }}
-                                  />
-                                </Stack>
-                              </View>
-                            </ErrorBoundary>
+                            <ThemedApp />
                           </AppInitializer>
                         </WebSocketProvider>
                       </NotificationProvider>

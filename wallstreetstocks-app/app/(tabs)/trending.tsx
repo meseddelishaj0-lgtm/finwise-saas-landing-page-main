@@ -26,6 +26,7 @@ import { InlineAdBanner } from "@/components/AdBanner";
 import { useWebSocket } from "@/context/WebSocketContext";
 import { marketDataService } from "@/services/marketDataService";
 import StockLogo from "@/components/StockLogo";
+import { useTheme } from "@/context/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
@@ -176,6 +177,7 @@ const HeaderCard = memo(({
   item: ChipData;
   onPress: () => void;
 }) => {
+  const { colors, isDark } = useTheme();
   const priceValue = item.value !== "..." ? Number(item.value) : 0;
   const changeValue = parseFloat(item.change) || 0;
 
@@ -183,23 +185,23 @@ const HeaderCard = memo(({
     <TouchableOpacity
       style={[
         styles.headerCard,
-        item.isPositive ? styles.headerCardPositive : styles.headerCardNegative
+        { borderColor: item.isPositive ? (isDark ? 'rgba(0,200,83,0.3)' : '#bbf7d0') : (isDark ? 'rgba(255,23,68,0.3)' : '#fecaca'), backgroundColor: item.isPositive ? (isDark ? 'rgba(0,200,83,0.1)' : '#f0fdf4') : (isDark ? 'rgba(255,23,68,0.1)' : '#fef2f2') }
       ]}
       activeOpacity={0.7}
       onPress={onPress}
     >
       <View style={styles.headerCardTop}>
         <View style={styles.headerCardInfo}>
-          <Text style={styles.headerCardSymbol}>{item.name}</Text>
+          <Text style={[styles.headerCardSymbol, { color: colors.textSecondary }]}>{item.name}</Text>
           {item.value !== "..." ? (
             <AnimatedPrice
               value={priceValue}
-              style={styles.headerCardPrice}
+              style={[styles.headerCardPrice, { color: colors.text }]}
               flashOnChange={true}
               decimals={2}
             />
           ) : (
-            <Text style={styles.headerCardPrice}>$...</Text>
+            <Text style={[styles.headerCardPrice, { color: colors.text }]}>$...</Text>
           )}
         </View>
         <View style={styles.headerCardSparkline}>
@@ -237,6 +239,7 @@ const HeaderCard = memo(({
 HeaderCard.displayName = 'HeaderCard';
 
 export default function Trending() {
+  const { colors, isDark } = useTheme();
   const { initialTab } = useLocalSearchParams<{ initialTab?: string }>();
   const [activeTab, setActiveTab] = useState<TabType>((initialTab as TabType) || "trending");
   const [data, setData] = useState<StockItem[]>([]);
@@ -875,14 +878,14 @@ export default function Trending() {
   }, [data, priceUpdateTrigger]);
 
   const renderItem = useCallback(({ item, index }: { item: StockItem; index: number }) => {
-    const numChange = typeof item.changesPercentage === 'string' 
-      ? parseFloat(item.changesPercentage) 
+    const numChange = typeof item.changesPercentage === 'string'
+      ? parseFloat(item.changesPercentage)
       : (item.changesPercentage || 0);
     const positive = numChange >= 0;
 
     return (
       <TouchableOpacity
-        style={styles.row}
+        style={[styles.row, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}
         onPress={() => {
           const encodedSymbol = encodeURIComponent(item.symbol);
           router.push(`/symbol/${encodedSymbol}/chart`);
@@ -890,23 +893,23 @@ export default function Trending() {
         activeOpacity={0.7}
       >
         <View style={styles.left}>
-          <View style={styles.rankBadge}>
-            <Text style={styles.rank}>{index + 1}</Text>
+          <View style={[styles.rankBadge, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.rank, { color: colors.textSecondary }]}>{index + 1}</Text>
           </View>
-          <StockLogo 
-            symbol={item.symbol} 
-            size={Platform.OS === 'android' ? 32 : 36} 
+          <StockLogo
+            symbol={item.symbol}
+            size={Platform.OS === 'android' ? 32 : 36}
             style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
           />
           <View style={styles.info}>
-            <Text style={styles.symbol}>{item.symbol}</Text>
+            <Text style={[styles.symbol, { color: colors.text }]}>{item.symbol}</Text>
           </View>
         </View>
         <View style={styles.right}>
           {item.price != null && (
             <AnimatedPrice
               value={item.price}
-              style={styles.price}
+              style={[styles.price, { color: colors.text }]}
               flashOnChange={true}
               decimals={2}
             />
@@ -927,42 +930,42 @@ export default function Trending() {
         </View>
       </TouchableOpacity>
     );
-  }, [router]);
+  }, [router, colors]);
 
   if (loading && data.length === 0) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-        <View style={styles.header}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
+        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
           <View style={styles.headerTopRow}>
-            <Text style={styles.title}>Trending</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Trending</Text>
           </View>
         </View>
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#00C853" />
-          <Text style={styles.loadingText}>Loading market data...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading market data...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
 
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
         {/* Header Top Row */}
         <View style={styles.headerTopRow}>
-          <Text style={styles.title}>Trending</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Trending</Text>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.refreshBtn} onPress={fetchLiveData}>
-              <Ionicons name="refresh" size={20} color="#6b7280" />
+            <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: colors.surface }]} onPress={fetchLiveData}>
+              <Ionicons name="refresh" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Subtitle */}
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           Real-time market movers & top performers
         </Text>
 
@@ -986,8 +989,8 @@ export default function Trending() {
         </ScrollView>
 
         {/* Tab Pills with Icons */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.tabsScroll}
           contentContainerStyle={styles.tabsContent}
@@ -995,18 +998,18 @@ export default function Trending() {
           {TAB_CONFIG.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
-              <TouchableOpacity 
-                key={tab.id} 
+              <TouchableOpacity
+                key={tab.id}
                 onPress={() => handleTabChange(tab.id)}
-                style={[styles.tabPill, isActive && styles.tabPillActive]}
+                style={[styles.tabPill, { backgroundColor: colors.surface }, isActive && { backgroundColor: isDark ? '#fff' : '#111827' }]}
                 activeOpacity={0.7}
               >
                 <Ionicons
                   name={tab.icon as any}
                   size={16}
-                  color={isActive ? "#fff" : "#6b7280"}
+                  color={isActive ? (isDark ? '#000' : '#fff') : colors.textSecondary}
                 />
-                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                <Text style={[styles.tabText, { color: colors.textSecondary }, isActive && { color: isDark ? '#000' : '#fff' }]}>
                   {tab.label}
                 </Text>
               </TouchableOpacity>
@@ -1024,11 +1027,11 @@ export default function Trending() {
         </View>
       )}
 
-      <Animated.View 
-        style={{ 
-          flex: 1, 
-          opacity: fadeAnim, 
-          transform: [{ translateX: slideAnim }] 
+      <Animated.View
+        style={{
+          flex: 1,
+          opacity: fadeAnim,
+          transform: [{ translateX: slideAnim }]
         }}
       >
         <FlatList
@@ -1040,8 +1043,8 @@ export default function Trending() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="trending-up" size={64} color="#e5e7eb" />
-              <Text style={styles.emptyText}>No data available</Text>
+              <Ionicons name="trending-up" size={64} color={colors.borderLight} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No data available</Text>
             </View>
           }
           ListFooterComponent={<InlineAdBanner />}
