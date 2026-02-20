@@ -1438,7 +1438,7 @@ export default function Screener() {
 
       {/* Heat Map Modal */}
       <Modal visible={showHeatMap} animationType="slide" onRequestClose={() => setShowHeatMap(false)}>
-        <SafeAreaView style={styles.heatMapContainer} edges={['top']}>
+        <SafeAreaView style={styles.heatMapContainer} edges={[]}>
           <View style={styles.heatMapHeader}>
             <TouchableOpacity onPress={() => setShowHeatMap(false)} style={styles.heatMapCloseBtn}>
               <Ionicons name="close" size={28} color="#fff" />
@@ -1810,7 +1810,7 @@ const styles = StyleSheet.create({
   fabText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   // Heat Map Styles
   heatMapContainer: { flex: 1, backgroundColor: '#0D0D0D' },
-  heatMapHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#222' },
+  heatMapHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 60, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#222' },
   heatMapCloseBtn: { padding: 4 },
   heatMapTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
   heatMapRefreshBtn: { padding: 4 },
