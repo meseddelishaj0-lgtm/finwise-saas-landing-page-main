@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import { PurchasesPackage } from 'react-native-purchases';
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useTheme } from '@/context/ThemeContext';
 
 // Feature lists for each tier
 const TIER_FEATURES: Record<string, string[]> = {
@@ -93,9 +94,11 @@ interface TierCardProps {
   onSelect: () => void;
   pkg?: PurchasesPackage;
   billingPeriod: BillingPeriod;
+  colors: any;
+  isDark: boolean;
 }
 
-function TierCard({ tierKey, isSelected, onSelect, pkg, billingPeriod }: TierCardProps) {
+function TierCard({ tierKey, isSelected, onSelect, pkg, billingPeriod, colors, isDark }: TierCardProps) {
   const tierColor = TIER_COLORS[tierKey];
   const tierName = TIER_NAMES[tierKey];
   const isLifetime = tierKey === 'lifetime';
@@ -117,9 +120,10 @@ function TierCard({ tierKey, isSelected, onSelect, pkg, billingPeriod }: TierCar
     <TouchableOpacity
       style={[
         styles.card,
+        { backgroundColor: isDark ? '#1a1a1a' : colors.card, borderColor: isDark ? '#333' : colors.border },
         isSelected && styles.cardSelected,
         isSelected && { borderColor: tierColor },
-        isLifetime && styles.lifetimeCard,
+        isLifetime && { backgroundColor: isDark ? '#1a1a2e' : '#F0E6F6', borderColor: '#9B59B6' },
       ]}
       onPress={onSelect}
       activeOpacity={0.8}
@@ -146,8 +150,8 @@ function TierCard({ tierKey, isSelected, onSelect, pkg, billingPeriod }: TierCar
         </View>
 
         <View style={styles.priceContainer}>
-          <Text style={styles.price}>{tierPrice}</Text>
-          <Text style={styles.period}>
+          <Text style={[styles.price, { color: colors.text }]}>{tierPrice}</Text>
+          <Text style={[styles.period, { color: colors.textSecondary }]}>
             {isLifetime ? ' one-time' : billingPeriod === 'yearly' ? '/year' : '/month'}
           </Text>
         </View>
@@ -157,7 +161,7 @@ function TierCard({ tierKey, isSelected, onSelect, pkg, billingPeriod }: TierCar
         {features.map((feature, index) => (
           <View key={index} style={styles.featureRow}>
             <Ionicons name="checkmark-circle" size={18} color={tierColor} />
-            <Text style={styles.featureText}>{feature}</Text>
+            <Text style={[styles.featureText, { color: colors.textSecondary }]}>{feature}</Text>
           </View>
         ))}
       </View>
@@ -172,6 +176,7 @@ function TierCard({ tierKey, isSelected, onSelect, pkg, billingPeriod }: TierCar
 }
 
 export default function PaywallScreen() {
+  const { colors, isDark } = useTheme();
   const {
     packages,
     isLoading,
@@ -297,12 +302,12 @@ export default function PaywallScreen() {
     const currentTierName = TIER_NAMES[currentTier];
 
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <Ionicons name="close" size={28} color="#fff" />
+            <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Your Subscription</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Your Subscription</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -311,8 +316,8 @@ export default function PaywallScreen() {
             <Text style={styles.currentTierBadgeText}>{currentTierName}</Text>
           </View>
           <Ionicons name="checkmark-circle" size={80} color="#4CAF50" style={{ marginTop: 20 }} />
-          <Text style={styles.alreadyPremiumTitle}>You&apos;re {currentTierName}!</Text>
-          <Text style={styles.alreadyPremiumText}>
+          <Text style={[styles.alreadyPremiumTitle, { color: colors.text }]}>You&apos;re {currentTierName}!</Text>
+          <Text style={[styles.alreadyPremiumText, { color: colors.textSecondary }]}>
             You have an active {currentTierName} subscription. Enjoy all your premium features!
           </Text>
 
@@ -338,8 +343,8 @@ export default function PaywallScreen() {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.backButton} onPress={handleClose}>
-            <Text style={styles.backButtonText}>Go Back</Text>
+          <TouchableOpacity style={[styles.backButton, { backgroundColor: isDark ? '#333' : colors.surface }]} onPress={handleClose}>
+            <Text style={[styles.backButtonText, { color: colors.text }]}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -347,58 +352,60 @@ export default function PaywallScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-          <Ionicons name="close" size={28} color="#fff" />
+          <Ionicons name="close" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upgrade to Premium</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Upgrade to Premium</Text>
         <View style={styles.placeholder} />
       </View>
 
       {isLoading && packages.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Loading plans...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading plans...</Text>
         </View>
       ) : (
         <>
-          <ScrollView 
+          <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.heroSection}>
-              <Text style={styles.heroTitle}>Unlock Premium Features</Text>
-              <Text style={styles.heroSubtitle}>
+              <Text style={[styles.heroTitle, { color: colors.text }]}>Unlock Premium Features</Text>
+              <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
                 Start your 7-day free trial. Cancel anytime.
               </Text>
             </View>
 
             {/* Billing Period Toggle */}
-            <View style={styles.billingToggleContainer}>
+            <View style={[styles.billingToggleContainer, { backgroundColor: isDark ? '#1a1a1a' : colors.surface }]}>
               <TouchableOpacity
                 style={[
                   styles.billingToggleButton,
-                  billingPeriod === 'monthly' && styles.billingToggleButtonActive,
+                  billingPeriod === 'monthly' && [styles.billingToggleButtonActive, { backgroundColor: isDark ? '#333' : colors.card }],
                 ]}
                 onPress={() => setBillingPeriod('monthly')}
               >
                 <Text style={[
                   styles.billingToggleText,
-                  billingPeriod === 'monthly' && styles.billingToggleTextActive,
+                  { color: colors.textSecondary },
+                  billingPeriod === 'monthly' && [styles.billingToggleTextActive, { color: colors.text }],
                 ]}>Monthly</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.billingToggleButton,
-                  billingPeriod === 'yearly' && styles.billingToggleButtonActive,
+                  billingPeriod === 'yearly' && [styles.billingToggleButtonActive, { backgroundColor: isDark ? '#333' : colors.card }],
                 ]}
                 onPress={() => setBillingPeriod('yearly')}
               >
                 <Text style={[
                   styles.billingToggleText,
-                  billingPeriod === 'yearly' && styles.billingToggleTextActive,
+                  { color: colors.textSecondary },
+                  billingPeriod === 'yearly' && [styles.billingToggleTextActive, { color: colors.text }],
                 ]}>Yearly</Text>
                 <View style={styles.saveBadge}>
                   <Text style={styles.saveBadgeText}>Save 17%</Text>
@@ -416,6 +423,8 @@ export default function PaywallScreen() {
                   onSelect={() => setSelectedTier(tierKey)}
                   pkg={getPackageForTier(tierKey)}
                   billingPeriod={billingPeriod}
+                  colors={colors}
+                  isDark={isDark}
                 />
               ))}
               {/* Always show lifetime as a separate option */}
@@ -426,6 +435,8 @@ export default function PaywallScreen() {
                 onSelect={() => setSelectedTier('lifetime')}
                 pkg={getPackageForTier('lifetime')}
                 billingPeriod={billingPeriod}
+                colors={colors}
+                isDark={isDark}
               />
             </View>
 
@@ -434,7 +445,7 @@ export default function PaywallScreen() {
             )}
 
             {!canPurchaseSelectedTier && (
-              <View style={styles.noticeContainer}>
+              <View style={[styles.noticeContainer, { backgroundColor: isDark ? '#332700' : '#FFF8E1' }]}>
                 <Ionicons name="information-circle" size={20} color="#FFD700" />
                 <Text style={styles.noticeText}>
                   The {TIER_NAMES[selectedTier]} plan is being finalized. You can view features now and subscribe soon!
@@ -443,25 +454,26 @@ export default function PaywallScreen() {
             )}
 
             <View style={styles.termsContainer}>
-              <Text style={styles.termsText}>
+              <Text style={[styles.termsText, { color: colors.textTertiary }]}>
                 7-day free trial for new subscribers. Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period.
               </Text>
               <View style={styles.termsLinks}>
                 <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
-                  <Text style={styles.termsLink}>Terms of Use (EULA)</Text>
+                  <Text style={[styles.termsLink, { color: colors.textSecondary }]}>Terms of Use (EULA)</Text>
                 </TouchableOpacity>
-                <Text style={styles.termsDivider}>•</Text>
+                <Text style={[styles.termsDivider, { color: colors.textTertiary }]}>•</Text>
                 <TouchableOpacity onPress={() => Linking.openURL('https://www.wallstreetstocks.ai/privacy')}>
-                  <Text style={styles.termsLink}>Privacy Policy</Text>
+                  <Text style={[styles.termsLink, { color: colors.textSecondary }]}>Privacy Policy</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </ScrollView>
 
-          <View style={styles.footer}>
+          <View style={[styles.footer, { borderTopColor: colors.border }]}>
             <TouchableOpacity
               style={[
                 styles.purchaseButton,
+                { backgroundColor: isDark ? '#fff' : '#000' },
                 isPurchasing && styles.purchaseButtonDisabled,
                 selectedTier === 'lifetime' && styles.lifetimePurchaseButton,
                 billingPeriod === 'yearly' && selectedTier !== 'lifetime' && styles.yearlyPurchaseButton,
@@ -470,17 +482,17 @@ export default function PaywallScreen() {
               disabled={isPurchasing}
             >
               {isPurchasing ? (
-                <ActivityIndicator color="#000" />
+                <ActivityIndicator color={isDark ? '#000' : '#fff'} />
               ) : (
                 <>
-                  <Text style={styles.purchaseButtonText}>
+                  <Text style={[styles.purchaseButtonText, { color: isDark ? '#000' : '#fff' }]}>
                     {selectedTier === 'lifetime'
                       ? `Get Lifetime Access - ${getDisplayPrice()}`
                       : `Start 7-Day Free Trial`
                     }
                   </Text>
                   {selectedTier !== 'lifetime' && (
-                    <Text style={styles.purchaseButtonSubtext}>
+                    <Text style={[styles.purchaseButtonSubtext, { color: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.6)' }]}>
                       Then {getDisplayPrice()}{billingPeriod === 'yearly' ? '/yr' : '/mo'}
                     </Text>
                   )}
@@ -493,7 +505,7 @@ export default function PaywallScreen() {
               onPress={handleRestore}
               disabled={isPurchasing}
             >
-              <Text style={styles.restoreButtonText}>Restore Purchases</Text>
+              <Text style={[styles.restoreButtonText, { color: colors.textSecondary }]}>Restore Purchases</Text>
             </TouchableOpacity>
           </View>
         </>
