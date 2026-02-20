@@ -2232,12 +2232,6 @@ export default function CommunityPage() {
             <Ionicons name="person-circle-outline" size={26} color="#000" />
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.composeButton}
-            onPress={openCreatePostModal}
-          >
-            <Ionicons name="add" size={22} color="#FFF" />
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -2669,8 +2663,9 @@ export default function CommunityPage() {
       <TouchableOpacity
         style={styles.fab}
         onPress={openCreatePostModal}
+        activeOpacity={0.8}
       >
-        <Ionicons name="add" size={28} color="#FFF" />
+        <Ionicons name="add" size={32} color="#000" />
       </TouchableOpacity>
 
       {/* PROFILE MODAL */}
@@ -4064,18 +4059,18 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 30,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007AFF',
+    bottom: 90,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#FFD700',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#007AFF',
+    shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 10,
   },
 
   // Modal
