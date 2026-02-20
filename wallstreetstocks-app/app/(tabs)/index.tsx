@@ -2091,7 +2091,7 @@ export default function Dashboard() {
             const chartSpacing = Math.max(2, (portfolioChartWidth - 40) / smoothedChartData.length);
 
             return (
-            <View style={styles.portfolioChartContainer}>
+            <View style={[styles.portfolioChartContainer, { backgroundColor: colors.background }]}>
               <GiftedLineChart
                 areaChart
                 data={smoothedChartData}
@@ -2489,14 +2489,14 @@ export default function Dashboard() {
         {/* Stock Picks Section */}
         <View style={styles.stockPicksSection}>
           <TouchableOpacity
-            style={[styles.stockPicksCard, { backgroundColor: colors.card }]}
+            style={[styles.stockPicksCard, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#FFD70030', shadowOpacity: isDark ? 0 : 0.08, elevation: isDark ? 0 : 3 }]}
             onPress={() => router.push('/premium/stock-picks')}
             activeOpacity={0.9}
           >
             {/* Header */}
             <View style={styles.stockPicksHeader}>
               <View style={styles.stockPicksHeaderLeft}>
-                <View style={styles.stockPicksIconBg}>
+                <View style={[styles.stockPicksIconBg, { backgroundColor: isDark ? "rgba(255,215,0,0.15)" : "#FFF8E1" }]}>
                   <Ionicons name="trophy" size={20} color="#FFD700" />
                 </View>
                 <View>
@@ -2530,7 +2530,7 @@ export default function Dashboard() {
             {/* Preview Cards */}
             <View style={styles.stockPicksPreview}>
               {(liveStockPicks.length > 0 ? liveStockPicks : STOCK_PICKS_PREVIEW).map((pick, idx) => (
-                <View key={idx} style={styles.pickPreviewCard}>
+                <View key={idx} style={[styles.pickPreviewCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F9FB' }]}>
                   <View style={styles.pickPreviewLeft}>
                     <View style={[styles.pickRankBadge, {
                       backgroundColor: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : '#CD7F32'
@@ -2538,14 +2538,14 @@ export default function Dashboard() {
                       <Text style={styles.pickRankText}>#{idx + 1}</Text>
                     </View>
                     <View>
-                      <Text style={styles.pickSymbol}>{pick.symbol}</Text>
-                      <Text style={styles.pickCategory}>{pick.category}</Text>
+                      <Text style={[styles.pickSymbol, { color: colors.text }]}>{pick.symbol}</Text>
+                      <Text style={[styles.pickCategory, { color: colors.textSecondary }]}>{pick.category}</Text>
                     </View>
                   </View>
                   <View style={styles.pickPreviewRight}>
                     {isPremium && liveStockPicks.length > 0 ? (
                       <>
-                        <Text style={styles.pickPrice}>${pick.price?.toFixed(2)}</Text>
+                        <Text style={[styles.pickPrice, { color: colors.text }]}>${pick.price?.toFixed(2)}</Text>
                         <View style={[styles.pickChangeContainer, {
                           backgroundColor: (pick.changePercent || 0) >= 0 ? '#34C75915' : '#FF3B3015'
                         }]}>
@@ -2572,8 +2572,8 @@ export default function Dashboard() {
             </View>
 
             {/* CTA */}
-            <View style={styles.stockPicksCTA}>
-              <Text style={styles.stockPicksCTAText}>
+            <View style={[styles.stockPicksCTA, { borderTopColor: isDark ? colors.border : "#F2F2F7" }]}>
+              <Text style={[styles.stockPicksCTAText, { color: colors.primary }]}>
                 {isPremium ? 'View All Picks' : 'Unlock Stock Picks'}
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.primary} />
