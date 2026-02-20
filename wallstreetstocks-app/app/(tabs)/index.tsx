@@ -2091,7 +2091,7 @@ export default function Dashboard() {
             const chartSpacing = Math.max(2, (portfolioChartWidth - 40) / smoothedChartData.length);
 
             return (
-            <View style={[styles.portfolioChartContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.portfolioChartContainer, { backgroundColor: isDark ? colors.card : colors.background }]}>
               <GiftedLineChart
                 areaChart
                 data={smoothedChartData}
