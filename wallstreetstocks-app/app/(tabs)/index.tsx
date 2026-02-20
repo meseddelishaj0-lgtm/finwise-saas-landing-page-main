@@ -1962,7 +1962,7 @@ export default function Dashboard() {
               {liveMarketIndices.map((index) => (
                 <TouchableOpacity
                   key={index.symbol}
-                  style={[styles.indexCard, { backgroundColor: isDark ? colors.card : '#F6F6F8' }]}
+                  style={[styles.indexCard, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}
                   onPress={() => router.push(`/symbol/${encodeURIComponent(index.symbol)}/chart`)}
                 >
                   <View style={styles.indexCardHeader}>
@@ -2001,7 +2001,7 @@ export default function Dashboard() {
         </View>
 
         {/* Enhanced Portfolio Section */}
-        <View style={[styles.portfolioSection, { backgroundColor: isDark ? colors.card : '#F6F6F8' }]}>
+        <View style={[styles.portfolioSection, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}>
           <View style={styles.portfolioTopRow}>
             <View style={styles.portfolioSelectorContainer}>
               <TouchableOpacity
@@ -2091,7 +2091,7 @@ export default function Dashboard() {
             const chartSpacing = Math.max(2, (portfolioChartWidth - 40) / smoothedChartData.length);
 
             return (
-            <View style={[styles.portfolioChartContainer, { backgroundColor: isDark ? colors.card : '#F6F6F8' }]}>
+            <View style={[styles.portfolioChartContainer, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}>
               <GiftedLineChart
                 areaChart
                 data={smoothedChartData}
@@ -2158,7 +2158,7 @@ export default function Dashboard() {
                       key={range}
                       style={[
                         styles.timeRangeButton,
-                        { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+                        { backgroundColor: isDark ? '#1C1C1E' : '#EDEDF0' },
                         isActive && { backgroundColor: isDark ? `${gainColor}20` : `${gainColor}15` }
                       ]}
                       onPress={() => setPortfolioTimeRange(range)}
@@ -2174,7 +2174,7 @@ export default function Dashboard() {
                     );
                   })}
                 </ScrollView>
-                <TouchableOpacity style={[styles.expandButton, { backgroundColor: isDark ? '#1C1C1E' : '#F5F5F7' }]}>
+                <TouchableOpacity style={[styles.expandButton, { backgroundColor: isDark ? '#1C1C1E' : '#EDEDF0' }]}>
                   <Ionicons name="expand-outline" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               </View>
@@ -2249,7 +2249,7 @@ export default function Dashboard() {
 
             return (
               <TouchableOpacity
-                style={[styles.analyticsPreviewCard, { backgroundColor: colors.card }]}
+                style={[styles.analyticsPreviewCard, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}
                 onPress={() => router.push('/portfolio/analytics')}
                 activeOpacity={0.7}
               >
@@ -2263,7 +2263,7 @@ export default function Dashboard() {
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
                 </View>
-                <View style={[styles.analyticsPreviewStats, { backgroundColor: colors.surface }]}>
+                <View style={[styles.analyticsPreviewStats, { backgroundColor: isDark ? colors.surface : '#EDEDF0' }]}>
                   <View style={styles.analyticsPreviewStat}>
                     <Text style={[styles.analyticsPreviewStatLabel, { color: colors.textTertiary }]}>Total P&L</Text>
                     <Text style={[styles.analyticsPreviewStatValue, { color: totalGain >= 0 ? '#34C759' : '#FF3B30' }]}>
@@ -2291,7 +2291,7 @@ export default function Dashboard() {
         </View>
 
         {/* Watchlist Section */}
-        <View style={[styles.watchlistSection, { backgroundColor: isDark ? colors.card : '#F4F5F7' }]}>
+        <View style={[styles.watchlistSection, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}>
           <View style={styles.watchlistHeader}>
             <View style={styles.watchlistHeaderLeft}>
               <View style={styles.sectionTitleRow}>
@@ -2496,7 +2496,7 @@ export default function Dashboard() {
         {/* Stock Picks Section */}
         <View style={styles.stockPicksSection}>
           <TouchableOpacity
-            style={[styles.stockPicksCard, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#FFD70030', shadowOpacity: isDark ? 0 : 0.08, elevation: isDark ? 0 : 3 }]}
+            style={[styles.stockPicksCard, { backgroundColor: isDark ? colors.surface : '#F5F5F7', borderColor: isDark ? colors.border : '#FFD70030', shadowOpacity: isDark ? 0 : 0.08, elevation: isDark ? 0 : 3 }]}
             onPress={() => router.push('/premium/stock-picks')}
             activeOpacity={0.9}
           >
@@ -2537,7 +2537,7 @@ export default function Dashboard() {
             {/* Preview Cards */}
             <View style={styles.stockPicksPreview}>
               {(liveStockPicks.length > 0 ? liveStockPicks : STOCK_PICKS_PREVIEW).map((pick, idx) => (
-                <View key={idx} style={[styles.pickPreviewCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F9FB' }]}>
+                <View key={idx} style={[styles.pickPreviewCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#EDEDF0' }]}>
                   <View style={styles.pickPreviewLeft}>
                     <View style={[styles.pickRankBadge, {
                       backgroundColor: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : '#CD7F32'
@@ -2603,7 +2603,7 @@ export default function Dashboard() {
               {news.slice(0, 5).map((item, i) => (
                 <TouchableOpacity
                   key={i}
-                  style={[styles.newsCard, { backgroundColor: isDark ? colors.card : '#F4F5F7' }]}
+                  style={[styles.newsCard, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}
                   onPress={async () => {
                     trackAction();
                     await WebBrowser.openBrowserAsync(item.url);
