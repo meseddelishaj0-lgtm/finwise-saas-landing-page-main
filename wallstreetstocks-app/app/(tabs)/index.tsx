@@ -2095,14 +2095,15 @@ export default function Dashboard() {
               <GiftedLineChart
                 areaChart
                 data={smoothedChartData}
-                height={200}
+                height={220}
                 width={portfolioChartWidth}
                 curved
-                curvature={0.15}
+                curvature={0.2}
                 curveType={1}
                 startFillColor={(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '#10B981' : '#EF4444'}
-                startOpacity={0.25}
-                endOpacity={0.01}
+                startOpacity={isDark ? 0.35 : 0.25}
+                endFillColor={(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '#10B98100' : '#EF444400'}
+                endOpacity={0}
                 color={(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '#10B981' : '#EF4444'}
                 thickness={2.5}
                 hideDataPoints
@@ -2112,17 +2113,17 @@ export default function Dashboard() {
                 yAxisLabelPrefix="$"
                 backgroundColor="transparent"
                 spacing={chartSpacing}
-                initialSpacing={5}
-                endSpacing={5}
+                initialSpacing={0}
+                endSpacing={0}
                 adjustToWidth
                 disableScroll
                 pointerConfig={{
-                  pointerStripHeight: 200,
-                  pointerStripColor: 'rgba(142, 142, 147, 0.3)',
+                  pointerStripHeight: 220,
+                  pointerStripColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(142, 142, 147, 0.3)',
                   pointerStripWidth: 1,
                   strokeDashArray: [4, 4],
                   pointerColor: (livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '#10B981' : '#EF4444',
-                  radius: 6,
+                  radius: 5,
                   pointerLabelWidth: 120,
                   pointerLabelHeight: 50,
                   activatePointersOnLongPress: false,
@@ -2131,8 +2132,8 @@ export default function Dashboard() {
                     if (!items?.[0]) return null;
                     const value = items[0].value;
                     return (
-                      <View style={styles.portfolioTooltip}>
-                        <Text style={styles.portfolioTooltipValue}>
+                      <View style={[styles.portfolioTooltip, { backgroundColor: isDark ? '#1C1C1E' : '#FFFFFF', borderColor: isDark ? '#333' : '#E5E5EA' }]}>
+                        <Text style={[styles.portfolioTooltipValue, { color: colors.text }]}>
                           ${value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Text>
                       </View>
@@ -2141,33 +2142,39 @@ export default function Dashboard() {
                 }}
                 animateOnDataChange={false}
               />
-              
+
               {/* Time Range Selector */}
-              <View style={styles.timeRangeSelectorContainer}>
-                <ScrollView 
-                  horizontal 
+              <View style={[styles.timeRangeSelectorContainer, { marginTop: 16 }]}>
+                <ScrollView
+                  horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.timeRangeScrollContent}
                 >
-                  {['1D', '5D', '1M', '6M', 'YTD', '1Y', '5Y', 'ALL'].map((range) => (
+                  {['1D', '5D', '1M', '6M', 'YTD', '1Y', '5Y', 'ALL'].map((range) => {
+                    const isActive = portfolioTimeRange === range;
+                    const gainColor = (livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '#10B981' : '#EF4444';
+                    return (
                     <TouchableOpacity
                       key={range}
                       style={[
                         styles.timeRangeButton,
-                        portfolioTimeRange === range && styles.timeRangeButtonActive
+                        { backgroundColor: isDark ? '#1C1C1E' : '#F2F2F7' },
+                        isActive && { backgroundColor: isDark ? `${gainColor}20` : `${gainColor}15` }
                       ]}
                       onPress={() => setPortfolioTimeRange(range)}
                     >
                       <Text style={[
                         styles.timeRangeText,
-                        portfolioTimeRange === range && styles.timeRangeTextActive
+                        { color: isDark ? '#8E8E93' : '#666' },
+                        isActive && { color: gainColor, fontWeight: '700' }
                       ]}>
                         {range}
                       </Text>
                     </TouchableOpacity>
-                  ))}
+                    );
+                  })}
                 </ScrollView>
-                <TouchableOpacity style={styles.expandButton}>
+                <TouchableOpacity style={[styles.expandButton, { backgroundColor: isDark ? '#1C1C1E' : '#F5F5F7' }]}>
                   <Ionicons name="expand-outline" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               </View>
@@ -3618,33 +3625,27 @@ const styles = StyleSheet.create({
   
   // Chart
   portfolioChartContainer: {
-    marginVertical: 0,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 0,
-    padding: 0,
+    marginTop: 8,
+    paddingHorizontal: 4,
   },
   portfolioTooltip: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   portfolioTooltipLabel: {
-    color: '#000',
     fontSize: 14,
     textAlign: 'center',
     fontWeight: '600',
   },
   portfolioTooltipValue: {
-    color: '#000',
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
     fontWeight: '700',
   },
@@ -3656,39 +3657,34 @@ const styles = StyleSheet.create({
   timeRangeSelectorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 16,
     justifyContent: 'space-between',
   },
   timeRangeScrollContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: 12,
+    gap: 6,
+    paddingRight: 8,
   },
   timeRangeButton: {
-    paddingVertical: Platform.OS === 'android' ? 7 : 10,
-    paddingHorizontal: Platform.OS === 'android' ? 12 : 18,
-    borderRadius: Platform.OS === 'android' ? 10 : 14,
-    marginRight: Platform.OS === 'android' ? 6 : 8,
-    backgroundColor: '#FFFFFF',
+    paddingVertical: Platform.OS === 'android' ? 6 : 8,
+    paddingHorizontal: Platform.OS === 'android' ? 12 : 16,
+    borderRadius: 8,
   },
   timeRangeButtonActive: {
-    backgroundColor: '#D6F0FF',
   },
   timeRangeText: {
-    fontSize: Platform.OS === 'android' ? 11 : 15,
-    color: '#000',
+    fontSize: Platform.OS === 'android' ? 12 : 13,
     fontWeight: '600',
     includeFontPadding: false,
   },
   timeRangeTextActive: {
-    color: '#000',
     fontWeight: '700',
   },
   expandButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F5F5F7',
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
