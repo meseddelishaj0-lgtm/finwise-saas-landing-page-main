@@ -2291,7 +2291,7 @@ export default function Dashboard() {
         </View>
 
         {/* Watchlist Section */}
-        <View style={[styles.watchlistSection, { backgroundColor: colors.card }]}>
+        <View style={[styles.watchlistSection, { backgroundColor: isDark ? colors.card : '#F4F5F7' }]}>
           <View style={styles.watchlistHeader}>
             <View style={styles.watchlistHeaderLeft}>
               <View style={styles.sectionTitleRow}>
@@ -2603,7 +2603,7 @@ export default function Dashboard() {
               {news.slice(0, 5).map((item, i) => (
                 <TouchableOpacity
                   key={i}
-                  style={[styles.newsCard, { backgroundColor: colors.card }]}
+                  style={[styles.newsCard, { backgroundColor: isDark ? colors.card : '#F4F5F7' }]}
                   onPress={async () => {
                     trackAction();
                     await WebBrowser.openBrowserAsync(item.url);
