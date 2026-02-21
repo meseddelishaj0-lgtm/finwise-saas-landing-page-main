@@ -1,6 +1,6 @@
 // app/_layout.tsx
-import { useEffect, useRef } from "react";
-import { Stack } from "expo-router";
+import { useEffect, useRef, useCallback } from "react";
+import { Stack, router } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View, StatusBar, Platform, AppState, LogBox } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -51,22 +51,7 @@ initializeSentry();
 const ONESIGNAL_APP_ID = Constants.expoConfig?.extra?.oneSignalAppId || 'f964a298-9c86-43a2-bb7f-a9f0cc8dac24';
 if (OneSignal && ONESIGNAL_APP_ID) {
   OneSignal.initialize(ONESIGNAL_APP_ID);
-
-  // Handle notification tap — open article URL in in-app browser or navigate to stock
-  OneSignal.Notifications.addEventListener('click', async (event: any) => {
-    const data = event.notification?.additionalData;
-    if (!data) return;
-
-    if (data.type === 'market_news' && data.url) {
-      try {
-        const WebBrowser = require('expo-web-browser');
-        await WebBrowser.openBrowserAsync(data.url);
-      } catch {}
-    } else if (data.type === 'market_mover') {
-      const { router } = require('expo-router');
-      router.push({ pathname: '/(tabs)/trending', params: { initialTab: 'gainers' } });
-    }
-  });
+  // Click handler registered inside AppInitializer where router is mounted
 }
 
 // Default symbols to stream - 24/7 crypto for always-live prices + popular stocks
@@ -87,6 +72,35 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   const { initializeReferral, initialized: referralInitialized } = useReferral();
   const appState = useRef(AppState.currentState);
   const trackingRequested = useRef(false);
+
+  // OneSignal notification tap handler — router is ready here inside the component tree
+  useEffect(() => {
+    if (!OneSignal) return;
+
+    const handleNotificationClick = async (event: any) => {
+      const data = event.notification?.additionalData;
+      if (!data) return;
+
+      // Small delay to ensure navigation stack is fully mounted on cold start
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (data.type === 'market_news' && data.url) {
+        try {
+          const WebBrowser = require('expo-web-browser');
+          await WebBrowser.openBrowserAsync(data.url);
+        } catch {}
+      } else if (data.type === 'market_mover') {
+        router.push({ pathname: '/(tabs)/trending', params: { initialTab: 'gainers' } } as any);
+      } else if (data.type === 'price_alert' && data.symbol) {
+        router.push(`/symbol/${data.symbol}/chart` as any);
+      }
+    };
+
+    OneSignal.Notifications.addEventListener('click', handleNotificationClick);
+    return () => {
+      OneSignal.Notifications.removeEventListener('click', handleNotificationClick);
+    };
+  }, []);
 
   // Update OneSignal user tags for segmentation (Gold/Platinum/Diamond targeting)
   useEffect(() => {
