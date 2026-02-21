@@ -2,7 +2,7 @@
   "expo": {
     "name": "wallstreetstocksapp",
     "slug": "wallstreetstocks-app",
-    "version": "1.0.9",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/wallstreetstocks.png",
     "scheme": "wallstreetstocksapp",
@@ -103,7 +103,7 @@
       "package": "ai.wallstreetstocks.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#0B1A2E",
         "foregroundImage": "./assets/images/wallstreetstocks-android.png"
       },
       "edgeToEdgeEnabled": true,
