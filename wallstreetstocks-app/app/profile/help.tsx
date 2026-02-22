@@ -149,7 +149,7 @@ export default function Help() {
         <View style={[styles.footer, { borderTopColor: isDark ? colors.border : '#f0f0f0' }]}>
           <View style={styles.appInfo}>
             <Text style={[styles.appName, { color: colors.text }]}>WallStreetStocks</Text>
-            <Text style={[styles.version, { color: colors.textTertiary }]}>Version 1.1.3</Text>
+            <Text style={[styles.version, { color: colors.textTertiary }]}>Version 1.1.4</Text>
           </View>
           <Text style={[styles.copyright, { color: colors.textTertiary }]}>© 2025 WallStreetStocks. All rights reserved.</Text>
 
