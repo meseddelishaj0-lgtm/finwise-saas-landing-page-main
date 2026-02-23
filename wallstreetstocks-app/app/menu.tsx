@@ -396,7 +396,7 @@ export default function MenuPage() {
         {/* Version Footer */}
         <View style={styles.footer}>
           <Text style={[styles.footerTitle, { color: colors.text }]}>WallStreetStocks</Text>
-          <Text style={styles.version}>Version 1.1.4</Text>
+          <Text style={styles.version}>Version 1.1.5</Text>
           <Text style={styles.copyright}>Made with in New York</Text>
         </View>
       </ScrollView>
