@@ -1,7 +1,7 @@
 // components/AnimatedPrice.tsx
 // Animated price display with smooth transitions and flash effects
 import React, { useEffect, useRef, memo } from 'react';
-import { Text, StyleSheet, Animated, View, TextStyle, ViewStyle } from 'react-native';
+import { Text, StyleSheet, Animated, View, TextStyle, ViewStyle, StyleProp } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface AnimatedPriceProps {
@@ -9,7 +9,7 @@ interface AnimatedPriceProps {
   prefix?: string;
   suffix?: string;
   decimals?: number;
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
   containerStyle?: ViewStyle;
   flashOnChange?: boolean;
   showPulse?: boolean;
