@@ -2032,6 +2032,7 @@ export default function Dashboard() {
                     >
                       <Text style={[
                         styles.portfolioDropdownItemText,
+                        { color: colors.text },
                         p.id === selectedPortfolioId && styles.portfolioDropdownItemTextActive
                       ]} numberOfLines={1}>
                         {p.name}
@@ -2041,7 +2042,7 @@ export default function Dashboard() {
                       )}
                     </TouchableOpacity>
                   ))}
-                  <View style={styles.portfolioDropdownDivider} />
+                  <View style={[styles.portfolioDropdownDivider, { backgroundColor: colors.border }]} />
                   <TouchableOpacity
                     style={styles.portfolioDropdownItem}
                     onPress={() => {
