@@ -24,7 +24,7 @@ export default function Display() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ zIndex: 1 }}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Display</Text>
@@ -106,6 +106,11 @@ export default function Display() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  backButton: {
+    zIndex: 10,
+    padding: 8,
+    marginLeft: -8,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
