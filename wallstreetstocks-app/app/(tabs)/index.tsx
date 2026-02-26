@@ -2032,7 +2032,6 @@ export default function Dashboard() {
                     >
                       <Text style={[
                         styles.portfolioDropdownItemText,
-                        { color: colors.text },
                         p.id === selectedPortfolioId && styles.portfolioDropdownItemTextActive
                       ]} numberOfLines={1}>
                         {p.name}
@@ -3559,7 +3558,7 @@ const styles = StyleSheet.create({
   portfolioDropdownItemText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#fff',
+    color: '#007AFF',
     flex: 1,
     marginRight: 8,
   },
