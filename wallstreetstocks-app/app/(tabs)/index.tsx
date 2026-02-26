@@ -3559,7 +3559,7 @@ const styles = StyleSheet.create({
   portfolioDropdownItemText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#000',
+    color: '#fff',
     flex: 1,
     marginRight: 8,
   },
