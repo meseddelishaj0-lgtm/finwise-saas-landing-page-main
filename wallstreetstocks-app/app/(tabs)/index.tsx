@@ -1139,10 +1139,11 @@ export default function Dashboard() {
     await fetchWatchlistFromAPI();
   };
 
-  // Fetch real chart data for watchlist in background using Twelve Data sparkline service
+  // Fetch real chart data + correct previous close for watchlist
   const fetchWatchlistCharts = async () => {
     try {
       const { fetchSparklines } = await import('@/services/sparklineService');
+      const { fetchDailyClose } = await import('@/services/quoteService');
 
       // Build change percents map for sparkline direction
       const changePercents: Record<string, number> = {};
@@ -1150,15 +1151,43 @@ export default function Dashboard() {
         if (s.symbol) changePercents[s.symbol] = s.changePercent || 0;
       });
 
-      const sparklineMap = await fetchSparklines(watchlist, changePercents);
+      // Fetch sparklines and correct previous close in parallel
+      const [sparklineMap, dailyCloseMap] = await Promise.all([
+        fetchSparklines(watchlist, changePercents),
+        fetchDailyClose(watchlist),
+      ]);
 
-      // Update watchlist with real sparkline data
+      // Update watchlist with real sparkline data AND corrected change percentages
       setWatchlistData(prev => prev.map(item => {
         const sparkline = sparklineMap[item.symbol];
+        const correctPrevClose = dailyCloseMap[item.symbol];
+        let updated = { ...item };
+
+        // Update sparkline data
         if (sparkline && sparkline.length > 0) {
-          return { ...item, data: sparkline };
+          updated.data = sparkline;
         }
-        return item;
+
+        // Update change % using correct previous close from daily time series
+        if (correctPrevClose && correctPrevClose > 0 && updated.price > 0) {
+          const change = updated.price - correctPrevClose;
+          const changePercent = (change / correctPrevClose) * 100;
+          updated.change = change;
+          updated.changePercent = changePercent;
+          updated.previousClose = correctPrevClose;
+          updated.color = changePercent >= 0 ? '#34C759' : '#FF3B30';
+
+          // Update priceStore with correct previousClose so WebSocket updates use it
+          priceStore.setQuote({
+            symbol: item.symbol,
+            price: updated.price,
+            change,
+            changePercent,
+            previousClose: correctPrevClose,
+          });
+        }
+
+        return updated;
       }));
     } catch {
     }

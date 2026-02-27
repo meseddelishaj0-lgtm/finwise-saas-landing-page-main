@@ -219,9 +219,10 @@ export async function fetchSparkline(
     const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
     // Use Twelve Data time_series endpoint for sparkline data
-    // Add prepost=true to include premarket and after-hours data
+    // 5min interval gives much smoother sparklines than 1h
+    // 78 bars = ~6.5 hours of detailed price movement
     const response = await fetch(
-      `${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(symbol)}&interval=1h&outputsize=48&prepost=true&apikey=${TWELVE_DATA_API_KEY}`,
+      `${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(symbol)}&interval=5min&outputsize=78&apikey=${TWELVE_DATA_API_KEY}`,
       { signal: controller.signal }
     );
     clearTimeout(timeoutId);
@@ -234,13 +235,21 @@ export async function fetchSparkline(
 
     // Twelve Data returns { values: [...] } with newest first
     if (data?.values && Array.isArray(data.values) && data.values.length > 0) {
-      // Filter to today's session for accurate intraday sparklines
-      const sparkline = filterToTodaySession(data.values, isPositive);
+      // Reverse to oldest-first, extract close prices
+      const sparkline = data.values
+        .slice(0, 78)
+        .reverse()
+        .map((item: { close: string }) => parseFloat(item.close))
+        .filter((v: number) => !isNaN(v) && v > 0);
 
-      // Cache the result
-      setToMemory(CACHE_KEYS.sparkline(symbol), sparkline);
+      if (sparkline.length >= 2) {
+        // Cache the result
+        setToMemory(CACHE_KEYS.sparkline(symbol), sparkline);
+        return sparkline;
+      }
 
-      return sparkline;
+      // Too few points, use fallback
+      return generateFallbackSparkline(isPositive);
     }
 
     // No data, return fallback

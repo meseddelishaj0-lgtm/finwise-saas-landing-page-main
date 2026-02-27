@@ -384,13 +384,14 @@ export default function ChartTab() {
   // ============================================================================
 
   const priceChange = useMemo(() => {
-    // Always calculate from previousClose for accuracy
-    // WebSocket day_change/day_change_percent can use open price as reference,
-    // giving wrong values for stocks with after-hours moves
+    // Use chart's first data point as primary reference for 1D timeframe
+    // This matches the dashed baseline and is the correct regular session close
+    // API's previousClose may include after-hours which gives wrong results
     const price = livePrice ?? currentPrice;
     if (price === null) return { amount: 0, percent: 0 };
 
-    const refPrice = previousClose || (liveChartData.length > 0 ? liveChartData[0]?.value : null) || price;
+    const chartFirstPoint = liveChartData.length > 0 ? liveChartData[0]?.value : null;
+    const refPrice = chartFirstPoint || previousClose || price;
     const amount = price - refPrice;
     const percent = refPrice > 0 ? (amount / refPrice) * 100 : 0;
 
@@ -443,7 +444,10 @@ export default function ChartTab() {
       }
 
       if (price > 0) {
-        const refPrice = prevClose > 0 ? prevClose : price;
+        // Use chart first data point as the best reference (regular session close)
+        // Twelve Data's previous_close may include after-hours for some stocks
+        const chartFirstPoint = rawChartDataRef.current.length > 0 ? rawChartDataRef.current[0]?.value : 0;
+        const refPrice = chartFirstPoint > 0 ? chartFirstPoint : (prevClose > 0 ? prevClose : price);
         const change = price - refPrice;
         const changePercent = refPrice > 0 ? (change / refPrice) * 100 : 0;
 
@@ -451,6 +455,7 @@ export default function ChartTab() {
         if (prevClose > 0) setPreviousClose(prevClose);
         setError(null);
 
+        // Store correct previousClose in priceStore for watchlist consistency
         priceStore.setQuote({
           symbol: cleanSymbol,
           price,
@@ -681,7 +686,7 @@ export default function ChartTab() {
   const displayPrice = pointerData?.price ?? livePrice ?? currentPrice ?? latestChartPrice;
   const displayChange = pointerData ? pointerData.change : priceChange.amount;
   const displayPercent = pointerData
-    ? ((previousClose || liveChartData[0]?.value) ? (pointerData.change / (previousClose || liveChartData[0]?.value)) * 100 : 0)
+    ? (liveChartData[0]?.value ? (pointerData.change / liveChartData[0].value) * 100 : 0)
     : priceChange.percent;
   const displayColor = displayChange >= 0 ? '#00C853' : '#FF3B30';
 

@@ -180,6 +180,68 @@ export function getCachedPrice(symbol: string): number | null {
 }
 
 /**
+ * Fetch correct previous regular session close for symbols
+ * Uses daily time_series (interval=1day, outputsize=2) to get yesterday's close
+ * This is more reliable than /quote's previous_close which may include after-hours
+ */
+export async function fetchDailyClose(
+  symbols: string[],
+  options: { timeout?: number } = {}
+): Promise<Record<string, number>> {
+  if (symbols.length === 0) return {};
+
+  const { timeout = 15000 } = options;
+  const result: Record<string, number> = {};
+
+  // Fetch in batches of 8
+  for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+    const batch = symbols.slice(i, i + BATCH_SIZE);
+
+    // Twelve Data time_series supports batch via comma-separated symbols
+    const url = `${TWELVE_DATA_URL}/time_series?symbol=${batch.join(',')}&interval=1day&outputsize=2&apikey=${TWELVE_DATA_API_KEY}`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) continue;
+
+      const json = await res.json();
+
+      if (batch.length === 1) {
+        // Single symbol - json has { values: [...] } directly
+        if (json?.values && json.values.length >= 2) {
+          // values[0] is most recent (today), values[1] is previous day
+          const prevClose = parseFloat(json.values[1]?.close);
+          if (prevClose > 0) result[batch[0]] = prevClose;
+        }
+      } else {
+        // Multiple symbols - json is keyed by symbol
+        for (const sym of batch) {
+          const symData = json[sym];
+          if (symData?.values && symData.values.length >= 2) {
+            const prevClose = parseFloat(symData.values[1]?.close);
+            if (prevClose > 0) result[sym] = prevClose;
+          }
+        }
+      }
+
+      // Small delay between batches
+      if (i + BATCH_SIZE < symbols.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    } catch {
+      // Continue with next batch
+    }
+  }
+
+  return result;
+}
+
+/**
  * Prefetch quotes into memory cache (for preloading)
  */
 export async function prefetchQuotes(symbols: string[]): Promise<void> {
