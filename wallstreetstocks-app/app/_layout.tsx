@@ -78,21 +78,38 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     if (!OneSignal) return;
 
     const handleNotificationClick = async (event: any) => {
-      const data = event.notification?.additionalData;
-      if (!data) return;
+      // Prevent OneSignal from auto-opening launchURL in system browser
+      // We handle all URL opening ourselves with the in-app browser
+      if (event.preventDefault) {
+        event.preventDefault();
+      }
+
+      const notification = event.notification;
+      const data = notification?.additionalData || {};
+
+      // Get URL from multiple possible locations:
+      // 1. additionalData.url (custom field)
+      // 2. notification.launchURL (OneSignal standard field)
+      const articleUrl = data.url || notification?.launchURL;
 
       // Small delay to ensure navigation stack is fully mounted on cold start
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      if (data.type === 'market_news' && data.url) {
+      if (data.type === 'price_alert' && data.symbol) {
+        // Navigate to stock chart
+        router.push(`/symbol/${data.symbol}/chart` as any);
+      } else if (data.type === 'market_mover') {
+        // Navigate to trending tab
+        router.push({ pathname: '/(tabs)/trending', params: { initialTab: 'gainers' } } as any);
+      } else if (articleUrl) {
+        // Open any article/news URL in the in-app browser
+        // This covers: market_news type, launchURL, or any notification with a URL
         try {
           const WebBrowser = require('expo-web-browser');
-          await WebBrowser.openBrowserAsync(data.url);
+          await WebBrowser.openBrowserAsync(articleUrl, {
+            presentationStyle: 1, // AUTOMATIC - shows as dismissable modal
+          });
         } catch {}
-      } else if (data.type === 'market_mover') {
-        router.push({ pathname: '/(tabs)/trending', params: { initialTab: 'gainers' } } as any);
-      } else if (data.type === 'price_alert' && data.symbol) {
-        router.push(`/symbol/${data.symbol}/chart` as any);
       }
     };
 

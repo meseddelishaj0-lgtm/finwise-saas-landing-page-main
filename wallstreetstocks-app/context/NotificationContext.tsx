@@ -243,6 +243,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Handle notification tap/response
   const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
     const data = response.notification.request.content.data;
+    const articleUrl = data?.url || data?.launchURL;
 
     // Navigate based on notification type
     if (data?.type) {
@@ -252,7 +253,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         case 'mention':
         case 'reply':
           if (data.postId) {
-            // Navigate to community tab with openPostId param
             router.push({
               pathname: '/(tabs)/community',
               params: { openPostId: data.postId.toString() },
@@ -261,7 +261,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           break;
         case 'follow':
           if (data.userId) {
-            // Navigate to community tab with openUserId param
             router.push({
               pathname: '/(tabs)/community',
               params: { openUserId: data.userId.toString() },
@@ -274,10 +273,10 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           }
           break;
         case 'market_news':
-          if (data.url) {
+          if (articleUrl) {
             try {
               const WebBrowser = require('expo-web-browser');
-              WebBrowser.openBrowserAsync(data.url);
+              WebBrowser.openBrowserAsync(articleUrl, { presentationStyle: 1 });
             } catch {}
           }
           break;
@@ -290,8 +289,13 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         default:
           router.push('/notifications' as any);
       }
+    } else if (articleUrl) {
+      // No type set but has a URL — open it in-app
+      try {
+        const WebBrowser = require('expo-web-browser');
+        WebBrowser.openBrowserAsync(articleUrl, { presentationStyle: 1 });
+      } catch {}
     } else {
-      // Default: go to notifications screen
       router.push('/notifications' as any);
     }
   };
