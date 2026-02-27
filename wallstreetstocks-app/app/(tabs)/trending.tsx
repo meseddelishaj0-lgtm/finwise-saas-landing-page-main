@@ -36,34 +36,8 @@ const STOCK_ROW_HEIGHT = 76; // Fixed row height for getItemLayout optimization
 // CONSTANTS - Moved outside component for performance
 // ============================================================================
 
-// Index-tracking ETFs (more reliable than actual index symbols)
-const INDICES_SYMBOLS = [
-  "SPY", "QQQ", "DIA", "IWM", "VXX", "EFA", "EEM", "GLD", "TLT", "XLF", "XLE", "XLK",
-];
-
-// Forex pairs for Twelve Data (format: XXX/YYY)
-const FOREX_PAIRS = [
-  "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", "AUD/USD", "USD/CAD", "NZD/USD",
-  "EUR/GBP", "EUR/JPY", "EUR/CHF", "EUR/AUD", "EUR/CAD",
-  "GBP/JPY", "GBP/CHF", "GBP/AUD",
-  "AUD/JPY", "CAD/JPY", "NZD/JPY",
-  "AUD/CAD", "AUD/CHF", "AUD/NZD",
-];
-
-// Commodities for Twelve Data
-const COMMODITIES_SYMBOLS = [
-  "XAU/USD", "XAG/USD", "XPT/USD", "XPD/USD",
-  "CL1", "CO1", "NG1",
-  "ZC1", "ZS1", "ZW1", "KC1", "CC1", "SB1", "CT1",
-  "HG1",
-];
-
 // Map tab to WebSocket symbols for INSTANT subscription
-const TAB_WS_SYMBOLS: Record<string, string[]> = {
-  indices: INDICES_SYMBOLS,
-  forex: FOREX_PAIRS,
-  commodities: COMMODITIES_SYMBOLS,
-};
+const TAB_WS_SYMBOLS: Record<string, string[]> = {};
 
 // WebSocket handles all real-time prices - no API polling needed
 
@@ -74,7 +48,7 @@ const getStockRowLayout = (_data: any, index: number) => ({
   index,
 });
 
-type TabType = "trending" | "gainers" | "losers" | "indices" | "forex" | "commodities";
+type TabType = "trending" | "gainers" | "losers" | "indices" | "forex";
 
 interface StockItem {
   symbol: string;
@@ -101,7 +75,6 @@ const TAB_CONFIG: { id: TabType; label: string; icon: string }[] = [
   { id: "losers", label: "Losers", icon: "trending-down" },
   { id: "indices", label: "Indices", icon: "stats-chart" },
   { id: "forex", label: "Forex", icon: "swap-horizontal" },
-  { id: "commodities", label: "Commodities", icon: "cube" },
 ];
 
 // Mini Sparkline Component - Memoized for performance
@@ -382,10 +355,10 @@ export default function Trending() {
   };
 
   // Fetch market movers from Twelve Data (gainers/losers/most active)
-  const fetchMarketMovers = async (direction: 'gainers' | 'losers' | 'most_active'): Promise<any[]> => {
+  const fetchMarketMovers = async (direction: 'gainers' | 'losers' | 'most_active', market: string = 'stocks'): Promise<any[]> => {
     try {
-      // Twelve Data market_movers endpoint
-      const url = `${TWELVE_DATA_URL}/market_movers/stocks?direction=${direction}&outputsize=50&country=United States&apikey=${TWELVE_DATA_API_KEY}`;
+      const countryParam = market === 'stocks' ? '&country=United States' : '';
+      const url = `${TWELVE_DATA_URL}/market_movers/${market}?direction=${direction}&outputsize=50${countryParam}&apikey=${TWELVE_DATA_API_KEY}`;
       const res = await fetchWithTimeout(url, { timeout: 15000 });
       const json = await res.json();
 
@@ -443,97 +416,33 @@ export default function Trending() {
       let cleaned: StockItem[] = [];
 
       if (activeTab === "indices") {
-        // INSTANT: Use pre-loaded ETF data from marketDataService
-        const localETFs = marketDataService.getLiveData('etf');
-        const indexNames: Record<string, string> = {
-          "SPY": "S&P 500 ETF",
-          "QQQ": "Nasdaq 100 ETF",
-          "DIA": "Dow Jones ETF",
-          "IWM": "Russell 2000 ETF",
-          "VXX": "VIX Futures ETF",
-          "EFA": "Intl Developed ETF",
-          "EEM": "Emerging Markets ETF",
-          "GLD": "Gold ETF",
-          "TLT": "Treasury Bond ETF",
-          "XLF": "Financials ETF",
-          "XLE": "Energy ETF",
-          "XLK": "Technology ETF",
-        };
-
-        // Filter pre-loaded ETFs for index symbols
-        const indexSymbols = new Set(INDICES_SYMBOLS);
-        const matchedETFs = localETFs.filter(etf => indexSymbols.has(etf.symbol));
-
-        if (matchedETFs.length > 0) {
-          // Instant - data already in memory
-          cleaned = matchedETFs.map(item => ({
-            symbol: item.symbol,
-            companyName: indexNames[item.symbol] || item.name || item.symbol,
-            changesPercentage: item.changePercent,
-            price: item.price,
-            change: item.change,
-          }));
-          setData(cleaned);
-          setLoading(false);
-          return;
-        }
-
-        // Fallback: fetch from API if local data not ready
+        // INDICES: Use Twelve Data market_movers/etf endpoint
         setLoading(true);
-        const quotes = await fetchTwelveDataQuotes(INDICES_SYMBOLS);
-        cleaned = quotes.map((item: any) => ({
-          symbol: item.symbol || "N/A",
-          companyName: indexNames[item.symbol] || item.name || item.symbol || "Unknown",
-          changesPercentage: parseFloat(item.percent_change) || 0,
-          price: parseFloat(item.close) || 0,
-          change: parseFloat(item.change) || 0,
-        }));
-      } else if (activeTab === "forex") {
-        // Fetch forex pairs from Twelve Data
-        setLoading(true);
-        const quotes = await fetchTwelveDataQuotes(FOREX_PAIRS);
-        cleaned = quotes.map((item: any) => ({
-          symbol: item.symbol?.replace('/', '') || "N/A",
-          companyName: item.symbol || "Unknown",
-          changesPercentage: parseFloat(item.percent_change) || 0,
-          price: parseFloat(item.close) || 0,
-          change: parseFloat(item.change) || 0,
-        }));
-      } else if (activeTab === "commodities") {
-        // Fetch commodities from Twelve Data
-        setLoading(true);
-        const quotes = await fetchTwelveDataQuotes(COMMODITIES_SYMBOLS);
-        cleaned = quotes.map((item: any) => {
-          // Map symbol to friendly name
-          const commodityNames: Record<string, string> = {
-            // Precious Metals
-            "XAU/USD": "Gold",
-            "XAG/USD": "Silver",
-            "XPT/USD": "Platinum",
-            "XPD/USD": "Palladium",
-            // Energy
-            "CL1": "Crude Oil (WTI)",
-            "CO1": "Brent Crude",
-            "NG1": "Natural Gas",
-            // Agricultural
-            "ZC1": "Corn",
-            "ZS1": "Soybeans",
-            "ZW1": "Wheat",
-            "KC1": "Coffee",
-            "CC1": "Cocoa",
-            "SB1": "Sugar",
-            "CT1": "Cotton",
-            // Industrial Metals
-            "HG1": "Copper",
-          };
-          return {
-            symbol: item.symbol?.replace('/', '') || "N/A",
-            companyName: commodityNames[item.symbol] || item.name || item.symbol || "Unknown",
+        const moversData = await fetchMarketMovers('gainers', 'etf');
+
+        if (moversData.length > 0) {
+          cleaned = moversData.map((item: any) => ({
+            symbol: item.symbol || "N/A",
+            companyName: item.name || item.symbol || "Unknown",
             changesPercentage: parseFloat(item.percent_change) || 0,
-            price: parseFloat(item.close) || 0,
+            price: parseFloat(item.last) || parseFloat(item.close) || 0,
             change: parseFloat(item.change) || 0,
-          };
-        });
+          }));
+        }
+      } else if (activeTab === "forex") {
+        // FOREX: Use Twelve Data market_movers/forex endpoint
+        setLoading(true);
+        const moversData = await fetchMarketMovers('gainers', 'forex');
+
+        if (moversData.length > 0) {
+          cleaned = moversData.map((item: any) => ({
+            symbol: item.symbol?.replace('/', '') || "N/A",
+            companyName: item.name || item.symbol || "Unknown",
+            changesPercentage: parseFloat(item.percent_change) || 0,
+            price: parseFloat(item.last) || parseFloat(item.close) || 0,
+            change: parseFloat(item.change) || 0,
+          }));
+        }
       } else if (activeTab === "gainers" || activeTab === "losers") {
         // GAINERS/LOSERS: Use Twelve Data market_movers API for real market data
         setLoading(true);
@@ -696,24 +605,35 @@ export default function Trending() {
         // Non-critical prefetch failure
       }
 
-      // Prefetch indices
+      // Prefetch indices (ETF movers)
       try {
-        const quotes = await fetchTwelveDataQuotes(INDICES_SYMBOLS);
-        const indexNames: Record<string, string> = {
-          "SPY": "S&P 500 ETF", "QQQ": "Nasdaq 100 ETF", "DIA": "Dow Jones ETF",
-          "IWM": "Russell 2000 ETF", "VXX": "VIX Futures ETF", "EFA": "Intl Developed ETF",
-          "EEM": "Emerging Markets ETF", "GLD": "Gold ETF", "TLT": "Treasury Bond ETF",
-          "XLF": "Financials ETF", "XLE": "Energy ETF", "XLK": "Technology ETF",
-        };
-        const cleaned = quotes.map((item: any) => ({
-          symbol: item.symbol || "N/A",
-          companyName: indexNames[item.symbol] || item.name || item.symbol || "Unknown",
-          changesPercentage: parseFloat(item.percent_change) || 0,
-          price: parseFloat(item.close) || 0,
-          change: parseFloat(item.change) || 0,
-        }));
-        if (cleaned.length > 0) {
+        const indicesData = await fetchMarketMovers('gainers', 'etf');
+        if (indicesData.length > 0) {
+          const cleaned = indicesData.map((item: any) => ({
+            symbol: item.symbol || "N/A",
+            companyName: item.name || item.symbol || "Unknown",
+            changesPercentage: parseFloat(item.percent_change) || 0,
+            price: parseFloat(item.last) || parseFloat(item.close) || 0,
+            change: parseFloat(item.change) || 0,
+          }));
           tabDataCache.current["indices"] = { data: cleaned, timestamp: Date.now() };
+        }
+      } catch {
+        // Non-critical prefetch failure
+      }
+
+      // Prefetch forex movers
+      try {
+        const forexData = await fetchMarketMovers('gainers', 'forex');
+        if (forexData.length > 0) {
+          const cleaned = forexData.map((item: any) => ({
+            symbol: item.symbol?.replace('/', '') || "N/A",
+            companyName: item.name || item.symbol || "Unknown",
+            changesPercentage: parseFloat(item.percent_change) || 0,
+            price: parseFloat(item.last) || parseFloat(item.close) || 0,
+            change: parseFloat(item.change) || 0,
+          }));
+          tabDataCache.current["forex"] = { data: cleaned, timestamp: Date.now() };
         }
       } catch {
         // Non-critical prefetch failure
