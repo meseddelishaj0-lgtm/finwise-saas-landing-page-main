@@ -1151,44 +1151,50 @@ export default function Dashboard() {
         if (s.symbol) changePercents[s.symbol] = s.changePercent || 0;
       });
 
-      // Fetch sparklines and correct previous close in parallel
-      const [sparklineMap, dailyCloseMap] = await Promise.all([
-        fetchSparklines(watchlist, changePercents),
-        fetchDailyClose(watchlist),
-      ]);
+      // Step 1: Fetch sparklines first
+      const sparklineMap = await fetchSparklines(watchlist, changePercents);
 
-      // Update watchlist with real sparkline data AND corrected change percentages
+      // Update sparklines immediately so user sees them
       setWatchlistData(prev => prev.map(item => {
         const sparkline = sparklineMap[item.symbol];
-        const correctPrevClose = dailyCloseMap[item.symbol];
-        let updated = { ...item };
-
-        // Update sparkline data
         if (sparkline && sparkline.length > 0) {
-          updated.data = sparkline;
+          return { ...item, data: sparkline };
         }
-
-        // Update change % using correct previous close from daily time series
-        if (correctPrevClose && correctPrevClose > 0 && updated.price > 0) {
-          const change = updated.price - correctPrevClose;
-          const changePercent = (change / correctPrevClose) * 100;
-          updated.change = change;
-          updated.changePercent = changePercent;
-          updated.previousClose = correctPrevClose;
-          updated.color = changePercent >= 0 ? '#34C759' : '#FF3B30';
-
-          // Update priceStore with correct previousClose so WebSocket updates use it
-          priceStore.setQuote({
-            symbol: item.symbol,
-            price: updated.price,
-            change,
-            changePercent,
-            previousClose: correctPrevClose,
-          });
-        }
-
-        return updated;
+        return item;
       }));
+
+      // Step 2: Fetch correct previous close AFTER sparklines (sequential to avoid rate limits)
+      const dailyCloseMap = await fetchDailyClose(watchlist);
+
+      // Update change percentages with correct previous close from /eod
+      if (Object.keys(dailyCloseMap).length > 0) {
+        setWatchlistData(prev => prev.map(item => {
+          const correctPrevClose = dailyCloseMap[item.symbol];
+
+          if (correctPrevClose && correctPrevClose > 0 && item.price > 0) {
+            const change = item.price - correctPrevClose;
+            const changePercent = (change / correctPrevClose) * 100;
+
+            // Update priceStore so WebSocket updates use the correct previousClose
+            priceStore.setQuote({
+              symbol: item.symbol,
+              price: item.price,
+              change,
+              changePercent,
+              previousClose: correctPrevClose,
+            });
+
+            return {
+              ...item,
+              change,
+              changePercent,
+              previousClose: correctPrevClose,
+              color: changePercent >= 0 ? '#34C759' : '#FF3B30',
+            };
+          }
+          return item;
+        }));
+      }
     } catch {
     }
   };

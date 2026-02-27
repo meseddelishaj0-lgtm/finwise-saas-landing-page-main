@@ -181,56 +181,43 @@ export function getCachedPrice(symbol: string): number | null {
 
 /**
  * Fetch correct previous regular session close for symbols
- * Uses daily time_series (interval=1day, outputsize=2) per symbol
- * Daily bar close = official regular session close (not including after-hours)
- * This is more reliable than /quote's previous_close which may include after-hours
+ * Uses /eod endpoint which returns the official end-of-day close price
+ * This is the regular session close (4 PM ET), NOT including after-hours
+ *
+ * During market hours: returns yesterday's close (today hasn't ended yet)
+ * During after-hours: returns today's regular session close
  */
 export async function fetchDailyClose(
-  symbols: string[],
-  options: { timeout?: number } = {}
+  symbols: string[]
 ): Promise<Record<string, number>> {
   if (symbols.length === 0) return {};
 
-  const { timeout = 10000 } = options;
   const result: Record<string, number> = {};
 
-  // Fetch symbols in parallel batches of 4 (time_series is per-symbol, not batch)
-  const PARALLEL = 4;
-  const DELAY = 300;
+  // Fetch one symbol at a time sequentially to avoid rate limiting
+  // /eod is a lightweight endpoint, each request is fast
+  for (let i = 0; i < symbols.length; i++) {
+    const sym = symbols[i];
+    try {
+      const url = `${TWELVE_DATA_URL}/eod?symbol=${encodeURIComponent(sym)}&apikey=${TWELVE_DATA_API_KEY}`;
+      const res = await fetch(url);
 
-  for (let i = 0; i < symbols.length; i += PARALLEL) {
-    const batch = symbols.slice(i, i + PARALLEL);
+      if (!res.ok) continue;
 
-    const promises = batch.map(async (sym) => {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
+      const json = await res.json();
 
-        const url = `${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(sym)}&interval=1day&outputsize=2&apikey=${TWELVE_DATA_API_KEY}`;
-        const res = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
-
-        if (!res.ok) return;
-
-        const json = await res.json();
-
-        if (json?.values && json.values.length >= 2) {
-          // values[0] = most recent day (today or last trading day)
-          // values[1] = previous trading day
-          // Use values[1].close = previous regular session close
-          const prevClose = parseFloat(json.values[1]?.close);
-          if (prevClose > 0) result[sym] = prevClose;
-        }
-      } catch {
-        // Skip this symbol
+      // /eod returns: { symbol, exchange, currency, datetime, close }
+      if (json?.close) {
+        const close = parseFloat(json.close);
+        if (close > 0) result[sym] = close;
       }
-    });
+    } catch {
+      // Skip this symbol on error
+    }
 
-    await Promise.all(promises);
-
-    // Delay between parallel batches
-    if (i + PARALLEL < symbols.length) {
-      await new Promise(resolve => setTimeout(resolve, DELAY));
+    // Small delay between requests to avoid rate limiting
+    if (i < symbols.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 150));
     }
   }
 
