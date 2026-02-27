@@ -2186,7 +2186,7 @@ export default function Dashboard() {
           {(livePortfolioData?.holdings || contextCurrentPortfolio?.holdings || []).length > 0 && (
             <View style={[styles.holdingsList, { borderTopColor: colors.borderLight }]}>
               <View style={styles.holdingsTitleRow}>
-                <Text style={[styles.holdingsTitle, { color: colors.text }]}>Holdings</Text>
+                <Text style={[styles.holdingsTitle, { color: '#007AFF' }]}>Holdings</Text>
                 <TouchableOpacity
                   style={styles.addHoldingButton}
                   onPress={() => setAddStockModal(true)}
