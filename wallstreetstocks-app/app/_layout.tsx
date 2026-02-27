@@ -49,9 +49,28 @@ initializeSentry();
 
 // Initialize OneSignal JS bridge (native init + permission handled in AppDelegate via withOneSignalAppDelegate plugin)
 const ONESIGNAL_APP_ID = Constants.expoConfig?.extra?.oneSignalAppId || 'f964a298-9c86-43a2-bb7f-a9f0cc8dac24';
+
+// Module-level notification click handling — catches cold-start taps before React mounts
+let _pendingNotificationClick: any = null;
+let _notificationProcessor: ((event: any) => Promise<void>) | null = null;
+
 if (OneSignal && ONESIGNAL_APP_ID) {
   OneSignal.initialize(ONESIGNAL_APP_ID);
-  // Click handler registered inside AppInitializer where router is mounted
+
+  // Register click handler at module level so cold-start taps are never missed.
+  // preventDefault() MUST be called synchronously to stop OneSignal opening URL in Safari.
+  OneSignal.Notifications.addEventListener('click', (event: any) => {
+    if (event.preventDefault) {
+      event.preventDefault();
+    }
+
+    if (_notificationProcessor) {
+      _notificationProcessor(event);
+    } else {
+      // Router not ready yet (cold start) — queue for processing after mount
+      _pendingNotificationClick = event;
+    }
+  });
 }
 
 // Default symbols to stream - 24/7 crypto for always-live prices + popular stocks
@@ -73,18 +92,14 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   const appState = useRef(AppState.currentState);
   const trackingRequested = useRef(false);
 
-  // OneSignal notification tap handler — router is ready here inside the component tree
+  // OneSignal notification tap handler — router is ready here inside the component tree.
+  // The click listener itself is registered at module level (above) to catch cold-start taps.
+  // This effect sets the processor function and drains any pending events.
   useEffect(() => {
     if (!OneSignal) return;
 
-    const handleNotificationClick = async (event: any) => {
-      // Prevent OneSignal from auto-opening launchURL in system browser
-      // We handle all URL opening ourselves with the in-app browser
-      if (event.preventDefault) {
-        event.preventDefault();
-      }
-
-      const notification = event.notification;
+    const processNotificationClick = async (event: any) => {
+      const notification = event?.notification;
       const data = notification?.additionalData || {};
 
       // Get URL from multiple possible locations:
@@ -96,26 +111,34 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       if (data.type === 'price_alert' && data.symbol) {
-        // Navigate to stock chart
         router.push(`/symbol/${data.symbol}/chart` as any);
       } else if (data.type === 'market_mover') {
-        // Navigate to trending tab
         router.push({ pathname: '/(tabs)/trending', params: { initialTab: 'gainers' } } as any);
       } else if (articleUrl) {
-        // Open any article/news URL in the in-app browser
-        // This covers: market_news type, launchURL, or any notification with a URL
+        // Open article/news URL in the in-app browser
         try {
           const WebBrowser = require('expo-web-browser');
           await WebBrowser.openBrowserAsync(articleUrl, {
-            presentationStyle: 1, // AUTOMATIC - shows as dismissable modal
+            presentationStyle: 1,
           });
         } catch {}
+      } else {
+        // Fallback: no URL or recognized type — navigate to trending
+        router.push({ pathname: '/(tabs)/trending' } as any);
       }
     };
 
-    OneSignal.Notifications.addEventListener('click', handleNotificationClick);
+    // Wire up the processor so the module-level handler can route events here
+    _notificationProcessor = processNotificationClick;
+
+    // Drain any cold-start event that arrived before mount
+    if (_pendingNotificationClick) {
+      processNotificationClick(_pendingNotificationClick);
+      _pendingNotificationClick = null;
+    }
+
     return () => {
-      OneSignal.Notifications.removeEventListener('click', handleNotificationClick);
+      _notificationProcessor = null;
     };
   }, []);
 

@@ -241,9 +241,15 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   };
 
   // Handle notification tap/response
+  // Supports both Expo Push format (flat data) and OneSignal APNs format
+  // (data nested under custom.a with URL under custom.u)
   const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
-    const data = response.notification.request.content.data;
-    const articleUrl = data?.url || data?.launchURL;
+    const rawData = response.notification.request.content.data;
+
+    // OneSignal wraps additionalData under custom.a and launchURL under custom.u
+    const oneSignalPayload = rawData?.custom;
+    const data = oneSignalPayload?.a || rawData || {};
+    const articleUrl = data?.url || oneSignalPayload?.u || data?.launchURL;
 
     // Navigate based on notification type
     if (data?.type) {
@@ -273,11 +279,14 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           }
           break;
         case 'market_news':
+        case 'breaking_news':
           if (articleUrl) {
             try {
               const WebBrowser = require('expo-web-browser');
               WebBrowser.openBrowserAsync(articleUrl, { presentationStyle: 1 });
             } catch {}
+          } else {
+            router.push({ pathname: '/(tabs)/trending' } as any);
           }
           break;
         case 'market_mover':
@@ -287,7 +296,14 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           } as any);
           break;
         default:
-          router.push('/notifications' as any);
+          if (articleUrl) {
+            try {
+              const WebBrowser = require('expo-web-browser');
+              WebBrowser.openBrowserAsync(articleUrl, { presentationStyle: 1 });
+            } catch {}
+          } else {
+            router.push('/notifications' as any);
+          }
       }
     } else if (articleUrl) {
       // No type set but has a URL — open it in-app
@@ -296,7 +312,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         WebBrowser.openBrowserAsync(articleUrl, { presentationStyle: 1 });
       } catch {}
     } else {
-      router.push('/notifications' as any);
+      // No URL, no type — navigate to trending as fallback
+      router.push({ pathname: '/(tabs)/trending' } as any);
     }
   };
 

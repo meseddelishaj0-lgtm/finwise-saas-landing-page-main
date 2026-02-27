@@ -101,8 +101,11 @@ export async function sendToAllSubscribers(
     payload.ios_attachments = { image: options.image };
   }
 
-  if (options?.url) {
-    payload.url = options.url;
+  // Set the launch URL from explicit option or from data.url
+  // This ensures the URL is available as notification.launchURL on the client
+  const launchUrl = options?.url || data?.url;
+  if (launchUrl) {
+    payload.url = launchUrl;
   }
 
   if (options?.ttl) {
