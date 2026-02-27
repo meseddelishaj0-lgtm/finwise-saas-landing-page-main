@@ -1940,7 +1940,7 @@ export default function Explore() {
       >
         {activeTab === "treasury" ? (
         <ScrollView
-          style={styles.treasuryScrollView}
+          style={[styles.treasuryScrollView, { backgroundColor: colors.background }]}
           contentContainerStyle={styles.treasuryContentContainer}
           showsVerticalScrollIndicator={false}
         >
