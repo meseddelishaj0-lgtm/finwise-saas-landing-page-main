@@ -126,12 +126,17 @@ const processQuoteData = (item: any, type: 'stock' | 'crypto' | 'etf'): MarketIt
   const price = parseFloat(item.close) || 0;
   const previousClose = parseFloat(item.previous_close) || price;
 
+  // Always calculate change from previousClose for accuracy
+  // Twelve Data REST change/percent_change may use different reference
+  const change = previousClose > 0 ? price - previousClose : 0;
+  const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
+
   return {
     symbol,
     name: item.name || symbol,
     price,
-    change: parseFloat(item.change) || 0,
-    changePercent: parseFloat(item.percent_change) || 0,
+    change,
+    changePercent,
     type,
     previousClose,
   };

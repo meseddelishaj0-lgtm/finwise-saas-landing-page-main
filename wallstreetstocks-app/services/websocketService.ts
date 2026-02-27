@@ -166,8 +166,10 @@ class WebSocketService {
     // Get existing quote to preserve other fields
     const existingQuote = priceStore.getQuote(symbol);
 
-    // Get previous close - from message, existing quote, or use current price as fallback
-    const previousClose = message.previous_close ?? existingQuote?.previousClose ?? price;
+    // Get previous close - prefer existing value from REST API (regular session close)
+    // over WebSocket's previous_close (which includes after-hours trading and gives
+    // wrong change% for stocks with big after-hours moves like earnings)
+    const previousClose = existingQuote?.previousClose ?? message.previous_close ?? price;
 
     // Always calculate change from previousClose for accuracy
     // Twelve Data's day_change/day_change_percent can use open price as reference,
