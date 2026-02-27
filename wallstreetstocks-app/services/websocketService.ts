@@ -166,20 +166,20 @@ class WebSocketService {
     // Get existing quote to preserve other fields
     const existingQuote = priceStore.getQuote(symbol);
 
-    // Get previous close - if we have a corrected value from /eod or chart, keep it
-    // WebSocket's previous_close includes after-hours trading which gives wrong change%
-    const hasCorrectedClose = existingQuote?.previousCloseSource === 'eod' || existingQuote?.previousCloseSource === 'chart';
-    const previousClose = hasCorrectedClose
-      ? existingQuote!.previousClose!
-      : (existingQuote?.previousClose ?? message.previous_close ?? price);
+    // Use WebSocket's previous_close when available, fall back to existing
+    const previousClose = message.previous_close ?? existingQuote?.previousClose ?? price;
 
-    // Always calculate change from previousClose for accuracy
-    // Twelve Data's day_change/day_change_percent can use open price as reference,
-    // which gives wrong values for stocks with after-hours moves (e.g. earnings)
+    // Use Twelve Data's pre-calculated day_change/day_change_percent when available
+    // These are calculated by Twelve Data using the correct reference price
     let change: number;
     let changePercent: number;
 
-    if (previousClose > 0 && previousClose !== price) {
+    if (message.day_change !== undefined && message.day_change_percent !== undefined) {
+      // Trust the WebSocket's pre-calculated values
+      change = message.day_change;
+      changePercent = message.day_change_percent;
+    } else if (previousClose > 0 && previousClose !== price) {
+      // Fall back to manual calculation
       change = price - previousClose;
       changePercent = ((price - previousClose) / previousClose) * 100;
     } else {
@@ -195,7 +195,6 @@ class WebSocketService {
       change,
       changePercent,
       previousClose,
-      previousCloseSource: hasCorrectedClose ? existingQuote!.previousCloseSource : existingQuote?.previousCloseSource,
       open: message.open ?? existingQuote?.open,
       high: message.high ?? existingQuote?.high,
       low: message.low ?? existingQuote?.low,
@@ -203,8 +202,6 @@ class WebSocketService {
       bid: message.bid ?? existingQuote?.bid,
       ask: message.ask ?? existingQuote?.ask,
     });
-
-    // Debug log for real-time updates (uncomment to debug)
   }
 
   // Subscribe to symbols

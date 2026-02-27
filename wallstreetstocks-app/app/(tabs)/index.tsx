@@ -245,82 +245,9 @@ const MARKET_OVERVIEW_SYMBOLS = [
   'LTC/USD',   // Litecoin
 ];
 
-// Popular stocks to subscribe via WebSocket for real-time prices
-// Pro plan has 1000 WS credits - MAXIMIZE usage for instant price updates
-// Using ~300 stocks to leave room for watchlist/trending/chart symbols
-const POPULAR_STOCKS_WS = [
-  // ========== MEGA CAPS (Top 20) ==========
-  'AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA', 'BRK.A', 'BRK.B',
-  'LLY', 'V', 'UNH', 'TSM', 'WMT', 'JPM', 'XOM', 'MA', 'JNJ', 'PG',
-
-  // ========== TECH (50 stocks) ==========
-  'AVGO', 'ORCL', 'ADBE', 'CRM', 'AMD', 'CSCO', 'ACN', 'NFLX', 'INTC', 'IBM',
-  'QCOM', 'TXN', 'NOW', 'INTU', 'AMAT', 'PANW', 'LRCX', 'ADI', 'MU', 'KLAC',
-  'SNPS', 'CDNS', 'MRVL', 'CRWD', 'FTNT', 'WDAY', 'TEAM', 'DDOG', 'ZS', 'NET',
-  'SNOW', 'SPLK', 'OKTA', 'MDB', 'HUBS', 'TWLO', 'PLTR', 'U', 'DOCN', 'PATH',
-  'SHOP', 'SQ', 'PYPL', 'COIN', 'HOOD', 'AFRM', 'UPST', 'SOFI', 'RBLX', 'ROKU',
-
-  // ========== FINANCE (40 stocks) ==========
-  'BAC', 'WFC', 'GS', 'MS', 'C', 'SCHW', 'BLK', 'AXP', 'SPGI', 'CME',
-  'ICE', 'MCO', 'CB', 'PGR', 'MMC', 'AON', 'MET', 'AIG', 'TRV', 'ALL',
-  'AFL', 'PRU', 'HIG', 'TROW', 'BK', 'STT', 'NTRS', 'FRC', 'USB', 'PNC',
-  'TFC', 'COF', 'DFS', 'SYF', 'AMP', 'RJF', 'ALLY', 'FITB', 'CFG', 'KEY',
-
-  // ========== HEALTHCARE (40 stocks) ==========
-  'PFE', 'ABBV', 'MRK', 'TMO', 'ABT', 'DHR', 'BMY', 'AMGN', 'GILD', 'VRTX',
-  'REGN', 'ISRG', 'SYK', 'BSX', 'MDT', 'ZTS', 'ELV', 'CI', 'HUM', 'CVS',
-  'MCK', 'CAH', 'ABC', 'MRNA', 'BIIB', 'ILMN', 'DXCM', 'IDXX', 'IQV', 'A',
-  'ALGN', 'HOLX', 'MTD', 'WAT', 'BIO', 'TECH', 'CRL', 'PKI', 'DGX', 'LH',
-
-  // ========== CONSUMER (40 stocks) ==========
-  'COST', 'HD', 'MCD', 'NKE', 'SBUX', 'DIS', 'LOW', 'TJX', 'TGT', 'BKNG',
-  'MAR', 'HLT', 'ABNB', 'CMG', 'YUM', 'DPZ', 'DARDEN', 'QSR', 'WEN', 'JACK',
-  'LULU', 'ULTA', 'ETSY', 'EBAY', 'W', 'CHWY', 'RVLV', 'GPS', 'ANF', 'AEO',
-  'KMX', 'AAP', 'ORLY', 'AZO', 'BBY', 'DG', 'DLTR', 'FIVE', 'OLLI', 'ROSS',
-
-  // ========== INDUSTRIALS (30 stocks) ==========
-  'CAT', 'DE', 'UNP', 'UPS', 'HON', 'RTX', 'LMT', 'BA', 'GE', 'MMM',
-  'EMR', 'ETN', 'ITW', 'PH', 'ROK', 'CMI', 'PCAR', 'FAST', 'GWW', 'IR',
-  'FTV', 'DOV', 'AME', 'SWK', 'XYL', 'IEX', 'GGG', 'NDSN', 'ROP', 'IDEX',
-
-  // ========== ENERGY (20 stocks) ==========
-  'CVX', 'COP', 'SLB', 'EOG', 'PXD', 'MPC', 'PSX', 'VLO', 'OXY', 'HES',
-  'DVN', 'FANG', 'HAL', 'BKR', 'OKE', 'WMB', 'KMI', 'ET', 'MPLX', 'EPD',
-
-  // ========== MATERIALS (15 stocks) ==========
-  'LIN', 'APD', 'SHW', 'ECL', 'DD', 'NEM', 'FCX', 'NUE', 'VMC', 'MLM',
-  'PPG', 'ALB', 'IFF', 'FMC', 'CE',
-
-  // ========== REAL ESTATE (15 stocks) ==========
-  'AMT', 'PLD', 'CCI', 'EQIX', 'PSA', 'O', 'SPG', 'WELL', 'DLR', 'AVB',
-  'EQR', 'VTR', 'ARE', 'UDR', 'PEAK',
-
-  // ========== COMMUNICATION (15 stocks) ==========
-  // Note: GOOG, NFLX, DIS already included above - adding unique symbols only
-  'T', 'VZ', 'TMUS', 'CMCSA', 'CHTR', 'WBD', 'PARA',
-  'FOX', 'FOXA', 'NWSA', 'OMC', 'IPG',
-
-  // ========== UTILITIES (10 stocks) ==========
-  'NEE', 'DUK', 'SO', 'D', 'AEP', 'EXC', 'SRE', 'XEL', 'PEG', 'ED',
-
-  // ========== POPULAR ETFs (30) ==========
-  'SPY', 'QQQ', 'IWM', 'DIA', 'VTI', 'VOO', 'VEA', 'VWO', 'EEM', 'EFA',
-  'ARKK', 'ARKG', 'ARKW', 'ARKF', 'XLF', 'XLK', 'XLE', 'XLV', 'XLI', 'XLY',
-  'XLP', 'XLU', 'XLB', 'XLRE', 'GLD', 'SLV', 'USO', 'TLT', 'HYG', 'LQD',
-
-  // ========== MEME/POPULAR (20) ==========
-  'GME', 'AMC', 'BB', 'BBBY', 'WISH', 'CLOV', 'SPCE', 'LCID', 'RIVN', 'NIO',
-  'XPEV', 'LI', 'FSR', 'NKLA', 'WKHS', 'GOEV', 'RIDE', 'MULN', 'FFIE', 'HYLN',
-
-  // ========== CRYPTO-RELATED (10) ==========
-  // Note: COIN already included above - adding unique symbols only
-  'MSTR', 'MARA', 'RIOT', 'CLSK', 'HUT', 'BITF', 'SI', 'GBTC', 'ETHE',
-
-  // ========== FOREX PAIRS (20) ==========
-  'EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'AUD/USD', 'USD/CAD', 'NZD/USD',
-  'EUR/GBP', 'EUR/JPY', 'GBP/JPY', 'AUD/JPY', 'CAD/JPY',
-  'EUR/AUD', 'EUR/CAD', 'GBP/AUD', 'GBP/CHF', 'AUD/NZD', 'AUD/CAD', 'NZD/JPY', 'EUR/CHF',
-];
+// WebSocket subscriptions for popular stocks are now handled centrally
+// by marketDataService (subscribes all 117 core symbols)
+// The home page only needs to subscribe the user's watchlist symbols
 
 export default function Dashboard() {
   const { colors, isDark } = useTheme();
@@ -675,14 +602,13 @@ export default function Dashboard() {
     }
   }, [wsConnected, wsSubscribe]);
 
-  // Subscribe popular stocks to WebSocket for instant real-time prices
-  // Pro plan: 1000 WS credits - maximize usage for best UX
+  // Subscribe watchlist symbols to WebSocket for real-time prices
+  // Core 117 symbols are subscribed by marketDataService centrally
   useEffect(() => {
-    if (wsConnected) {
-      // Subscribe to 50 popular stocks via WebSocket
-      wsSubscribe(POPULAR_STOCKS_WS);
+    if (wsConnected && watchlist.length > 0) {
+      wsSubscribe(watchlist);
     }
-  }, [wsConnected, wsSubscribe]);
+  }, [wsConnected, wsSubscribe, watchlist]);
 
   // ============= REAL-TIME PRICE REFRESH =============
   // Interval triggers re-render to show WebSocket price updates
@@ -710,9 +636,11 @@ export default function Dashboard() {
     useCallback(() => {
       if (wsConnected) {
         wsSubscribe(MARKET_OVERVIEW_SYMBOLS);
-        wsSubscribe(POPULAR_STOCKS_WS);
+        if (watchlist.length > 0) {
+          wsSubscribe(watchlist);
+        }
       }
-    }, [wsConnected, wsSubscribe])
+    }, [wsConnected, wsSubscribe, watchlist])
   );
 
   // Extended hours price updates - WEBSOCKET ONLY
@@ -1140,7 +1068,6 @@ export default function Dashboard() {
   };
 
   // Fetch real chart data for watchlist sparklines
-  // Daily close corrections are handled centrally by dailyCloseService via marketDataService
   const fetchWatchlistCharts = async () => {
     try {
       const { fetchSparklines } = await import('@/services/sparklineService');
@@ -1162,10 +1089,6 @@ export default function Dashboard() {
         }
         return item;
       }));
-
-      // Also trigger daily close correction for watchlist symbols not yet corrected
-      const { correctPreviousCloses } = await import('@/services/dailyCloseService');
-      correctPreviousCloses(watchlist).catch(() => {});
     } catch {
     }
   };

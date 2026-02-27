@@ -11,7 +11,6 @@ export interface Quote {
   changePercent?: number;
   name?: string;
   previousClose?: number;
-  previousCloseSource?: 'quote' | 'eod' | 'chart'; // Tracks where previousClose came from
   open?: number;
   high?: number;
   low?: number;

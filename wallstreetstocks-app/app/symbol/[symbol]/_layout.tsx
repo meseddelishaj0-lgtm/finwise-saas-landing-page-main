@@ -22,8 +22,9 @@ async function prefetchSymbolData(symbol: string) {
     if (data && data.symbol && !data.code) {
       const price = parseFloat(data.close) || 0;
       const previousClose = parseFloat(data.previous_close) || price;
-      const change = previousClose > 0 ? price - previousClose : 0;
-      const changesPercentage = previousClose > 0 ? (change / previousClose) * 100 : 0;
+      // Use Twelve Data's pre-calculated values, fall back to manual calc
+      const change = parseFloat(data.change) || (previousClose > 0 ? price - previousClose : 0);
+      const changesPercentage = parseFloat(data.percent_change) || (previousClose > 0 ? ((price - previousClose) / previousClose) * 100 : 0);
 
       const quoteData = {
         symbol: data.symbol,
@@ -42,9 +43,6 @@ async function prefetchSymbolData(symbol: string) {
         JSON.stringify({ data: { ...quoteData, timestamp: Date.now() }, timestamp: Date.now() })
       );
 
-      // Correct previousClose with /eod for accurate change% (non-blocking)
-      const { correctPreviousCloses } = await import('../../../services/dailyCloseService');
-      correctPreviousCloses([cleanSymbol]).catch(() => {});
     }
   } catch (err) {
     // Silent fail - prefetch is best effort

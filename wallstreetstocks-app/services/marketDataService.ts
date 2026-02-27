@@ -5,7 +5,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { priceStore } from '../stores/priceStore';
 import { websocketService } from './websocketService';
-import { correctPreviousCloses } from './dailyCloseService';
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
@@ -127,10 +126,10 @@ const processQuoteData = (item: any, type: 'stock' | 'crypto' | 'etf'): MarketIt
   const price = parseFloat(item.close) || 0;
   const previousClose = parseFloat(item.previous_close) || price;
 
-  // Always calculate change from previousClose for accuracy
-  // Twelve Data REST change/percent_change may use different reference
-  const change = previousClose > 0 ? price - previousClose : 0;
-  const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
+  // Use Twelve Data's pre-calculated change/percent_change directly
+  // These are more reliable than manual calculation from previous_close
+  const change = parseFloat(item.change) || (previousClose > 0 ? price - previousClose : 0);
+  const changePercent = parseFloat(item.percent_change) || (previousClose > 0 ? ((price - previousClose) / previousClose) * 100 : 0);
 
   return {
     symbol,
@@ -255,24 +254,14 @@ const fetchAllData = async () => {
   // Notify listeners
   notifyListeners();
 
-  // Correct previousClose for stocks and ETFs using /eod (fire and forget)
-  // This fixes wrong change% from Twelve Data's /quote previous_close which includes after-hours
-  const stockAndEtfSymbols = [...ALL_STOCKS, ...ALL_ETFS];
-  correctPreviousCloses(stockAndEtfSymbols).then(() => {
-    notifyListeners(); // Re-notify after corrections applied
-  }).catch(() => {});
 };
 
 const subscribeToWebSocket = () => {
   // Delay WebSocket subscription to prevent overwhelming the device at startup
   setTimeout(() => {
-    // Get symbols for WebSocket subscription - reduced count for better performance
-    const stockSymbols = ALL_STOCKS.slice(0, 10); // Top 10 stocks (reduced from 20)
-    const cryptoSymbols = ALL_CRYPTO.slice(0, 5); // Top 5 crypto (reduced from 10)
-    const etfSymbols = ALL_ETFS.slice(0, 5); // Top 5 ETFs (reduced from 10)
-
-    const allSymbols = [...stockSymbols, ...cryptoSymbols, ...etfSymbols];
-
+    // Subscribe ALL symbols for real-time WebSocket updates
+    // 117 symbols total - well within 800 WS credit limit
+    const allSymbols = [...ALL_STOCKS, ...ALL_CRYPTO, ...ALL_ETFS];
     websocketService.subscribe(allSymbols);
   }, 3000); // 3 second delay
 };

@@ -74,9 +74,9 @@ export async function fetchQuotesWithCache(
       .map(item => {
         const price = parseFloat(item.close) || 0;
         const previousClose = parseFloat(item.previous_close) || price;
-        // Always calculate from previousClose for accuracy
-        const change = previousClose > 0 ? price - previousClose : 0;
-        const changesPercentage = previousClose > 0 ? (change / previousClose) * 100 : 0;
+        // Use Twelve Data's pre-calculated values, fall back to manual calc
+        const change = parseFloat(item.change) || (previousClose > 0 ? price - previousClose : 0);
+        const changesPercentage = parseFloat(item.percent_change) || (previousClose > 0 ? ((price - previousClose) / previousClose) * 100 : 0);
 
         return {
           symbol: item.symbol,

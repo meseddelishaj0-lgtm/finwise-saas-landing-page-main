@@ -119,15 +119,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         .map(item => {
           const price = parseFloat(item.close) || 0;
           const previousClose = parseFloat(item.previous_close) || price;
-          const change = previousClose > 0 ? price - previousClose : 0;
+          // Use Twelve Data's pre-calculated change value
+          const change = parseFloat(item.change) || (previousClose > 0 ? price - previousClose : 0);
           return { symbol: item.symbol, price, change, previousClose, name: item.name };
         });
-
-      // Correct previousClose with /eod for accurate dayChange (non-blocking)
-      const symbolsToCorrect = priceData.map(q => q.symbol);
-      import('../services/dailyCloseService').then(({ correctPreviousCloses }) => {
-        correctPreviousCloses(symbolsToCorrect).catch(() => {});
-      }).catch(() => {});
 
       if (priceData.length === 0) {
         // Don't throw - gracefully fall back to avgCost

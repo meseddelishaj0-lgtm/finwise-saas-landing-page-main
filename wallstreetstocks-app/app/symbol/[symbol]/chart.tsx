@@ -462,7 +462,6 @@ export default function ChartTab() {
           change,
           changePercent,
           previousClose: refPrice,
-          previousCloseSource: 'chart',
         });
       }
     } catch (err) {}
