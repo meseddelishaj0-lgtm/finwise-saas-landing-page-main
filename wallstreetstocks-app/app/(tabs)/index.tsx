@@ -1139,39 +1139,24 @@ export default function Dashboard() {
     await fetchWatchlistFromAPI();
   };
 
-  // Fetch real chart data for watchlist in background
+  // Fetch real chart data for watchlist in background using Twelve Data sparkline service
   const fetchWatchlistCharts = async () => {
     try {
-      const chartsData = await Promise.all(
-        watchlist.map(async (symbol) => {
-          try {
-            const chartRes = await fetchWithTimeout(
-              `${BASE_URL}/historical-chart/1min/${symbol}?apikey=${FMP_API_KEY}`,
-              5000 // 5 second timeout
-            );
-            const chartData = await chartRes.json();
+      const { fetchSparklines } = await import('@/services/sparklineService');
 
-            if (chartData && Array.isArray(chartData) && chartData.length > 0) {
-              const rawData = chartData.slice(0, 40).reverse().map((d: any) => d.close);
-              const cleanedData = cleanChartData(rawData);
-              
-              return {
-                symbol,
-                data: cleanedData,
-              };
-            }
-            return null;
-          } catch {
-            return null;
-          }
-        })
-      );
+      // Build change percents map for sparkline direction
+      const changePercents: Record<string, number> = {};
+      watchlistData.forEach(s => {
+        if (s.symbol) changePercents[s.symbol] = s.changePercent || 0;
+      });
 
-      // Update watchlist with real chart data
+      const sparklineMap = await fetchSparklines(watchlist, changePercents);
+
+      // Update watchlist with real sparkline data
       setWatchlistData(prev => prev.map(item => {
-        const chartInfo = chartsData.find(c => c?.symbol === item.symbol);
-        if (chartInfo) {
-          return { ...item, data: chartInfo.data };
+        const sparkline = sparklineMap[item.symbol];
+        if (sparkline && sparkline.length > 0) {
+          return { ...item, data: sparkline };
         }
         return item;
       }));
