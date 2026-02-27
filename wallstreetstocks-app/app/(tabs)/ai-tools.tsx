@@ -856,7 +856,7 @@ Always remind users that this is educational information, not financial advice.`
             ) : (
             <>
             {/* Search Card */}
-            <View style={[styles.searchCard, { backgroundColor: colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3, borderRadius: isDark ? 0 : 20 }]}>
+            <View style={[styles.searchCard, { backgroundColor: isDark ? colors.card : colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3 }]}>
               <Text style={[styles.searchTitle, { color: colors.text }]}>Stock Analyzer</Text>
               <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>DCF Valuation & AI-Powered Analysis</Text>
 
@@ -1187,7 +1187,7 @@ Always remind users that this is educational information, not financial advice.`
             ) : (
             <>
             {/* Search Card */}
-            <View style={[styles.searchCard, { backgroundColor: colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3, borderRadius: isDark ? 0 : 20 }]}>
+            <View style={[styles.searchCard, { backgroundColor: isDark ? colors.card : colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3 }]}>
               <Text style={[styles.searchTitle, { color: colors.text }]}>Stock Comparison</Text>
               <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>Side-by-side analysis with DCF valuation</Text>
 
@@ -1503,7 +1503,7 @@ Always remind users that this is educational information, not financial advice.`
             ) : (
             <>
             {/* Search Card */}
-            <View style={[styles.searchCard, { backgroundColor: colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3, borderRadius: isDark ? 0 : 20 }]}>
+            <View style={[styles.searchCard, { backgroundColor: isDark ? colors.card : colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3 }]}>
               <Text style={[styles.searchTitle, { color: colors.text }]}>AI Price Forecast</Text>
               <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>3-6 month price targets & probability analysis</Text>
 
