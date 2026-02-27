@@ -1884,7 +1884,7 @@ export default function Explore() {
 
       {/* Region Selector for Stocks */}
       {activeTab === "stocks" && (
-        <View style={[styles.regionBar, { backgroundColor: colors.background }]}>
+        <View style={[styles.regionBar, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {([
               { key: "us", label: "US", subLabel: "S&P 500", icon: "flag" },
