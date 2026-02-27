@@ -18,7 +18,6 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
-import { fetchWithTimeout } from "@/utils/performance";
 import { AnimatedPrice, AnimatedChange, MarketTimeLabel } from "@/components/AnimatedPrice";
 import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
@@ -38,6 +37,15 @@ const STOCK_ROW_HEIGHT = 76; // Fixed row height for getItemLayout optimization
 
 // Map tab to WebSocket symbols for INSTANT subscription
 const TAB_WS_SYMBOLS: Record<string, string[]> = {};
+
+// ETF symbols for indices tab filtering
+const ETF_SYMBOLS = new Set([
+  'SPY', 'VOO', 'VTI', 'QQQ', 'IVV', 'VEA', 'IEFA', 'VWO', 'VTV', 'IEMG',
+  'BND', 'AGG', 'VUG', 'IJR', 'IWM', 'VIG', 'SCHD', 'VYM', 'VGT', 'XLF',
+  'XLK', 'XLE', 'XLV', 'XLI', 'XLY', 'XLP', 'XLU', 'XLB', 'XLRE', 'XLC',
+  'ARKK', 'ARKG', 'ARKW', 'ARKF', 'DIA', 'GLD', 'SLV', 'USO', 'TLT', 'LQD',
+  'HYG', 'EEM', 'EFA',
+]);
 
 // WebSocket handles all real-time prices - no API polling needed
 
@@ -288,19 +296,6 @@ export default function Trending() {
   // Price update trigger for real-time updates
   const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
 
-  const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-  const TWELVE_DATA_URL = "https://api.twelvedata.com";
-
-  // Top stocks for market movers (used for trending/gainers/losers)
-  const TOP_STOCKS = [
-    "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK.B",
-    "JPM", "V", "JNJ", "WMT", "PG", "MA", "UNH", "HD", "DIS", "PYPL",
-    "BAC", "ADBE", "CRM", "NFLX", "INTC", "AMD", "CSCO", "PEP", "KO",
-    "NKE", "MRK", "ABT", "TMO", "COST", "AVGO", "TXN", "QCOM", "LOW",
-    "ORCL", "UPS", "MS", "GS", "IBM", "CAT", "GE", "BA", "MMM", "CVX",
-    "XOM", "PFE", "ABBV", "LLY",
-  ];
-
   const HEADER_SYMBOLS = ["SPY", "QQQ", "DIA", "IWM", "AAPL", "MSFT", "GOOGL", "AMZN"];
   const HEADER_NAMES: Record<string, string> = {
     "SPY": "S&P 500",
@@ -354,60 +349,50 @@ export default function Trending() {
     }
   };
 
-  // Fetch market movers from Twelve Data (gainers/losers/most active)
-  const fetchMarketMovers = async (direction: 'gainers' | 'losers' | 'most_active', market: string = 'stocks'): Promise<any[]> => {
-    try {
-      const countryParam = market === 'stocks' ? '&country=United States' : '';
-      const url = `${TWELVE_DATA_URL}/market_movers/${market}?direction=${direction}&outputsize=50${countryParam}&apikey=${TWELVE_DATA_API_KEY}`;
-      const res = await fetchWithTimeout(url, { timeout: 15000 });
-      const json = await res.json();
+  // Derive market movers from in-memory priceStore (zero API calls)
+  const getMoversFromStore = useCallback((
+    filter: 'stocks' | 'etfs' | 'forex' | 'all',
+    sort: 'gainers' | 'losers' | 'volatile',
+    limit: number = 50,
+  ): StockItem[] => {
+    const allQuotes = priceStore.getAll();
+    let items = Object.values(allQuotes).filter(q =>
+      q.symbol && q.price > 0 && q.changePercent !== undefined && q.changePercent !== 0
+    );
 
-      if (json?.values && Array.isArray(json.values)) {
-        return json.values;
-      }
-      return [];
-    } catch {
-      return [];
+    // Filter by asset type
+    if (filter === 'etfs') {
+      items = items.filter(q => ETF_SYMBOLS.has(q.symbol));
+    } else if (filter === 'forex') {
+      items = items.filter(q => q.symbol.includes('/') && !q.symbol.includes('USD') ? true :
+        (q.symbol.length === 7 && q.symbol.includes('/')) ||
+        ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'AUD/USD', 'USD/CAD', 'NZD/USD',
+         'EUR/GBP', 'EUR/JPY', 'GBP/JPY', 'AUD/JPY', 'CAD/JPY', 'EUR/AUD', 'EUR/CAD',
+         'GBP/AUD', 'GBP/CHF', 'AUD/NZD', 'AUD/CAD', 'NZD/JPY', 'EUR/CHF'].includes(q.symbol)
+      );
+    } else if (filter === 'stocks') {
+      items = items.filter(q => !ETF_SYMBOLS.has(q.symbol) && !q.symbol.includes('/'));
     }
-  };
 
-  // Fetch quotes from Twelve Data API
-  const fetchTwelveDataQuotes = async (symbols: string[]): Promise<any[]> => {
-    try {
-      if (symbols.length === 0) return [];
-
-      // Batch symbols (max 8 per request for Twelve Data)
-      const batchSize = 8;
-      const allResults: any[] = [];
-
-      for (let i = 0; i < symbols.length; i += batchSize) {
-        const batch = symbols.slice(i, i + batchSize);
-        const url = `${TWELVE_DATA_URL}/quote?symbol=${batch.join(",")}&apikey=${TWELVE_DATA_API_KEY}`;
-        const res = await fetchWithTimeout(url, { timeout: 15000 });
-        const json = await res.json();
-
-        if (Array.isArray(json)) {
-          allResults.push(...json);
-        } else if (json && typeof json === 'object' && !json.code) {
-          // Multi-symbol response returns object with symbol keys like:
-          // { "EUR/USD": {...}, "GBP/USD": {...} }
-          // Single symbol returns object with data directly
-          const values = Object.values(json);
-          if (values.length > 0 && values[0] && typeof values[0] === 'object' && 'symbol' in (values[0] as object)) {
-            // Multi-symbol response - extract all quote objects
-            allResults.push(...values);
-          } else if (json.symbol) {
-            // Single symbol response
-            allResults.push(json);
-          }
-        }
-      }
-
-      return allResults;
-    } catch {
-      return [];
+    // Sort
+    if (sort === 'gainers') {
+      items = items.filter(q => (q.changePercent ?? 0) > 0)
+        .sort((a, b) => (b.changePercent ?? 0) - (a.changePercent ?? 0));
+    } else if (sort === 'losers') {
+      items = items.filter(q => (q.changePercent ?? 0) < 0)
+        .sort((a, b) => (a.changePercent ?? 0) - (b.changePercent ?? 0));
+    } else {
+      items = items.sort((a, b) => Math.abs(b.changePercent ?? 0) - Math.abs(a.changePercent ?? 0));
     }
-  };
+
+    return items.slice(0, limit).map(q => ({
+      symbol: q.symbol.includes('/') ? q.symbol.replace('/', '') : q.symbol,
+      companyName: q.name || q.symbol,
+      changesPercentage: q.changePercent ?? 0,
+      price: q.price,
+      change: q.change ?? 0,
+    }));
+  }, []);
 
   const fetchLiveData = useCallback(async () => {
     setError(null);
@@ -416,144 +401,84 @@ export default function Trending() {
       let cleaned: StockItem[] = [];
 
       if (activeTab === "indices") {
-        // INDICES: Use Twelve Data market_movers/etf endpoint
-        setLoading(true);
-        const moversData = await fetchMarketMovers('gainers', 'etf');
+        // INDICES: Derive from ETF quotes in priceStore
+        cleaned = getMoversFromStore('etfs', 'gainers');
 
-        if (moversData.length > 0) {
-          cleaned = moversData.map((item: any) => ({
-            symbol: item.symbol || "N/A",
-            companyName: item.name || item.symbol || "Unknown",
-            changesPercentage: parseFloat(item.percent_change) || 0,
-            price: parseFloat(item.last) || parseFloat(item.close) || 0,
-            change: parseFloat(item.change) || 0,
-          }));
-        }
-      } else if (activeTab === "forex") {
-        // FOREX: Use Twelve Data market_movers/forex endpoint
-        setLoading(true);
-        const moversData = await fetchMarketMovers('gainers', 'forex');
-
-        if (moversData.length > 0) {
-          cleaned = moversData.map((item: any) => ({
-            symbol: item.symbol?.replace('/', '') || "N/A",
-            companyName: item.name || item.symbol || "Unknown",
-            changesPercentage: parseFloat(item.percent_change) || 0,
-            price: parseFloat(item.last) || parseFloat(item.close) || 0,
-            change: parseFloat(item.change) || 0,
-          }));
-        }
-      } else if (activeTab === "gainers" || activeTab === "losers") {
-        // GAINERS/LOSERS: Use Twelve Data market_movers API for real market data
-        setLoading(true);
-
-        const direction = activeTab === "gainers" ? "gainers" : "losers";
-        const moversData = await fetchMarketMovers(direction);
-
-        if (moversData.length > 0) {
-          cleaned = moversData.map((item: any) => ({
-            symbol: item.symbol || "N/A",
-            companyName: item.name || item.symbol || "Unknown",
-            changesPercentage: parseFloat(item.percent_change) || 0,
-            price: parseFloat(item.last) || parseFloat(item.close) || 0,
-            change: parseFloat(item.change) || 0,
-          }));
-        } else {
-          // Fallback: fetch top stocks and sort manually
-          const quotes = await fetchTwelveDataQuotes(TOP_STOCKS);
-
-          let stocksWithChange = quotes
-            .filter((item: any) => item && item.symbol && item.close)
-            .map((item: any) => ({
-              symbol: item.symbol,
-              companyName: item.name || item.symbol || "Unknown",
-              changesPercentage: parseFloat(item.percent_change) || 0,
-              price: parseFloat(item.close) || 0,
-              change: parseFloat(item.change) || 0,
-            }));
-
-          if (activeTab === "gainers") {
-            stocksWithChange = stocksWithChange
-              .filter(s => s.changesPercentage > 0)
-              .sort((a, b) => b.changesPercentage - a.changesPercentage);
-          } else {
-            stocksWithChange = stocksWithChange
-              .filter(s => s.changesPercentage < 0)
-              .sort((a, b) => a.changesPercentage - b.changesPercentage);
-          }
-
-          cleaned = stocksWithChange.slice(0, 50);
-        }
-      } else {
-        // TRENDING: Use pre-loaded stock data for instant display
-        const localStocks = marketDataService.getLiveData('stock');
-
-        if (localStocks.length > 0) {
-          // Instant - sort by absolute change (most volatile)
-          let stocksWithChange = localStocks.map(item => ({
+        // Fallback: use marketDataService if priceStore is empty
+        if (cleaned.length === 0) {
+          const localETFs = marketDataService.getLiveData('etf');
+          cleaned = localETFs.map(item => ({
             symbol: item.symbol,
             companyName: item.name || item.symbol,
             changesPercentage: item.changePercent,
             price: item.price,
             change: item.change,
-          }));
-
-          stocksWithChange = stocksWithChange
-            .sort((a, b) => Math.abs(b.changesPercentage) - Math.abs(a.changesPercentage));
-
-          cleaned = stocksWithChange.slice(0, 50);
-          setData(cleaned);
-          setLoading(false);
-          return;
+          })).sort((a, b) => b.changesPercentage - a.changesPercentage).slice(0, 50);
         }
+      } else if (activeTab === "forex") {
+        // FOREX: Derive from forex quotes in priceStore
+        cleaned = getMoversFromStore('forex', 'gainers');
+      } else if (activeTab === "gainers") {
+        // GAINERS: Top gaining stocks from priceStore
+        cleaned = getMoversFromStore('stocks', 'gainers');
 
-        // Fallback: fetch from API if local data not ready
-        setLoading(true);
-        const moversData = await fetchMarketMovers('most_active');
-
-        if (moversData.length > 0) {
-          cleaned = moversData.map((item: any) => ({
-            symbol: item.symbol || "N/A",
-            companyName: item.name || item.symbol || "Unknown",
-            changesPercentage: parseFloat(item.percent_change) || 0,
-            price: parseFloat(item.last) || parseFloat(item.close) || 0,
-            change: parseFloat(item.change) || 0,
-          }));
-        } else {
-          const quotes = await fetchTwelveDataQuotes(TOP_STOCKS);
-
-          let stocksWithChange = quotes
-            .filter((item: any) => item && item.symbol && item.close)
-            .map((item: any) => ({
+        // Fallback: use marketDataService
+        if (cleaned.length === 0) {
+          const localStocks = marketDataService.getLiveData('stock');
+          cleaned = localStocks.filter(s => s.changePercent > 0)
+            .sort((a, b) => b.changePercent - a.changePercent)
+            .slice(0, 50)
+            .map(item => ({
               symbol: item.symbol,
-              companyName: item.name || item.symbol || "Unknown",
-              changesPercentage: parseFloat(item.percent_change) || 0,
-              price: parseFloat(item.close) || 0,
-              change: parseFloat(item.change) || 0,
+              companyName: item.name || item.symbol,
+              changesPercentage: item.changePercent,
+              price: item.price,
+              change: item.change,
             }));
+        }
+      } else if (activeTab === "losers") {
+        // LOSERS: Top losing stocks from priceStore
+        cleaned = getMoversFromStore('stocks', 'losers');
 
-          stocksWithChange = stocksWithChange
-            .sort((a, b) => Math.abs(b.changesPercentage) - Math.abs(a.changesPercentage));
+        // Fallback: use marketDataService
+        if (cleaned.length === 0) {
+          const localStocks = marketDataService.getLiveData('stock');
+          cleaned = localStocks.filter(s => s.changePercent < 0)
+            .sort((a, b) => a.changePercent - b.changePercent)
+            .slice(0, 50)
+            .map(item => ({
+              symbol: item.symbol,
+              companyName: item.name || item.symbol,
+              changesPercentage: item.changePercent,
+              price: item.price,
+              change: item.change,
+            }));
+        }
+      } else {
+        // TRENDING: Most volatile stocks from priceStore
+        cleaned = getMoversFromStore('stocks', 'volatile');
 
-          cleaned = stocksWithChange.slice(0, 50);
+        // Fallback: use marketDataService
+        if (cleaned.length === 0) {
+          const localStocks = marketDataService.getLiveData('stock');
+          cleaned = localStocks.map(item => ({
+            symbol: item.symbol,
+            companyName: item.name || item.symbol,
+            changesPercentage: item.changePercent,
+            price: item.price,
+            change: item.change,
+          })).sort((a, b) => Math.abs(b.changesPercentage) - Math.abs(a.changesPercentage))
+            .slice(0, 50);
         }
       }
 
-      // Update global price store with fetched data
-      priceStore.setQuotes(cleaned.map(item => ({
-        symbol: item.symbol,
-        price: typeof item.price === 'number' ? item.price : 0,
-        changePercent: typeof item.changesPercentage === 'number' ? item.changesPercentage : parseFloat(String(item.changesPercentage)) || 0,
-        name: item.companyName,
-      })));
-
       setData(cleaned);
     } catch (err: any) {
-      setError(err.message || "Network error. Check connection.");
+      setError(err.message || "Failed to load data.");
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, getMoversFromStore]);
 
   // Update cache when data changes successfully
   useEffect(() => {
@@ -565,83 +490,28 @@ export default function Trending() {
     }
   }, [data, loading, activeTab]);
 
-  // PRE-FETCH: Load gainers, losers, and indices data in background on mount for instant tab switching
+  // PRE-CACHE: Compute all tabs from priceStore after initial data loads
   useEffect(() => {
-    const prefetchTabs = async () => {
-      // Wait for trending (default tab) to load first
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Prefetch gainers
-      try {
-        const gainersData = await fetchMarketMovers('gainers');
-        if (gainersData.length > 0) {
-          const cleaned = gainersData.map((item: any) => ({
-            symbol: item.symbol || "N/A",
-            companyName: item.name || item.symbol || "Unknown",
-            changesPercentage: parseFloat(item.percent_change) || 0,
-            price: parseFloat(item.last) || parseFloat(item.close) || 0,
-            change: parseFloat(item.change) || 0,
-          }));
-          tabDataCache.current["gainers"] = { data: cleaned, timestamp: Date.now() };
-        }
-      } catch {
-        // Non-critical prefetch failure
-      }
-
-      // Prefetch losers
-      try {
-        const losersData = await fetchMarketMovers('losers');
-        if (losersData.length > 0) {
-          const cleaned = losersData.map((item: any) => ({
-            symbol: item.symbol || "N/A",
-            companyName: item.name || item.symbol || "Unknown",
-            changesPercentage: parseFloat(item.percent_change) || 0,
-            price: parseFloat(item.last) || parseFloat(item.close) || 0,
-            change: parseFloat(item.change) || 0,
-          }));
-          tabDataCache.current["losers"] = { data: cleaned, timestamp: Date.now() };
-        }
-      } catch {
-        // Non-critical prefetch failure
-      }
-
-      // Prefetch indices (ETF movers)
-      try {
-        const indicesData = await fetchMarketMovers('gainers', 'etf');
-        if (indicesData.length > 0) {
-          const cleaned = indicesData.map((item: any) => ({
-            symbol: item.symbol || "N/A",
-            companyName: item.name || item.symbol || "Unknown",
-            changesPercentage: parseFloat(item.percent_change) || 0,
-            price: parseFloat(item.last) || parseFloat(item.close) || 0,
-            change: parseFloat(item.change) || 0,
-          }));
-          tabDataCache.current["indices"] = { data: cleaned, timestamp: Date.now() };
-        }
-      } catch {
-        // Non-critical prefetch failure
-      }
-
-      // Prefetch forex movers
-      try {
-        const forexData = await fetchMarketMovers('gainers', 'forex');
-        if (forexData.length > 0) {
-          const cleaned = forexData.map((item: any) => ({
-            symbol: item.symbol?.replace('/', '') || "N/A",
-            companyName: item.name || item.symbol || "Unknown",
-            changesPercentage: parseFloat(item.percent_change) || 0,
-            price: parseFloat(item.last) || parseFloat(item.close) || 0,
-            change: parseFloat(item.change) || 0,
-          }));
-          tabDataCache.current["forex"] = { data: cleaned, timestamp: Date.now() };
-        }
-      } catch {
-        // Non-critical prefetch failure
-      }
+    const prefetchFromStore = () => {
+      // Wait for WebSocket/marketDataService to populate priceStore
+      setTimeout(() => {
+        const tabs: { key: string; filter: 'stocks' | 'etfs' | 'forex'; sort: 'gainers' | 'losers' | 'volatile' }[] = [
+          { key: 'gainers', filter: 'stocks', sort: 'gainers' },
+          { key: 'losers', filter: 'stocks', sort: 'losers' },
+          { key: 'indices', filter: 'etfs', sort: 'gainers' },
+          { key: 'forex', filter: 'forex', sort: 'gainers' },
+        ];
+        tabs.forEach(({ key, filter, sort }) => {
+          const items = getMoversFromStore(filter, sort);
+          if (items.length > 0) {
+            tabDataCache.current[key] = { data: items, timestamp: Date.now() };
+          }
+        });
+      }, 3000);
     };
 
-    prefetchTabs();
-  }, []);
+    prefetchFromStore();
+  }, [getMoversFromStore]);
 
   // ============================================================================
   // OPTIMIZED TAB SWITCHING - Instant + Smooth

@@ -315,6 +315,11 @@ const POPULAR_STOCKS_WS = [
   // ========== CRYPTO-RELATED (10) ==========
   // Note: COIN already included above - adding unique symbols only
   'MSTR', 'MARA', 'RIOT', 'CLSK', 'HUT', 'BITF', 'SI', 'GBTC', 'ETHE',
+
+  // ========== FOREX PAIRS (20) ==========
+  'EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'AUD/USD', 'USD/CAD', 'NZD/USD',
+  'EUR/GBP', 'EUR/JPY', 'GBP/JPY', 'AUD/JPY', 'CAD/JPY',
+  'EUR/AUD', 'EUR/CAD', 'GBP/AUD', 'GBP/CHF', 'AUD/NZD', 'AUD/CAD', 'NZD/JPY', 'EUR/CHF',
 ];
 
 export default function Dashboard() {
