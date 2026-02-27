@@ -2249,7 +2249,7 @@ export default function Dashboard() {
 
             return (
               <TouchableOpacity
-                style={[styles.analyticsPreviewCard, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}
+                style={[styles.analyticsPreviewCard, { backgroundColor: isDark ? colors.card : '#F5F5F7', borderWidth: isDark ? 1 : 0, borderColor: isDark ? '#333' : 'transparent' }]}
                 onPress={() => router.push('/portfolio/analytics')}
                 activeOpacity={0.7}
               >
