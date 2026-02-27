@@ -2183,9 +2183,9 @@ export default function CommunityPage() {
   // Loading state
   if (loading && posts.length === 0) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Loading community...</Text>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading community...</Text>
       </View>
     );
   }
