@@ -860,7 +860,7 @@ Always remind users that this is educational information, not financial advice.`
               <Text style={[styles.searchTitle, { color: colors.text }]}>Stock Analyzer</Text>
               <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>DCF Valuation & AI-Powered Analysis</Text>
 
-              <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : colors.border }]}>
+              <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : colors.border }]}>
                 <Ionicons name="search" size={20} color={colors.textTertiary} />
                 <TextInput
                   style={[styles.searchInput, { color: colors.text }]}
@@ -900,7 +900,7 @@ Always remind users that this is educational information, not financial advice.`
                   {QUICK_PICKS.map((symbol) => (
                     <TouchableOpacity
                       key={symbol}
-                      style={[styles.quickPickChip, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : colors.border }]}
+                      style={[styles.quickPickChip, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : colors.border }]}
                       onPress={() => handleAnalyze(symbol)}
                     >
                       <Text style={styles.quickPickText}>{symbol}</Text>
@@ -1193,7 +1193,7 @@ Always remind users that this is educational information, not financial advice.`
 
               <View style={styles.compareInputRow}>
                 <View style={styles.compareInputWrapper}>
-                  <View style={[styles.compareInputBox, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' }, compareTicker1 && styles.compareInputBoxActive]}>
+                  <View style={[styles.compareInputBox, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : '#E5E5EA' }, compareTicker1 && styles.compareInputBoxActive]}>
                     <Ionicons name="business" size={18} color={compareTicker1 ? '#007AFF' : '#8E8E93'} />
                     <TextInput
                       style={[styles.compareInput, { backgroundColor: 'transparent', color: colors.text }]}
@@ -1213,7 +1213,7 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
 
                 <View style={styles.compareInputWrapper}>
-                  <View style={[styles.compareInputBox, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' }, compareTicker2 && styles.compareInputBoxActive]}>
+                  <View style={[styles.compareInputBox, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : '#E5E5EA' }, compareTicker2 && styles.compareInputBoxActive]}>
                     <Ionicons name="business" size={18} color={compareTicker2 ? '#FF9500' : '#8E8E93'} />
                     <TextInput
                       style={[styles.compareInput, { backgroundColor: 'transparent', color: colors.text }]}
@@ -1253,7 +1253,7 @@ Always remind users that this is educational information, not financial advice.`
                   ].map(([t1, t2], idx) => (
                     <TouchableOpacity
                       key={idx}
-                      style={[styles.quickCompareChip, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : colors.border }]}
+                      style={[styles.quickCompareChip, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : colors.border }]}
                       onPress={() => { setCompareTicker1(t1); setCompareTicker2(t2); }}
                     >
                       <Text style={styles.quickCompareText}>{t1} vs {t2}</Text>
@@ -1507,7 +1507,7 @@ Always remind users that this is educational information, not financial advice.`
               <Text style={[styles.searchTitle, { color: colors.text }]}>AI Price Forecast</Text>
               <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>3-6 month price targets & probability analysis</Text>
 
-              <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : colors.border }]}>
+              <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : colors.border }]}>
                 <Ionicons name="telescope" size={20} color={colors.textTertiary} />
                 <TextInput
                   style={[styles.searchInput, { color: colors.text }]}
@@ -1547,7 +1547,7 @@ Always remind users that this is educational information, not financial advice.`
                   {['TSLA', 'NVDA', 'AAPL', 'META', 'AMD', 'AMZN'].map((sym) => (
                     <TouchableOpacity
                       key={sym}
-                      style={[styles.quickPickChip, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#5856D620' }]}
+                      style={[styles.quickPickChip, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : '#5856D620' }]}
                       onPress={() => handleForecast(sym)}
                     >
                       <Text style={[styles.quickPickText, { color: '#5856D6' }]}>{sym}</Text>
@@ -2038,78 +2038,81 @@ Always remind users that this is educational information, not financial advice.`
               </View>
             ) : (
             <>
-            {/* Header */}
-            <View style={[styles.insiderHeader, { backgroundColor: colors.background }]}>
-              <View style={styles.insiderHeaderIcon}>
-                <Ionicons name="briefcase" size={28} color="#5856D6" />
+            {/* Insider Card Wrapper */}
+            <View style={[styles.searchCard, { backgroundColor: isDark ? colors.card : colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3 }]}>
+              {/* Header */}
+              <View style={[styles.insiderHeader, { backgroundColor: 'transparent' }]}>
+                <View style={styles.insiderHeaderIcon}>
+                  <Ionicons name="briefcase" size={28} color="#5856D6" />
+                </View>
+                <View style={styles.insiderHeaderText}>
+                  <Text style={[styles.insiderHeaderTitle, { color: colors.text }]}>Insider Trading</Text>
+                  <Text style={[styles.insiderHeaderSubtitle, { color: colors.textSecondary }]}>Track what executives are buying & selling</Text>
+                </View>
               </View>
-              <View style={styles.insiderHeaderText}>
-                <Text style={[styles.insiderHeaderTitle, { color: colors.text }]}>Insider Trading</Text>
-                <Text style={[styles.insiderHeaderSubtitle, { color: colors.textSecondary }]}>Track what executives are buying & selling</Text>
-              </View>
-            </View>
 
-            {/* Info Card */}
-            <View style={[styles.insiderInfoCard, { backgroundColor: colors.background }]}>
-              <View style={styles.insiderInfoRow}>
-                <View style={styles.insiderInfoItem}>
-                  <Ionicons name="eye" size={20} color="#007AFF" />
-                  <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>Real-Time Data</Text>
-                </View>
-                <View style={styles.insiderInfoItem}>
-                  <Ionicons name="document-text" size={20} color="#34C759" />
-                  <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>SEC Filings</Text>
-                </View>
-                <View style={styles.insiderInfoItem}>
-                  <Ionicons name="search" size={20} color="#FF9500" />
-                  <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>Symbol Search</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Feature List */}
-            <View style={[styles.insiderFeatures, { backgroundColor: colors.background }]}>
-              <Text style={[styles.insiderFeaturesTitle, { color: colors.text }]}>What you can do:</Text>
-              {[
-                { icon: 'search', text: 'Search insider trades by stock symbol', color: '#007AFF' },
-                { icon: 'trending-up', text: 'Filter by buys or sells', color: '#34C759' },
-                { icon: 'person', text: 'See who is trading (executives, directors)', color: '#FF9500' },
-                { icon: 'cash', text: 'View trade values and share counts', color: '#5856D6' },
-                { icon: 'time', text: 'Track recent SEC Form 4 filings', color: '#FF3B30' },
-              ].map((feature, idx) => (
-                <View key={idx} style={styles.insiderFeatureItem}>
-                  <View style={[styles.insiderFeatureIcon, { backgroundColor: `${feature.color}15` }]}>
-                    <Ionicons name={feature.icon as any} size={16} color={feature.color} />
+              {/* Info Card */}
+              <View style={[styles.insiderInfoCard, { backgroundColor: colors.surface, borderWidth: 1, borderColor: isDark ? '#444' : '#E5E5EA', borderRadius: 12 }]}>
+                <View style={styles.insiderInfoRow}>
+                  <View style={styles.insiderInfoItem}>
+                    <Ionicons name="eye" size={20} color="#007AFF" />
+                    <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>Real-Time Data</Text>
                   </View>
-                  <Text style={[styles.insiderFeatureText, { color: colors.textSecondary }]}>{feature.text}</Text>
+                  <View style={styles.insiderInfoItem}>
+                    <Ionicons name="document-text" size={20} color="#34C759" />
+                    <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>SEC Filings</Text>
+                  </View>
+                  <View style={styles.insiderInfoItem}>
+                    <Ionicons name="search" size={20} color="#FF9500" />
+                    <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>Symbol Search</Text>
+                  </View>
                 </View>
-              ))}
-            </View>
+              </View>
 
-            {/* CTA Button */}
-            <TouchableOpacity
-              style={styles.insiderCTAButton}
-              onPress={() => router.push('/insider-trading')}
-            >
-              <Text style={styles.insiderCTAText}>Open Insider Trading</Text>
-              <Ionicons name="arrow-forward" size={20} color="#FFF" />
-            </TouchableOpacity>
-
-            {/* Quick Access Popular Stocks */}
-            <View style={[styles.insiderQuickAccess, { backgroundColor: colors.background }]}>
-              <Text style={[styles.insiderQuickTitle, { color: colors.text }]}>Quick Access</Text>
-              <Text style={[styles.insiderQuickSubtitle, { color: colors.textSecondary }]}>Check insider activity for popular stocks</Text>
-              <View style={styles.insiderQuickGrid}>
-                {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN'].map((symbol) => (
-                  <TouchableOpacity
-                    key={symbol}
-                    style={[styles.insiderQuickChip, { backgroundColor: colors.surface }]}
-                    onPress={() => router.push('/insider-trading')}
-                  >
-                    <Text style={[styles.insiderQuickChipText, { color: colors.text }]}>{symbol}</Text>
-                    <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
-                  </TouchableOpacity>
+              {/* Feature List */}
+              <View style={[styles.insiderFeatures, { backgroundColor: colors.surface, borderWidth: 1, borderColor: isDark ? '#444' : '#E5E5EA', borderRadius: 12 }]}>
+                <Text style={[styles.insiderFeaturesTitle, { color: colors.text }]}>What you can do:</Text>
+                {[
+                  { icon: 'search', text: 'Search insider trades by stock symbol', color: '#007AFF' },
+                  { icon: 'trending-up', text: 'Filter by buys or sells', color: '#34C759' },
+                  { icon: 'person', text: 'See who is trading (executives, directors)', color: '#FF9500' },
+                  { icon: 'cash', text: 'View trade values and share counts', color: '#5856D6' },
+                  { icon: 'time', text: 'Track recent SEC Form 4 filings', color: '#FF3B30' },
+                ].map((feature, idx) => (
+                  <View key={idx} style={styles.insiderFeatureItem}>
+                    <View style={[styles.insiderFeatureIcon, { backgroundColor: `${feature.color}15` }]}>
+                      <Ionicons name={feature.icon as any} size={16} color={feature.color} />
+                    </View>
+                    <Text style={[styles.insiderFeatureText, { color: colors.textSecondary }]}>{feature.text}</Text>
+                  </View>
                 ))}
+              </View>
+
+              {/* CTA Button */}
+              <TouchableOpacity
+                style={styles.insiderCTAButton}
+                onPress={() => router.push('/insider-trading')}
+              >
+                <Text style={styles.insiderCTAText}>Open Insider Trading</Text>
+                <Ionicons name="arrow-forward" size={20} color="#FFF" />
+              </TouchableOpacity>
+
+              {/* Quick Access Popular Stocks */}
+              <View style={[styles.insiderQuickAccess, { backgroundColor: colors.surface, borderWidth: 1, borderColor: isDark ? '#444' : '#E5E5EA', borderRadius: 12 }]}>
+                <Text style={[styles.insiderQuickTitle, { color: colors.text }]}>Quick Access</Text>
+                <Text style={[styles.insiderQuickSubtitle, { color: colors.textSecondary }]}>Check insider activity for popular stocks</Text>
+                <View style={styles.insiderQuickGrid}>
+                  {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN'].map((symbol) => (
+                    <TouchableOpacity
+                      key={symbol}
+                      style={[styles.insiderQuickChip, { backgroundColor: isDark ? colors.card : colors.surface, borderWidth: 1, borderColor: isDark ? '#444' : '#E5E5EA' }]}
+                      onPress={() => router.push('/insider-trading')}
+                    >
+                      <Text style={[styles.insiderQuickChipText, { color: colors.text }]}>{symbol}</Text>
+                      <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             </View>
 
