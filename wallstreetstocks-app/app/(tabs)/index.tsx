@@ -4649,7 +4649,7 @@ const styles = StyleSheet.create({
   analyticsPreviewStatValue: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#000',
+    color: '#007AFF',
   },
   analyticsPreviewDivider: {
     width: 1,
