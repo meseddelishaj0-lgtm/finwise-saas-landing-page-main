@@ -5,8 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const WATCHLIST_KEY = 'user_watchlist';
 const API_URL = 'https://www.wallstreetstocks.ai';
-const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 // Debounce delay for AsyncStorage saves (500ms)
 const SAVE_DEBOUNCE_MS = 500;
@@ -112,11 +112,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Validate stock exists using FMP API
-      const res = await fetch(`${FMP_BASE_URL}/quote/${upperSymbol}?apikey=${FMP_API_KEY}`);
+      // Validate stock exists using Twelve Data API
+      const res = await fetch(`${TWELVE_DATA_URL}/quote?symbol=${upperSymbol}&apikey=${TWELVE_DATA_API_KEY}`);
       const data = await res.json();
 
-      if (!data || !Array.isArray(data) || data.length === 0) {
+      if (!data || data.code || !data.symbol) {
         Alert.alert('Error', `Stock ${upperSymbol} not found`);
         return false;
       }

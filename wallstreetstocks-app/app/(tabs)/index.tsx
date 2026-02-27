@@ -756,13 +756,26 @@ export default function Dashboard() {
       }
 
       if (quote && quote.price > 0) {
+        // Always calculate from previousClose for accuracy
+        const previousClose = quote.previousClose;
+        let change: number;
+        let changePercent: number;
+
+        if (previousClose && previousClose > 0) {
+          change = quote.price - previousClose;
+          changePercent = (change / previousClose) * 100;
+        } else {
+          change = quote.change || 0;
+          changePercent = quote.changePercent || 0;
+        }
+
         return {
           ...index,
           name: nameMap[index.symbol] || index.symbol,
           price: quote.price,
-          change: quote.change || 0,
-          changePercent: quote.changePercent || 0,
-          color: (quote.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
+          change,
+          changePercent,
+          color: changePercent >= 0 ? '#34C759' : '#FF3B30',
         };
       }
       return index;
@@ -792,15 +805,18 @@ export default function Dashboard() {
       }
 
       if (quote && quote.price > 0) {
-        // Use previousClose to calculate accurate change if quote.changePercent is 0 or missing
+        // Always calculate from previousClose for accuracy
+        // WebSocket day_change can use open price as reference, giving wrong values
         const previousClose = quote.previousClose || stock.previousClose;
-        let newChange = quote.change ?? stock.change;
-        let newChangePercent = quote.changePercent ?? stock.changePercent;
-        
-        // Recalculate if change is 0 but we have previousClose
-        if ((newChangePercent === 0 || newChangePercent === undefined) && previousClose && previousClose > 0) {
+        let newChange: number;
+        let newChangePercent: number;
+
+        if (previousClose && previousClose > 0) {
           newChange = quote.price - previousClose;
           newChangePercent = (newChange / previousClose) * 100;
+        } else {
+          newChange = quote.change ?? stock.change ?? 0;
+          newChangePercent = quote.changePercent ?? stock.changePercent ?? 0;
         }
         
         // Update sparkline data with live price as the last point
@@ -886,11 +902,24 @@ export default function Dashboard() {
     return stockPicksData.map(pick => {
       const quote = priceStore.getQuote(pick.symbol);
       if (quote && quote.price > 0) {
+        // Always calculate from previousClose for accuracy
+        const previousClose = quote.previousClose;
+        let change: number;
+        let changePercent: number;
+
+        if (previousClose && previousClose > 0) {
+          change = quote.price - previousClose;
+          changePercent = (change / previousClose) * 100;
+        } else {
+          change = quote.change ?? pick.change ?? 0;
+          changePercent = quote.changePercent ?? pick.changePercent ?? 0;
+        }
+
         return {
           ...pick,
           price: quote.price,
-          change: quote.change ?? pick.change,
-          changePercent: quote.changePercent ?? pick.changePercent,
+          change,
+          changePercent,
         };
       }
       return pick;

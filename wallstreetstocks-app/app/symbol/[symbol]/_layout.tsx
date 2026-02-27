@@ -6,60 +6,40 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import SymbolHeader from "./header";
 import { setToMemory, CACHE_KEYS } from "../../../utils/memoryCache";
 
-const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const CHART_CACHE_PREFIX = 'chart_cache_';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 const QUOTE_CACHE_PREFIX = 'quote_cache_';
 
-// Pre-fetch chart and quote data for faster tab loading
+// Pre-fetch quote data for faster tab loading (chart.tsx fetches its own chart data)
 async function prefetchSymbolData(symbol: string) {
   const cleanSymbol = symbol.toUpperCase().trim();
-  const encodedSymbol = encodeURIComponent(cleanSymbol.replace(/\//g, ''));
 
   try {
-    // Fetch quote and 1D chart data in parallel
-    const [quoteRes, chartRes] = await Promise.all([
-      fetch(`https://financialmodelingprep.com/api/v3/quote/${encodedSymbol}?apikey=${FMP_API_KEY}`),
-      fetch(`https://financialmodelingprep.com/api/v3/historical-chart/1min/${encodedSymbol}?extended=true&apikey=${FMP_API_KEY}`)
-    ]);
+    // Fetch quote from Twelve Data
+    const res = await fetch(`${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(cleanSymbol)}&apikey=${TWELVE_DATA_API_KEY}`);
+    const data = await res.json();
 
-    const [quoteData, chartData] = await Promise.all([
-      quoteRes.json(),
-      chartRes.json()
-    ]);
+    if (data && data.symbol && !data.code) {
+      const price = parseFloat(data.close) || 0;
+      const previousClose = parseFloat(data.previous_close) || price;
+      const change = previousClose > 0 ? price - previousClose : 0;
+      const changesPercentage = previousClose > 0 ? (change / previousClose) * 100 : 0;
 
-    // Cache quote data to BOTH memory (instant) and AsyncStorage (persistent)
-    if (quoteData?.[0]) {
+      const quoteData = {
+        symbol: data.symbol,
+        name: data.name,
+        price,
+        change,
+        changesPercentage,
+        previousClose,
+      };
+
       // Memory cache for instant access
-      setToMemory(CACHE_KEYS.quote(cleanSymbol), quoteData[0]);
+      setToMemory(CACHE_KEYS.quote(cleanSymbol), quoteData);
       // AsyncStorage for persistence
       await AsyncStorage.setItem(
         `${QUOTE_CACHE_PREFIX}${cleanSymbol}`,
-        JSON.stringify({ data: { ...quoteData[0], timestamp: Date.now() }, timestamp: Date.now() })
-      );
-    }
-
-    // Cache chart data (1D)
-    if (Array.isArray(chartData) && chartData.length > 0) {
-      const today = new Date().toISOString().split('T')[0];
-      const todayData = chartData.filter((d: any) => d.date.startsWith(today));
-      const dataToUse = todayData.length > 10 ? todayData : chartData.slice(0, 960);
-      const sampleRate = dataToUse.length > 300 ? 3 : dataToUse.length > 150 ? 2 : 1;
-
-      const formatted = dataToUse
-        .filter((_: any, i: number) => i % sampleRate === 0)
-        .reverse()
-        .map((d: any) => ({
-          value: d.close,
-          label: new Date(d.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-          date: new Date(d.date),
-        }));
-
-      // Memory cache for instant access
-      setToMemory(CACHE_KEYS.chart(cleanSymbol, '1D'), formatted);
-      // AsyncStorage for persistence
-      await AsyncStorage.setItem(
-        `${CHART_CACHE_PREFIX}${cleanSymbol}_1D`,
-        JSON.stringify({ data: formatted, timestamp: Date.now() })
+        JSON.stringify({ data: { ...quoteData, timestamp: Date.now() }, timestamp: Date.now() })
       );
     }
   } catch (err) {

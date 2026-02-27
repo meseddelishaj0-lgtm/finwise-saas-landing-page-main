@@ -3,8 +3,8 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Alert } from 'react-native';
 
-const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 interface Holding {
   symbol: string;
@@ -39,10 +39,10 @@ export function StockProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const res = await fetch(`${BASE_URL}/quote/${upperSymbol}?apikey=${FMP_API_KEY}`);
+      const res = await fetch(`${TWELVE_DATA_URL}/quote?symbol=${upperSymbol}&apikey=${TWELVE_DATA_API_KEY}`);
       const data = await res.json();
 
-      if (!data || !Array.isArray(data) || data.length === 0) {
+      if (!data || data.code || !data.symbol) {
         Alert.alert('Error', `Stock ${upperSymbol} not found`);
         return false;
       }

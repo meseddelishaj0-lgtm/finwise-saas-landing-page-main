@@ -384,12 +384,9 @@ export default function ChartTab() {
   // ============================================================================
 
   const priceChange = useMemo(() => {
-    // Prefer WebSocket values
-    if (wsChange !== undefined && wsChangePercent !== undefined) {
-      return { amount: wsChange, percent: wsChangePercent };
-    }
-
-    // Fallback: calculate from previousClose (accurate) or chart first point
+    // Always calculate from previousClose for accuracy
+    // WebSocket day_change/day_change_percent can use open price as reference,
+    // giving wrong values for stocks with after-hours moves
     const price = livePrice ?? currentPrice;
     if (price === null) return { amount: 0, percent: 0 };
 
@@ -398,7 +395,7 @@ export default function ChartTab() {
     const percent = refPrice > 0 ? (amount / refPrice) * 100 : 0;
 
     return { amount, percent };
-  }, [liveChartData, livePrice, currentPrice, wsChange, wsChangePercent, previousClose]);
+  }, [liveChartData, livePrice, currentPrice, previousClose]);
 
   const isPositive = priceChange.amount >= 0;
   const priceColor = isPositive ? '#00C853' : '#FF3B30';

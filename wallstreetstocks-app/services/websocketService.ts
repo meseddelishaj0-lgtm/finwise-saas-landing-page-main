@@ -169,18 +169,19 @@ class WebSocketService {
     // Get previous close - from message, existing quote, or use current price as fallback
     const previousClose = message.previous_close ?? existingQuote?.previousClose ?? price;
 
-    // Calculate change and change percent if not provided
-    let change = message.day_change;
-    let changePercent = message.day_change_percent;
+    // Always calculate change from previousClose for accuracy
+    // Twelve Data's day_change/day_change_percent can use open price as reference,
+    // which gives wrong values for stocks with after-hours moves (e.g. earnings)
+    let change: number;
+    let changePercent: number;
 
-    if ((change === undefined || changePercent === undefined) && previousClose > 0) {
+    if (previousClose > 0 && previousClose !== price) {
       change = price - previousClose;
       changePercent = ((price - previousClose) / previousClose) * 100;
+    } else {
+      change = existingQuote?.change ?? 0;
+      changePercent = existingQuote?.changePercent ?? 0;
     }
-
-    // Fallback to existing values if still undefined
-    change = change ?? existingQuote?.change ?? 0;
-    changePercent = changePercent ?? existingQuote?.changePercent ?? 0;
 
     // Update the price store with all available data
     priceStore.setQuote({

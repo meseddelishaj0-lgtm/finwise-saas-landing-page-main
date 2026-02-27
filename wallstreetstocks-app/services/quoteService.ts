@@ -1,14 +1,15 @@
 // services/quoteService.ts
-// Centralized quote fetching service with memory cache support
-// Ensures all tabs display prices synced with chart data
+// Centralized quote fetching service using Twelve Data API
+// FMP is NOT used for stock quotes - only for AI tools and market news
 
 import { getFromMemory, setToMemory, CACHE_KEYS } from '../utils/memoryCache';
 
-const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 // Cache TTL: 5 minutes for chart-synced prices
 const CACHE_TTL = 300000;
+const BATCH_SIZE = 8; // Twelve Data batch limit
 
 export interface Quote {
   symbol: string;
@@ -25,12 +26,8 @@ export interface Quote {
 }
 
 /**
- * Fetch quotes with memory cache support
- * Prioritizes chart-synced prices over FMP API data
- *
- * @param symbols - Array of stock symbols to fetch
- * @param options - Optional configuration
- * @returns Array of quotes with cached prices where available
+ * Fetch quotes from Twelve Data with memory cache support
+ * Prioritizes chart-synced prices over API data
  */
 export async function fetchQuotesWithCache(
   symbols: string[],
@@ -41,31 +38,64 @@ export async function fetchQuotesWithCache(
   const { timeout = 15000 } = options;
 
   try {
-    const symbolsParam = symbols.join(',');
+    const allResults: any[] = [];
 
-    // Fetch from FMP API
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    // Fetch in batches of 8 (Twelve Data limit)
+    for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+      const batch = symbols.slice(i, i + BATCH_SIZE);
+      const url = `${TWELVE_DATA_URL}/quote?symbol=${batch.join(',')}&apikey=${TWELVE_DATA_API_KEY}`;
 
-    const res = await fetch(
-      `${BASE_URL}/quote/${symbolsParam}?apikey=${FMP_API_KEY}`,
-      { signal: controller.signal }
-    );
-    clearTimeout(timeoutId);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    if (!res.ok) {
-      throw new Error(`FMP API returned ${res.status}`);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) continue;
+
+        const json = await res.json();
+        // Single symbol returns object directly, multiple returns keyed object
+        const results = batch.length === 1 ? [json] : Object.values(json);
+        allResults.push(...(results as any[]));
+
+        // Small delay between batches
+        if (i + BATCH_SIZE < symbols.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch {
+        // Continue with next batch on error
+      }
     }
 
-    const data = await res.json();
-    const quotes: Quote[] = Array.isArray(data) ? data : [];
+    // Filter out errors and map to Quote interface
+    const quotes: Quote[] = allResults
+      .filter(item => item && item.symbol && !item.code)
+      .map(item => {
+        const price = parseFloat(item.close) || 0;
+        const previousClose = parseFloat(item.previous_close) || price;
+        // Always calculate from previousClose for accuracy
+        const change = previousClose > 0 ? price - previousClose : 0;
+        const changesPercentage = previousClose > 0 ? (change / previousClose) * 100 : 0;
+
+        return {
+          symbol: item.symbol,
+          name: item.name || item.symbol,
+          price,
+          change,
+          changesPercentage,
+          previousClose,
+          dayHigh: parseFloat(item.high) || undefined,
+          dayLow: parseFloat(item.low) || undefined,
+          volume: parseInt(item.volume) || undefined,
+        };
+      });
 
     // Merge with memory cache - prioritize chart-synced prices
     const mergedQuotes = quotes.map((quote: Quote) => {
       // First check for chart-synced quote cache
       const cachedQuote = getFromMemory<any>(CACHE_KEYS.quote(quote.symbol), CACHE_TTL);
       if (cachedQuote?.price && cachedQuote?._chartSynced) {
-        // Use chart-synced price (most accurate)
         return {
           ...quote,
           price: cachedQuote.price,

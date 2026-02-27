@@ -3,8 +3,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
+const BATCH_SIZE = 8;
 
 interface HoldingBase {
   symbol: string;
@@ -96,13 +97,33 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const symbols = portfolio.holdings.map(h => h.symbol.toUpperCase()).join(',');
+      const symbolList = portfolio.holdings.map(h => h.symbol.toUpperCase());
 
-      const response = await fetch(`${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`);
-      const priceData = await response.json();
+      // Fetch in batches of 8 from Twelve Data
+      const allResults: any[] = [];
+      for (let i = 0; i < symbolList.length; i += BATCH_SIZE) {
+        const batch = symbolList.slice(i, i + BATCH_SIZE);
+        try {
+          const res = await fetch(`${TWELVE_DATA_URL}/quote?symbol=${batch.join(',')}&apikey=${TWELVE_DATA_API_KEY}`);
+          const json = await res.json();
+          const results = batch.length === 1 ? [json] : Object.values(json);
+          allResults.push(...(results as any[]));
+        } catch {
+          // Continue with next batch
+        }
+      }
 
+      // Map Twelve Data response to expected format
+      const priceData = allResults
+        .filter(item => item && item.symbol && !item.code)
+        .map(item => {
+          const price = parseFloat(item.close) || 0;
+          const previousClose = parseFloat(item.previous_close) || price;
+          const change = previousClose > 0 ? price - previousClose : 0;
+          return { symbol: item.symbol, price, change, previousClose, name: item.name };
+        });
 
-      if (!Array.isArray(priceData) || priceData.length === 0) {
+      if (priceData.length === 0) {
         // Don't throw - gracefully fall back to avgCost
         const holdingsWithPrices: HoldingWithPrices[] = portfolio.holdings.map(h => ({
           symbol: h.symbol.toUpperCase(),
