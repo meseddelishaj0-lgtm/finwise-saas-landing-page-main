@@ -1139,11 +1139,11 @@ export default function Dashboard() {
     await fetchWatchlistFromAPI();
   };
 
-  // Fetch real chart data + correct previous close for watchlist
+  // Fetch real chart data for watchlist sparklines
+  // Daily close corrections are handled centrally by dailyCloseService via marketDataService
   const fetchWatchlistCharts = async () => {
     try {
       const { fetchSparklines } = await import('@/services/sparklineService');
-      const { fetchDailyClose } = await import('@/services/quoteService');
 
       // Build change percents map for sparkline direction
       const changePercents: Record<string, number> = {};
@@ -1151,10 +1151,10 @@ export default function Dashboard() {
         if (s.symbol) changePercents[s.symbol] = s.changePercent || 0;
       });
 
-      // Step 1: Fetch sparklines first
+      // Fetch sparklines
       const sparklineMap = await fetchSparklines(watchlist, changePercents);
 
-      // Update sparklines immediately so user sees them
+      // Update sparklines
       setWatchlistData(prev => prev.map(item => {
         const sparkline = sparklineMap[item.symbol];
         if (sparkline && sparkline.length > 0) {
@@ -1163,38 +1163,9 @@ export default function Dashboard() {
         return item;
       }));
 
-      // Step 2: Fetch correct previous close AFTER sparklines (sequential to avoid rate limits)
-      const dailyCloseMap = await fetchDailyClose(watchlist);
-
-      // Update change percentages with correct previous close from /eod
-      if (Object.keys(dailyCloseMap).length > 0) {
-        setWatchlistData(prev => prev.map(item => {
-          const correctPrevClose = dailyCloseMap[item.symbol];
-
-          if (correctPrevClose && correctPrevClose > 0 && item.price > 0) {
-            const change = item.price - correctPrevClose;
-            const changePercent = (change / correctPrevClose) * 100;
-
-            // Update priceStore so WebSocket updates use the correct previousClose
-            priceStore.setQuote({
-              symbol: item.symbol,
-              price: item.price,
-              change,
-              changePercent,
-              previousClose: correctPrevClose,
-            });
-
-            return {
-              ...item,
-              change,
-              changePercent,
-              previousClose: correctPrevClose,
-              color: changePercent >= 0 ? '#34C759' : '#FF3B30',
-            };
-          }
-          return item;
-        }));
-      }
+      // Also trigger daily close correction for watchlist symbols not yet corrected
+      const { correctPreviousCloses } = await import('@/services/dailyCloseService');
+      correctPreviousCloses(watchlist).catch(() => {});
     } catch {
     }
   };

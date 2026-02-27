@@ -180,51 +180,6 @@ export function getCachedPrice(symbol: string): number | null {
 }
 
 /**
- * Fetch correct previous regular session close for symbols
- * Uses /eod endpoint which returns the official end-of-day close price
- * This is the regular session close (4 PM ET), NOT including after-hours
- *
- * During market hours: returns yesterday's close (today hasn't ended yet)
- * During after-hours: returns today's regular session close
- */
-export async function fetchDailyClose(
-  symbols: string[]
-): Promise<Record<string, number>> {
-  if (symbols.length === 0) return {};
-
-  const result: Record<string, number> = {};
-
-  // Fetch one symbol at a time sequentially to avoid rate limiting
-  // /eod is a lightweight endpoint, each request is fast
-  for (let i = 0; i < symbols.length; i++) {
-    const sym = symbols[i];
-    try {
-      const url = `${TWELVE_DATA_URL}/eod?symbol=${encodeURIComponent(sym)}&apikey=${TWELVE_DATA_API_KEY}`;
-      const res = await fetch(url);
-
-      if (!res.ok) continue;
-
-      const json = await res.json();
-
-      // /eod returns: { symbol, exchange, currency, datetime, close }
-      if (json?.close) {
-        const close = parseFloat(json.close);
-        if (close > 0) result[sym] = close;
-      }
-    } catch {
-      // Skip this symbol on error
-    }
-
-    // Small delay between requests to avoid rate limiting
-    if (i < symbols.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 150));
-    }
-  }
-
-  return result;
-}
-
-/**
  * Prefetch quotes into memory cache (for preloading)
  */
 export async function prefetchQuotes(symbols: string[]): Promise<void> {

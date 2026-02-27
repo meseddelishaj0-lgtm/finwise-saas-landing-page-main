@@ -5,6 +5,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { priceStore } from '../stores/priceStore';
 import { websocketService } from './websocketService';
+import { correctPreviousCloses } from './dailyCloseService';
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
@@ -253,6 +254,13 @@ const fetchAllData = async () => {
 
   // Notify listeners
   notifyListeners();
+
+  // Correct previousClose for stocks and ETFs using /eod (fire and forget)
+  // This fixes wrong change% from Twelve Data's /quote previous_close which includes after-hours
+  const stockAndEtfSymbols = [...ALL_STOCKS, ...ALL_ETFS];
+  correctPreviousCloses(stockAndEtfSymbols).then(() => {
+    notifyListeners(); // Re-notify after corrections applied
+  }).catch(() => {});
 };
 
 const subscribeToWebSocket = () => {

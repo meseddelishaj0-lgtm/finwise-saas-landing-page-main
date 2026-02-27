@@ -123,6 +123,12 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
           return { symbol: item.symbol, price, change, previousClose, name: item.name };
         });
 
+      // Correct previousClose with /eod for accurate dayChange (non-blocking)
+      const symbolsToCorrect = priceData.map(q => q.symbol);
+      import('../services/dailyCloseService').then(({ correctPreviousCloses }) => {
+        correctPreviousCloses(symbolsToCorrect).catch(() => {});
+      }).catch(() => {});
+
       if (priceData.length === 0) {
         // Don't throw - gracefully fall back to avgCost
         const holdingsWithPrices: HoldingWithPrices[] = portfolio.holdings.map(h => ({

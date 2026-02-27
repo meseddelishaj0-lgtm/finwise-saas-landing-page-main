@@ -166,10 +166,12 @@ class WebSocketService {
     // Get existing quote to preserve other fields
     const existingQuote = priceStore.getQuote(symbol);
 
-    // Get previous close - prefer existing value from REST API (regular session close)
-    // over WebSocket's previous_close (which includes after-hours trading and gives
-    // wrong change% for stocks with big after-hours moves like earnings)
-    const previousClose = existingQuote?.previousClose ?? message.previous_close ?? price;
+    // Get previous close - if we have a corrected value from /eod or chart, keep it
+    // WebSocket's previous_close includes after-hours trading which gives wrong change%
+    const hasCorrectedClose = existingQuote?.previousCloseSource === 'eod' || existingQuote?.previousCloseSource === 'chart';
+    const previousClose = hasCorrectedClose
+      ? existingQuote!.previousClose!
+      : (existingQuote?.previousClose ?? message.previous_close ?? price);
 
     // Always calculate change from previousClose for accuracy
     // Twelve Data's day_change/day_change_percent can use open price as reference,
@@ -193,6 +195,7 @@ class WebSocketService {
       change,
       changePercent,
       previousClose,
+      previousCloseSource: hasCorrectedClose ? existingQuote!.previousCloseSource : existingQuote?.previousCloseSource,
       open: message.open ?? existingQuote?.open,
       high: message.high ?? existingQuote?.high,
       low: message.low ?? existingQuote?.low,

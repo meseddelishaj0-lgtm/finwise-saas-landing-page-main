@@ -41,6 +41,10 @@ async function prefetchSymbolData(symbol: string) {
         `${QUOTE_CACHE_PREFIX}${cleanSymbol}`,
         JSON.stringify({ data: { ...quoteData, timestamp: Date.now() }, timestamp: Date.now() })
       );
+
+      // Correct previousClose with /eod for accurate change% (non-blocking)
+      const { correctPreviousCloses } = await import('../../../services/dailyCloseService');
+      correctPreviousCloses([cleanSymbol]).catch(() => {});
     }
   } catch (err) {
     // Silent fail - prefetch is best effort

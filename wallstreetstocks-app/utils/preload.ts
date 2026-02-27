@@ -144,11 +144,16 @@ export async function preloadAppData(): Promise<void> {
   // This prevents the app from becoming unresponsive on startup
   setTimeout(async () => {
     try {
+      // Load persisted daily close cache first for instant corrections on warm start
+      const { initDailyCloseCache } = await import('../services/dailyCloseService');
+      await initDailyCloseCache();
+
       // Import market data service dynamically to avoid circular deps
       const { marketDataService } = await import('../services/marketDataService');
 
       // Initialize market data service (Robinhood-style pre-loading)
       // This loads stocks, crypto, ETFs for instant tab switching
+      // After loading, it triggers dailyCloseService to correct previousClose values
       marketDataService.initialize();
 
       // Pre-load popular stock quotes with Twelve Data
