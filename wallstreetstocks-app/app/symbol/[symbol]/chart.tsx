@@ -389,16 +389,16 @@ export default function ChartTab() {
       return { amount: wsChange, percent: wsChangePercent };
     }
 
-    // Fallback: calculate from chart
+    // Fallback: calculate from previousClose (accurate) or chart first point
     const price = livePrice ?? currentPrice;
-    if (!liveChartData.length || price === null) return { amount: 0, percent: 0 };
+    if (price === null) return { amount: 0, percent: 0 };
 
-    const startPrice = liveChartData[0]?.value || price;
-    const amount = price - startPrice;
-    const percent = startPrice > 0 ? (amount / startPrice) * 100 : 0;
+    const refPrice = previousClose || (liveChartData.length > 0 ? liveChartData[0]?.value : null) || price;
+    const amount = price - refPrice;
+    const percent = refPrice > 0 ? (amount / refPrice) * 100 : 0;
 
     return { amount, percent };
-  }, [liveChartData, livePrice, currentPrice, wsChange, wsChangePercent]);
+  }, [liveChartData, livePrice, currentPrice, wsChange, wsChangePercent, previousClose]);
 
   const isPositive = priceChange.amount >= 0;
   const priceColor = isPositive ? '#00C853' : '#FF3B30';
@@ -435,21 +435,23 @@ export default function ChartTab() {
     if (!cleanSymbol || !apiSymbol) return;
 
     try {
-      const res = await fetch(`${TWELVE_DATA_URL}/price?symbol=${encodeURIComponent(apiSymbol)}&apikey=${TWELVE_DATA_API_KEY}`);
+      const res = await fetch(`${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(apiSymbol)}&apikey=${TWELVE_DATA_API_KEY}`);
       const data = await res.json();
 
-      let price = parseFloat(data?.price) || 0;
+      let price = parseFloat(data?.close) || 0;
+      const prevClose = parseFloat(data?.previous_close) || 0;
 
       if (price === 0 && rawChartDataRef.current.length > 0) {
         price = rawChartDataRef.current[rawChartDataRef.current.length - 1]?.value || 0;
       }
 
       if (price > 0) {
-        const prevClose = previousClose || price;
-        const change = price - prevClose;
-        const changePercent = prevClose > 0 ? (change / prevClose) * 100 : 0;
+        const refPrice = prevClose > 0 ? prevClose : price;
+        const change = price - refPrice;
+        const changePercent = refPrice > 0 ? (change / refPrice) * 100 : 0;
 
         setCurrentPrice(price);
+        if (prevClose > 0) setPreviousClose(prevClose);
         setError(null);
 
         priceStore.setQuote({
@@ -457,11 +459,11 @@ export default function ChartTab() {
           price,
           change,
           changePercent,
-          previousClose: prevClose,
+          previousClose: refPrice,
         });
       }
     } catch (err) {}
-  }, [cleanSymbol, apiSymbol, previousClose]);
+  }, [cleanSymbol, apiSymbol]);
 
   const fetchChartData = useCallback(async (showLoading = true) => {
     if (!cleanSymbol || !apiSymbol) return;
@@ -682,7 +684,7 @@ export default function ChartTab() {
   const displayPrice = pointerData?.price ?? livePrice ?? currentPrice ?? latestChartPrice;
   const displayChange = pointerData ? pointerData.change : priceChange.amount;
   const displayPercent = pointerData
-    ? (liveChartData[0]?.value ? (pointerData.change / liveChartData[0].value) * 100 : 0)
+    ? ((previousClose || liveChartData[0]?.value) ? (pointerData.change / (previousClose || liveChartData[0]?.value)) * 100 : 0)
     : priceChange.percent;
   const displayColor = displayChange >= 0 ? '#00C853' : '#FF3B30';
 
