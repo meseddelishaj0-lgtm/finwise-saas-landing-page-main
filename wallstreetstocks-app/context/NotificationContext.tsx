@@ -3,7 +3,7 @@
 // NOTE: Permission requests and token registration are handled by OneSignal in _layout.tsx
 // This context only handles notification display and deep link routing
 import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
-import { Platform, AppState, AppStateStatus } from 'react-native';
+import { Platform, AppState, AppStateStatus, Linking } from 'react-native';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth';
@@ -243,13 +243,20 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   // Handle notification tap/response
   // Supports both Expo Push format (flat data) and OneSignal APNs format
   // (data nested under custom.a with URL under custom.u)
-  const handleNotificationResponse = (response: Notifications.NotificationResponse) => {
+  const handleNotificationResponse = async (response: Notifications.NotificationResponse) => {
     const rawData = response.notification.request.content.data;
 
     // OneSignal wraps additionalData under custom.a and launchURL under custom.u
     const oneSignalPayload = rawData?.custom;
     const data = oneSignalPayload?.a || rawData || {};
-    const articleUrl = data?.url || oneSignalPayload?.u || data?.launchURL;
+    const articleUrl = data?.url || oneSignalPayload?.u || data?.launchURL || rawData?.url;
+
+    console.log('[ExpoNotif] Notification tapped:', JSON.stringify({
+      rawData,
+      oneSignalPayload,
+      resolvedData: data,
+      resolvedUrl: articleUrl,
+    }));
 
     // Navigate based on notification type
     if (data?.type) {
@@ -283,8 +290,15 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           if (articleUrl) {
             try {
               const WebBrowser = require('expo-web-browser');
-              WebBrowser.openBrowserAsync(articleUrl, { presentationStyle: 1 });
-            } catch {}
+              await WebBrowser.openBrowserAsync(articleUrl, {
+                presentationStyle: 1,
+                dismissButtonStyle: 'close',
+                enableBarCollapsing: true,
+              });
+            } catch (e) {
+              console.warn('[ExpoNotif] In-app browser failed, opening externally:', e);
+              Linking.openURL(articleUrl).catch(() => {});
+            }
           } else {
             router.push({ pathname: '/(tabs)/trending' } as any);
           }
@@ -299,8 +313,15 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
           if (articleUrl) {
             try {
               const WebBrowser = require('expo-web-browser');
-              WebBrowser.openBrowserAsync(articleUrl, { presentationStyle: 1 });
-            } catch {}
+              await WebBrowser.openBrowserAsync(articleUrl, {
+                presentationStyle: 1,
+                dismissButtonStyle: 'close',
+                enableBarCollapsing: true,
+              });
+            } catch (e) {
+              console.warn('[ExpoNotif] In-app browser failed, opening externally:', e);
+              Linking.openURL(articleUrl).catch(() => {});
+            }
           } else {
             router.push('/notifications' as any);
           }
@@ -309,8 +330,15 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       // No type set but has a URL — open it in-app
       try {
         const WebBrowser = require('expo-web-browser');
-        WebBrowser.openBrowserAsync(articleUrl, { presentationStyle: 1 });
-      } catch {}
+        await WebBrowser.openBrowserAsync(articleUrl, {
+          presentationStyle: 1,
+          dismissButtonStyle: 'close',
+          enableBarCollapsing: true,
+        });
+      } catch (e) {
+        console.warn('[ExpoNotif] In-app browser failed, opening externally:', e);
+        Linking.openURL(articleUrl).catch(() => {});
+      }
     } else {
       // No URL, no type — navigate to trending as fallback
       router.push({ pathname: '/(tabs)/trending' } as any);

@@ -102,10 +102,24 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
       const notification = event?.notification;
       const data = notification?.additionalData || {};
 
-      // Get URL from multiple possible locations:
-      // 1. additionalData.url (custom field)
+      // Get URL from multiple possible locations (OneSignal v5 puts it in different places):
+      // 1. additionalData.url (custom data field)
       // 2. notification.launchURL (OneSignal standard field)
-      const articleUrl = data.url || notification?.launchURL;
+      // 3. event.result.url (OneSignal click result — most reliable on iOS)
+      // 4. notification.url (direct field)
+      const articleUrl =
+        data.url ||
+        notification?.launchURL ||
+        event?.result?.url ||
+        notification?.url;
+
+      console.log('[OneSignal] Notification tapped:', JSON.stringify({
+        additionalData: data,
+        launchURL: notification?.launchURL,
+        resultUrl: event?.result?.url,
+        notificationUrl: notification?.url,
+        resolvedUrl: articleUrl,
+      }));
 
       // Small delay to ensure navigation stack is fully mounted on cold start
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -115,13 +129,20 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
       } else if (data.type === 'market_mover') {
         router.push({ pathname: '/(tabs)/trending', params: { initialTab: 'gainers' } } as any);
       } else if (articleUrl) {
-        // Open article/news URL in the in-app browser
+        // Open article URL in in-app browser — dismissing returns to app
         try {
           const WebBrowser = require('expo-web-browser');
           await WebBrowser.openBrowserAsync(articleUrl, {
-            presentationStyle: 1,
+            presentationStyle: 1, // Modal — swipe down to return to app
+            dismissButtonStyle: 'close',
+            enableBarCollapsing: true,
           });
-        } catch {}
+        } catch (e) {
+          console.warn('[OneSignal] Failed to open in-app browser, falling back to Linking:', e);
+          // Fallback: open in external browser if in-app browser fails
+          const { Linking } = require('react-native');
+          Linking.openURL(articleUrl).catch(() => {});
+        }
       } else {
         // Fallback: no URL or recognized type — navigate to trending
         router.push({ pathname: '/(tabs)/trending' } as any);
