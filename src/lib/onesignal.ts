@@ -101,12 +101,10 @@ export async function sendToAllSubscribers(
     payload.ios_attachments = { image: options.image };
   }
 
-  // Set the launch URL from explicit option or from data.url
-  // This ensures the URL is available as notification.launchURL on the client
-  const launchUrl = options?.url || data?.url;
-  if (launchUrl) {
-    payload.url = launchUrl;
-  }
+  // DO NOT set payload.url (OneSignal's launchURL) — it causes the native iOS SDK
+  // to handle the tap at the native level, which races with the JS click handler
+  // and blocks it on cold start (JS hasn't loaded yet). Instead, the URL is kept
+  // only in payload.data where the JS handler reads it via additionalData.url.
 
   if (options?.ttl) {
     payload.ttl = options.ttl;
