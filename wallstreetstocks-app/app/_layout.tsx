@@ -1,8 +1,8 @@
 // app/_layout.tsx
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { Stack, router } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { View, StatusBar, Platform, AppState, Linking, LogBox } from "react-native";
+import { View, StatusBar, Platform, AppState, LogBox } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants from "expo-constants";
@@ -90,24 +90,11 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   const appState = useRef(AppState.currentState);
   const trackingRequested = useRef(false);
 
-  // Helper: open a URL in the in-app browser, falling back to external browser
-  const openArticleUrl = useCallback(async (url: string) => {
-    try {
-      const WebBrowser = require('expo-web-browser');
-      await WebBrowser.openBrowserAsync(url, {
-        presentationStyle: 1, // Modal — swipe down to return to app
-        dismissButtonStyle: 'close',
-        enableBarCollapsing: true,
-      });
-    } catch (e) {
-      console.warn('[Notification] In-app browser failed, opening externally:', e);
-      Linking.openURL(url).catch(() => {});
-    }
-  }, []);
-
-  // OneSignal notification tap handler — router is ready here inside the component tree.
-  // The click listener itself is registered at module level (above) to catch cold-start taps.
-  // This effect sets the processor function and drains any pending events.
+  // OneSignal notification tap handler — handles in-app routing for notifications that
+  // do NOT have an article URL (price alerts, market movers, etc.).
+  // Article URLs are opened natively by the Swift OSNotificationClickListener in
+  // withOneSignalAppDelegate.js via SFSafariViewController — that's more reliable on
+  // cold start than waiting for the JS bridge to load.
   useEffect(() => {
     if (!OneSignal) return;
 
@@ -115,24 +102,16 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
       const notification = event?.notification;
       const data = notification?.additionalData || {};
 
-      // Get URL from multiple possible locations (OneSignal v5 puts it in different places):
-      // 1. additionalData.url (custom data field — primary, always set by our backend)
-      // 2. notification.launchURL (OneSignal standard field — no longer set to avoid native SDK interference)
-      // 3. event.result.url (OneSignal click result)
-      // 4. notification.url (direct field)
-      const articleUrl =
-        data.url ||
-        notification?.launchURL ||
-        event?.result?.url ||
-        notification?.url;
-
       console.log('[OneSignal] Notification tapped:', JSON.stringify({
         additionalData: data,
         launchURL: notification?.launchURL,
-        resultUrl: event?.result?.url,
-        notificationUrl: notification?.url,
-        resolvedUrl: articleUrl,
       }));
+
+      // If notification has a URL, the native Swift click listener opens it in
+      // SFSafariViewController. Don't duplicate that here.
+      if (data?.url || notification?.launchURL) {
+        return;
+      }
 
       // Wait for navigation stack to be fully mounted on cold start
       await new Promise(resolve => setTimeout(resolve, 800));
@@ -141,10 +120,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
         router.push(`/symbol/${data.symbol}/chart` as any);
       } else if (data.type === 'market_mover') {
         router.push({ pathname: '/(tabs)/trending', params: { initialTab: 'gainers' } } as any);
-      } else if (articleUrl) {
-        await openArticleUrl(articleUrl);
       } else {
-        // Fallback: no URL or recognized type — navigate to trending
         router.push({ pathname: '/(tabs)/trending' } as any);
       }
     };
@@ -161,33 +137,6 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     return () => {
       _notificationProcessor = null;
     };
-  }, []);
-
-  // Fallback: catch URLs opened by OneSignal's native SDK on cold start
-  // (when the JS click listener hasn't registered in time).
-  // Also handles Linking.getInitialURL() for notifications that launched the app.
-  useEffect(() => {
-    let handled = false;
-
-    const handleUrl = (url: string) => {
-      if (handled) return;
-      // Only handle external article URLs, not deep links into the app
-      if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-        handled = true;
-        console.log('[Linking] Opening URL from cold start:', url);
-        openArticleUrl(url);
-      }
-    };
-
-    // Check if the app was launched with a URL (cold start)
-    Linking.getInitialURL().then((url) => {
-      if (url) handleUrl(url);
-    });
-
-    // Listen for URLs while app is running
-    const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
-
-    return () => sub.remove();
   }, []);
 
   // Update OneSignal user tags for segmentation (Gold/Platinum/Diamond targeting)
