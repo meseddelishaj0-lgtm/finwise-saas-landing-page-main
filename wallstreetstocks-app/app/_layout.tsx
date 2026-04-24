@@ -15,6 +15,14 @@ try {
   // Module not available in Expo Go - will work in production builds
 }
 
+// In-app browser for opening article URLs from notifications
+let WebBrowser: any = null;
+try {
+  WebBrowser = require("expo-web-browser");
+} catch {
+  // Module not available
+}
+
 // ATT module - only available in production builds, not Expo Go
 let requestTrackingPermissionsAsync: (() => Promise<any>) | null = null;
 try {
@@ -90,31 +98,37 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   const appState = useRef(AppState.currentState);
   const trackingRequested = useRef(false);
 
-  // OneSignal notification tap handler — handles in-app routing for notifications that
-  // do NOT have an article URL (price alerts, market movers, etc.).
-  // Article URLs are opened natively by the Swift OSNotificationClickListener in
-  // withOneSignalAppDelegate.js via SFSafariViewController — that's more reliable on
-  // cold start than waiting for the JS bridge to load.
   useEffect(() => {
     if (!OneSignal) return;
 
     const processNotificationClick = async (event: any) => {
       const notification = event?.notification;
       const data = notification?.additionalData || {};
+      const articleUrl = data?.url || notification?.launchURL;
 
       console.log('[OneSignal] Notification tapped:', JSON.stringify({
         additionalData: data,
         launchURL: notification?.launchURL,
+        resolvedUrl: articleUrl,
       }));
-
-      // If notification has a URL, the native Swift click listener opens it in
-      // SFSafariViewController. Don't duplicate that here.
-      if (data?.url || notification?.launchURL) {
-        return;
-      }
 
       // Wait for navigation stack to be fully mounted on cold start
       await new Promise(resolve => setTimeout(resolve, 800));
+
+      if (articleUrl && WebBrowser) {
+        try {
+          await WebBrowser.openBrowserAsync(articleUrl, {
+            presentationStyle: 1, // FULL_SCREEN
+            dismissButtonStyle: 'close',
+            enableBarCollapsing: true,
+          });
+        } catch (e) {
+          console.warn('[OneSignal] In-app browser failed, opening externally:', e);
+          const { Linking } = require('react-native');
+          Linking.openURL(articleUrl).catch(() => {});
+        }
+        return;
+      }
 
       if (data.type === 'price_alert' && data.symbol) {
         router.push(`/symbol/${data.symbol}/chart` as any);
