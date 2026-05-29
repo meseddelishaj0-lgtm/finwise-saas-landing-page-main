@@ -101,13 +101,33 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!OneSignal) return;
 
+    const openArticle = async (articleUrl: string) => {
+      if (WebBrowser) {
+        try {
+          await WebBrowser.openBrowserAsync(articleUrl, {
+            presentationStyle: 1, // FULL_SCREEN
+            dismissButtonStyle: 'close',
+            enableBarCollapsing: true,
+          });
+          return;
+        } catch (e) {
+          console.warn('[OneSignal] In-app browser failed, opening externally:', e);
+        }
+      }
+      const { Linking } = require('react-native');
+      Linking.openURL(articleUrl).catch(() => {});
+    };
+
     const processNotificationClick = async (event: any) => {
       const notification = event?.notification;
-      const data = notification?.additionalData || {};
-      const articleUrl = data?.url || notification?.launchURL;
+      // OneSignal may deliver custom payload flat (additionalData) or nested under custom.a
+      const rawData = notification?.additionalData || {};
+      const data = rawData?.custom?.a || rawData || {};
+      const articleUrl = data?.url || rawData?.url || notification?.launchURL || rawData?.custom?.u;
 
       console.log('[OneSignal] Notification tapped:', JSON.stringify({
-        additionalData: data,
+        additionalData: rawData,
+        resolvedData: data,
         launchURL: notification?.launchURL,
         resolvedUrl: articleUrl,
       }));
@@ -115,27 +135,81 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
       // Wait for navigation stack to be fully mounted on cold start
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      if (articleUrl && WebBrowser) {
-        try {
-          await WebBrowser.openBrowserAsync(articleUrl, {
-            presentationStyle: 1, // FULL_SCREEN
-            dismissButtonStyle: 'close',
-            enableBarCollapsing: true,
-          });
-        } catch (e) {
-          console.warn('[OneSignal] In-app browser failed, opening externally:', e);
-          const { Linking } = require('react-native');
-          Linking.openURL(articleUrl).catch(() => {});
-        }
-        return;
-      }
+      switch (data?.type) {
+        // Social notifications -> open the relevant post in the community tab
+        case 'like':
+        case 'comment':
+        case 'mention':
+        case 'reply':
+          if (data.postId != null) {
+            router.push({
+              pathname: '/(tabs)/community',
+              params: { openPostId: String(data.postId) },
+            } as any);
+          } else {
+            router.push({ pathname: '/(tabs)/community' } as any);
+          }
+          return;
 
-      if (data.type === 'price_alert' && data.symbol) {
-        router.push(`/symbol/${data.symbol}/chart` as any);
-      } else if (data.type === 'market_mover') {
-        router.push({ pathname: '/(tabs)/trending', params: { initialTab: 'gainers' } } as any);
-      } else {
-        router.push({ pathname: '/(tabs)/trending' } as any);
+        // Follow -> open the follower's profile in the community tab
+        case 'follow':
+          if (data.userId != null) {
+            router.push({
+              pathname: '/(tabs)/community',
+              params: { openUserId: String(data.userId) },
+            } as any);
+          } else {
+            router.push({ pathname: '/(tabs)/community' } as any);
+          }
+          return;
+
+        // Direct message -> open the conversation
+        case 'message':
+          if (data.conversationId != null) {
+            router.push(`/messages/${data.conversationId}` as any);
+          } else {
+            router.push({ pathname: '/(tabs)/community' } as any);
+          }
+          return;
+
+        // Price / watchlist alerts -> open the symbol chart
+        case 'price_alert':
+        case 'watchlist_alert':
+          if (data.symbol || data.ticker) {
+            router.push(`/symbol/${data.symbol || data.ticker}/chart` as any);
+          } else {
+            router.push({ pathname: '/(tabs)/trending' } as any);
+          }
+          return;
+
+        // Market movers -> trending gainers
+        case 'market_mover':
+          router.push({ pathname: '/(tabs)/trending', params: { initialTab: 'gainers' } } as any);
+          return;
+
+        // News -> open the article, fall back to trending
+        case 'market_news':
+        case 'breaking_news':
+          if (articleUrl) {
+            await openArticle(articleUrl);
+          } else {
+            router.push({ pathname: '/(tabs)/trending' } as any);
+          }
+          return;
+
+        // Daily recap -> trending overview
+        case 'daily_recap':
+          router.push({ pathname: '/(tabs)/trending' } as any);
+          return;
+
+        // Unknown type: open URL if present, otherwise show the notifications list
+        default:
+          if (articleUrl) {
+            await openArticle(articleUrl);
+          } else {
+            router.push('/notifications' as any);
+          }
+          return;
       }
     };
 
