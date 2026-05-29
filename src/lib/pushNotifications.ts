@@ -1,117 +1,16 @@
 // src/lib/pushNotifications.ts
-// Utility functions for sending push notifications via Expo's push service
+// Per-user / targeted push notifications.
+//
+// These now send through OneSignal (see src/lib/onesignal.ts) so the app uses a
+// single push provider. The public function signatures are kept identical to the
+// previous Expo-push implementation so existing callers (social, messages, price
+// alerts, etc.) work unchanged. Targeting is done by OneSignal external_id, which
+// the mobile app sets via OneSignal.login(userId) on launch.
 import { prisma } from '@/lib/prisma';
-
-interface ExpoPushMessage {
-  to: string;
-  sound?: 'default' | null;
-  title: string;
-  body: string;
-  data?: Record<string, any>;
-  badge?: number;
-  channelId?: string;
-  priority?: 'default' | 'normal' | 'high';
-  ttl?: number;
-}
-
-interface ExpoPushTicket {
-  status: 'ok' | 'error';
-  id?: string;
-  message?: string;
-  details?: {
-    error?: string;
-  };
-}
-
-const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+import { sendToAllSubscribers, sendToExternalUserIds } from '@/lib/onesignal';
 
 /**
- * Send a push notification to a single device
- */
-export async function sendPushNotification(
-  pushToken: string,
-  title: string,
-  body: string,
-  data?: Record<string, any>,
-  options?: {
-    channelId?: string;
-    badge?: number;
-    priority?: 'default' | 'normal' | 'high';
-  }
-): Promise<ExpoPushTicket | null> {
-  if (!pushToken.startsWith('ExponentPushToken[')) {
-    console.error('Invalid Expo push token format:', pushToken);
-    return null;
-  }
-
-  const message: ExpoPushMessage = {
-    to: pushToken,
-    sound: 'default',
-    title,
-    body,
-    data: data || {},
-    ...options,
-  };
-
-  try {
-    const response = await fetch(EXPO_PUSH_URL, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Accept-encoding': 'gzip, deflate',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(message),
-    });
-
-    const result = await response.json();
-    return result.data?.[0] || null;
-  } catch (error) {
-    console.error('Error sending push notification:', error);
-    return null;
-  }
-}
-
-/**
- * Send push notifications to multiple devices
- */
-export async function sendBatchPushNotifications(
-  messages: ExpoPushMessage[]
-): Promise<ExpoPushTicket[]> {
-  if (messages.length === 0) return [];
-
-  // Expo recommends sending in batches of 100
-  const BATCH_SIZE = 100;
-  const tickets: ExpoPushTicket[] = [];
-
-  for (let i = 0; i < messages.length; i += BATCH_SIZE) {
-    const batch = messages.slice(i, i + BATCH_SIZE);
-
-    try {
-      const response = await fetch(EXPO_PUSH_URL, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Accept-encoding': 'gzip, deflate',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(batch),
-      });
-
-      const result = await response.json();
-      if (result.data) {
-        tickets.push(...result.data);
-      }
-    } catch (error) {
-      console.error('Error sending batch push notifications:', error);
-    }
-  }
-
-  return tickets;
-}
-
-/**
- * Send push notification to a user (all their devices)
+ * Send push notification to a single user (all their devices).
  */
 export async function sendPushNotificationToUser(
   userId: number,
@@ -124,46 +23,7 @@ export async function sendPushNotificationToUser(
   }
 ): Promise<void> {
   try {
-    // Get all active device tokens for the user
-    const deviceTokens = await prisma.deviceToken.findMany({
-      where: {
-        userId,
-        isActive: true,
-      },
-    });
-
-    if (deviceTokens.length === 0) {
-      console.log(`No active device tokens for user ${userId}`);
-      return;
-    }
-
-    // Send to all devices
-    const messages: ExpoPushMessage[] = deviceTokens.map(device => ({
-      to: device.pushToken,
-      sound: 'default',
-      title,
-      body,
-      data: data || {},
-      channelId: options?.channelId || 'default',
-      badge: options?.badge,
-    }));
-
-    const tickets = await sendBatchPushNotifications(messages);
-
-    // Handle any errors (e.g., invalid tokens)
-    tickets.forEach((ticket, index) => {
-      if (ticket.status === 'error') {
-        console.error(`Push notification error for token ${deviceTokens[index].pushToken}:`, ticket.message);
-
-        // If token is invalid, mark it as inactive
-        if (ticket.details?.error === 'DeviceNotRegistered') {
-          prisma.deviceToken.update({
-            where: { id: deviceTokens[index].id },
-            data: { isActive: false },
-          }).catch(console.error);
-        }
-      }
-    });
+    await sendToExternalUserIds([userId], title, body, data);
   } catch (error) {
     console.error('Error sending push notification to user:', error);
   }
@@ -204,7 +64,7 @@ export const NotificationMessages = {
 };
 
 /**
- * Send push notification to ALL active devices (for breaking news, market alerts)
+ * Send push notification to ALL subscribers (for breaking news, market alerts).
  */
 export async function sendPushNotificationToAllUsers(
   title: string,
@@ -214,60 +74,12 @@ export async function sendPushNotificationToAllUsers(
     channelId?: string;
   }
 ): Promise<{ sent: number; failed: number }> {
-  try {
-    // Get all active device tokens
-    const deviceTokens = await prisma.deviceToken.findMany({
-      where: { isActive: true },
-    });
-
-    if (deviceTokens.length === 0) {
-      console.log('No active device tokens found');
-      return { sent: 0, failed: 0 };
-    }
-
-    // Create messages for all devices
-    const messages: ExpoPushMessage[] = deviceTokens.map(device => ({
-      to: device.pushToken,
-      sound: 'default',
-      title,
-      body,
-      data: data || {},
-      channelId: options?.channelId || 'default',
-      priority: 'high',
-    }));
-
-    const tickets = await sendBatchPushNotifications(messages);
-
-    let sent = 0;
-    let failed = 0;
-
-    // Handle results and mark invalid tokens as inactive
-    tickets.forEach((ticket, index) => {
-      if (ticket.status === 'ok') {
-        sent++;
-      } else {
-        failed++;
-        console.error(`Push notification error:`, ticket.message);
-
-        if (ticket.details?.error === 'DeviceNotRegistered') {
-          prisma.deviceToken.update({
-            where: { id: deviceTokens[index].id },
-            data: { isActive: false },
-          }).catch(console.error);
-        }
-      }
-    });
-
-    console.log(`Push notifications sent: ${sent} successful, ${failed} failed`);
-    return { sent, failed };
-  } catch (error) {
-    console.error('Error sending push notifications to all users:', error);
-    return { sent: 0, failed: 0 };
-  }
+  const result = await sendToAllSubscribers(title, body, data);
+  return { sent: result?.recipients ?? 0, failed: 0 };
 }
 
 /**
- * Send push notification to users who have a specific ticker in their watchlist
+ * Send push notification to users who have a specific ticker in their watchlist.
  */
 export async function sendPushNotificationToWatchlistUsers(
   ticker: string,
@@ -282,57 +94,21 @@ export async function sendPushNotificationToWatchlistUsers(
       select: { userId: true },
     });
 
-    if (watchlistEntries.length === 0) {
+    const userIds = [...new Set(watchlistEntries.map((w: { userId: number }) => w.userId))];
+
+    if (userIds.length === 0) {
       console.log(`No users have ${ticker} in their watchlist`);
       return { sent: 0, failed: 0, usersNotified: 0 };
     }
 
-    const userIds = [...new Set(watchlistEntries.map((w: { userId: number }) => w.userId))];
-
-    // Get device tokens for these users
-    const deviceTokens = await prisma.deviceToken.findMany({
-      where: {
-        userId: { in: userIds },
-        isActive: true,
-      },
-    });
-
-    if (deviceTokens.length === 0) {
-      console.log('No active devices for watchlist users');
-      return { sent: 0, failed: 0, usersNotified: userIds.length };
-    }
-
-    // Create messages
-    const messages: ExpoPushMessage[] = deviceTokens.map(device => ({
-      to: device.pushToken,
-      sound: 'default',
+    const result = await sendToExternalUserIds(
+      userIds,
       title,
       body,
-      data: { ...data, type: 'watchlist_alert', ticker },
-      channelId: 'alerts',
-      priority: 'high',
-    }));
+      { ...data, type: 'watchlist_alert', ticker }
+    );
 
-    const tickets = await sendBatchPushNotifications(messages);
-
-    let sent = 0;
-    let failed = 0;
-
-    tickets.forEach((ticket, index) => {
-      if (ticket.status === 'ok') {
-        sent++;
-      } else {
-        failed++;
-        if (ticket.details?.error === 'DeviceNotRegistered') {
-          prisma.deviceToken.update({
-            where: { id: deviceTokens[index].id },
-            data: { isActive: false },
-          }).catch(console.error);
-        }
-      }
-    });
-
-    return { sent, failed, usersNotified: userIds.length };
+    return { sent: result?.recipients ?? 0, failed: 0, usersNotified: userIds.length };
   } catch (error) {
     console.error('Error sending watchlist notifications:', error);
     return { sent: 0, failed: 0, usersNotified: 0 };
@@ -340,7 +116,7 @@ export async function sendPushNotificationToWatchlistUsers(
 }
 
 /**
- * Create notification in database and send push notification
+ * Create notification in database and send push notification.
  */
 export async function createAndSendNotification(params: {
   userId: number;
@@ -368,20 +144,12 @@ export async function createAndSendNotification(params: {
     });
 
     // Send push notification
-    await sendPushNotificationToUser(
-      userId,
-      pushTitle,
-      pushBody,
-      {
-        type,
-        postId,
-        actorId,
-        ...data,
-      },
-      {
-        channelId: type === 'price_alert' ? 'alerts' : 'social',
-      }
-    );
+    await sendPushNotificationToUser(userId, pushTitle, pushBody, {
+      type,
+      postId,
+      actorId,
+      ...data,
+    });
   } catch (error) {
     console.error('Error creating and sending notification:', error);
   }

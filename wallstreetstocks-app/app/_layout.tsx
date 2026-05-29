@@ -42,7 +42,6 @@ import { SubscriptionProvider, useSubscription } from "../context/SubscriptionCo
 import { StockProvider } from "../context/StockContext";
 import { WatchlistProvider } from "../context/WatchlistContext";
 import { UserProfileProvider } from "../context/UserProfileContext";
-import { NotificationProvider } from "../context/NotificationContext";
 import { ReferralProvider, useReferral } from "../context/ReferralContext";
 import { WebSocketProvider } from "../context/WebSocketContext";
 import { PortfolioProvider } from "../context/PortfolioContext";
@@ -352,16 +351,14 @@ export default function RootLayout() {
                 <PortfolioProvider>
                   <StockProvider>
                     <UserProfileProvider>
-                      <NotificationProvider>
-                        <WebSocketProvider
-                          autoConnect={true}  // Twelve Data WebSocket for real-time streaming
-                          initialSymbols={DEFAULT_STREAMING_SYMBOLS}
-                        >
-                          <AppInitializer>
-                            <ThemedApp />
-                          </AppInitializer>
-                        </WebSocketProvider>
-                      </NotificationProvider>
+                      <WebSocketProvider
+                        autoConnect={true}  // Twelve Data WebSocket for real-time streaming
+                        initialSymbols={DEFAULT_STREAMING_SYMBOLS}
+                      >
+                        <AppInitializer>
+                          <ThemedApp />
+                        </AppInitializer>
+                      </WebSocketProvider>
                     </UserProfileProvider>
                   </StockProvider>
                 </PortfolioProvider>

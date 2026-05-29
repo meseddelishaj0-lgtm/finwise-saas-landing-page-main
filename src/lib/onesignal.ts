@@ -12,6 +12,7 @@ interface OneSignalNotificationPayload {
   contents: { en: string };
   data?: Record<string, any>;
   included_segments?: string[];
+  include_aliases?: { external_id: string[] };
   filters?: OneSignalFilter[];
   ios_sound?: string;
   android_sound?: string;
@@ -105,6 +106,54 @@ export async function sendToAllSubscribers(
   // to handle the tap at the native level, which races with the JS click handler
   // and blocks it on cold start (JS hasn't loaded yet). Instead, the URL is kept
   // only in payload.data where the JS handler reads it via additionalData.url.
+
+  if (options?.ttl) {
+    payload.ttl = options.ttl;
+  }
+
+  return sendNotification(payload);
+}
+
+/**
+ * Send a push notification to specific users, targeted by their OneSignal
+ * external_id. The mobile app sets this via OneSignal.login(userId) on launch,
+ * so the external_id is the app's numeric user id (as a string).
+ *
+ * Used for all per-user notifications (social, messages, price alerts, etc.).
+ */
+export async function sendToExternalUserIds(
+  userIds: Array<string | number>,
+  title: string,
+  body: string,
+  data?: Record<string, any>,
+  options?: {
+    image?: string;
+    url?: string;
+    ttl?: number;
+  }
+): Promise<OneSignalResponse | null> {
+  const externalIds = [...new Set(userIds.map((id) => String(id)))].filter(Boolean);
+
+  if (externalIds.length === 0) {
+    return null;
+  }
+
+  const payload: Partial<OneSignalNotificationPayload> = {
+    include_aliases: { external_id: externalIds },
+    headings: { en: title },
+    contents: { en: body },
+    data,
+    priority: 10,
+  };
+
+  if (options?.image) {
+    payload.big_picture = options.image;
+    payload.ios_attachments = { image: options.image };
+  }
+
+  // Deliberately do NOT set payload.url — the URL is carried in payload.data so
+  // the JS click handler routes the tap (setting launchURL makes the native SDK
+  // race the JS handler and breaks deep-linking on cold start).
 
   if (options?.ttl) {
     payload.ttl = options.ttl;
