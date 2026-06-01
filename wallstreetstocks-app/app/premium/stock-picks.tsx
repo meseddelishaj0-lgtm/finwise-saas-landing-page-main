@@ -18,125 +18,18 @@ import { useSubscription } from '@/context/SubscriptionContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
-// Cache key and duration (cache picks for 24 hours)
-const PICKS_CACHE_KEY = 'ai_stock_picks_cache';
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+// Picks are generated and gated server-side. The client only renders what the
+// API returns for the user's tier — no symbols or API keys ship in the bundle.
+const API_URL = 'https://www.wallstreetstocks.ai';
 
-// Stock picks limits by tier
+// Stock picks limits by tier. Used only for the initial counter display before
+// the server response arrives; the server is the authoritative source of truth.
 const PICKS_BY_TIER = {
   free: 0,
   gold: 5,
   platinum: 8,
   diamond: 15,
-};
-
-interface AIPick {
-  symbol: string;
-  category: string;
-  reason: string;
-}
-
-// Function to generate AI stock picks using OpenAI
-const generateAIStockPicks = async (): Promise<AIPick[]> => {
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert stock analyst. Generate a list of 15 top stock picks for investors.
-Focus on stocks with strong fundamentals, growth potential, and current market momentum.
-Consider various sectors for diversification: Technology, Healthcare, Financials, Consumer, Energy, etc.
-Only include US-listed stocks with valid ticker symbols.`
-          },
-          {
-            role: 'user',
-            content: `Generate 15 top stock picks for today. For each stock provide:
-1. The ticker symbol (must be a valid US stock ticker)
-2. A short category (2-3 words like "AI & Tech", "Healthcare", "Financials")
-3. A brief reason for the pick (1 sentence explaining why it's a good investment right now)
-
-Return ONLY a valid JSON array with no markdown formatting, like this:
-[{"symbol":"AAPL","category":"Tech Giant","reason":"Strong services growth and loyal customer ecosystem"},...]`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (data.choices && data.choices[0]?.message?.content) {
-      let content = data.choices[0].message.content.trim();
-      // Remove markdown code blocks if present
-      content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-      const picks = JSON.parse(content);
-
-      if (Array.isArray(picks) && picks.length > 0) {
-        return picks.slice(0, 15);
-      }
-    }
-
-    throw new Error('Invalid AI response');
-  } catch (error) {
-    
-    // Return fallback picks if AI fails
-    return getFallbackPicks();
-  }
-};
-
-// Fallback picks in case AI generation fails
-const getFallbackPicks = (): AIPick[] => [
-  { symbol: 'NVDA', category: 'AI & Tech', reason: 'AI chip leader with strong earnings growth' },
-  { symbol: 'AAPL', category: 'Tech Giant', reason: 'Services revenue expansion & loyal ecosystem' },
-  { symbol: 'MSFT', category: 'Cloud & AI', reason: 'Azure growth and AI integration' },
-  { symbol: 'GOOGL', category: 'AI & Ads', reason: 'Search dominance and Gemini AI rollout' },
-  { symbol: 'AMZN', category: 'E-commerce & Cloud', reason: 'AWS leader with retail recovery' },
-  { symbol: 'META', category: 'Social & AI', reason: 'Reels monetization and AI investments' },
-  { symbol: 'TSLA', category: 'EV & Energy', reason: 'FSD progress and energy storage growth' },
-  { symbol: 'LLY', category: 'Healthcare', reason: 'GLP-1 drug dominance (Mounjaro/Zepbound)' },
-  { symbol: 'AVGO', category: 'Semiconductors', reason: 'AI networking chips and VMware synergies' },
-  { symbol: 'JPM', category: 'Financials', reason: 'Best-in-class bank with strong NII' },
-  { symbol: 'V', category: 'Payments', reason: 'Cross-border travel recovery' },
-  { symbol: 'UNH', category: 'Healthcare', reason: 'Optum growth and aging demographics' },
-  { symbol: 'XOM', category: 'Energy', reason: 'Strong cash flow and Permian expansion' },
-  { symbol: 'COST', category: 'Retail', reason: 'Membership loyalty and market share gains' },
-  { symbol: 'HD', category: 'Retail', reason: 'Pro segment growth and housing demand' },
-];
-
-// Cache management functions
-const getCachedPicks = async (): Promise<{ picks: AIPick[], timestamp: number } | null> => {
-  try {
-    const cached = await AsyncStorage.getItem(PICKS_CACHE_KEY);
-    if (cached) {
-      return JSON.parse(cached);
-    }
-  } catch (error) {
-    
-  }
-  return null;
-};
-
-const setCachedPicks = async (picks: AIPick[]): Promise<void> => {
-  try {
-    await AsyncStorage.setItem(PICKS_CACHE_KEY, JSON.stringify({
-      picks,
-      timestamp: Date.now(),
-    }));
-  } catch (error) {
-    
-  }
 };
 
 interface StockPick {
@@ -159,21 +52,8 @@ export default function StockPicksScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [stockPicks, setStockPicks] = useState<StockPick[]>([]);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  const [aiPicks, setAiPicks] = useState<AIPick[]>([]);
-  const [generatingPicks, setGeneratingPicks] = useState(false);
-
-  // Determine picks limit based on tier
-  const getPicksLimit = () => {
-    if (!isPremium || !currentTier) return 0;
-    switch (currentTier) {
-      case 'gold': return PICKS_BY_TIER.gold;
-      case 'platinum': return PICKS_BY_TIER.platinum;
-      case 'diamond': return PICKS_BY_TIER.diamond;
-      default: return 0;
-    }
-  };
-
-  const picksLimit = getPicksLimit();
+  const [picksLimit, setPicksLimit] = useState(0);
+  const [totalPicks, setTotalPicks] = useState(15);
 
   // Get tier badge info
   const getTierInfo = () => {
@@ -187,72 +67,63 @@ export default function StockPicksScreen() {
 
   const tierInfo = getTierInfo();
 
-  // Fetch or generate AI stock picks with caching
-  const getAIPicks = useCallback(async (forceRefresh = false): Promise<AIPick[]> => {
-    // Check cache first (unless force refresh)
-    if (!forceRefresh) {
-      const cached = await getCachedPicks();
-      if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-        
-        return cached.picks;
-      }
-    }
-
-    // Generate new picks from AI
-    
-    setGeneratingPicks(true);
-    const newPicks = await generateAIStockPicks();
-    setGeneratingPicks(false);
-
-    // Cache the new picks
-    await setCachedPicks(newPicks);
-    return newPicks;
-  }, []);
-
-  const fetchStockData = useCallback(async (forceRefresh = false) => {
+  // Fetch the tier-gated stock picks from the server. The backend verifies the
+  // subscription and only returns the symbols this user has paid for, so no
+  // pick names (or API keys) ever live in the client bundle.
+  const fetchStockData = useCallback(async () => {
     try {
-      // Get AI-generated picks (with caching)
-      const picks = await getAIPicks(forceRefresh);
-      setAiPicks(picks);
+      // Optimistic counter value until the server responds authoritatively.
+      setPicksLimit(
+        isPremium && currentTier
+          ? PICKS_BY_TIER[currentTier as keyof typeof PICKS_BY_TIER] ?? 0
+          : 0
+      );
 
-      const picksToFetch = picks.slice(0, Math.max(picksLimit, 5));
-      const symbols = picksToFetch.map((p: AIPick) => p.symbol).join(',');
+      const userDataStr = await AsyncStorage.getItem('userData');
+      const userData = userDataStr ? JSON.parse(userDataStr) : null;
+      const userId = userData?.id?.toString();
 
-      const response = await fetch(`${BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`);
-      const data = await response.json();
+      if (!userId) {
+        setStockPicks([]);
+        return;
+      }
 
-      if (Array.isArray(data)) {
-        const enrichedPicks = picksToFetch.map((pick: AIPick) => {
-          const quote = data.find((q: any) => q.symbol === pick.symbol);
-          return {
-            ...pick,
-            name: quote?.name || pick.symbol,
-            price: quote?.price,
-            change: quote?.change,
-            changePercent: quote?.changesPercentage,
-            marketCap: quote?.marketCap,
-            pe: quote?.pe,
-            weekHigh52: quote?.yearHigh,
-            weekLow52: quote?.yearLow,
-          };
-        });
-        setStockPicks(enrichedPicks);
+      const response = await fetch(`${API_URL}/api/stock-picks`, {
+        headers: {
+          'x-user-id': userId,
+          'Cache-Control': 'no-cache',
+        },
+      });
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data && Array.isArray(data.picks)) {
+        setStockPicks(data.picks);
+        if (typeof data.limit === 'number') setPicksLimit(data.limit);
+        if (typeof data.total === 'number') setTotalPicks(data.total);
+      } else {
+        // Not entitled (403) or an error — show nothing rather than leak picks.
+        setStockPicks([]);
       }
     } catch (error) {
-      
+      setStockPicks([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [picksLimit, getAIPicks]);
+  }, [isPremium, currentTier]);
 
   useEffect(() => {
-    fetchStockData(false);
-  }, [fetchStockData]);
+    if (isPremium) {
+      fetchStockData();
+    } else {
+      // Non-premium users see the paywall below; don't hit the API.
+      setLoading(false);
+    }
+  }, [isPremium, fetchStockData]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchStockData(true); // Force refresh to get new AI picks
+    fetchStockData();
   };
 
   const handleStockPress = (symbol: string) => {
@@ -343,7 +214,7 @@ export default function StockPicksScreen() {
           <Text style={styles.counterLabel}>Your Stock Picks</Text>
           <View style={styles.counterRow}>
             <Text style={[styles.counterValue, { color: tierInfo.color }]}>{picksLimit}</Text>
-            <Text style={styles.counterTotal}>/ {aiPicks.length || 15}</Text>
+            <Text style={styles.counterTotal}>/ {totalPicks}</Text>
           </View>
           {currentTier !== 'diamond' && (
             <TouchableOpacity
@@ -360,9 +231,7 @@ export default function StockPicksScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FFD700" />
-          <Text style={styles.loadingText}>
-            {generatingPicks ? 'AI is generating stock picks...' : 'Loading stock picks...'}
-          </Text>
+          <Text style={styles.loadingText}>Loading stock picks...</Text>
         </View>
       ) : (
         <ScrollView

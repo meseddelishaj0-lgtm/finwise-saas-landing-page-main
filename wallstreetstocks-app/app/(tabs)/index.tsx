@@ -2493,8 +2493,17 @@ export default function Dashboard() {
                       <Text style={styles.pickRankText}>#{idx + 1}</Text>
                     </View>
                     <View>
-                      <Text style={[styles.pickSymbol, { color: colors.text }]}>{pick.symbol}</Text>
-                      <Text style={[styles.pickCategory, { color: colors.textSecondary }]}>{pick.category}</Text>
+                      {isPremium ? (
+                        <>
+                          <Text style={[styles.pickSymbol, { color: colors.text }]}>{pick.symbol}</Text>
+                          <Text style={[styles.pickCategory, { color: colors.textSecondary }]}>{pick.category}</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={[styles.pickSymbol, { color: colors.textTertiary, letterSpacing: 2 }]}>•••••</Text>
+                          <Text style={[styles.pickCategory, { color: colors.textTertiary }]}>Unlock to reveal</Text>
+                        </>
+                      )}
                     </View>
                   </View>
                   <View style={styles.pickPreviewRight}>
