@@ -230,11 +230,12 @@ const STOCK_PICKS_PREVIEW = [
   { symbol: 'MSFT', category: 'Cloud & AI', reason: 'Azure expansion' },
 ];
 
-// Market Overview symbols - ONLY 24/7 assets (crypto)
-// Crypto trades 24/7 so Apple reviewers will ALWAYS see live price movement
+// Market Overview symbols - crypto (24/7 movement for Apple review) + major index ETFs
 const MARKET_OVERVIEW_SYMBOLS = [
   'BTC/USD',   // Bitcoin
+  'SPY',       // S&P 500 ETF
   'ETH/USD',   // Ethereum
+  'QQQ',       // Nasdaq 100 ETF
   'SOL/USD',   // Solana
   'BNB/USD',   // Binance Coin
   'XRP/USD',   // Ripple
@@ -322,7 +323,9 @@ export default function Dashboard() {
   const INDICES_CACHE_KEY = 'cached_market_indices';
   const [majorIndices, setMajorIndices] = useState([
     { symbol: 'BTC/USD', name: 'Bitcoin', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'SPY', name: 'S&P 500', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'ETH/USD', name: 'Ethereum', price: 0, change: 0, changePercent: 0, color: '#34C759' },
+    { symbol: 'QQQ', name: 'Nasdaq 100', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'SOL/USD', name: 'Solana', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'BNB/USD', name: 'Binance Coin', price: 0, change: 0, changePercent: 0, color: '#34C759' },
     { symbol: 'XRP/USD', name: 'Ripple', price: 0, change: 0, changePercent: 0, color: '#34C759' },
@@ -655,6 +658,7 @@ export default function Dashboard() {
   const liveMarketIndices = useMemo(() => {
     const nameMap: { [key: string]: string } = {
       'BTC/USD': 'Bitcoin', 'ETH/USD': 'Ethereum', 'SOL/USD': 'Solana',
+      'SPY': 'S&P 500', 'QQQ': 'Nasdaq 100',
       'BNB/USD': 'Binance Coin', 'XRP/USD': 'Ripple', 'ADA/USD': 'Cardano',
       'DOGE/USD': 'Dogecoin', 'AVAX/USD': 'Avalanche', 'DOT/USD': 'Polkadot',
       'MATIC/USD': 'Polygon', 'LINK/USD': 'Chainlink', 'LTC/USD': 'Litecoin',
@@ -880,13 +884,14 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolio.chartData, livePortfolioData?.totalValue, priceUpdateTrigger]);
 
-  // Fetch live market overview data - INSTANT from pre-loaded crypto data
-  // Crypto only - trades 24/7 for Apple review
+  // Fetch live market overview data - INSTANT from pre-loaded crypto + ETF data
   const fetchMarketChips = async () => {
     const symbols = MARKET_OVERVIEW_SYMBOLS;
     const nameMap: { [key: string]: string } = {
       'BTC/USD': 'Bitcoin',
+      'SPY': 'S&P 500',
       'ETH/USD': 'Ethereum',
+      'QQQ': 'Nasdaq 100',
       'SOL/USD': 'Solana',
       'BNB/USD': 'Binance Coin',
       'XRP/USD': 'Ripple',
@@ -899,9 +904,10 @@ export default function Dashboard() {
       'LTC/USD': 'Litecoin',
     };
 
-    // INSTANT: Try to use pre-loaded crypto data from marketDataService
+    // INSTANT: Try to use pre-loaded crypto + ETF data from marketDataService
     const localCrypto = marketDataService.getLiveData('crypto');
-    const allLocalData = [...localCrypto];
+    const localETFs = marketDataService.getLiveData('etf');
+    const allLocalData = [...localCrypto, ...localETFs];
     const symbolSet = new Set(symbols);
 
     // Also check for crypto symbols without slash (e.g., BTCUSD for BTC/USD)
@@ -1918,10 +1924,10 @@ export default function Dashboard() {
                   onPress={() => router.push(`/symbol/${encodeURIComponent(index.symbol)}/chart`)}
                 >
                   <View style={styles.indexCardHeader}>
-                    <StockLogo 
-                      symbol={index.symbol} 
-                      size={Platform.OS === 'android' ? 24 : 28} 
-                      style={{ marginRight: Platform.OS === 'android' ? 6 : 8 }}
+                    <StockLogo
+                      symbol={index.symbol}
+                      size={Platform.OS === 'android' ? 20 : 24}
+                      style={{ marginRight: Platform.OS === 'android' ? 5 : 6 }}
                     />
                     <Text style={[styles.indexSymbol, { color: colors.text }]}>{index.symbol.replace('/USD', '')}</Text>
                   </View>
@@ -3375,10 +3381,10 @@ const styles = StyleSheet.create({
   },
   indexCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.OS === 'android' ? 12 : 16,
-    padding: Platform.OS === 'android' ? 10 : 14,
-    marginRight: Platform.OS === 'android' ? 8 : 12,
-    width: Platform.OS === 'android' ? 105 : 130,
+    borderRadius: Platform.OS === 'android' ? 12 : 14,
+    padding: Platform.OS === 'android' ? 8 : 11,
+    marginRight: Platform.OS === 'android' ? 8 : 10,
+    width: Platform.OS === 'android' ? 94 : 112,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -3399,7 +3405,7 @@ const styles = StyleSheet.create({
     marginRight: Platform.OS === 'android' ? 6 : 8,
   },
   indexSymbol: {
-    fontSize: Platform.OS === 'android' ? 11 : 14,
+    fontSize: Platform.OS === 'android' ? 11 : 13,
     fontWeight: '700',
     color: '#000',
     letterSpacing: 0.3,
@@ -3413,10 +3419,10 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   indexPrice: {
-    fontSize: Platform.OS === 'android' ? 13 : 17,
+    fontSize: Platform.OS === 'android' ? 13 : 15,
     fontWeight: '700',
     color: '#000',
-    marginBottom: Platform.OS === 'android' ? 6 : 8,
+    marginBottom: Platform.OS === 'android' ? 5 : 6,
     includeFontPadding: false,
   },
   indexChangePill: {
