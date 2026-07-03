@@ -1200,14 +1200,13 @@ export default function Screener() {
 
   const renderStockItem = useCallback(({ item, index }: { item: Stock; index: number }) => {
     const isPositive = item.change >= 0;
-    const isEven = index % 2 === 0;
     return (
       <FadeSlideIn delay={Math.min(index, 10) * 40} distance={10}>
       <TouchableOpacity
         style={[
           styles.stockItem,
           { borderBottomColor: colors.borderLight },
-          isEven ? { backgroundColor: colors.background } : { backgroundColor: colors.surface }
+          { backgroundColor: colors.background }
         ]}
         activeOpacity={0.7}
         onPress={() => handleStockPress(item.symbol)}
@@ -1266,7 +1265,7 @@ export default function Screener() {
   ];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
         <FadeSlideIn distance={8}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Screener</Text>
@@ -1458,7 +1457,7 @@ export default function Screener() {
 
       {/* All Filters Modal */}
       <Modal visible={showAllFilters} animationType="slide" onRequestClose={() => setShowAllFilters(false)}>
-        <SafeAreaView style={[styles.fullModalContainer, { backgroundColor: colors.surface }]} edges={['bottom']}>
+        <SafeAreaView style={[styles.fullModalContainer, { backgroundColor: colors.background }]} edges={['bottom']}>
           <View style={[styles.fullModalHeader, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={() => setShowAllFilters(false)} style={styles.fullModalCloseBtn}>
               <Ionicons name="close" size={28} color={colors.text} />
