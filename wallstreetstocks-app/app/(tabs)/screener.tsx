@@ -13,6 +13,10 @@ import {
   RefreshControl,
   Platform,
   Dimensions,
+  Animated,
+  Easing,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +30,86 @@ import { useTheme } from '@/context/ThemeContext';
 import { FLATLIST_PERFORMANCE_PROPS } from '@/components/OptimizedListItems';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
+
+// Enable layout animations on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const smoothLayout = () =>
+  LayoutAnimation.configureNext(LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity));
+
+// Fade + slide-up entrance wrapper (opacity/transform only — never affects layout)
+const FadeSlideIn = ({
+  children,
+  delay = 0,
+  distance = 14,
+  style,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  distance?: number;
+  style?: any;
+}) => {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 420,
+      delay,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        style,
+        {
+          opacity: progress,
+          transform: [
+            {
+              translateY: progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [distance, 0],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      {children}
+    </Animated.View>
+  );
+};
+
+// Touchable with a springy scale-down press response
+const ScalePress = ({
+  children,
+  onPress,
+  style,
+  activeScale = 0.96,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style?: any;
+  activeScale?: number;
+}) => {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const pressIn = () =>
+    Animated.spring(scale, { toValue: activeScale, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+  const pressOut = () =>
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 24, bounciness: 9 }).start();
+
+  return (
+    <TouchableOpacity activeOpacity={1} onPress={onPress} onPressIn={pressIn} onPressOut={pressOut}>
+      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    </TouchableOpacity>
+  );
+};
 
 // Stock row height for getItemLayout optimization
 const STOCK_ROW_HEIGHT = 72;
@@ -154,21 +238,21 @@ interface ScreenerParams {
 
 // Preset Screens
 const presets: Preset[] = [
-  { id: 'trending', name: 'Trending', icon: 'flame', gradient: ['#FF6B6B', '#FF8E53'], description: 'Most active today' },
-  { id: 'gainers', name: 'Top Gainers', icon: 'trending-up', gradient: ['#00C853', '#69F0AE'], description: 'Biggest winners' },
-  { id: 'losers', name: 'Top Losers', icon: 'trending-down', gradient: ['#FF5252', '#FF1744'], description: 'Biggest drops' },
-  { id: 'heatmap', name: 'Heat Map', icon: 'grid', gradient: ['#8B5CF6', '#EC4899'], description: 'Visual overview' },
-  { id: 'undervalued', name: 'Undervalued', icon: 'diamond', gradient: ['#7C4DFF', '#B388FF'], description: 'Low P/E gems' },
-  { id: 'dividend', name: 'High Dividend', icon: 'cash', gradient: ['#00BCD4', '#4DD0E1'], description: '4%+ yield' },
-  { id: 'quality', name: 'Quality', icon: 'shield-checkmark', gradient: ['#5C6BC0', '#7986CB'], description: 'High ROE & margins' },
-  { id: 'growth', name: 'Growth', icon: 'rocket', gradient: ['#FF9800', '#FFB74D'], description: 'Fast growing' },
-  { id: 'cashcow', name: 'Cash Cows', icon: 'wallet', gradient: ['#26A69A', '#80CBC4'], description: 'Strong FCF' },
+  { id: 'trending', name: 'Trending', icon: 'flame', gradient: ['#FF6B6B', '#FF8E53'], description: 'Most traded right now' },
+  { id: 'gainers', name: 'Top Gainers', icon: 'trending-up', gradient: ['#00C853', '#69F0AE'], description: "Today's top climbers" },
+  { id: 'losers', name: 'Top Losers', icon: 'trending-down', gradient: ['#FF5252', '#FF1744'], description: "Today's steepest drops" },
+  { id: 'heatmap', name: 'Heat Map', icon: 'grid', gradient: ['#8B5CF6', '#EC4899'], description: 'The market at a glance' },
+  { id: 'undervalued', name: 'Undervalued', icon: 'diamond', gradient: ['#7C4DFF', '#B388FF'], description: 'Bargains under 15x P/E' },
+  { id: 'dividend', name: 'High Dividend', icon: 'cash', gradient: ['#00BCD4', '#4DD0E1'], description: 'Yields of 4% and up' },
+  { id: 'quality', name: 'Quality', icon: 'shield-checkmark', gradient: ['#5C6BC0', '#7986CB'], description: 'Elite ROE & margins' },
+  { id: 'growth', name: 'Growth', icon: 'rocket', gradient: ['#FF9800', '#FFB74D'], description: 'Revenue compounding fast' },
+  { id: 'cashcow', name: 'Cash Cows', icon: 'wallet', gradient: ['#26A69A', '#80CBC4'], description: 'Rich free cash flow' },
   // Premium Presets
-  { id: 'insider', name: 'Insider Buying', icon: 'people', gradient: ['#FFD700', '#FFA000'], description: 'Insider activity', isPremium: true },
-  { id: 'momentum', name: 'Momentum', icon: 'flash', gradient: ['#E91E63', '#F06292'], description: 'Strong momentum', isPremium: true },
-  { id: 'aipicks', name: 'AI Picks', icon: 'sparkles', gradient: ['#00BFA5', '#1DE9B6'], description: 'AI recommended', isPremium: true },
-  { id: 'shortSqueeze', name: 'Short Squeeze', icon: 'arrow-up', gradient: ['#FF6F00', '#FFAB00'], description: 'High short %', isPremium: true },
-  { id: 'breakout', name: 'Breakout', icon: 'pulse', gradient: ['#D500F9', '#E040FB'], description: '52W high', isPremium: true },
+  { id: 'insider', name: 'Insider Buying', icon: 'people', gradient: ['#FFD700', '#FFA000'], description: 'Executives are buying', isPremium: true },
+  { id: 'momentum', name: 'Momentum', icon: 'flash', gradient: ['#E91E63', '#F06292'], description: 'Strength begets strength', isPremium: true },
+  { id: 'aipicks', name: 'AI Picks', icon: 'sparkles', gradient: ['#00BFA5', '#1DE9B6'], description: 'Handpicked by our AI', isPremium: true },
+  { id: 'shortSqueeze', name: 'Short Squeeze', icon: 'arrow-up', gradient: ['#FF6F00', '#FFAB00'], description: 'Heavily shorted setups', isPremium: true },
+  { id: 'breakout', name: 'Breakout', icon: 'pulse', gradient: ['#D500F9', '#E040FB'], description: 'Pushing 52-week highs', isPremium: true },
 ];
 
 // Filter Categories
@@ -988,6 +1072,7 @@ export default function Screener() {
         stocks = await enrichStocksWithQuotes(stocks);
       }
 
+      smoothLayout();
       setResults(sortStocks(stocks));
     } catch (err: any) {
       setError(err.message || 'Failed to fetch stocks');
@@ -1022,12 +1107,14 @@ export default function Screener() {
   };
 
   const handleFilterSelect = (filterId: string, value: string) => {
+    smoothLayout();
     setFilters(prev => ({ ...prev, [filterId]: value === 'Any' ? '' : value }));
     setActiveFilterModal(null);
     setActivePreset(null);
   };
 
   const handleSort = (newSortBy: typeof sortBy) => {
+    smoothLayout();
     if (sortBy === newSortBy) setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
     else { setSortBy(newSortBy); setSortOrder('desc'); }
   };
@@ -1060,30 +1147,32 @@ export default function Screener() {
     router.push('/(modals)/paywall' as any);
   };
 
-  const renderPreset = ({ item }: { item: Preset }) => {
+  const renderPreset = ({ item, index }: { item: Preset; index: number }) => {
     const isLocked = item.isPremium && !hasPlatinumAccess;
     return (
-      <TouchableOpacity
-        style={[styles.presetCard, activePreset === item.id && styles.presetCardActive]}
-        onPress={() => isLocked ? handlePremiumPress() : handlePresetPress(item)}
-        activeOpacity={0.8}
-      >
-        <LinearGradient colors={item.gradient as [string, string]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.presetGradient}>
-          <View style={styles.presetIconContainer}>
-            <Ionicons name={item.icon as any} size={22} color="#fff" />
-          </View>
-          <Text style={styles.presetName}>{item.name}</Text>
-          <Text style={styles.presetDescription}>{item.description}</Text>
-        </LinearGradient>
-        {item.isPremium && (
-          <View style={[styles.premiumBadge, !isLocked && styles.premiumBadgeUnlocked]}>
-            <Ionicons name={isLocked ? "lock-closed" : "diamond"} size={12} color={isLocked ? "#FFD700" : "#E5E4E2"} />
-          </View>
-        )}
-        {activePreset === item.id && !isLocked && (
-          <View style={styles.presetCheckmark}><Ionicons name="checkmark-circle" size={20} color="#fff" /></View>
-        )}
-      </TouchableOpacity>
+      <FadeSlideIn delay={Math.min(index, 8) * 55}>
+        <ScalePress
+          style={[styles.presetCard, activePreset === item.id && styles.presetCardActive]}
+          onPress={() => isLocked ? handlePremiumPress() : handlePresetPress(item)}
+          activeScale={0.93}
+        >
+          <LinearGradient colors={item.gradient as [string, string]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.presetGradient}>
+            <View style={styles.presetIconContainer}>
+              <Ionicons name={item.icon as any} size={22} color="#fff" />
+            </View>
+            <Text style={styles.presetName}>{item.name}</Text>
+            <Text style={styles.presetDescription}>{item.description}</Text>
+          </LinearGradient>
+          {item.isPremium && (
+            <View style={[styles.premiumBadge, !isLocked && styles.premiumBadgeUnlocked]}>
+              <Ionicons name={isLocked ? "lock-closed" : "diamond"} size={12} color={isLocked ? "#FFD700" : "#E5E4E2"} />
+            </View>
+          )}
+          {activePreset === item.id && !isLocked && (
+            <View style={styles.presetCheckmark}><Ionicons name="checkmark-circle" size={20} color="#fff" /></View>
+          )}
+        </ScalePress>
+      </FadeSlideIn>
     );
   };
 
@@ -1113,6 +1202,7 @@ export default function Screener() {
     const isPositive = item.change >= 0;
     const isEven = index % 2 === 0;
     return (
+      <FadeSlideIn delay={Math.min(index, 10) * 40} distance={10}>
       <TouchableOpacity
         style={[
           styles.stockItem,
@@ -1152,6 +1242,7 @@ export default function Screener() {
           </View>
         </View>
       </TouchableOpacity>
+      </FadeSlideIn>
     );
   }, [handleStockPress, colors]);
 
@@ -1177,7 +1268,10 @@ export default function Screener() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.surface }]} edges={['top']}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Screener</Text>
+        <FadeSlideIn distance={8}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Screener</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Scan the entire market in seconds</Text>
+        </FadeSlideIn>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton} onPress={() => setShowAllFilters(true)}>
             <Ionicons name="options" size={24} color={colors.text} />
@@ -1194,7 +1288,7 @@ export default function Screener() {
           <Ionicons name="search" size={20} color={colors.textTertiary} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search by name or symbol..."
+            placeholder="Search any ticker or company…"
             placeholderTextColor={colors.textTertiary}
             value={searchQuery}
             onChangeText={handleSearchChange}
@@ -1249,22 +1343,30 @@ export default function Screener() {
 
       <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(activePreset, filters); }} />}>
         <View style={styles.section}>
-          <View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Screens</Text></View>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Screens</Text>
+              <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>One tap, instant results</Text>
+            </View>
+          </View>
           <FlatList data={presets} renderItem={renderPreset} keyExtractor={item => item.id} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presetList} />
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.filterTitleRow}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Filters</Text>
+              <View>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Filters</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>Stack filters to narrow the field</Text>
+              </View>
               {activeFilterCount > 0 && <View style={styles.filterCountBadge}><Text style={styles.filterCountText}>{activeFilterCount}</Text></View>}
             </View>
-            {activeFilterCount > 0 && <TouchableOpacity onPress={() => { setFilters({}); setActivePreset(null); fetchData(null, {}); }}><Text style={styles.clearText}>Clear All</Text></TouchableOpacity>}
+            {activeFilterCount > 0 && <TouchableOpacity onPress={() => { smoothLayout(); setFilters({}); setActivePreset(null); fetchData(null, {}); }}><Text style={styles.clearText}>Clear All</Text></TouchableOpacity>}
           </View>
           
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryTabs} contentContainerStyle={styles.categoryTabsContent}>
             {categoryTabs.map(tab => (
-              <TouchableOpacity key={tab.key} style={[styles.categoryTab, { backgroundColor: colors.card, borderColor: colors.border }, selectedCategory === tab.key && styles.categoryTabActive]} onPress={() => setSelectedCategory(tab.key)}>
+              <TouchableOpacity key={tab.key} style={[styles.categoryTab, { backgroundColor: colors.card, borderColor: colors.border }, selectedCategory === tab.key && styles.categoryTabActive]} onPress={() => { smoothLayout(); setSelectedCategory(tab.key); }}>
                 <Text style={[styles.categoryTabText, { color: colors.textSecondary }, selectedCategory === tab.key && styles.categoryTabTextActive]}>{tab.label}</Text>
               </TouchableOpacity>
             ))}
@@ -1278,25 +1380,32 @@ export default function Screener() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Results</Text>
-            <Text style={[styles.resultCount, { color: colors.textSecondary }]}>{filteredResults.length} stocks</Text>
+            <Text style={[styles.resultCount, { color: colors.textSecondary }]}>{filteredResults.length} {filteredResults.length === 1 ? 'match' : 'matches'}</Text>
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortContainer} contentContainerStyle={styles.sortContent}>
             {sortOptions.map(sort => (
-              <TouchableOpacity key={sort.key} style={[styles.sortButton, { backgroundColor: colors.card }, sortBy === sort.key && { backgroundColor: isDark ? 'rgba(255, 214, 10,0.15)' : '#E8F2FF' }]} onPress={() => handleSort(sort.key)}>
+              <TouchableOpacity key={sort.key} style={[styles.sortButton, { backgroundColor: colors.card }, sortBy === sort.key && { backgroundColor: isDark ? 'rgba(255, 214, 10,0.15)' : '#F6EEDA' }]} onPress={() => handleSort(sort.key)}>
                 <Text style={[styles.sortButtonText, { color: colors.textSecondary }, sortBy === sort.key && { color: colors.primary }]}>{sort.label}</Text>
                 {sortBy === sort.key && <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color={colors.primary} />}
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          {loading && !refreshing && <View style={styles.loadingContainer}><ActivityIndicator size="large" color={colors.primary} /><Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading stocks...</Text></View>}
+          {loading && !refreshing && (
+            <FadeSlideIn distance={6}>
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Scanning the market…</Text>
+              </View>
+            </FadeSlideIn>
+          )}
           
           {error && !loading && (
             <View style={styles.errorContainer}>
               <Ionicons name="alert-circle" size={48} color="#FF5252" />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={() => fetchData(activePreset, filters)}><Text style={styles.retryButtonText}>Retry</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.retryButton} onPress={() => fetchData(activePreset, filters)}><Text style={styles.retryButtonText}>Try Again</Text></TouchableOpacity>
             </View>
           )}
 
@@ -1313,11 +1422,13 @@ export default function Screener() {
                 ListFooterComponent={<View style={{ height: 20 }} />}
               />
             ) : (
-              <View style={styles.emptyContainer}>
-                <Ionicons name="search" size={48} color={colors.borderLight} />
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No stocks found</Text>
-                <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Try adjusting your filters</Text>
-              </View>
+              <FadeSlideIn distance={6}>
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="search" size={48} color={colors.borderLight} />
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No matches found</Text>
+                  <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Try loosening a filter or two</Text>
+                </View>
+              </FadeSlideIn>
             )
           )}
         </View>
@@ -1334,7 +1445,7 @@ export default function Screener() {
               {activeFilterModal?.options.map(option => {
                 const isSelected = filters[activeFilterModal.id] === option || (option === 'Any' && !filters[activeFilterModal.id]);
                 return (
-                  <TouchableOpacity key={option} style={[styles.modalOption, { borderBottomColor: colors.borderLight }, isSelected && { backgroundColor: isDark ? 'rgba(255, 214, 10,0.1)' : '#F8F9FF' }]} onPress={() => handleFilterSelect(activeFilterModal.id, option)}>
+                  <TouchableOpacity key={option} style={[styles.modalOption, { borderBottomColor: colors.borderLight }, isSelected && { backgroundColor: isDark ? 'rgba(255, 214, 10,0.1)' : '#FBF7EC' }]} onPress={() => handleFilterSelect(activeFilterModal.id, option)}>
                     <Text style={[styles.modalOptionText, { color: colors.text }, isSelected && { color: colors.primary, fontWeight: '600' }]}>{option}</Text>
                     {isSelected && <Ionicons name="checkmark" size={20} color={colors.primary} />}
                   </TouchableOpacity>
@@ -1435,7 +1546,7 @@ export default function Screener() {
               onPress={() => { setShowAllFilters(false); fetchData(null, filters); }}
             >
               <Ionicons name="search" size={20} color="#fff" />
-              <Text style={styles.applyButtonText}>Apply Filters ({activeFilterCount})</Text>
+              <Text style={styles.applyButtonText}>See Results ({activeFilterCount})</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -1459,7 +1570,7 @@ export default function Screener() {
           {heatMapLoading ? (
             <View style={styles.heatMapLoading}>
               <ActivityIndicator size="large" color="#8B5CF6" />
-              <Text style={styles.heatMapLoadingText}>Loading heat map...</Text>
+              <Text style={styles.heatMapLoadingText}>Mapping the market…</Text>
             </View>
           ) : (
             <ScrollView 
@@ -1516,7 +1627,7 @@ export default function Screener() {
                 }}
               >
                 <LinearGradient
-                  colors={['#B8860B', '#0055FF']}
+                  colors={['#DAA520', '#B8860B']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.saveCurrentGradient}
@@ -1637,12 +1748,16 @@ export default function Screener() {
       </Modal>
 
       {activeFilterCount > 0 && !activePreset && (
-        <TouchableOpacity style={styles.fab} onPress={() => fetchData(null, filters)}>
-          <LinearGradient colors={['#B8860B', '#0055FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabGradient}>
-            <Ionicons name="search" size={20} color="#fff" />
-            <Text style={styles.fabText}>Apply Filters</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        <FadeSlideIn distance={24} style={styles.fab}>
+          <ScalePress onPress={() => fetchData(null, filters)} activeScale={0.97}>
+            <LinearGradient colors={['#DAA520', '#B8860B']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabGradient}>
+              <Ionicons name="search" size={20} color="#fff" />
+              <Text style={styles.fabText}>
+                Run Screen · {activeFilterCount} {activeFilterCount === 1 ? 'filter' : 'filters'}
+              </Text>
+            </LinearGradient>
+          </ScalePress>
+        </FadeSlideIn>
       )}
     </SafeAreaView>
   );
@@ -1652,6 +1767,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Platform.OS === 'android' ? 16 : 20, paddingVertical: Platform.OS === 'android' ? 12 : 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   headerTitle: { fontSize: Platform.OS === 'android' ? 22 : 28, fontWeight: '700', color: '#000' },
+  headerSubtitle: { fontSize: 12, fontWeight: '500', marginTop: 2 },
+  sectionSubtitle: { fontSize: 12, fontWeight: '500', marginTop: 2 },
   headerActions: { flexDirection: 'row', gap: 8 },
   headerButton: { padding: 8, position: 'relative' },
   headerBadge: { position: 'absolute', top: 4, right: 4, backgroundColor: '#B8860B', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center' },
@@ -1693,7 +1810,7 @@ const styles = StyleSheet.create({
   sortContainer: { marginBottom: 12 },
   sortContent: { paddingHorizontal: 20 },
   sortButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#fff', marginRight: 8, gap: 4 },
-  sortButtonActive: { backgroundColor: '#E8F2FF' },
+  sortButtonActive: { backgroundColor: '#F6EEDA' },
   sortButtonText: { fontSize: 13, color: '#666', fontWeight: '500' },
   sortButtonTextActive: { color: '#B8860B' },
   stockList: { backgroundColor: '#fff', marginHorizontal: 16, borderRadius: 16, overflow: 'hidden', ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 }, android: { elevation: 2 } }) },
@@ -1733,7 +1850,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 20, color: '#000' },
   modalOptions: { paddingHorizontal: 20 },
   modalOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-  modalOptionSelected: { backgroundColor: '#F8F9FF', marginHorizontal: -20, paddingHorizontal: 20 },
+  modalOptionSelected: { backgroundColor: '#FBF7EC', marginHorizontal: -20, paddingHorizontal: 20 },
   modalOptionText: { fontSize: 16, color: '#333' },
   modalOptionTextSelected: { color: '#B8860B', fontWeight: '600' },
   fullModalContainer: { flex: 1, backgroundColor: '#F8F9FA' },
@@ -1765,7 +1882,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5E5',
     minHeight: 100,
   },
-  filterGridItemActive: { borderColor: '#B8860B', backgroundColor: '#F0F7FF' },
+  filterGridItemActive: { borderColor: '#B8860B', backgroundColor: '#FBF6E8' },
   filterGridItemPremium: { borderColor: '#FFD700', backgroundColor: '#FFFEF5' },
   filterGridIconRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   filterGridIconBg: {
@@ -1776,7 +1893,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  filterGridIconBgActive: { backgroundColor: '#E8F2FF' },
+  filterGridIconBgActive: { backgroundColor: '#F6EEDA' },
   filterGridIconBgPremium: { backgroundColor: '#FFF9E6' },
   filterLockBadge: {
     position: 'absolute',
@@ -1994,7 +2111,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#E8F2FF',
+    backgroundColor: '#F6EEDA',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
