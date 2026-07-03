@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 import { IBenefit } from "@/types";
 
 interface Props {
@@ -16,30 +17,45 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }) => {
     <section
       className={`relative w-full bg-transparent ${
         imageAtRight ? "md:flex-row-reverse" : "md:flex-row"
-      } flex flex-col items-center justify-between gap-16 px-6 md:px-12`}
+      } flex flex-col items-center justify-between gap-16 px-6 md:px-12 py-10`}
     >
       {/* ✅ Left Text */}
-      <div className="flex-1 space-y-6 text-left">
-        <h3 className="text-4xl md:text-5xl font-bold text-yellow-400">
+      <motion.div
+        initial={{ opacity: 0, x: imageAtRight ? 40 : -40 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        className="flex-1 space-y-6 text-left"
+      >
+        <h3 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">
           {title}
         </h3>
-        <p className="text-gray-300 text-lg leading-relaxed">
-          {description}
-        </p>
+        <p className="text-gray-300 text-lg leading-relaxed">{description}</p>
 
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {bullets?.map((b, i) => (
-            <li key={i} className="text-gray-400 text-md">
-              <strong className="text-yellow-400">{b.title}:</strong>{" "}
-              {b.description}
+            <li key={i} className="flex items-start gap-3 text-gray-400 text-md">
+              <span className="mt-1.5 flex-shrink-0 w-5 h-5 rounded-full bg-yellow-400/15 border border-yellow-400/40 flex items-center justify-center">
+                <span className="w-2 h-2 rounded-full bg-yellow-400" />
+              </span>
+              <span>
+                <strong className="text-yellow-400">{b.title}:</strong>{" "}
+                {b.description}
+              </span>
             </li>
           ))}
         </ul>
-      </div>
+      </motion.div>
 
       {/* ✅ Right Widget */}
-      <div
-        className="flex-1 w-full h-[650px] md:h-[700px] overflow-hidden rounded-2xl shadow-[0_0_30px_rgba(255,215,0,0.15)]"
+      <motion.div
+        initial={{ opacity: 0, x: imageAtRight ? -40 : 40 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true, margin: "-100px" }}
+        transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        className="flex-1 w-full h-[650px] md:h-[700px] overflow-hidden rounded-2xl
+        border border-white/10 bg-white/[0.02]
+        shadow-[0_0_40px_rgba(255,215,0,0.12),0_25px_50px_rgba(0,0,0,0.5)]"
         dangerouslySetInnerHTML={{ __html: widget || "" }}
       />
     </section>

@@ -20,13 +20,18 @@ const Benefits: React.FC = () => {
       {/* ✅ Main content container */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-12 md:py-20">
         {/* Section Heading */}
-        <h2
-          className="text-5xl md:text-6xl font-extrabold text-center mb-20 
-          bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 bg-clip-text text-transparent 
-          drop-shadow-[0_0_40px_rgba(255,215,0,0.4)]"
-        >
-          Platform Benefits
-        </h2>
+        <div className="text-center mb-20">
+          <span className="inline-block px-4 py-1.5 mb-5 rounded-full text-sm font-medium text-yellow-300 bg-yellow-400/10 border border-yellow-400/25">
+            Why WallStreetStocks
+          </span>
+          <h2
+            className="text-5xl md:text-6xl font-extrabold tracking-tight
+            bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 bg-clip-text text-transparent
+            drop-shadow-[0_0_40px_rgba(255,215,0,0.4)]"
+          >
+            Platform Benefits
+          </h2>
+        </div>
 
         {/* ✅ Benefit sections — seamless merge (no vertical space) */}
         <div className="flex flex-col m-0 p-0">

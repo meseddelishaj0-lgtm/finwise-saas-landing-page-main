@@ -125,6 +125,31 @@ h1, h2, h3, h4, h5, h6 {
   background: radial-gradient(circle, var(--tw-gradient-stops));
 }
 
+/* === Hero Grid Overlay === */
+.bg-hero-grid {
+  background-image:
+    linear-gradient(rgba(255, 215, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 215, 0, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 100%);
+}
+
+/* === Glass Card === */
+.glass-card {
+  @apply relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md transition-all duration-300;
+}
+.glass-card:hover {
+  @apply border-yellow-400/40 -translate-y-1;
+  box-shadow: 0 0 35px rgba(255, 215, 0, 0.15), 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* === Gold Section Title === */
+.section-title-gold {
+  @apply text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-yellow-400 via-amber-200 to-yellow-500 bg-clip-text text-transparent;
+  filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.25));
+}
+
 /* === Floating Ticker Animations === */
 @keyframes ticker-scroll-left {
   0% { transform: translateX(100%); }

@@ -9,6 +9,7 @@ import Section from "@/components/Section";
 import Stats from "@/components/Stats";
 import CTA from "@/components/CTA";
 import Features from "@/components/Features";
+import Reveal from "@/components/ui/Reveal";
 
 
 
@@ -30,80 +31,95 @@ const HomePage: React.FC = () => {
 
         {/* ✅ Renamed from Pricing to Plans */}
         <section
-  id="plans"
-  className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a]"
-  style={{ marginLeft: 'calc(-50vw + 50%)' }}
->
-  {/* Gold glow background */}
-  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
+          id="plans"
+          className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-black via-[#0a0a0a] to-[#0f0d05]"
+          style={{ marginLeft: 'calc(-50vw + 50%)' }}
+        >
+          {/* Gold glow background */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.07)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-yellow-400/[0.06] rounded-full blur-[120px] pointer-events-none" />
 
-  <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 text-center">
-    {/* Section Title */}
-    <h2 className="text-4xl md:text-5xl font-extrabold mb-4 text-yellow-400 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)]">
-      Plans
-    </h2>
-    <p className="text-gray-400 max-w-2xl mx-auto mb-16 text-lg">
-      Choose a plan that fits your goals — <span className="text-yellow-300 font-medium">simple</span>, transparent, and built for every investor.
-    </p>
+          <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 text-center">
+            <Reveal>
+              <span className="inline-block px-4 py-1.5 mb-5 rounded-full text-sm font-medium text-yellow-300 bg-yellow-400/10 border border-yellow-400/25">
+                Membership Plans
+              </span>
+              <h2 className="section-title-gold mb-4">Choose Your Edge</h2>
+              <p className="text-gray-400 max-w-2xl mx-auto mb-16 text-lg">
+                Simple, transparent pricing — built for every investor, from first trade to full portfolio.
+              </p>
+            </Reveal>
 
-    {/* Pricing Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-      {/* Gold Plan */}
-      <div className="group relative p-8 rounded-2xl bg-gradient-to-b from-[#111] to-[#1a1a1a] border border-gray-800 hover:border-yellow-400 transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,215,0,0.6)] transform hover:-translate-y-2">
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.4)_0%,rgba(0,0,0,0)_70%)] transition-opacity duration-500 rounded-2xl" />
-        <h3 className="text-2xl font-bold mb-3 text-yellow-400">Gold</h3>
-        <p className="text-3xl font-extrabold mb-1 text-white">$29.99<span className="text-lg font-medium text-gray-400">/mo</span></p>
-        <p className="text-sm text-gray-400 mb-6">Perfect for beginners starting their AI investing journey.</p>
-        <ul className="text-left text-gray-300 space-y-2 mb-8">
-          <li>✔ AI Stock Picks</li>
-          <li>✔ Weekly Research Reports</li>
-          <li>✔ Fundamental AI Ratings</li>
-          <li>✔ Beginner Portfolio Templates</li>
-        </ul>
-        <button className="relative inline-flex items-center justify-center px-6 py-2 font-semibold text-black bg-yellow-400 rounded-full hover:bg-yellow-300 transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,215,0,0.8)]">
-          Subscribe
-        </button>
-      </div>
-
-      {/* Platinum Plan */}
-      <div className="group relative p-8 rounded-2xl bg-gradient-to-b from-[#111] to-[#1a1a1a] border border-yellow-400 shadow-[0_0_25px_rgba(255,215,0,0.6)] hover:shadow-[0_0_50px_rgba(255,215,0,0.8)] transition-all duration-500 transform hover:-translate-y-3 scale-105">
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-30 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.5)_0%,rgba(0,0,0,0)_70%)] transition-opacity duration-500 rounded-2xl" />
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-semibold py-1 px-3 rounded-full shadow-md">
-          ⭐ Most Popular
-        </div>
-        <h3 className="text-2xl font-bold mb-3 text-yellow-300">Platinum</h3>
-        <p className="text-3xl font-extrabold mb-1 text-white">$49.99<span className="text-lg font-medium text-gray-400">/mo</span></p>
-        <p className="text-sm text-gray-400 mb-6">Everything included in Gold, plus advanced AI tools and dashboards.</p>
-        <ul className="text-left text-gray-300 space-y-2 mb-8">
-          <li>✔ Real-Time AI Dashboards</li>
-          <li>✔ Advanced Portfolio Tracking</li>
-          <li>✔ Sector Rotation & Trend Forecasts</li>
-          <li>✔ Custom Research Requests</li>
-        </ul>
-        <button className="relative inline-flex items-center justify-center px-6 py-2 font-semibold text-black bg-yellow-400 rounded-full hover:bg-yellow-300 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,215,0,0.9)]">
-          Subscribe
-        </button>
-      </div>
-
-      {/* Diamond Plan */}
-      <div className="group relative p-8 rounded-2xl bg-gradient-to-b from-[#111] to-[#1a1a1a] border border-gray-800 hover:border-yellow-400 transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,215,0,0.6)] transform hover:-translate-y-2">
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.4)_0%,rgba(0,0,0,0)_70%)] transition-opacity duration-500 rounded-2xl" />
-        <h3 className="text-2xl font-bold mb-3 text-yellow-400">Diamond</h3>
-        <p className="text-3xl font-extrabold mb-1 text-white">$99.99<span className="text-lg font-medium text-gray-400">/mo</span></p>
-        <p className="text-sm text-gray-400 mb-6">Everything included in Platinum, plus full research access and priority insights.</p>
-        <ul className="text-left text-gray-300 space-y-2 mb-8">
-          <li>✔ Full AI Research Access</li>
-          <li>✔ Predictive Market Outlooks</li>
-          <li>✔ Institutional-Grade Reports</li>
-          <li>✔ Portfolio Optimization Tools</li>
-        </ul>
-        <button className="relative inline-flex items-center justify-center px-6 py-2 font-semibold text-black bg-yellow-400 rounded-full hover:bg-yellow-300 transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,215,0,0.8)]">
-          Subscribe
-        </button>
-      </div>
-    </div>
-  </div>
-</section>
+            {/* Pricing Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 lg:gap-10 items-stretch">
+              {[
+                {
+                  name: 'Gold',
+                  price: '$29.99',
+                  tagline: 'Perfect for beginners starting their AI investing journey.',
+                  features: ['AI Stock Picks', 'Weekly Research Reports', 'Fundamental AI Ratings', 'Beginner Portfolio Templates'],
+                  featured: false,
+                },
+                {
+                  name: 'Platinum',
+                  price: '$49.99',
+                  tagline: 'Everything in Gold, plus advanced AI tools and dashboards.',
+                  features: ['Real-Time AI Dashboards', 'Advanced Portfolio Tracking', 'Sector Rotation & Trend Forecasts', 'Custom Research Requests'],
+                  featured: true,
+                },
+                {
+                  name: 'Diamond',
+                  price: '$99.99',
+                  tagline: 'Everything in Platinum, plus full research access and priority insights.',
+                  features: ['Full AI Research Access', 'Predictive Market Outlooks', 'Institutional-Grade Reports', 'Portfolio Optimization Tools'],
+                  featured: false,
+                },
+              ].map((plan, i) => (
+                <Reveal key={plan.name} delay={i * 0.12} className="h-full">
+                  <div
+                    className={`group relative h-full flex flex-col p-8 rounded-2xl backdrop-blur-md transition-all duration-300 transform hover:-translate-y-2 ${
+                      plan.featured
+                        ? 'bg-gradient-to-b from-yellow-400/[0.08] to-white/[0.02] border border-yellow-400/60 shadow-[0_0_35px_rgba(255,215,0,0.25)] hover:shadow-[0_0_55px_rgba(255,215,0,0.45)] md:scale-[1.04]'
+                        : 'bg-white/[0.03] border border-white/10 hover:border-yellow-400/50 hover:shadow-[0_0_30px_rgba(255,215,0,0.2)]'
+                    }`}
+                  >
+                    {plan.featured && (
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-amber-400 text-black text-xs font-bold py-1.5 px-4 rounded-full shadow-[0_0_20px_rgba(255,215,0,0.5)]">
+                        ⭐ Most Popular
+                      </div>
+                    )}
+                    <h3 className="text-xl font-bold mb-2 text-yellow-300 tracking-wide uppercase">{plan.name}</h3>
+                    <p className="text-4xl font-extrabold mb-2 text-white">
+                      {plan.price}
+                      <span className="text-lg font-medium text-gray-400">/mo</span>
+                    </p>
+                    <p className="text-sm text-gray-400 mb-8">{plan.tagline}</p>
+                    <ul className="text-left text-gray-300 space-y-3 mb-10 flex-1">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-3">
+                          <span className="mt-1 flex-shrink-0 w-4 h-4 rounded-full bg-yellow-400/15 border border-yellow-400/40 flex items-center justify-center">
+                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                          </span>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    <a
+                      href="/plans"
+                      className={`inline-flex items-center justify-center px-6 py-3 font-bold rounded-full transition-all duration-300 ${
+                        plan.featured
+                          ? 'text-black bg-gradient-to-r from-yellow-400 to-amber-400 hover:shadow-[0_0_35px_rgba(255,215,0,0.7)]'
+                          : 'text-yellow-300 bg-white/[0.04] border border-yellow-400/30 hover:bg-yellow-400 hover:text-black hover:border-yellow-400'
+                      }`}
+                    >
+                      Subscribe
+                    </a>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
 
 
 
@@ -117,69 +133,64 @@ const HomePage: React.FC = () => {
   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
 
   <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 text-center">
-    {/* Section Title */}
-    <h2 className="text-4xl md:text-5xl font-extrabold mb-4 text-yellow-400 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)]">
-      What Our Clients Say
-    </h2>
-    <p className="text-gray-400 max-w-2xl mx-auto mb-16 text-lg">
-      Hear from those who have partnered with <span className="text-yellow-300 font-semibold">WallStreetStocks.ai</span>.
-    </p>
+    <Reveal>
+      <span className="inline-block px-4 py-1.5 mb-5 rounded-full text-sm font-medium text-yellow-300 bg-yellow-400/10 border border-yellow-400/25">
+        Testimonials
+      </span>
+      <h2 className="section-title-gold mb-4">What Our Clients Say</h2>
+      <p className="text-gray-400 max-w-2xl mx-auto mb-16 text-lg">
+        Hear from those who have partnered with <span className="text-yellow-300 font-semibold">WallStreetStocks.ai</span>.
+      </p>
+    </Reveal>
 
     {/* Testimonials */}
     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {/* Testimonial 1 */}
-      <div className="group relative bg-gradient-to-b from-[#111] to-[#1a1a1a] p-8 rounded-2xl border border-gray-800 hover:border-yellow-400 transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,215,0,0.6)] transform hover:-translate-y-2">
-        <div className="flex items-center gap-4 mb-4">
-          <img
-            src="/images/testimonial-1.webp"
-            alt="John Smith"
-            className="w-12 h-12 rounded-full border border-yellow-400"
-          />
-          <div className="text-left">
-            <h3 className="text-yellow-300 font-semibold">John Smith</h3>
-            <p className="text-sm text-gray-400">CEO at Company</p>
+      {[
+        {
+          img: '/images/testimonial-1.webp',
+          name: 'John Smith',
+          role: 'CEO at Company',
+          quote:
+            "WallStreetStocks’s AI-driven insights have transformed how we approach market research for our clients. It’s an invaluable resource in the modern financial landscape.",
+        },
+        {
+          img: '/images/testimonial-2.webp',
+          name: 'Jane Doe',
+          role: 'CTO at Startup',
+          quote:
+            "As a CTO, I'm impressed by WallStreetStocks’s robust security measures and seamless integrations. It’s rare to find an app that balances user-friendliness with such advanced technology.",
+        },
+        {
+          img: '/images/testimonial-3.webp',
+          name: 'Emily Johnson',
+          role: 'Product Manager',
+          quote:
+            "WallStreetStocks is revolutionizing market research. Its intuitive design and powerful AI-driven tools make it indispensable for anyone serious about financial growth.",
+        },
+      ].map((t, i) => (
+        <Reveal key={t.name} delay={i * 0.12} className="h-full">
+          <div className="group relative h-full flex flex-col bg-white/[0.03] backdrop-blur-md p-8 rounded-2xl border border-white/10 hover:border-yellow-400/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,215,0,0.2)] transform hover:-translate-y-2">
+            <div className="absolute top-6 right-8 text-6xl text-yellow-400/15 font-serif leading-none select-none">”</div>
+            <div className="flex text-yellow-400 mb-5 gap-0.5" aria-label="5 out of 5 stars">
+              {'★★★★★'.split('').map((star, j) => (
+                <span key={j} className="text-sm drop-shadow-[0_0_6px_rgba(255,215,0,0.5)]">{star}</span>
+              ))}
+            </div>
+            <p className="text-gray-300 text-left leading-relaxed flex-1">“{t.quote}”</p>
+            <div className="flex items-center gap-4 mt-6 pt-6 border-t border-white/10">
+              <img
+                src={t.img}
+                alt={t.name}
+                className="w-12 h-12 rounded-full border-2 border-yellow-400/60 shadow-[0_0_12px_rgba(255,215,0,0.3)]"
+              />
+              <div className="text-left">
+                <h3 className="text-yellow-300 font-semibold">{t.name}</h3>
+                <p className="text-sm text-gray-400">{t.role}</p>
+              </div>
+            </div>
           </div>
-        </div>
-        <p className="text-gray-300 text-left">
-          "WallStreetStocks’s AI-driven insights have transformed how we approach market research for our clients. It’s an invaluable resource in the modern financial landscape."
-        </p>
-      </div>
-
-      {/* Testimonial 2 */}
-      <div className="group relative bg-gradient-to-b from-[#111] to-[#1a1a1a] p-8 rounded-2xl border border-gray-800 hover:border-yellow-400 transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,215,0,0.6)] transform hover:-translate-y-2">
-        <div className="flex items-center gap-4 mb-4">
-          <img
-            src="/images/testimonial-2.webp"
-            alt="Jane Doe"
-            className="w-12 h-12 rounded-full border border-yellow-400"
-          />
-          <div className="text-left">
-            <h3 className="text-yellow-300 font-semibold">Jane Doe</h3>
-            <p className="text-sm text-gray-400">CTO at Startup</p>
-          </div>
-        </div>
-        <p className="text-gray-300 text-left">
-          "As a CTO, I'm impressed by WallStreetStocks’s robust security measures and seamless integrations. It’s rare to find an app that balances user-friendliness with such advanced technology."
-        </p>
-      </div>
-
-      {/* Testimonial 3 */}
-      <div className="group relative bg-gradient-to-b from-[#111] to-[#1a1a1a] p-8 rounded-2xl border border-gray-800 hover:border-yellow-400 transition-all duration-300 hover:shadow-[0_0_25px_rgba(255,215,0,0.6)] transform hover:-translate-y-2">
-        <div className="flex items-center gap-4 mb-4">
-          <img
-            src="/images/testimonial-3.webp"
-            alt="Emily Johnson"
-            className="w-12 h-12 rounded-full border border-yellow-400"
-          />
-          <div className="text-left">
-            <h3 className="text-yellow-300 font-semibold">Emily Johnson</h3>
-            <p className="text-sm text-gray-400">Product Manager</p>
-          </div>
-        </div>
-        <p className="text-gray-300 text-left">
-          "WallStreetStocks is revolutionizing market research. Its intuitive design and powerful AI-driven tools make it indispensable for anyone serious about financial growth."
-        </p>
-      </div>
+        </Reveal>
+      ))}
     </div>
   </div>
 </section>
@@ -198,7 +209,10 @@ const HomePage: React.FC = () => {
   <div className="relative z-10 max-w-7xl mx-auto px-6 py-24">
     {/* Title */}
     <div className="text-center mb-16">
-      <h2 className="text-4xl md:text-5xl font-extrabold text-yellow-400 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)] mb-4">
+      <span className="inline-block px-4 py-1.5 mb-5 rounded-full text-sm font-medium text-yellow-300 bg-yellow-400/10 border border-yellow-400/25">
+        FAQ
+      </span>
+      <h2 className="section-title-gold mb-4">
         Frequently Asked Questions
       </h2>
       <p className="text-gray-400 max-w-2xl mx-auto text-lg">
@@ -238,7 +252,7 @@ const HomePage: React.FC = () => {
       ].map((faq, i) => (
         <details
           key={i}
-          className="group border border-gray-800 bg-gradient-to-b from-[#111] to-[#1a1a1a] rounded-xl overflow-hidden hover:border-yellow-400 transition-all duration-300"
+          className="group border border-white/10 bg-white/[0.03] backdrop-blur-md rounded-xl overflow-hidden hover:border-yellow-400/50 hover:shadow-[0_0_20px_rgba(255,215,0,0.12)] transition-all duration-300"
         >
           <summary className="flex justify-between items-center cursor-pointer px-6 py-4 text-lg font-semibold text-white hover:text-yellow-300 transition-all duration-200">
             {faq.q}
@@ -266,7 +280,7 @@ const HomePage: React.FC = () => {
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
           <div className="relative z-10 max-w-4xl mx-auto px-6 py-24">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-yellow-400 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)] mb-4 text-center">
+            <h2 className="section-title-gold mb-4 text-center">
               Terms and Conditions
             </h2>
             <p className="text-gray-400 text-center mb-12">Last Updated: December 11, 2025</p>
@@ -340,7 +354,7 @@ const HomePage: React.FC = () => {
               ].map((item, i) => (
                 <details
                   key={i}
-                  className="group border border-gray-800 bg-gradient-to-b from-[#111] to-[#1a1a1a] rounded-xl overflow-hidden hover:border-yellow-400 transition-all duration-300"
+                  className="group border border-white/10 bg-white/[0.03] backdrop-blur-md rounded-xl overflow-hidden hover:border-yellow-400/50 hover:shadow-[0_0_20px_rgba(255,215,0,0.12)] transition-all duration-300"
                 >
                   <summary className="flex justify-between items-center cursor-pointer px-6 py-4 text-lg font-semibold text-white hover:text-yellow-300 transition-all duration-200">
                     {item.title}
@@ -361,7 +375,7 @@ const HomePage: React.FC = () => {
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
           <div className="relative z-10 max-w-4xl mx-auto px-6 py-24">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-yellow-400 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)] mb-4 text-center">
+            <h2 className="section-title-gold mb-4 text-center">
               Privacy Policy
             </h2>
             <p className="text-gray-400 text-center mb-12">Last Updated: December 11, 2025</p>
@@ -427,7 +441,7 @@ const HomePage: React.FC = () => {
               ].map((item, i) => (
                 <details
                   key={i}
-                  className="group border border-gray-800 bg-gradient-to-b from-[#111] to-[#1a1a1a] rounded-xl overflow-hidden hover:border-yellow-400 transition-all duration-300"
+                  className="group border border-white/10 bg-white/[0.03] backdrop-blur-md rounded-xl overflow-hidden hover:border-yellow-400/50 hover:shadow-[0_0_20px_rgba(255,215,0,0.12)] transition-all duration-300"
                 >
                   <summary className="flex justify-between items-center cursor-pointer px-6 py-4 text-lg font-semibold text-white hover:text-yellow-300 transition-all duration-200">
                     {item.title}
