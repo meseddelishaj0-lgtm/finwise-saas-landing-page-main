@@ -2470,7 +2470,7 @@ export default function CommunityPage() {
           </>
         }
         renderItem={({ item: post }) => (
-          <View style={[styles.postCard, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : colors.borderLight }]}>
+          <View style={[styles.postCard, { backgroundColor: isDark ? colors.surface : colors.card, borderColor: isDark ? colors.borderLight : colors.border }]}>
             {/* Post Header */}
             <View style={styles.postHeader}>
               <Avatar 
@@ -3942,8 +3942,15 @@ const styles = StyleSheet.create({
   },
   postCard: {
     backgroundColor: '#FFF',
-    marginBottom: 8,
+    marginHorizontal: 12,
+    marginBottom: 12,
     padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8 },
+      android: { elevation: 2 },
+    }),
   },
   postHeader: {
     flexDirection: 'row',
