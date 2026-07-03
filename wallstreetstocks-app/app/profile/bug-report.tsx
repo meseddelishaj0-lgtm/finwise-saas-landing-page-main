@@ -26,7 +26,7 @@ type BugCategory = {
 
 const bugCategories: BugCategory[] = [
   { id: 'crash', label: 'App Crash', icon: 'warning', color: '#FF3B30' },
-  { id: 'ui', label: 'UI Issue', icon: 'eye-outline', color: '#007AFF' },
+  { id: 'ui', label: 'UI Issue', icon: 'eye-outline', color: '#B8860B' },
   { id: 'performance', label: 'Slow/Laggy', icon: 'speedometer-outline', color: '#FF9500' },
   { id: 'data', label: 'Data Error', icon: 'cloud-offline-outline', color: '#5856D6' },
   { id: 'login', label: 'Login Issue', icon: 'lock-closed-outline', color: '#34C759' },
@@ -278,7 +278,7 @@ export default function BugReportScreen() {
             onPress={() => setIncludeDeviceInfo(!includeDeviceInfo)}
           >
             <View style={styles.deviceInfoLeft}>
-              <Ionicons name="phone-portrait-outline" size={22} color="#007AFF" />
+              <Ionicons name="phone-portrait-outline" size={22} color="#B8860B" />
               <View>
                 <Text style={[styles.deviceInfoLabel, { color: colors.text }]}>Include Device Info</Text>
                 <Text style={[styles.deviceInfoHint, { color: colors.textTertiary }]}>Helps us debug the issue</Text>

@@ -262,12 +262,12 @@ export default function PriceAlerts() {
           style={styles.addButton}
           onPress={() => setShowCreateModal(true)}
         >
-          <Ionicons name="add" size={24} color="#007AFF" />
+          <Ionicons name="add" size={24} color="#B8860B" />
         </TouchableOpacity>
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color="#B8860B" style={{ marginTop: 40 }} />
       ) : alerts.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="notifications-outline" size={64} color={colors.textTertiary} />
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   createButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',

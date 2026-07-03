@@ -132,7 +132,7 @@ export default function RateUsPage() {
             style={styles.backButton}
             activeOpacity={0.7}
           >
-            <ChevronLeft size={28} color="#007AFF" />
+            <ChevronLeft size={28} color="#B8860B" />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Rate Us</Text>
           <View style={styles.headerRight} />
@@ -167,7 +167,7 @@ export default function RateUsPage() {
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <ChevronLeft size={28} color="#007AFF" />
+          <ChevronLeft size={28} color="#B8860B" />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Rate Us</Text>
         <View style={styles.headerRight} />
@@ -180,7 +180,7 @@ export default function RateUsPage() {
         {/* Icon Section */}
         <View style={styles.iconContainer}>
           <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.surface : '#F0F8FF' }]}>
-            <Star size={48} color="#007AFF" fill="#007AFF" />
+            <Star size={48} color="#B8860B" fill="#B8860B" />
           </View>
         </View>
 
@@ -202,7 +202,7 @@ export default function RateUsPage() {
 
           <View style={styles.benefitItem}>
             <View style={[styles.benefitIcon, { backgroundColor: colors.surface }]}>
-              <ThumbsUp size={20} color="#007AFF" />
+              <ThumbsUp size={20} color="#B8860B" />
             </View>
             <View style={styles.benefitContent}>
               <Text style={[styles.benefitText, { color: colors.text }]}>
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#007AFF",
+    backgroundColor: "#B8860B",
     borderRadius: 12,
     paddingVertical: 16,
     gap: 8,
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   doneButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#B8860B",
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 48,

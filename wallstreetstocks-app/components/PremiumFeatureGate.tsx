@@ -160,7 +160,7 @@ export function PremiumFeatureCard({
       {!hasAccess && (
         <View style={styles.unlockPrompt}>
           <Text style={styles.unlockPromptText}>Tap to unlock</Text>
-          <Ionicons name="chevron-forward" size={14} color="#007AFF" />
+          <Ionicons name="chevron-forward" size={14} color="#B8860B" />
         </View>
       )}
     </TouchableOpacity>
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   },
   unlockPromptText: {
     fontSize: 13,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   // Section styles
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   featuresGrid: {

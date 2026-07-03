@@ -222,7 +222,7 @@ export default function StockPicksScreen() {
               onPress={() => router.push('/(modals)/paywall' as any)}
             >
               <Text style={styles.upgradeLinkText}>Upgrade for more picks</Text>
-              <Ionicons name="arrow-forward" size={14} color="#007AFF" />
+              <Ionicons name="arrow-forward" size={14} color="#B8860B" />
             </TouchableOpacity>
           )}
         </View>
@@ -353,9 +353,9 @@ export default function StockPicksScreen() {
                           style={styles.viewChartButton}
                           onPress={() => handleStockPress(stock.symbol)}
                         >
-                          <Ionicons name="stats-chart" size={18} color="#007AFF" />
+                          <Ionicons name="stats-chart" size={18} color="#B8860B" />
                           <Text style={styles.viewChartText}>View Full Analysis</Text>
-                          <Ionicons name="chevron-forward" size={18} color="#007AFF" />
+                          <Ionicons name="chevron-forward" size={18} color="#B8860B" />
                         </TouchableOpacity>
                       </View>
                     )}
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   upgradeLinkText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   loadingContainer: {
     flex: 1,
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     padding: 14,
     borderRadius: 12,
     gap: 8,
@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
   viewChartText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   expandIndicator: {
     alignItems: 'center',
@@ -685,7 +685,7 @@ const styles = StyleSheet.create({
   },
   lockedUpgradeText: {
     fontSize: 12,
-    color: '#007AFF',
+    color: '#B8860B',
     marginTop: 6,
   },
   upgradeCTA: {

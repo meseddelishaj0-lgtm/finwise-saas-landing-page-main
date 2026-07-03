@@ -153,7 +153,7 @@ export default function Blocked() {
         disabled={unblocking === item.id}
       >
         {unblocking === item.id ? (
-          <ActivityIndicator size="small" color="#007AFF" />
+          <ActivityIndicator size="small" color="#B8860B" />
         ) : (
           <Text style={styles.unblockText}>Unblock</Text>
         )}
@@ -177,7 +177,7 @@ export default function Blocked() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#B8860B" />
         </View>
       ) : blockedUsers.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -304,12 +304,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
     minWidth: 80,
     alignItems: 'center',
   },
   unblockText: {
-    color: '#007AFF',
+    color: '#B8860B',
     fontSize: 14,
     fontWeight: '600',
   },

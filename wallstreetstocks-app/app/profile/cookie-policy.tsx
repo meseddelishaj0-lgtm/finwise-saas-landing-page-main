@@ -109,7 +109,7 @@ export default function CookiePolicy() {
           <Text style={[styles.sectionTitle, { color: colors.text }]}>How We Use Cookies</Text>
 
           <View style={styles.useCase}>
-            <Ionicons name="person-outline" size={24} color="#007AFF" />
+            <Ionicons name="person-outline" size={24} color="#B8860B" />
             <View style={styles.useCaseContent}>
               <Text style={[styles.useCaseTitle, { color: colors.text }]}>Authentication</Text>
               <Text style={[styles.useCaseText, { color: colors.textSecondary }]}>Keep you logged in securely across sessions</Text>
@@ -117,7 +117,7 @@ export default function CookiePolicy() {
           </View>
 
           <View style={styles.useCase}>
-            <Ionicons name="settings-outline" size={24} color="#007AFF" />
+            <Ionicons name="settings-outline" size={24} color="#B8860B" />
             <View style={styles.useCaseContent}>
               <Text style={[styles.useCaseTitle, { color: colors.text }]}>Preferences</Text>
               <Text style={[styles.useCaseText, { color: colors.textSecondary }]}>Remember your settings and customizations</Text>
@@ -125,7 +125,7 @@ export default function CookiePolicy() {
           </View>
 
           <View style={styles.useCase}>
-            <Ionicons name="analytics-outline" size={24} color="#007AFF" />
+            <Ionicons name="analytics-outline" size={24} color="#B8860B" />
             <View style={styles.useCaseContent}>
               <Text style={[styles.useCaseTitle, { color: colors.text }]}>Analytics</Text>
               <Text style={[styles.useCaseText, { color: colors.textSecondary }]}>Understand usage patterns to improve the app</Text>
@@ -133,7 +133,7 @@ export default function CookiePolicy() {
           </View>
 
           <View style={styles.useCase}>
-            <Ionicons name="shield-outline" size={24} color="#007AFF" />
+            <Ionicons name="shield-outline" size={24} color="#B8860B" />
             <View style={styles.useCaseContent}>
               <Text style={[styles.useCaseTitle, { color: colors.text }]}>Security</Text>
               <Text style={[styles.useCaseText, { color: colors.textSecondary }]}>Detect and prevent fraudulent activity</Text>
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   requiredBadge: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingVertical: 14,
     borderRadius: 12,
     marginTop: 16,
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   },
   contactEmail: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '500',
   },
 });

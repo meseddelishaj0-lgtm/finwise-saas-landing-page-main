@@ -2184,7 +2184,7 @@ export default function CommunityPage() {
   if (loading && posts.length === 0) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#B8860B" />
         <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading community...</Text>
       </View>
     );
@@ -2328,7 +2328,7 @@ export default function CommunityPage() {
         {/* Suggested Loading State */}
         {suggestedLoading && visibleSuggestedUsers.length === 0 && (
           <View style={[styles.suggestedLoadingContainer, { backgroundColor: colors.background }]}>
-            <ActivityIndicator size="small" color="#007AFF" />
+            <ActivityIndicator size="small" color="#B8860B" />
           </View>
         )}
 
@@ -2521,7 +2521,7 @@ export default function CommunityPage() {
                 {post.tickers.map((ticker) => (
                   <TouchableOpacity
                     key={ticker}
-                    style={[styles.tickerPill, { backgroundColor: isDark ? "rgba(0,122,255,0.15)" : "#E3F2FD" }]}
+                    style={[styles.tickerPill, { backgroundColor: isDark ? "rgba(184, 134, 11,0.15)" : "#E3F2FD" }]}
                     onPress={() => handleTickerPress(ticker)}
                   >
                     <Text style={styles.tickerPillText}>${ticker}</Text>
@@ -2696,7 +2696,7 @@ export default function CommunityPage() {
             {/* Show loading state while fetching fresh profile data */}
             {!selectedProfile && profileLoading ? (
               <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#B8860B" />
                 <Text style={{ marginTop: 12, color: '#666', fontSize: 14 }}>Loading profile...</Text>
               </View>
             ) : (
@@ -2713,7 +2713,7 @@ export default function CommunityPage() {
                 </Text>
                 <SubscriptionBadgeInline tier={selectedProfile?.subscriptionTier as any} />
                 {profileLoading && (
-                  <ActivityIndicator size="small" color="#007AFF" style={{ marginLeft: 8 }} />
+                  <ActivityIndicator size="small" color="#B8860B" style={{ marginLeft: 8 }} />
                 )}
               </View>
 
@@ -2768,13 +2768,13 @@ export default function CommunityPage() {
                     disabled={followLoading}
                   >
                     {followLoading ? (
-                      <ActivityIndicator size="small" color={selectedProfile?.isFollowing ? "#007AFF" : "#FFF"} />
+                      <ActivityIndicator size="small" color={selectedProfile?.isFollowing ? "#B8860B" : "#FFF"} />
                     ) : (
                       <>
                         <Ionicons
                           name={selectedProfile?.isFollowing ? "checkmark" : "person-add-outline"}
                           size={18}
-                          color={selectedProfile?.isFollowing ? "#007AFF" : "#FFF"}
+                          color={selectedProfile?.isFollowing ? "#B8860B" : "#FFF"}
                         />
                         <Text style={[
                           styles.followButtonText,
@@ -2796,7 +2796,7 @@ export default function CommunityPage() {
                       }
                     }}
                   >
-                    <Ionicons name="chatbubble-outline" size={18} color="#007AFF" />
+                    <Ionicons name="chatbubble-outline" size={18} color="#B8860B" />
                     <Text style={[styles.messageButtonText, { color: colors.primary }]}>Message</Text>
                   </TouchableOpacity>
 
@@ -2841,7 +2841,7 @@ export default function CommunityPage() {
                     navRouter.push('/profile/edit-profile');
                   }}
                 >
-                  <Ionicons name="create-outline" size={18} color="#007AFF" />
+                  <Ionicons name="create-outline" size={18} color="#B8860B" />
                   <Text style={[styles.editProfileButtonText, { color: colors.primary }]}>Edit Profile</Text>
                 </TouchableOpacity>
               )}
@@ -2852,7 +2852,7 @@ export default function CommunityPage() {
               <Text style={[styles.profilePostsTitle, { color: colors.text }]}>Posts</Text>
               
               {profileLoading ? (
-                <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+                <ActivityIndicator size="large" color="#B8860B" style={{ marginTop: 40 }} />
               ) : profilePosts.length > 0 ? (
                 profilePosts.map((post) => (
                   <TouchableOpacity 
@@ -3033,7 +3033,7 @@ export default function CommunityPage() {
 
             <View style={styles.mediaButtonsRow}>
               <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
-                <Ionicons name="image-outline" size={24} color="#007AFF" />
+                <Ionicons name="image-outline" size={24} color="#B8860B" />
                 <Text style={styles.addImageText}>Image</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.addImageButton} onPress={openGiphyPicker}>
@@ -3076,7 +3076,7 @@ export default function CommunityPage() {
 
           <ScrollView style={styles.searchResults}>
             {searchLoading ? (
-              <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+              <ActivityIndicator size="large" color="#B8860B" style={{ marginTop: 40 }} />
             ) : searchResults.length > 0 ? (
               searchResults.map((post) => (
                 <TouchableOpacity 
@@ -3132,7 +3132,7 @@ export default function CommunityPage() {
           <ScrollView style={styles.notificationsList}>
             {notificationsLoading ? (
               <View style={styles.emptyNotifications}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#B8860B" />
                 <Text style={[styles.emptyTitle, { marginTop: 12 }]}>Loading...</Text>
               </View>
             ) : notifications.length > 0 ? (
@@ -3254,7 +3254,7 @@ export default function CommunityPage() {
             )}
 
             {commentsLoading ? (
-              <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
+              <ActivityIndicator size="large" color="#B8860B" style={{ marginTop: 20 }} />
             ) : comments.length > 0 ? (
               comments.filter(comment => comment.user).map((comment) => (
                 <View key={comment.id} style={styles.commentItem}>
@@ -3593,7 +3593,7 @@ export default function CommunityPage() {
           </View>
 
           {giphyLoading ? (
-            <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+            <ActivityIndicator size="large" color="#B8860B" style={{ marginTop: 40 }} />
           ) : (
             <ScrollView contentContainerStyle={styles.giphyGrid}>
               {giphyResults.map((gif) => (
@@ -3727,7 +3727,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3841,7 +3841,7 @@ const styles = StyleSheet.create({
   },
   seeAllText: {
     fontSize: 15,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '500',
   },
   suggestedList: {
@@ -3892,7 +3892,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   suggestedFollowBtn: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 24,
     paddingVertical: 8,
     borderRadius: 16,
@@ -3903,7 +3903,7 @@ const styles = StyleSheet.create({
   suggestedFollowingBtn: {
     backgroundColor: '#FFF',
     borderWidth: 1.5,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
   },
   suggestedFollowText: {
     color: '#FFF',
@@ -3911,7 +3911,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   suggestedFollowingText: {
-    color: '#007AFF',
+    color: '#B8860B',
   },
   suggestedLoadingContainer: {
     backgroundColor: '#FFF',
@@ -3958,7 +3958,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   tickerBadge: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
@@ -4045,7 +4045,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   emptyButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
@@ -4099,10 +4099,10 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     fontSize: 17,
-    color: '#007AFF',
+    color: '#B8860B',
   },
   postButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
@@ -4232,7 +4232,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 24,
@@ -4242,7 +4242,7 @@ const styles = StyleSheet.create({
   followingButton: {
     backgroundColor: '#FFF',
     borderWidth: 1.5,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
   },
   followButtonText: {
     fontSize: 16,
@@ -4250,7 +4250,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   followingButtonText: {
-    color: '#007AFF',
+    color: '#B8860B',
   },
   messageButton: {
     flexDirection: 'row',
@@ -4258,7 +4258,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFF',
     borderWidth: 1.5,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 24,
@@ -4267,7 +4267,7 @@ const styles = StyleSheet.create({
   messageButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   editProfileButton: {
     flexDirection: 'row',
@@ -4275,7 +4275,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFF',
     borderWidth: 1.5,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 24,
@@ -4285,7 +4285,7 @@ const styles = StyleSheet.create({
   editProfileButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   profilePostsSection: {
     backgroundColor: '#FFF',
@@ -4305,7 +4305,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E5EA',
   },
   profilePostTicker: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -4442,13 +4442,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
     borderStyle: 'dashed',
     gap: 8,
   },
   addImageText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   mediaButtonsRow: {
@@ -4459,7 +4459,7 @@ const styles = StyleSheet.create({
   gifButtonText: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#007AFF',
+    color: '#B8860B',
   },
 
   // Giphy Picker
@@ -4717,7 +4717,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -4816,7 +4816,7 @@ const styles = StyleSheet.create({
   optionsCancelText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
 
   // Image Viewer
@@ -4885,7 +4885,7 @@ const styles = StyleSheet.create({
   tickerPillText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   
   // Sentiment Voting

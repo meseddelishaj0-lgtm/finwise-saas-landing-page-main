@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
   errorContainer: { alignItems: 'center', padding: 40 },
   errorText: { color: '#8E8E93', fontSize: 15, marginTop: 12, marginBottom: 16 },
   retryButton: { backgroundColor: '#1C1C1E', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20 },
-  retryText: { color: '#007AFF', fontSize: 15, fontWeight: '600' },
+  retryText: { color: '#B8860B', fontSize: 15, fontWeight: '600' },
   noDataContainer: { alignItems: 'center', padding: 40 },
   noDataText: { color: '#8E8E93', fontSize: 15 },
 

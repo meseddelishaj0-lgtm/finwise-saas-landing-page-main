@@ -228,7 +228,7 @@ For privacy-related inquiries, please include "Privacy Inquiry" in your email su
             style={[styles.relatedLink, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
             onPress={() => router.push('/profile/terms' as any)}
           >
-            <Ionicons name="document-text-outline" size={20} color="#007AFF" />
+            <Ionicons name="document-text-outline" size={20} color="#B8860B" />
             <Text style={[styles.relatedLinkText, { color: colors.text }]}>Terms of Service</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
@@ -236,7 +236,7 @@ For privacy-related inquiries, please include "Privacy Inquiry" in your email su
             style={[styles.relatedLink, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
             onPress={() => router.push('/profile/house-rules' as any)}
           >
-            <Ionicons name="shield-outline" size={20} color="#007AFF" />
+            <Ionicons name="shield-outline" size={20} color="#B8860B" />
             <Text style={[styles.relatedLinkText, { color: colors.text }]}>House Rules</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
@@ -410,19 +410,19 @@ const styles = StyleSheet.create({
   },
   contactEmail: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '500',
     marginBottom: 16,
   },
   contactButton: {
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 20,
   },
   contactButtonText: {
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   relatedSection: {

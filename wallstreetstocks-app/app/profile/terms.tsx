@@ -252,7 +252,7 @@ Arbitration shall take place in Delaware, or remotely if permitted.`,
         {/* Hero */}
         <View style={[styles.heroSection, { backgroundColor: isDark ? colors.surface : '#f8f9fa', borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}>
           <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
-            <Ionicons name="document-text" size={36} color="#007AFF" />
+            <Ionicons name="document-text" size={36} color="#B8860B" />
           </View>
           <Text style={[styles.heroTitle, { color: colors.text }]}>Terms of Service</Text>
           <Text style={[styles.effectiveDate, { color: colors.textSecondary }]}>Effective Date: January 1, 2025</Text>
@@ -323,7 +323,7 @@ Arbitration shall take place in Delaware, or remotely if permitted.`,
             style={[styles.relatedLink, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
             onPress={() => router.push('/profile/privacy' as any)}
           >
-            <Ionicons name="lock-closed-outline" size={20} color="#007AFF" />
+            <Ionicons name="lock-closed-outline" size={20} color="#B8860B" />
             <Text style={[styles.relatedLinkText, { color: colors.text }]}>Privacy Policy</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
@@ -331,7 +331,7 @@ Arbitration shall take place in Delaware, or remotely if permitted.`,
             style={[styles.relatedLink, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
             onPress={() => router.push('/profile/community-guidelines' as any)}
           >
-            <Ionicons name="people-outline" size={20} color="#007AFF" />
+            <Ionicons name="people-outline" size={20} color="#B8860B" />
             <Text style={[styles.relatedLinkText, { color: colors.text }]}>Community Guidelines</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
@@ -339,7 +339,7 @@ Arbitration shall take place in Delaware, or remotely if permitted.`,
             style={[styles.relatedLink, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
             onPress={() => router.push('/profile/cookie-policy' as any)}
           >
-            <Ionicons name="ellipse-outline" size={20} color="#007AFF" />
+            <Ionicons name="ellipse-outline" size={20} color="#B8860B" />
             <Text style={[styles.relatedLinkText, { color: colors.text }]}>Cookie Policy</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
           </TouchableOpacity>
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   },
   tocNumber: {
     fontSize: 13,
-    color: '#007AFF',
+    color: '#B8860B',
     width: 20,
   },
   tocText: {
@@ -513,19 +513,19 @@ const styles = StyleSheet.create({
   },
   contactEmail: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '500',
     marginBottom: 16,
   },
   contactButton: {
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 20,
   },
   contactButtonText: {
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   relatedSection: {

@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   userMessage: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     borderBottomRightRadius: 4,
   },
   agentMessage: {
@@ -540,11 +540,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: '#007AFF30',
+    borderColor: '#B8860B30',
   },
   quickReplyText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '500',
   },
   inputContainer: {
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 10,

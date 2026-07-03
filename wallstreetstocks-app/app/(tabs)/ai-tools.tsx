@@ -146,7 +146,7 @@ interface ResourceCategory {
 }
 
 const RESOURCE_CATEGORIES: ResourceCategory[] = [
-  { id: 'finance', title: 'Finance', icon: 'wallet-outline', color: '#007AFF', description: 'Personal finance and wealth building' },
+  { id: 'finance', title: 'Finance', icon: 'wallet-outline', color: '#B8860B', description: 'Personal finance and wealth building' },
   { id: 'accounting', title: 'Accounting', icon: 'calculator-outline', color: '#34C759', description: 'Financial statements and bookkeeping' },
   { id: 'real-estate', title: 'Real Estate', icon: 'home-outline', color: '#FF9500', description: 'Property investing and REITs' },
   { id: 'insurance', title: 'Insurance', icon: 'shield-checkmark-outline', color: '#5856D6', description: 'Risk protection and policies' },
@@ -736,7 +736,7 @@ Always remind users that this is educational information, not financial advice.`
   // Suggested questions for assistant
   const SUGGESTED_QUESTIONS = [
     { icon: 'trending-up', text: 'What stocks are trending today?', color: '#00C853' },
-    { icon: 'analytics', text: 'Explain P/E ratio', color: '#007AFF' },
+    { icon: 'analytics', text: 'Explain P/E ratio', color: '#B8860B' },
     { icon: 'shield-checkmark', text: 'How to diversify my portfolio?', color: '#5856D6' },
     { icon: 'warning', text: 'What are the risks of day trading?', color: '#FF9500' },
   ];
@@ -770,7 +770,7 @@ Always remind users that this is educational information, not financial advice.`
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? 'transparent' : colors.borderLight }]}>
           <View style={styles.headerContent}>
             <View style={styles.headerIconBg}>
-              <Ionicons name="sparkles" size={28} color="#007AFF" />
+              <Ionicons name="sparkles" size={28} color="#B8860B" />
             </View>
             <View style={styles.headerText}>
               <Text style={[styles.headerTitle, { color: colors.text }]}>AI Tools</Text>
@@ -799,7 +799,7 @@ Always remind users that this is educational information, not financial advice.`
                   onPress={() => handleTabPress(tab.key)}
                 >
                   <View style={styles.tabContent}>
-                    <Ionicons name={tab.icon as any} size={16} color={activeTab === tab.key ? (isDark ? '#000' : '#007AFF') : colors.textTertiary} />
+                    <Ionicons name={tab.icon as any} size={16} color={activeTab === tab.key ? (isDark ? '#000' : '#B8860B') : colors.textTertiary} />
                     <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive, activeTab !== tab.key && { color: colors.textSecondary }, activeTab === tab.key && { color: isDark ? '#000' : '#fff' }]}>{tab.label}</Text>
                     {tab.isDiamond && (
                       <View style={[styles.diamondBadge, isLocked && styles.diamondBadgeLocked]}>
@@ -921,7 +921,7 @@ Always remind users that this is educational information, not financial advice.`
             {/* Loading State */}
             {analyzerLoading && (
               <View style={[styles.loadingCard, { backgroundColor: colors.background }]}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#B8860B" />
                 <Text style={[styles.loadingText, { color: colors.text }]}>Analyzing {analyzerTicker}...</Text>
                 <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>Fetching DCF valuation & running AI analysis</Text>
               </View>
@@ -960,7 +960,7 @@ Always remind users that this is educational information, not financial advice.`
                 {analysisResult.dcfValue && (
                   <View style={[styles.dcfCard, { backgroundColor: colors.background }]}>
                     <View style={styles.dcfHeader}>
-                      <Ionicons name="calculator" size={22} color="#007AFF" />
+                      <Ionicons name="calculator" size={22} color="#B8860B" />
                       <Text style={[styles.dcfTitle, { color: colors.text }]}>DCF Valuation</Text>
                     </View>
 
@@ -975,7 +975,7 @@ Always remind users that this is educational information, not financial advice.`
                         </View>
                         <View style={styles.dcfValueItem}>
                           <Text style={[styles.dcfLabel, { color: colors.textSecondary }]}>Intrinsic Value</Text>
-                          <Text style={[styles.dcfValue, { color: '#007AFF' }]}>${analysisResult.dcfValue.toFixed(2)}</Text>
+                          <Text style={[styles.dcfValue, { color: '#B8860B' }]}>${analysisResult.dcfValue.toFixed(2)}</Text>
                         </View>
                       </View>
 
@@ -1112,7 +1112,7 @@ Always remind users that this is educational information, not financial advice.`
                 {analysisResult.priceTarget && (
                   <View style={[styles.priceTargetCard, { backgroundColor: colors.background }]}>
                     <View style={styles.priceTargetHeader}>
-                      <Ionicons name="flag" size={20} color="#007AFF" />
+                      <Ionicons name="flag" size={20} color="#B8860B" />
                       <Text style={[styles.priceTargetTitle, { color: colors.text }]}>12-Month Price Targets</Text>
                     </View>
                     <View style={styles.priceTargetRow}>
@@ -1122,7 +1122,7 @@ Always remind users that this is educational information, not financial advice.`
                       </View>
                       <View style={styles.priceTargetItem}>
                         <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>Base Case</Text>
-                        <Text style={[styles.priceTargetValue, { color: '#007AFF' }]}>${analysisResult.priceTarget.mid}</Text>
+                        <Text style={[styles.priceTargetValue, { color: '#B8860B' }]}>${analysisResult.priceTarget.mid}</Text>
                       </View>
                       <View style={styles.priceTargetItem}>
                         <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>Bull Case</Text>
@@ -1137,9 +1137,9 @@ Always remind users that this is educational information, not financial advice.`
                   style={styles.viewChartButton}
                   onPress={() => router.push(`/symbol/${analysisResult.symbol}/chart`)}
                 >
-                  <Ionicons name="stats-chart" size={20} color="#007AFF" />
+                  <Ionicons name="stats-chart" size={20} color="#B8860B" />
                   <Text style={styles.viewChartText}>View Full Chart & Fundamentals</Text>
-                  <Ionicons name="chevron-forward" size={20} color="#007AFF" />
+                  <Ionicons name="chevron-forward" size={20} color="#B8860B" />
                 </TouchableOpacity>
 
                 {/* Disclaimer */}
@@ -1194,7 +1194,7 @@ Always remind users that this is educational information, not financial advice.`
               <View style={styles.compareInputRow}>
                 <View style={styles.compareInputWrapper}>
                   <View style={[styles.compareInputBox, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : '#E5E5EA' }, compareTicker1 && styles.compareInputBoxActive]}>
-                    <Ionicons name="business" size={18} color={compareTicker1 ? '#007AFF' : '#8E8E93'} />
+                    <Ionicons name="business" size={18} color={compareTicker1 ? '#B8860B' : '#8E8E93'} />
                     <TextInput
                       style={[styles.compareInput, { backgroundColor: 'transparent', color: colors.text }]}
                       placeholder="AAPL"
@@ -1274,7 +1274,7 @@ Always remind users that this is educational information, not financial advice.`
             {/* Loading State */}
             {compareLoading && (
               <View style={[styles.loadingCard, { backgroundColor: colors.background }]}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#B8860B" />
                 <Text style={[styles.loadingText, { color: colors.text }]}>Comparing {compareTicker1} vs {compareTicker2}...</Text>
                 <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>Fetching valuations & running AI analysis</Text>
               </View>
@@ -1314,7 +1314,7 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={styles.categoryGrid}>
                     {[
                       { key: 'growth', label: 'Growth', icon: 'trending-up', color: '#00C853' },
-                      { key: 'value', label: 'Value', icon: 'pricetag', color: '#007AFF' },
+                      { key: 'value', label: 'Value', icon: 'pricetag', color: '#B8860B' },
                       { key: 'safety', label: 'Safety', icon: 'shield-checkmark', color: '#5856D6' },
                       { key: 'momentum', label: 'Momentum', icon: 'flash', color: '#FF9500' },
                     ].map((cat) => (
@@ -1333,7 +1333,7 @@ Always remind users that this is educational information, not financial advice.`
 
                 {/* Side by Side Header */}
                 <View style={styles.sideBySideHeader}>
-                  <View style={[styles.stockHeaderBadge, { backgroundColor: '#007AFF' }]}>
+                  <View style={[styles.stockHeaderBadge, { backgroundColor: '#B8860B' }]}>
                     <Text style={styles.stockHeaderSymbol}>{comparisonResult.stock1.symbol}</Text>
                   </View>
                   <Text style={styles.sideBySideVs}>VS</Text>
@@ -1443,11 +1443,11 @@ Always remind users that this is educational information, not financial advice.`
                 {/* View Individual Stocks */}
                 <View style={styles.viewStocksRow}>
                   <TouchableOpacity
-                    style={[styles.viewStockButton, { borderColor: '#007AFF' }]}
+                    style={[styles.viewStockButton, { borderColor: '#B8860B' }]}
                     onPress={() => router.push(`/symbol/${comparisonResult.stock1.symbol}/chart`)}
                   >
-                    <Ionicons name="stats-chart" size={18} color="#007AFF" />
-                    <Text style={[styles.viewStockText, { color: '#007AFF' }]}>View {comparisonResult.stock1.symbol}</Text>
+                    <Ionicons name="stats-chart" size={18} color="#B8860B" />
+                    <Text style={[styles.viewStockText, { color: '#B8860B' }]}>View {comparisonResult.stock1.symbol}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.viewStockButton, { borderColor: '#FF9500' }]}
@@ -1701,7 +1701,7 @@ Always remind users that this is educational information, not financial advice.`
                 {/* Technical Signals Card */}
                 <View style={[styles.technicalCard, { backgroundColor: colors.background }]}>
                   <View style={styles.technicalHeader}>
-                    <Ionicons name="pulse" size={20} color="#007AFF" />
+                    <Ionicons name="pulse" size={20} color="#B8860B" />
                     <Text style={[styles.technicalTitle, { color: colors.text }]}>Technical Signals</Text>
                   </View>
                   <View style={styles.technicalGrid}>
@@ -1872,7 +1872,7 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
                 <View style={styles.chatCapabilities}>
                   <View style={[styles.capabilityChip, { backgroundColor: colors.surface }]}>
-                    <Ionicons name="analytics" size={14} color="#007AFF" />
+                    <Ionicons name="analytics" size={14} color="#B8860B" />
                     <Text style={[styles.capabilityText, { color: colors.text }]}>Market Analysis</Text>
                   </View>
                   <View style={[styles.capabilityChip, { backgroundColor: colors.surface }]}>
@@ -1985,7 +1985,7 @@ Always remind users that this is educational information, not financial advice.`
         {activeTab === 'resources' && (
           <View style={[styles.resourcesContainer, { backgroundColor: colors.background }]}>
             <View style={[styles.resourcesHeader, { backgroundColor: colors.background }]}>
-              <Ionicons name="library" size={28} color="#007AFF" />
+              <Ionicons name="library" size={28} color="#B8860B" />
               <View>
                 <Text style={[styles.resourcesTitle, { color: colors.text }]}>Learning Resources</Text>
                 <Text style={[styles.resourcesSubtitle, { color: colors.textSecondary }]}>Expand your financial knowledge</Text>
@@ -2055,7 +2055,7 @@ Always remind users that this is educational information, not financial advice.`
               <View style={[styles.insiderInfoCard, { backgroundColor: colors.surface, borderWidth: 1, borderColor: isDark ? '#444' : '#E5E5EA', borderRadius: 12 }]}>
                 <View style={styles.insiderInfoRow}>
                   <View style={styles.insiderInfoItem}>
-                    <Ionicons name="eye" size={20} color="#007AFF" />
+                    <Ionicons name="eye" size={20} color="#B8860B" />
                     <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>Real-Time Data</Text>
                   </View>
                   <View style={styles.insiderInfoItem}>
@@ -2073,7 +2073,7 @@ Always remind users that this is educational information, not financial advice.`
               <View style={[styles.insiderFeatures, { backgroundColor: colors.surface, borderWidth: 1, borderColor: isDark ? '#444' : '#E5E5EA', borderRadius: 12 }]}>
                 <Text style={[styles.insiderFeaturesTitle, { color: colors.text }]}>What you can do:</Text>
                 {[
-                  { icon: 'search', text: 'Search insider trades by stock symbol', color: '#007AFF' },
+                  { icon: 'search', text: 'Search insider trades by stock symbol', color: '#B8860B' },
                   { icon: 'trending-up', text: 'Filter by buys or sells', color: '#34C759' },
                   { icon: 'person', text: 'See who is trading (executives, directors)', color: '#FF9500' },
                   { icon: 'cash', text: 'View trade values and share counts', color: '#5856D6' },
@@ -2146,7 +2146,7 @@ Always remind users that this is educational information, not financial advice.`
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.calcTypeScroll}>
               {[
                 { key: 'investment', label: 'Investment', icon: 'trending-up', color: '#34C759' },
-                { key: 'mortgage', label: 'Mortgage', icon: 'home', color: '#007AFF' },
+                { key: 'mortgage', label: 'Mortgage', icon: 'home', color: '#B8860B' },
                 { key: 'loan', label: 'Loan', icon: 'card', color: '#FF9500' },
                 { key: 'bond', label: 'Bond', icon: 'ribbon', color: '#5856D6' },
                 { key: 'retirement', label: 'Retirement', icon: 'sunny', color: '#FF3B30' },
@@ -2272,7 +2272,7 @@ Always remind users that this is educational information, not financial advice.`
                     </View>
                   </View>
                 </View>
-                <TouchableOpacity style={[styles.calcButton, { backgroundColor: '#007AFF' }]} onPress={() => {
+                <TouchableOpacity style={[styles.calcButton, { backgroundColor: '#B8860B' }]} onPress={() => {
                   const principal = (parseFloat(mortgageHomePrice) || 0) - (parseFloat(mortgageDownPayment) || 0);
                   const rate = (parseFloat(mortgageInterestRate) || 6.5) / 100 / 12;
                   const payments = (parseInt(mortgageTerm) || 30) * 12;
@@ -2488,7 +2488,7 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
                 <View style={styles.calcResultGrid}>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
-                    <Ionicons name="wallet-outline" size={20} color="#007AFF" />
+                    <Ionicons name="wallet-outline" size={20} color="#B8860B" />
                     <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Total Invested</Text>
                     <Text style={[styles.calcResultItemValue, { color: colors.text }]}>${calcResult.totalContributions.toLocaleString()}</Text>
                   </View>
@@ -2506,11 +2506,11 @@ Always remind users that this is educational information, not financial advice.`
                 <Text style={[styles.calcResultTitle, { color: colors.text }]}>Mortgage Payment Breakdown</Text>
                 <View style={styles.calcResultMain}>
                   <Text style={styles.calcResultLabel}>Monthly Payment</Text>
-                  <Text style={[styles.calcResultValue, { color: '#007AFF' }]}>${calcResult.monthlyPayment.toLocaleString()}</Text>
+                  <Text style={[styles.calcResultValue, { color: '#B8860B' }]}>${calcResult.monthlyPayment.toLocaleString()}</Text>
                 </View>
                 <View style={styles.calcResultGrid}>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
-                    <Ionicons name="home-outline" size={20} color="#007AFF" />
+                    <Ionicons name="home-outline" size={20} color="#B8860B" />
                     <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Principal & Interest</Text>
                     <Text style={[styles.calcResultItemValue, { color: colors.text }]}>${calcResult.principalInterest.toLocaleString()}</Text>
                   </View>
@@ -2520,11 +2520,11 @@ Always remind users that this is educational information, not financial advice.`
                     <Text style={[styles.calcResultItemValue, { color: colors.text }]}>${(calcResult.propertyTax + calcResult.insurance).toLocaleString()}</Text>
                   </View>
                 </View>
-                <View style={[styles.calcInflationBox, { backgroundColor: '#007AFF15' }]}>
-                  <Ionicons name="information-circle" size={18} color="#007AFF" />
+                <View style={[styles.calcInflationBox, { backgroundColor: '#B8860B15' }]}>
+                  <Ionicons name="information-circle" size={18} color="#B8860B" />
                   <View style={{ flex: 1, marginLeft: 10 }}>
                     <Text style={[styles.calcInflationLabel, { color: colors.text }]}>Loan Details</Text>
-                    <Text style={[styles.calcInflationValue, { color: '#007AFF' }]}>Loan: ${calcResult.loanAmount.toLocaleString()}</Text>
+                    <Text style={[styles.calcInflationValue, { color: '#B8860B' }]}>Loan: ${calcResult.loanAmount.toLocaleString()}</Text>
                     <Text style={styles.calcInflationNote}>Down Payment: {calcResult.downPaymentPercent}% | Total Interest: ${calcResult.totalInterest.toLocaleString()}</Text>
                   </View>
                 </View>
@@ -2540,7 +2540,7 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
                 <View style={styles.calcResultGrid}>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
-                    <Ionicons name="cash-outline" size={20} color="#007AFF" />
+                    <Ionicons name="cash-outline" size={20} color="#B8860B" />
                     <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Total Payments</Text>
                     <Text style={[styles.calcResultItemValue, { color: colors.text }]}>${calcResult.totalPayments.toLocaleString()}</Text>
                   </View>
@@ -2608,7 +2608,7 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
                 <View style={styles.calcResultGrid}>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
-                    <Ionicons name="time-outline" size={20} color="#007AFF" />
+                    <Ionicons name="time-outline" size={20} color="#B8860B" />
                     <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Years in Retirement</Text>
                     <Text style={[styles.calcResultItemValue, { color: colors.text }]}>{calcResult.yearsOfRetirement} yrs</Text>
                   </View>
@@ -2671,7 +2671,7 @@ const styles = StyleSheet.create({
   // Header
   header: { paddingHorizontal: 20, paddingTop: 50, paddingBottom: 16, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
   headerContent: { flexDirection: 'row', alignItems: 'center' },
-  headerIconBg: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#007AFF15', justifyContent: 'center', alignItems: 'center' },
+  headerIconBg: { width: 48, height: 48, borderRadius: 14, backgroundColor: '#B8860B15', justifyContent: 'center', alignItems: 'center' },
   headerText: { marginLeft: 12 },
   headerTitle: { fontSize: 26, fontWeight: '800', color: '#000' },
   headerSubtitle: { fontSize: 13, color: '#8E8E93', fontWeight: '500', marginTop: 2 },
@@ -2679,10 +2679,10 @@ const styles = StyleSheet.create({
   // Tabs
   tabContainer: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
   tab: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, marginRight: 8 },
-  tabActive: { backgroundColor: '#007AFF15' },
+  tabActive: { backgroundColor: '#B8860B15' },
   tabContent: { flexDirection: 'row', alignItems: 'center', position: 'relative' },
   tabText: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginLeft: 6 },
-  tabTextActive: { color: '#007AFF' },
+  tabTextActive: { color: '#B8860B' },
   diamondBadge: {
     width: 14,
     height: 14,
@@ -2755,13 +2755,13 @@ const styles = StyleSheet.create({
   searchSubtitle: { fontSize: 14, color: '#8E8E93', marginBottom: 20 },
   searchInputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 14, paddingHorizontal: 14, borderWidth: 1, borderColor: '#E5E5EA' },
   searchInput: { flex: 1, paddingVertical: 14, fontSize: 16, fontWeight: '600', color: '#000', marginLeft: 10 },
-  analyzeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#007AFF', borderRadius: 14, paddingVertical: 16, marginTop: 16, gap: 8 },
+  analyzeButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#B8860B', borderRadius: 14, paddingVertical: 16, marginTop: 16, gap: 8 },
   analyzeButtonText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
   buttonDisabled: { opacity: 0.6 },
   quickPicksContainer: { marginTop: 20 },
   quickPicksLabel: { fontSize: 13, color: '#8E8E93', fontWeight: '600', marginBottom: 10 },
   quickPickChip: { backgroundColor: '#F5F5F7', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: '#E5E5EA' },
-  quickPickText: { fontSize: 14, fontWeight: '700', color: '#007AFF' },
+  quickPickText: { fontSize: 14, fontWeight: '700', color: '#B8860B' },
 
   // Error & Loading
   errorCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FF3B3015', padding: 16, borderRadius: 14, marginTop: 16, gap: 12 },
@@ -2838,8 +2838,8 @@ const styles = StyleSheet.create({
   priceTargetValue: { fontSize: 22, fontWeight: '800' },
 
   // View Chart Button
-  viewChartButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#007AFF15', padding: 16, borderRadius: 14, marginTop: 16, gap: 8 },
-  viewChartText: { fontSize: 16, fontWeight: '700', color: '#007AFF' },
+  viewChartButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#B8860B15', padding: 16, borderRadius: 14, marginTop: 16, gap: 8 },
+  viewChartText: { fontSize: 16, fontWeight: '700', color: '#B8860B' },
 
   // Disclaimer
   disclaimer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 16, gap: 6 },
@@ -2853,8 +2853,8 @@ const styles = StyleSheet.create({
   inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 12, paddingHorizontal: 14, marginBottom: 12, borderWidth: 1, borderColor: '#E5E5EA' },
   input: { flex: 1, paddingVertical: 14, fontSize: 16, fontWeight: '500', color: '#000', marginLeft: 10 },
   vsContainer: { alignItems: 'center', marginVertical: 8 },
-  vsText: { fontSize: 18, fontWeight: '800', color: '#007AFF' },
-  primaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12, marginTop: 8, gap: 8 },
+  vsText: { fontSize: 18, fontWeight: '800', color: '#B8860B' },
+  primaryButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#B8860B', paddingVertical: 16, borderRadius: 12, marginTop: 8, gap: 8 },
   buttonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
   resultCard: { marginTop: 20, backgroundColor: '#F9F9FB', borderRadius: 14, padding: 16 },
   resultText: { fontSize: 15, color: '#000', lineHeight: 24, fontWeight: '500' },
@@ -2866,7 +2866,7 @@ const styles = StyleSheet.create({
   chatContainer: { maxHeight: 400 },
   chatContent: { padding: 16 },
   messageContainer: { marginBottom: 12, padding: 12, borderRadius: 14, maxWidth: '85%' },
-  userMessage: { backgroundColor: '#007AFF15', alignSelf: 'flex-end' },
+  userMessage: { backgroundColor: '#B8860B15', alignSelf: 'flex-end' },
   assistantMessage: { backgroundColor: '#F5F5F7', alignSelf: 'flex-start' },
   messageHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 6 },
   messageRole: { fontSize: 12, fontWeight: '700', color: '#000' },
@@ -2874,7 +2874,7 @@ const styles = StyleSheet.create({
   inputArea: { padding: 12, borderTopWidth: 1, borderTopColor: '#E5E5EA', backgroundColor: '#F9F9FB' },
   chatInputContainer: { flexDirection: 'row', alignItems: 'flex-end', backgroundColor: '#FFF', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 8, borderWidth: 1, borderColor: '#E5E5EA' },
   chatInput: { flex: 1, fontSize: 15, color: '#000', maxHeight: 80, paddingVertical: 6, fontWeight: '500' },
-  sendButton: { backgroundColor: '#007AFF', width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
+  sendButton: { backgroundColor: '#B8860B', width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center', marginLeft: 8 },
   sendButtonDisabled: { backgroundColor: '#C7C7CC' },
 
   // Resources
@@ -2893,14 +2893,14 @@ const styles = StyleSheet.create({
   compareInputRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   compareInputWrapper: { flex: 1, alignItems: 'center' },
   compareInputBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14, width: '100%', borderWidth: 2, borderColor: '#E5E5EA', gap: 8 },
-  compareInputBoxActive: { borderColor: '#007AFF30' },
+  compareInputBoxActive: { borderColor: '#B8860B30' },
   compareInput: { flex: 1, fontSize: 18, fontWeight: '700', color: '#000', textAlign: 'center' },
   compareInputLabel: { fontSize: 12, color: '#8E8E93', marginTop: 8, fontWeight: '600' },
   vsCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#1C1C1E', justifyContent: 'center', alignItems: 'center', marginHorizontal: 12 },
   vsCircleText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
   quickCompareSuggestions: { marginTop: 20 },
   quickCompareChip: { backgroundColor: '#F5F5F7', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: '#E5E5EA' },
-  quickCompareText: { fontSize: 13, fontWeight: '600', color: '#007AFF' },
+  quickCompareText: { fontSize: 13, fontWeight: '600', color: '#B8860B' },
   winnerCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginTop: 16, borderWidth: 2, borderColor: '#FFD70030' },
   winnerHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   winnerHeaderText: { fontSize: 18, fontWeight: '700', color: '#000' },
@@ -3004,9 +3004,9 @@ const styles = StyleSheet.create({
   aiAvatarContainer: { marginRight: 10 },
   userAvatarContainer: { marginLeft: 10 },
   aiAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#34C759', justifyContent: 'center', alignItems: 'center' },
-  userAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#007AFF', justifyContent: 'center', alignItems: 'center' },
+  userAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#B8860B', justifyContent: 'center', alignItems: 'center' },
   messageBubbleContent: { maxWidth: '75%', borderRadius: 20, padding: 14 },
-  userBubbleContent: { backgroundColor: '#007AFF', borderBottomRightRadius: 6 },
+  userBubbleContent: { backgroundColor: '#B8860B', borderBottomRightRadius: 6 },
   aiBubbleContent: { backgroundColor: '#FFF', borderBottomLeftRadius: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   messageBubbleText: { fontSize: 15, lineHeight: 22, color: '#1C1C1E', fontWeight: '500' },
   userBubbleText: { color: '#FFF' },
@@ -3048,7 +3048,7 @@ const styles = StyleSheet.create({
   insiderQuickSubtitle: { fontSize: 13, color: '#8E8E93', marginBottom: 12 },
   insiderQuickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   insiderQuickChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, gap: 6 },
-  insiderQuickChipText: { fontSize: 14, fontWeight: '700', color: '#007AFF' },
+  insiderQuickChipText: { fontSize: 14, fontWeight: '700', color: '#B8860B' },
   insiderDisclaimer: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 4, gap: 8, marginBottom: 20 },
   insiderDisclaimerText: { flex: 1, fontSize: 12, color: '#8E8E93', lineHeight: 18 },
 

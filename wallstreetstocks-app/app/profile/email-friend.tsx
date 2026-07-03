@@ -72,7 +72,7 @@ export default function EmailFriendPage() {
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <ChevronLeft size={28} color="#007AFF" />
+          <ChevronLeft size={28} color="#B8860B" />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Email to a Friend</Text>
         <View style={styles.headerRight} />
@@ -90,7 +90,7 @@ export default function EmailFriendPage() {
           {/* Icon Section */}
           <View style={styles.iconContainer}>
             <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.surface : '#F0F8FF' }]}>
-              <Mail size={48} color="#007AFF" />
+              <Mail size={48} color="#B8860B" />
             </View>
           </View>
 
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#007AFF",
+    backgroundColor: "#B8860B",
     borderRadius: 12,
     paddingVertical: 16,
     gap: 8,

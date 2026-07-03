@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-const CATEGORY_COLOR = '#007AFF';
+const CATEGORY_COLOR = '#B8860B';
 
 const SUBCATEGORIES = [
   {

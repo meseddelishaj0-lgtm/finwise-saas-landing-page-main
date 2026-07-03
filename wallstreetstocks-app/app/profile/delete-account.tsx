@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   cancelButtonText: {
-    color: '#007AFF',
+    color: '#B8860B',
     fontSize: 16,
     fontWeight: '500',
   },

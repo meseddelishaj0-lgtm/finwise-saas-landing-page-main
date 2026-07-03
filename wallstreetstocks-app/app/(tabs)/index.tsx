@@ -2134,7 +2134,7 @@ export default function Dashboard() {
           {(livePortfolioData?.holdings || contextCurrentPortfolio?.holdings || []).length > 0 && (
             <View style={[styles.holdingsList, { borderTopColor: colors.borderLight }]}>
               <View style={styles.holdingsTitleRow}>
-                <Text style={[styles.holdingsTitle, { color: '#007AFF' }]}>Holdings</Text>
+                <Text style={[styles.holdingsTitle, { color: '#B8860B' }]}>Holdings</Text>
                 <TouchableOpacity
                   style={styles.addHoldingButton}
                   onPress={() => setAddStockModal(true)}
@@ -3174,14 +3174,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: Platform.OS === 'ios' ? 110 : 90,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
-    shadowColor: '#007AFF',
+    shadowColor: '#B8860B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 12,
@@ -3306,9 +3306,9 @@ const styles = StyleSheet.create({
   },
   searchResultExchange: {
     fontSize: 11,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -3477,7 +3477,7 @@ const styles = StyleSheet.create({
   portfolioDropdownText: {
     fontSize: Platform.OS === 'android' ? 12 : 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
     marginRight: 6,
     includeFontPadding: false,
     maxWidth: 150,
@@ -3510,17 +3510,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   portfolioDropdownItemActive: {
-    backgroundColor: '#007AFF10',
+    backgroundColor: '#B8860B10',
   },
   portfolioDropdownItemText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#007AFF',
+    color: '#B8860B',
     flex: 1,
     marginRight: 8,
   },
   portfolioDropdownItemTextActive: {
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   portfolioDropdownDivider: {
@@ -3531,7 +3531,7 @@ const styles = StyleSheet.create({
   portfolioDropdownAddText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#007AFF',
+    color: '#B8860B',
     marginLeft: 8,
   },
   portfolioActions: {
@@ -3559,7 +3559,7 @@ const styles = StyleSheet.create({
     width: Platform.OS === 'android' ? 34 : 40,
     height: Platform.OS === 'android' ? 34 : 40,
     borderRadius: Platform.OS === 'android' ? 17 : 20,
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3685,7 +3685,7 @@ const styles = StyleSheet.create({
     width: Platform.OS === 'android' ? 32 : 40,
     height: Platform.OS === 'android' ? 32 : 40,
     borderRadius: Platform.OS === 'android' ? 16 : 20,
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: Platform.OS === 'android' ? 8 : 12,
@@ -3693,7 +3693,7 @@ const styles = StyleSheet.create({
   holdingIcon: {
     fontSize: Platform.OS === 'android' ? 12 : 16,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#B8860B',
     includeFontPadding: false,
   },
   holdingLogo: {
@@ -3734,7 +3734,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#007AFF10',
+    backgroundColor: '#B8860B10',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -3831,7 +3831,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#F0F0F0',
   },
   dropdownItemActive: {
-    backgroundColor: '#007AFF10',
+    backgroundColor: '#B8860B10',
   },
   dropdownItemText: {
     fontSize: Platform.OS === 'android' ? 11 : 14,
@@ -3840,7 +3840,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   dropdownItemTextActive: {
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   addWatchlistButton: {
@@ -3924,7 +3924,7 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#007AFF10',
+    backgroundColor: '#B8860B10',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -3944,7 +3944,7 @@ const styles = StyleSheet.create({
   addFirstButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
@@ -3993,7 +3993,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   newsSymbolBadge: {
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -4002,7 +4002,7 @@ const styles = StyleSheet.create({
   newsSymbolText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   newsSource: {
     fontSize: 12,
@@ -4093,7 +4093,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   modalButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
@@ -4188,7 +4188,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -4392,7 +4392,7 @@ const styles = StyleSheet.create({
   stockPicksCTAText: {
     fontSize: Platform.OS === 'android' ? 12 : 15,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
     includeFontPadding: false,
   },
 
@@ -4422,7 +4422,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -4430,7 +4430,7 @@ const styles = StyleSheet.create({
   holdingOptionsIcon: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   holdingOptionsSymbol: {
     fontSize: 20,
@@ -4506,7 +4506,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
@@ -4514,7 +4514,7 @@ const styles = StyleSheet.create({
   editHoldingIcon: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   editHoldingSymbol: {
     fontSize: 22,
@@ -4568,7 +4568,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -4606,7 +4606,7 @@ const styles = StyleSheet.create({
   analyticsPreviewStatValue: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   analyticsPreviewDivider: {
     width: 1,
@@ -4659,7 +4659,7 @@ const styles = StyleSheet.create({
   },
   createPortfolioCreateBtn: {
     flex: 1,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
@@ -4721,7 +4721,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingVertical: 16,
     borderRadius: 14,
     gap: 8,

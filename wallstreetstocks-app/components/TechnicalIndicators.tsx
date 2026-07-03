@@ -383,7 +383,7 @@ export default function TechnicalIndicators({
         </View>
         <View style={styles.legend}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#007AFF' }]} />
+            <View style={[styles.legendDot, { backgroundColor: '#B8860B' }]} />
             <Text style={styles.legendText}>MACD</Text>
           </View>
           <View style={styles.legendItem}>
@@ -426,7 +426,7 @@ export default function TechnicalIndicators({
               width={SCREEN_WIDTH - 40}
               curved
               curvature={0.1}
-              color="#007AFF"
+              color="#B8860B"
               thickness={1.5}
               hideDataPoints
               hideAxesAndRules
@@ -471,7 +471,7 @@ export default function TechnicalIndicators({
         </View>
         <View style={styles.legend}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#007AFF' }]} />
+            <View style={[styles.legendDot, { backgroundColor: '#B8860B' }]} />
             <Text style={styles.legendText}>SMA 20 {currentSMA20 ? `($${currentSMA20.toFixed(2)})` : ''}</Text>
           </View>
           <View style={styles.legendItem}>
@@ -492,7 +492,7 @@ export default function TechnicalIndicators({
             width={SCREEN_WIDTH - 40}
             curved
             curvature={0.1}
-            color="#007AFF"
+            color="#B8860B"
             thickness={1.5}
             hideDataPoints
             hideAxesAndRules

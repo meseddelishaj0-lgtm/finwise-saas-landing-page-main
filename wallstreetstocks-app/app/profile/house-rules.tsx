@@ -36,7 +36,7 @@ export default function HouseRules() {
       icon: 'trending-up',
       title: 'No Market Manipulation',
       description: 'Coordinated buying/selling, pump and dump schemes, and spreading false information to influence prices is strictly prohibited.',
-      color: '#007AFF',
+      color: '#B8860B',
     },
     {
       number: 4,
@@ -123,7 +123,7 @@ export default function HouseRules() {
         {/* Hero Section */}
         <View style={[styles.heroSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
           <View style={[styles.heroIconContainer, { backgroundColor: colors.card }]}>
-            <Ionicons name="home" size={40} color="#007AFF" />
+            <Ionicons name="home" size={40} color="#B8860B" />
           </View>
           <Text style={[styles.heroTitle, { color: colors.text }]}>Our Community Standards</Text>
           <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
@@ -210,7 +210,7 @@ export default function HouseRules() {
           </View>
 
           <View style={[styles.appealBox, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
-            <Ionicons name="hand-left-outline" size={24} color="#007AFF" />
+            <Ionicons name="hand-left-outline" size={24} color="#B8860B" />
             <View style={styles.appealContent}>
               <Text style={styles.appealTitle}>Appeals Process</Text>
               <Text style={[styles.appealText, { color: colors.textSecondary }]}>
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#007AFF',
+    shadowColor: '#B8860B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
   appealTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
     marginBottom: 4,
   },
   appealText: {
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   },
   disclaimerLink: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '500',
   },
   lastUpdated: {

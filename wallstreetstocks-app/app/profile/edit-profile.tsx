@@ -361,7 +361,7 @@ export default function EditProfile() {
           disabled={saving}
         >
           {saving ? (
-            <ActivityIndicator size="small" color="#007AFF" />
+            <ActivityIndicator size="small" color="#B8860B" />
           ) : (
             <Text style={styles.saveHeaderText}>Save</Text>
           )}
@@ -370,7 +370,7 @@ export default function EditProfile() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#B8860B" />
         </View>
       ) : (
       <KeyboardAvoidingView
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
   saveHeaderText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   loadingContainer: {
     flex: 1,

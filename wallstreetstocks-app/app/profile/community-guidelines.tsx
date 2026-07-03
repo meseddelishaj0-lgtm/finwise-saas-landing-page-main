@@ -33,7 +33,7 @@ export default function CommunityGuidelines() {
       icon: 'shield',
       title: 'Protect Privacy',
       description: 'Don\'t share personal information about others without consent. Respect everyone\'s privacy.',
-      color: '#007AFF',
+      color: '#B8860B',
     },
     {
       icon: 'warning',
@@ -147,7 +147,7 @@ export default function CommunityGuidelines() {
 
         {/* Reporting */}
         <View style={[styles.reportSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
-          <Ionicons name="flag" size={32} color="#007AFF" />
+          <Ionicons name="flag" size={32} color="#B8860B" />
           <Text style={[styles.reportTitle, { color: colors.text }]}>See Something? Report It.</Text>
           <Text style={[styles.reportText, { color: colors.textSecondary }]}>
             Help us keep the community safe by reporting content that violates these guidelines.
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   reportButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,

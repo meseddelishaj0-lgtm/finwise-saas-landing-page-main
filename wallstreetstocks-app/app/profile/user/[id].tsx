@@ -225,7 +225,7 @@ export default function UserProfile() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
           <View style={{ width: 24 }} />
         </View>
-        <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color="#B8860B" style={{ marginTop: 40 }} />
       </SafeAreaView>
     );
   }
@@ -282,12 +282,12 @@ export default function UserProfile() {
 
               {!isOwnProfile && (
                 <TouchableOpacity
-                  style={[styles.followButton, user.isFollowing && [styles.followingButton, { backgroundColor: colors.background, borderColor: '#007AFF' }]]}
+                  style={[styles.followButton, user.isFollowing && [styles.followingButton, { backgroundColor: colors.background, borderColor: '#B8860B' }]]}
                   onPress={handleFollow}
                   disabled={followLoading}
                 >
                   {followLoading ? (
-                    <ActivityIndicator size="small" color={user.isFollowing ? '#007AFF' : '#FFF'} />
+                    <ActivityIndicator size="small" color={user.isFollowing ? '#B8860B' : '#FFF'} />
                   ) : (
                     <Text
                       style={[styles.followButtonText, user.isFollowing && styles.followingButtonText]}
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     top: 12,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   followingButton: {
     backgroundColor: '#FFF',
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
   },
   followButtonText: {
     color: '#FFF',
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   followingButtonText: {
-    color: '#007AFF',
+    color: '#B8860B',
   },
   userName: {
     fontSize: 22,

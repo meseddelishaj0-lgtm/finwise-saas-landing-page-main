@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   unreadBadge: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     borderRadius: 12,
     minWidth: 24,
     height: 24,

@@ -214,7 +214,7 @@ export default function PostDetail() {
           <Text style={styles.headerTitle}>Post</Text>
           <View style={{ width: 24 }} />
         </View>
-        <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color="#B8860B" style={{ marginTop: 40 }} />
       </SafeAreaView>
     );
   }
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,

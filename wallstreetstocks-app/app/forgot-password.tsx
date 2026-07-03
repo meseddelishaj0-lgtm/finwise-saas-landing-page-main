@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   resend: {
-    color: '#007AFF',
+    color: '#B8860B',
     textAlign: 'center',
     marginTop: 16,
     textDecorationLine: 'underline',

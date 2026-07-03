@@ -313,7 +313,7 @@ Provide actionable advice for a balanced, risk-adjusted portfolio. Return ONLY v
           <Text style={styles.headerTitle}>Portfolio Optimizer</Text>
         </View>
         <TouchableOpacity onPress={updatePrices} style={styles.refreshButton}>
-          <Ionicons name="refresh" size={24} color="#007AFF" />
+          <Ionicons name="refresh" size={24} color="#B8860B" />
         </TouchableOpacity>
       </View>
 
@@ -364,7 +364,7 @@ Provide actionable advice for a balanced, risk-adjusted portfolio. Return ONLY v
           <View style={styles.summaryCard}>
             <View style={styles.summaryHeader}>
               <Text style={styles.cardTitle}>Portfolio Summary</Text>
-              {loading && <ActivityIndicator size="small" color="#007AFF" />}
+              {loading && <ActivityIndicator size="small" color="#B8860B" />}
             </View>
             <View style={styles.summaryStats}>
               <View style={styles.statItem}>
@@ -448,7 +448,7 @@ Provide actionable advice for a balanced, risk-adjusted portfolio. Return ONLY v
             {/* Risk Analysis */}
             <View style={styles.riskCard}>
               <View style={styles.cardHeader}>
-                <Ionicons name="shield-checkmark" size={20} color="#007AFF" />
+                <Ionicons name="shield-checkmark" size={20} color="#B8860B" />
                 <Text style={styles.cardTitle}>Risk Analysis</Text>
               </View>
               <View style={styles.scoreContainer}>
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingVertical: 12,
     borderRadius: 10,
     gap: 6,
@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
   },
   weightFill: {
     height: '100%',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     borderRadius: 3,
   },
   weightText: {
@@ -797,14 +797,14 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     justifyContent: 'center',
     alignItems: 'center',
   },
   scoreValue: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   scoreLabel: {
     fontSize: 11,
@@ -834,7 +834,7 @@ const styles = StyleSheet.create({
   riskLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
     marginBottom: 4,
   },
   riskValue: {

@@ -398,7 +398,7 @@ export default function ConversationScreen() {
                   {otherUser.name || otherUser.username}
                 </Text>
                 {otherUser.isVerified && (
-                  <Ionicons name="checkmark-circle" size={14} color="#007AFF" style={{ marginLeft: 4 }} />
+                  <Ionicons name="checkmark-circle" size={14} color="#B8860B" style={{ marginLeft: 4 }} />
                 )}
               </View>
               <Text style={[styles.headerUsername, { color: colors.textSecondary }]}>@{otherUser.username}</Text>
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   myBubble: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     borderBottomRightRadius: 4,
   },
   theirBubble: {
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,

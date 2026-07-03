@@ -29,7 +29,7 @@ export default function ContactUs() {
       title: 'Email Us',
       subtitle: 'wallstreetstocks@outlook.com',
       action: () => Linking.openURL('mailto:wallstreetstocks@outlook.com'),
-      color: '#007AFF',
+      color: '#B8860B',
     },
     {
       icon: 'chatbubbles',
@@ -93,7 +93,7 @@ export default function ContactUs() {
         {/* Hero */}
         <View style={[styles.heroSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
           <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
-            <Ionicons name="headset" size={40} color="#007AFF" />
+            <Ionicons name="headset" size={40} color="#B8860B" />
           </View>
           <Text style={[styles.heroTitle, { color: colors.text }]}>We&apos;re Here to Help</Text>
           <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
@@ -130,7 +130,7 @@ export default function ContactUs() {
               style={[styles.faqRow, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
               onPress={() => router.push(faq.route as any)}
             >
-              <Ionicons name="help-circle-outline" size={22} color="#007AFF" />
+              <Ionicons name="help-circle-outline" size={22} color="#B8860B" />
               <Text style={[styles.faqText, { color: colors.text }]}>{faq.question}</Text>
               <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
             </TouchableOpacity>
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#007AFF',
+    shadowColor: '#B8860B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 15,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   formGroup: {
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingVertical: 16,
     borderRadius: 12,
     marginTop: 8,

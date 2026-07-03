@@ -1965,7 +1965,7 @@ export default function Explore() {
                   </Text>
                 </View>
                 <TouchableOpacity onPress={fetchTreasuryRates} style={[styles.treasuryRefreshBtn, { backgroundColor: colors.card }]}>
-                  <Ionicons name="refresh" size={20} color="#007AFF" />
+                  <Ionicons name="refresh" size={20} color="#B8860B" />
                 </TouchableOpacity>
               </View>
 
@@ -2401,7 +2401,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   regionChipActive: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#B8860B",
   },
   regionText: {
     fontSize: 13,
@@ -2792,8 +2792,8 @@ const styles = StyleSheet.create({
     borderColor: "#e2e8f0",
   },
   treasuryRateItemHighlight: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
+    backgroundColor: "#B8860B",
+    borderColor: "#B8860B",
   },
   treasuryRateLabel: {
     fontSize: 11,
@@ -3109,7 +3109,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   treasuryRateCardSelected: {
-    borderColor: "#007AFF",
+    borderColor: "#B8860B",
     backgroundColor: "#f0f9ff",
   },
   treasuryRateCardTenor: {
@@ -3119,7 +3119,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   treasuryRateCardTenorSelected: {
-    color: "#007AFF",
+    color: "#B8860B",
   },
   treasuryRateCardValue: {
     fontSize: 20,
@@ -3128,7 +3128,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   treasuryRateCardValueSelected: {
-    color: "#007AFF",
+    color: "#B8860B",
   },
   treasuryRateCardChange: {
     flexDirection: "row",
@@ -3189,7 +3189,7 @@ const styles = StyleSheet.create({
   },
   treasuryRetryBtn: {
     marginTop: 16,
-    backgroundColor: "#007AFF",
+    backgroundColor: "#B8860B",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 20,
@@ -3241,8 +3241,8 @@ const styles = StyleSheet.create({
     borderColor: "#e2e8f0",
   },
   treasuryRateBoxHighlight: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
+    backgroundColor: "#B8860B",
+    borderColor: "#B8860B",
   },
   treasuryRateTenor: {
     fontSize: 12,

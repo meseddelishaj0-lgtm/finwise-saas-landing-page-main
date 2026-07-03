@@ -21,7 +21,7 @@ export default function AboutPremium() {
       icon: 'analytics',
       title: 'Advanced Analytics',
       description: 'Access professional-grade charts, technical indicators, and market analysis tools.',
-      color: '#007AFF',
+      color: '#B8860B',
     },
     {
       icon: 'flash',
@@ -153,7 +153,7 @@ export default function AboutPremium() {
         {/* Hero */}
         <View style={[styles.heroSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
           <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
-            <Ionicons name="diamond" size={48} color="#007AFF" />
+            <Ionicons name="diamond" size={48} color="#B8860B" />
           </View>
           <Text style={[styles.heroTitle, { color: colors.text }]}>Unlock Your Trading Potential</Text>
           <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#007AFF',
+    shadowColor: '#B8860B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   popularBadge: {
     position: 'absolute',
     top: -10,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,

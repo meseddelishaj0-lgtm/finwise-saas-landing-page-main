@@ -111,7 +111,7 @@ export default function MenuPage() {
           label: "My Profile",
           route: "/profile/my-profile",
           icon: "person-circle-outline",
-          color: "#007AFF"
+          color: "#B8860B"
         },
         {
           label: "Portfolio",
@@ -184,7 +184,7 @@ export default function MenuPage() {
         {
           label: "Share App",
           icon: "share-outline",
-          color: "#007AFF",
+          color: "#B8860B",
           onPress: handleShare,
         },
         {
@@ -216,7 +216,7 @@ export default function MenuPage() {
           label: "Contact Us",
           route: "/profile/contact",
           icon: "mail-outline",
-          color: "#007AFF",
+          color: "#B8860B",
         },
         {
           label: "Report a Bug",
@@ -239,7 +239,7 @@ export default function MenuPage() {
           label: "Terms of Service",
           route: "/profile/terms",
           icon: "document-text-outline",
-          color: "#007AFF",
+          color: "#B8860B",
         },
         {
           label: "Privacy Policy",
@@ -262,7 +262,7 @@ export default function MenuPage() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
+          <Ionicons name="chevron-back" size={28} color="#B8860B" />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Menu</Text>
         <View style={{ width: 44 }} />
@@ -292,7 +292,7 @@ export default function MenuPage() {
             )}
             <View style={styles.profileInfo}>
               {loading ? (
-                <ActivityIndicator size="small" color="#007AFF" />
+                <ActivityIndicator size="small" color="#B8860B" />
               ) : (
                 <>
                   <Text style={[styles.profileName, { color: colors.text }]}>{getDisplayName()}</Text>
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#007AFF",
+    backgroundColor: "#B8860B",
     justifyContent: "center",
     alignItems: "center",
   },

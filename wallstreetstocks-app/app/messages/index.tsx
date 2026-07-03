@@ -353,7 +353,7 @@ export default function MessagesScreen() {
                   {item.otherUser.name || item.otherUser.username}
                 </Text>
                 {item.otherUser.isVerified && (
-                  <Ionicons name="checkmark-circle" size={14} color="#007AFF" style={{ marginLeft: 4 }} />
+                  <Ionicons name="checkmark-circle" size={14} color="#B8860B" style={{ marginLeft: 4 }} />
                 )}
               </View>
               {item.lastMessage && (
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     borderWidth: 2,
     borderColor: '#fff',
   },
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   startMessageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 24,
@@ -700,7 +700,7 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 17,
-    color: '#007AFF',
+    color: '#B8860B',
   },
   modalTitle: {
     fontSize: 17,

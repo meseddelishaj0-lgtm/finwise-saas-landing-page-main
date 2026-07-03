@@ -153,7 +153,7 @@ export default function Muted() {
         disabled={unmuting === item.id}
       >
         {unmuting === item.id ? (
-          <ActivityIndicator size="small" color="#007AFF" />
+          <ActivityIndicator size="small" color="#B8860B" />
         ) : (
           <Text style={styles.unmuteText}>Unmute</Text>
         )}
@@ -177,7 +177,7 @@ export default function Muted() {
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#B8860B" />
         </View>
       ) : mutedUsers.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -304,12 +304,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
     minWidth: 80,
     alignItems: 'center',
   },
   unmuteText: {
-    color: '#007AFF',
+    color: '#B8860B',
     fontSize: 14,
     fontWeight: '600',
   },

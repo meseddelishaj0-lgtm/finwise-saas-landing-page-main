@@ -56,7 +56,7 @@ export default function Referrals() {
   }, [user?.id, user?.name, initialized]);
 
   const shareOptions = [
-    { icon: 'mail', label: 'Email', color: '#007AFF' },
+    { icon: 'mail', label: 'Email', color: '#B8860B' },
     { icon: 'chatbubble', label: 'Message', color: '#34C759' },
     { icon: 'logo-twitter', label: 'Twitter', color: '#1DA1F2' },
     { icon: 'logo-whatsapp', label: 'WhatsApp', color: '#25D366' },
@@ -138,7 +138,7 @@ export default function Referrals() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#B8860B" />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading referral program...</Text>
         </View>
       </SafeAreaView>
@@ -154,7 +154,7 @@ export default function Referrals() {
         </TouchableOpacity>
         <Text style={[styles.title, { color: colors.text }]}>Referral Program</Text>
         <TouchableOpacity onPress={handleRefresh}>
-          <Ionicons name="refresh" size={24} color="#007AFF" />
+          <Ionicons name="refresh" size={24} color="#B8860B" />
         </TouchableOpacity>
       </View>
 
@@ -168,7 +168,7 @@ export default function Referrals() {
         {/* Hero Section */}
         <View style={[styles.heroSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
           <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
-            <Ionicons name="gift" size={40} color="#007AFF" />
+            <Ionicons name="gift" size={40} color="#B8860B" />
           </View>
           <Text style={[styles.heroTitle, { color: colors.text }]}>Give Premium, Get Premium</Text>
           <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
@@ -192,7 +192,7 @@ export default function Referrals() {
           <View style={[styles.codeContainer, { backgroundColor: isDark ? colors.surface : '#f5f5f5' }]}>
             <Text style={styles.codeText}>{referralCode || 'Loading...'}</Text>
             <TouchableOpacity style={[styles.copyButton, { backgroundColor: isDark ? colors.card : '#fff' }]} onPress={handleCopyCode}>
-              <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color="#007AFF" />
+              <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color="#B8860B" />
               <Text style={styles.copyButtonText}>{copied ? 'Copied!' : 'Copy'}</Text>
             </TouchableOpacity>
           </View>
@@ -241,7 +241,7 @@ export default function Referrals() {
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Pending</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}>
-              <Text style={[styles.statNumber, { color: '#007AFF' }]}>{stats.nextTierReferrals}</Text>
+              <Text style={[styles.statNumber, { color: '#B8860B' }]}>{stats.nextTierReferrals}</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Until Next Tier</Text>
             </View>
           </View>
@@ -293,12 +293,12 @@ export default function Referrals() {
                 >
                   <View style={[
                     styles.rewardIcon,
-                    { backgroundColor: isUnlocked ? '#007AFF15' : isNext ? '#FF950015' : isDark ? colors.surface : '#f0f0f0' }
+                    { backgroundColor: isUnlocked ? '#B8860B15' : isNext ? '#FF950015' : isDark ? colors.surface : '#f0f0f0' }
                   ]}>
                     <Ionicons
                       name={tier.icon as any}
                       size={24}
-                      color={isUnlocked ? '#007AFF' : isNext ? '#FF9500' : '#ccc'}
+                      color={isUnlocked ? '#B8860B' : isNext ? '#FF9500' : '#ccc'}
                     />
                   </View>
                   <View style={styles.rewardContent}>
@@ -393,7 +393,7 @@ export default function Referrals() {
                 Share your code with friends to start earning rewards!
               </Text>
               <TouchableOpacity style={styles.emptyHistoryButton} onPress={handleShare}>
-                <Ionicons name="share-outline" size={18} color="#007AFF" />
+                <Ionicons name="share-outline" size={18} color="#B8860B" />
                 <Text style={styles.emptyHistoryButtonText}>Share Now</Text>
               </TouchableOpacity>
             </View>
@@ -429,7 +429,7 @@ export default function Referrals() {
               {referrals.length > 5 && (
                 <TouchableOpacity style={styles.viewAllButton}>
                   <Text style={styles.viewAllText}>View All {referrals.length} Referrals</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#007AFF" />
+                  <Ionicons name="chevron-forward" size={16} color="#B8860B" />
                 </TouchableOpacity>
               )}
             </>
@@ -446,7 +446,7 @@ export default function Referrals() {
             style={[styles.enterCodeButton, { backgroundColor: isDark ? colors.card : '#fff' }]}
             onPress={() => setApplyCodeModal(true)}
           >
-            <Ionicons name="ticket-outline" size={20} color="#007AFF" />
+            <Ionicons name="ticket-outline" size={20} color="#B8860B" />
             <Text style={styles.enterCodeButtonText}>Enter Referral Code</Text>
           </TouchableOpacity>
         </View>
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    shadowColor: '#007AFF',
+    shadowColor: '#B8860B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 12,
@@ -624,7 +624,7 @@ const styles = StyleSheet.create({
   codeText: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#B8860B',
     letterSpacing: 2,
     marginRight: 12,
   },
@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
   },
   copyButtonText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   shareLinkContainer: {
@@ -653,14 +653,14 @@ const styles = StyleSheet.create({
   },
   shareLink: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#B8860B',
     textDecorationLine: 'underline',
   },
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
@@ -755,7 +755,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     borderRadius: 4,
   },
   rewardsSection: {
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
   rewardUnlocked: {
     backgroundColor: '#f0f8ff',
     borderWidth: 1,
-    borderColor: '#007AFF30',
+    borderColor: '#B8860B30',
   },
   rewardNext: {
     backgroundColor: '#FFF8E1',
@@ -844,7 +844,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -871,7 +871,7 @@ const styles = StyleSheet.create({
   stepConnector: {
     width: 2,
     height: 24,
-    backgroundColor: '#007AFF30',
+    backgroundColor: '#B8860B30',
     marginLeft: 15,
     marginVertical: 4,
   },
@@ -914,13 +914,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     borderRadius: 20,
   },
   emptyHistoryButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   historyItem: {
     flexDirection: 'row',
@@ -934,14 +934,14 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     justifyContent: 'center',
     alignItems: 'center',
   },
   historyAvatarText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   historyContent: {
     flex: 1,
@@ -977,7 +977,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 15,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   haveCodeSection: {
@@ -1008,12 +1008,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#B8860B',
   },
   enterCodeButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   termsSection: {
     margin: 20,
@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
   },
   termsLink: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '500',
     marginTop: 12,
   },
@@ -1083,7 +1083,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,

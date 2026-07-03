@@ -263,13 +263,13 @@ export default function AnalyticsScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            <Ionicons name="arrow-back" size={24} color="#B8860B" />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio Analytics</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#B8860B" />
           <Text style={{ marginTop: 10, color: colors.textSecondary }}>Loading portfolio data...</Text>
         </View>
       </SafeAreaView>
@@ -281,7 +281,7 @@ export default function AnalyticsScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            <Ionicons name="arrow-back" size={24} color="#B8860B" />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio Analytics</Text>
           <View style={{ width: 40 }} />
@@ -302,7 +302,7 @@ export default function AnalyticsScreen() {
   const totalGainPercent = currentPortfolio.totalGainPercent;
 
   // Pie chart data
-  const pieColors = ['#007AFF', '#34C759', '#FF9500', '#FF3B30', '#AF52DE', '#5AC8FA', '#FFCC00', '#FF2D55'];
+  const pieColors = ['#B8860B', '#34C759', '#FF9500', '#FF3B30', '#AF52DE', '#5AC8FA', '#FFCC00', '#FF2D55'];
   const pieData = currentPortfolio.holdings.map((h, idx) => ({
     value: h.currentValue,
     color: pieColors[idx % pieColors.length],
@@ -311,7 +311,7 @@ export default function AnalyticsScreen() {
   }));
 
   // Sector breakdown data
-  const sectorColors = ['#007AFF', '#34C759', '#FF9500', '#FF3B30', '#AF52DE', '#5AC8FA', '#FFCC00', '#FF2D55', '#30B0C7', '#A2845E'];
+  const sectorColors = ['#B8860B', '#34C759', '#FF9500', '#FF3B30', '#AF52DE', '#5AC8FA', '#FFCC00', '#FF2D55', '#30B0C7', '#A2845E'];
   const sectorTotals: Record<string, number> = {};
   currentPortfolio.holdings.forEach(h => {
     const sector = sectorMap[h.symbol] || 'Unknown';
@@ -347,7 +347,7 @@ export default function AnalyticsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          <Ionicons name="arrow-back" size={24} color="#B8860B" />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{currentPortfolio.name}</Text>
         <View style={{ width: 40 }} />
@@ -386,7 +386,7 @@ export default function AnalyticsScreen() {
           <View style={styles.chartContainer}>
             {chartLoading ? (
               <View style={styles.chartLoadingContainer}>
-                <ActivityIndicator size="small" color="#007AFF" />
+                <ActivityIndicator size="small" color="#B8860B" />
               </View>
             ) : chartData.length > 1 ? (
               <LineChart
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
   },
   timeRangeTextActive: {
-    color: '#007AFF',
+    color: '#B8860B',
   },
   card: {
     backgroundColor: '#FFFFFF',

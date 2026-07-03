@@ -244,7 +244,7 @@ export default function PersonalInfoScreen() {
   if (loading || profileLoading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#B8860B" />
       </View>
     );
   }
@@ -327,7 +327,7 @@ export default function PersonalInfoScreen() {
                   Linking.openURL(url);
                 }}
               >
-                <Ionicons name="link-outline" size={16} color="#007AFF" />
+                <Ionicons name="link-outline" size={16} color="#B8860B" />
                 <Text style={[styles.metaText, styles.linkText]}>
                   {displayWebsite.replace(/^https?:\/\//, "")}
                 </Text>
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   linkText: {
-    color: "#007AFF",
+    color: "#B8860B",
   },
   statsRow: {
     flexDirection: "row",
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: "#007AFF",
+    borderBottomColor: "#B8860B",
   },
   tabText: {
     fontSize: 15,
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   activeTabText: {
-    color: "#007AFF",
+    color: "#B8860B",
     fontWeight: "600",
   },
   postsContainer: {

@@ -381,7 +381,7 @@ export default function HelpCenter() {
                   style={[styles.articleRow, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}
                   onPress={() => openArticle(article)}
                 >
-                  <Ionicons name="document-text-outline" size={20} color="#007AFF" />
+                  <Ionicons name="document-text-outline" size={20} color="#B8860B" />
                   <View style={styles.articleRowContent}>
                     <Text style={[styles.articleText, { color: colors.text }]}>{article.question}</Text>
                     <Text style={[styles.articleCategory, { color: colors.textTertiary }]}>
@@ -430,8 +430,8 @@ export default function HelpCenter() {
               style={[styles.quickActionCard, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}
               onPress={() => router.push('/profile/contact' as any)}
             >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#007AFF15' }]}>
-                <Ionicons name="call-outline" size={24} color="#007AFF" />
+              <View style={[styles.quickActionIcon, { backgroundColor: '#B8860B15' }]}>
+                <Ionicons name="call-outline" size={24} color="#B8860B" />
               </View>
               <Text style={[styles.quickActionTitle, { color: colors.text }]}>Call Us</Text>
             </TouchableOpacity>
@@ -495,7 +495,7 @@ export default function HelpCenter() {
                 >
                   <View style={styles.categoryHeaderLeft}>
                     <View style={[styles.categoryIconContainer, { backgroundColor: isDark ? colors.card : '#e8f4fd' }]}>
-                      <Ionicons name={category.icon as any} size={24} color="#007AFF" />
+                      <Ionicons name={category.icon as any} size={24} color="#B8860B" />
                     </View>
                     <View>
                       <Text style={[styles.categoryTitle, { color: colors.text }]}>{category.title}</Text>
@@ -548,8 +548,8 @@ export default function HelpCenter() {
               style={styles.immediateHelpButton}
               onPress={() => router.push('/profile/contact' as any)}
             >
-              <View style={[styles.immediateHelpIcon, { backgroundColor: '#007AFF15' }]}>
-                <Ionicons name="call-outline" size={20} color="#007AFF" />
+              <View style={[styles.immediateHelpIcon, { backgroundColor: '#B8860B15' }]}>
+                <Ionicons name="call-outline" size={20} color="#B8860B" />
               </View>
               <Text style={[styles.immediateHelpText, { color: colors.text }]}>Call Us</Text>
             </TouchableOpacity>
@@ -879,7 +879,7 @@ const styles = StyleSheet.create({
   contactButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
@@ -970,7 +970,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   articleTag: {
-    backgroundColor: '#007AFF15',
+    backgroundColor: '#B8860B15',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -978,7 +978,7 @@ const styles = StyleSheet.create({
   articleTagText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   articleAnswer: {
     fontSize: 16,
@@ -1050,7 +1050,7 @@ const styles = StyleSheet.create({
   },
   relatedItemText: {
     fontSize: 15,
-    color: '#007AFF',
+    color: '#B8860B',
     flex: 1,
     paddingRight: 8,
   },

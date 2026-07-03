@@ -150,7 +150,7 @@ export default function Notifications() {
       case 'like':
         return { name: 'heart', color: '#FF3B30' };
       case 'comment':
-        return { name: 'chatbubble', color: '#007AFF' };
+        return { name: 'chatbubble', color: '#B8860B' };
       case 'follow':
         return { name: 'person-add', color: '#34C759' };
       case 'mention':
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   },
   markAllText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '500',
   },
   list: {
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     marginLeft: 8,
     alignSelf: 'center',
   },

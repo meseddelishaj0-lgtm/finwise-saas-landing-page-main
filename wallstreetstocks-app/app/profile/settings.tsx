@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 
 const settingsItems = [
-  { title: 'Personal Info', icon: 'person', route: '/profile/personal-info', color: '#007AFF', bgColor: '#007AFF15' },
+  { title: 'Personal Info', icon: 'person', route: '/profile/personal-info', color: '#B8860B', bgColor: '#B8860B15' },
   { title: 'Display', icon: 'color-palette', route: '/profile/display', color: '#AF52DE', bgColor: '#AF52DE15' },
   { title: 'Experience', icon: 'sparkles', route: '/profile/experience', color: '#FF9500', bgColor: '#FF950015' },
   { title: 'Notifications', icon: 'notifications', route: '/profile/notifications', color: '#FF3B30', bgColor: '#FF3B3015' },

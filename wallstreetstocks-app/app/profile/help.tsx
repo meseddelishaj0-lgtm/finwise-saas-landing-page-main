@@ -76,7 +76,7 @@ export default function Help() {
 
   const quickActions = [
     { icon: 'chatbubble-ellipses', label: 'Live Chat', color: '#34C759', isX: false },
-    { icon: 'call', label: 'Call Us', color: '#007AFF', isX: false },
+    { icon: 'call', label: 'Call Us', color: '#B8860B', isX: false },
     { icon: 'logo-twitter', label: 'X', color: '#000000', isX: true },
   ];
 
@@ -134,7 +134,7 @@ export default function Help() {
           >
             <View style={styles.rowLeft}>
               <View style={[styles.iconContainer, { backgroundColor: isDark ? `${colors.primary}20` : '#f0f8ff' }]}>
-                <Ionicons name={item.icon as any} size={22} color="#007AFF" />
+                <Ionicons name={item.icon as any} size={22} color="#B8860B" />
               </View>
               <View style={styles.rowTextContainer}>
                 <Text style={[styles.rowText, { color: colors.text }]}>{item.title}</Text>

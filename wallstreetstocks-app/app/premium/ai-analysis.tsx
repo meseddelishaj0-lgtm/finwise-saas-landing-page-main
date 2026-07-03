@@ -338,7 +338,7 @@ Return ONLY the JSON, no other text.`
             {result.intrinsicValue && (
               <View style={styles.valuationCard}>
                 <View style={styles.cardHeader}>
-                  <Ionicons name="calculator" size={20} color="#007AFF" />
+                  <Ionicons name="calculator" size={20} color="#B8860B" />
                   <Text style={styles.cardTitle}>Valuation</Text>
                 </View>
                 <View style={styles.valuationRow}>
@@ -399,7 +399,7 @@ Return ONLY the JSON, no other text.`
             {(result as any).priceTarget && (
               <View style={styles.priceTargetCard}>
                 <View style={styles.cardHeader}>
-                  <Ionicons name="trending-up" size={20} color="#007AFF" />
+                  <Ionicons name="trending-up" size={20} color="#B8860B" />
                   <Text style={styles.cardTitle}>Price Targets ({(result as any).timeframe})</Text>
                 </View>
                 <View style={styles.priceTargetRow}>
@@ -411,7 +411,7 @@ Return ONLY the JSON, no other text.`
                   </View>
                   <View style={styles.priceTargetItem}>
                     <Text style={styles.priceTargetLabel}>Base Case</Text>
-                    <Text style={[styles.priceTargetValue, { color: '#007AFF' }]}>
+                    <Text style={[styles.priceTargetValue, { color: '#B8860B' }]}>
                       ${(result as any).priceTarget.mid}
                     </Text>
                   </View>
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   recentChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   errorCard: {
     flexDirection: 'row',

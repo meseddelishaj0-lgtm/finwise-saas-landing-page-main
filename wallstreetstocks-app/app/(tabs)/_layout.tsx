@@ -6,25 +6,33 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/ThemeContext';
 
-// Custom tab bar icon with indicator
+// Custom tab bar icon with soft glow pill behind the active icon
 const TabIcon = ({
   name,
   color,
   focused,
-  indicatorColor,
+  accentColor,
 }: {
   name: keyof typeof Ionicons.glyphMap;
   color: string;
   focused: boolean;
-  indicatorColor: string;
+  accentColor: string;
 }) => (
   <View style={styles.iconContainer}>
+    {focused && (
+      <View
+        style={[
+          styles.activePill,
+          { backgroundColor: `${accentColor}22`, borderColor: `${accentColor}44` },
+        ]}
+      />
+    )}
     <Ionicons
-      name={focused ? name : `${name}-outline` as keyof typeof Ionicons.glyphMap}
+      name={focused ? name : (`${name}-outline` as keyof typeof Ionicons.glyphMap)}
       size={22}
       color={color}
     />
-    {focused && <View style={[styles.activeIndicator, { backgroundColor: indicatorColor }]} />}
+    {focused && <View style={[styles.activeIndicator, { backgroundColor: accentColor }]} />}
   </View>
 );
 
@@ -51,23 +59,24 @@ export default function TabLayout() {
           left: 0,
           right: 0,
           backgroundColor: Platform.OS === 'ios'
-            ? (isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)')
+            ? (isDark ? 'rgba(8,8,8,0.9)' : 'rgba(255,255,255,0.9)')
             : colors.background,
-          borderTopWidth: Platform.OS === 'android' ? 1 : 0,
-          borderTopColor: colors.border,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: isDark ? 'rgba(255,214,10,0.18)' : 'rgba(212,160,23,0.25)',
           elevation: Platform.OS === 'android' ? 8 : 0,
           height: tabBarHeight,
           paddingBottom: bottomPadding,
           paddingTop: 8,
-          shadowColor: '#000',
+          shadowColor: isDark ? '#FFD60A' : '#000',
           shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08,
+          shadowOpacity: isDark ? 0.06 : 0.08,
           shadowRadius: 12,
         },
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: '600',
+          fontWeight: '700',
           marginTop: 2,
+          letterSpacing: 0.2,
         },
         tabBarItemStyle: {
           paddingTop: 4,
@@ -88,7 +97,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="home" color={color} focused={focused} indicatorColor={colors.primary} />
+            <TabIcon name="home" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
       />
@@ -97,7 +106,7 @@ export default function TabLayout() {
         options={{
           title: 'Markets',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="globe" color={color} focused={focused} indicatorColor={colors.primary} />
+            <TabIcon name="globe" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
       />
@@ -106,7 +115,7 @@ export default function TabLayout() {
         options={{
           title: 'Trending',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="flame" color={color} focused={focused} indicatorColor={colors.primary} />
+            <TabIcon name="flame" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
       />
@@ -115,7 +124,7 @@ export default function TabLayout() {
         options={{
           title: 'AI',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="sparkles" color={color} focused={focused} indicatorColor={colors.primary} />
+            <TabIcon name="sparkles" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
       />
@@ -124,7 +133,7 @@ export default function TabLayout() {
         options={{
           title: 'Social',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="chatbubbles" color={color} focused={focused} indicatorColor={colors.primary} />
+            <TabIcon name="chatbubbles" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
       />
@@ -133,7 +142,7 @@ export default function TabLayout() {
         options={{
           title: 'Screen',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name="funnel" color={color} focused={focused} indicatorColor={colors.primary} />
+            <TabIcon name="funnel" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
       />
@@ -145,12 +154,19 @@ const styles = StyleSheet.create({
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 44,
-    height: 28,
+    width: 48,
+    height: 30,
+  },
+  activePill: {
+    position: 'absolute',
+    width: 48,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: -4,
+    bottom: -5,
     width: 4,
     height: 4,
     borderRadius: 2,

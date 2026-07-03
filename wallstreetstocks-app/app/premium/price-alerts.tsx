@@ -201,7 +201,7 @@ export default function PriceAlertsScreen() {
   const getAlertStatus = (alert: PriceAlert) => {
     if (!alert.enabled) return { text: 'Paused', color: '#8E8E93' };
     if (alert.triggered) return { text: 'Triggered', color: '#34C759' };
-    return { text: 'Active', color: '#007AFF' };
+    return { text: 'Active', color: '#B8860B' };
   };
 
   return (
@@ -219,7 +219,7 @@ export default function PriceAlertsScreen() {
           <Text style={styles.headerTitle}>Price Alerts</Text>
         </View>
         <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.addButton}>
-          <Ionicons name="add" size={24} color="#007AFF" />
+          <Ionicons name="add" size={24} color="#B8860B" />
         </TouchableOpacity>
       </View>
 
@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   targetPrice: {
-    color: '#007AFF',
+    color: '#B8860B',
   },
   alertArrow: {
     padding: 8,

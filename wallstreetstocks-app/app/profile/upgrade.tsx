@@ -48,7 +48,7 @@ export default function Upgrade() {
       id: 'pro' as PlanId,
       name: 'Pro',
       icon: 'diamond',
-      color: '#007AFF',
+      color: '#B8860B',
       monthlyPrice: 14.99,
       yearlyPrice: 9.99,
       description: 'Advanced tools for serious investors',
@@ -257,7 +257,7 @@ export default function Upgrade() {
         {/* Compare All Plans */}
         <TouchableOpacity style={styles.compareButton}>
           <Text style={styles.compareButtonText}>Compare All Plans</Text>
-          <Ionicons name="chevron-forward" size={18} color="#007AFF" />
+          <Ionicons name="chevron-forward" size={18} color="#B8860B" />
         </TouchableOpacity>
 
         {/* Trust Badges */}
@@ -267,7 +267,7 @@ export default function Upgrade() {
             <Text style={[styles.trustText, { color: colors.textSecondary }]}>Secure Payment</Text>
           </View>
           <View style={styles.trustBadge}>
-            <Ionicons name="refresh" size={20} color="#007AFF" />
+            <Ionicons name="refresh" size={20} color="#B8860B" />
             <Text style={[styles.trustText, { color: colors.textSecondary }]}>Cancel Anytime</Text>
           </View>
           <View style={styles.trustBadge}>
@@ -334,7 +334,7 @@ export default function Upgrade() {
           </View>
         </View>
         <TouchableOpacity
-          style={[styles.subscribeButton, { backgroundColor: selectedPlanData.color === '#FFD700' ? '#007AFF' : selectedPlanData.color }]}
+          style={[styles.subscribeButton, { backgroundColor: selectedPlanData.color === '#FFD700' ? '#B8860B' : selectedPlanData.color }]}
           onPress={handleSubscribe}
         >
           <Text style={styles.subscribeButtonText}>Start Free Trial</Text>
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
     top: -10,
     left: '50%',
     transform: [{ translateX: -50 }],
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 10,
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   },
   compareButtonText: {
     fontSize: 15,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   trustSection: {

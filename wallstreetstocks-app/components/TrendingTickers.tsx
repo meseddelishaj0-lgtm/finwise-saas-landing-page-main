@@ -77,7 +77,7 @@ export default function TrendingTickers({ onTickerPress }: Props) {
       </View>
 
       {loading ? (
-        <ActivityIndicator size="small" color="#007AFF" style={styles.loader} />
+        <ActivityIndicator size="small" color="#B8860B" style={styles.loader} />
       ) : tickers.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No trending tickers yet</Text>
       ) : (
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F7',
   },
   activeTab: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
   },
   tabText: {
     fontSize: 12,
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     left: 4,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     borderRadius: 4,
     paddingHorizontal: 4,
     paddingVertical: 2,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   tickerSymbol: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#B8860B',
     marginTop: 4,
   },
   mentionRow: {

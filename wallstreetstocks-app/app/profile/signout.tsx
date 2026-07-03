@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   signOutButtonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
-  cancelText: { color: '#007AFF', fontSize: 17 },
+  cancelText: { color: '#B8860B', fontSize: 17 },
 
   // Modal
   modalOverlay: {

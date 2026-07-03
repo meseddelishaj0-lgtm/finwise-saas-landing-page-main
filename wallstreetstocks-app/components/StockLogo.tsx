@@ -174,7 +174,7 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
   
   // Get crypto icon if available (for fallback)
   const cryptoIcon = CRYPTO_ICONS[normalizedSymbol];
-  const cryptoColor = CRYPTO_COLORS[normalizedSymbol] || '#007AFF';
+  const cryptoColor = CRYPTO_COLORS[normalizedSymbol] || '#B8860B';
   
   // Logo URLs
   // For stocks: FMP provides direct image URLs (fallback)
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   },
   fallbackText: {
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#B8860B',
     includeFontPadding: false,
   },
   cryptoIcon: {

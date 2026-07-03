@@ -858,13 +858,13 @@ export default function SubscriptionPage() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ChevronLeft size={28} color="#007AFF" />
+            <ChevronLeft size={28} color="#B8860B" />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Subscription</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#B8860B" />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading...</Text>
         </View>
       </View>
@@ -875,7 +875,7 @@ export default function SubscriptionPage() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ChevronLeft size={28} color="#007AFF" />
+          <ChevronLeft size={28} color="#B8860B" />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Subscription</Text>
         <View style={styles.headerRight} />
@@ -896,7 +896,7 @@ export default function SubscriptionPage() {
         {!activeSubscription && (
           <View style={styles.heroSection}>
             <View style={[styles.heroIconContainer, { backgroundColor: isDark ? colors.surface : '#F0F8FF' }]}>
-              <Zap size={40} color="#007AFF" />
+              <Zap size={40} color="#B8860B" />
             </View>
             <Text style={[styles.heroTitle, { color: colors.text }]}>Unlock Premium Features</Text>
             <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
@@ -1014,7 +1014,7 @@ export default function SubscriptionPage() {
         >
           {restoring ? (
             <View style={styles.restoreLoading}>
-              <ActivityIndicator size="small" color="#007AFF" />
+              <ActivityIndicator size="small" color="#B8860B" />
               <Text style={styles.restoreText}>Restoring...</Text>
             </View>
           ) : (
@@ -1520,7 +1520,7 @@ const styles = StyleSheet.create({
   },
   restoreText: {
     fontSize: 15,
-    color: "#007AFF",
+    color: "#B8860B",
     fontWeight: "500",
   },
   // Terms
@@ -1540,7 +1540,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: 13,
-    color: "#007AFF",
+    color: "#B8860B",
   },
   linkDivider: {
     fontSize: 13,

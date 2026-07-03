@@ -1283,7 +1283,7 @@ export default function Screener() {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortContainer} contentContainerStyle={styles.sortContent}>
             {sortOptions.map(sort => (
-              <TouchableOpacity key={sort.key} style={[styles.sortButton, { backgroundColor: colors.card }, sortBy === sort.key && { backgroundColor: isDark ? 'rgba(10,132,255,0.15)' : '#E8F2FF' }]} onPress={() => handleSort(sort.key)}>
+              <TouchableOpacity key={sort.key} style={[styles.sortButton, { backgroundColor: colors.card }, sortBy === sort.key && { backgroundColor: isDark ? 'rgba(255, 214, 10,0.15)' : '#E8F2FF' }]} onPress={() => handleSort(sort.key)}>
                 <Text style={[styles.sortButtonText, { color: colors.textSecondary }, sortBy === sort.key && { color: colors.primary }]}>{sort.label}</Text>
                 {sortBy === sort.key && <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color={colors.primary} />}
               </TouchableOpacity>
@@ -1334,7 +1334,7 @@ export default function Screener() {
               {activeFilterModal?.options.map(option => {
                 const isSelected = filters[activeFilterModal.id] === option || (option === 'Any' && !filters[activeFilterModal.id]);
                 return (
-                  <TouchableOpacity key={option} style={[styles.modalOption, { borderBottomColor: colors.borderLight }, isSelected && { backgroundColor: isDark ? 'rgba(10,132,255,0.1)' : '#F8F9FF' }]} onPress={() => handleFilterSelect(activeFilterModal.id, option)}>
+                  <TouchableOpacity key={option} style={[styles.modalOption, { borderBottomColor: colors.borderLight }, isSelected && { backgroundColor: isDark ? 'rgba(255, 214, 10,0.1)' : '#F8F9FF' }]} onPress={() => handleFilterSelect(activeFilterModal.id, option)}>
                     <Text style={[styles.modalOptionText, { color: colors.text }, isSelected && { color: colors.primary, fontWeight: '600' }]}>{option}</Text>
                     {isSelected && <Ionicons name="checkmark" size={20} color={colors.primary} />}
                   </TouchableOpacity>
@@ -1416,7 +1416,7 @@ export default function Screener() {
                             <Text style={styles.filterGridValue} numberOfLines={1}>
                               {filters[filter.id]}
                             </Text>
-                            <Ionicons name="checkmark-circle" size={14} color="#007AFF" />
+                            <Ionicons name="checkmark-circle" size={14} color="#B8860B" />
                           </View>
                         ) : (
                           <Text style={[styles.filterGridHint, { color: colors.textTertiary }]}>Tap to select</Text>
@@ -1516,7 +1516,7 @@ export default function Screener() {
                 }}
               >
                 <LinearGradient
-                  colors={['#007AFF', '#0055FF']}
+                  colors={['#B8860B', '#0055FF']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.saveCurrentGradient}
@@ -1529,7 +1529,7 @@ export default function Screener() {
 
             {loadingPresets ? (
               <View style={styles.presetsLoading}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color="#B8860B" />
                 <Text style={styles.presetsLoadingText}>Loading presets...</Text>
               </View>
             ) : savedPresets.length === 0 ? (
@@ -1555,7 +1555,7 @@ export default function Screener() {
                     >
                       <View style={styles.presetItemLeft}>
                         <View style={styles.presetIconBg}>
-                          <Ionicons name="funnel" size={20} color="#007AFF" />
+                          <Ionicons name="funnel" size={20} color="#B8860B" />
                         </View>
                         <View style={styles.presetItemInfo}>
                           <Text style={styles.presetItemName}>{preset.name}</Text>
@@ -1638,7 +1638,7 @@ export default function Screener() {
 
       {activeFilterCount > 0 && !activePreset && (
         <TouchableOpacity style={styles.fab} onPress={() => fetchData(null, filters)}>
-          <LinearGradient colors={['#007AFF', '#0055FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabGradient}>
+          <LinearGradient colors={['#B8860B', '#0055FF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabGradient}>
             <Ionicons name="search" size={20} color="#fff" />
             <Text style={styles.fabText}>Apply Filters</Text>
           </LinearGradient>
@@ -1654,7 +1654,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: Platform.OS === 'android' ? 22 : 28, fontWeight: '700', color: '#000' },
   headerActions: { flexDirection: 'row', gap: 8 },
   headerButton: { padding: 8, position: 'relative' },
-  headerBadge: { position: 'absolute', top: 4, right: 4, backgroundColor: '#007AFF', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center' },
+  headerBadge: { position: 'absolute', top: 4, right: 4, backgroundColor: '#B8860B', borderRadius: 10, minWidth: 18, height: 18, justifyContent: 'center', alignItems: 'center' },
   headerBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
   searchContainer: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#fff', zIndex: 1001, position: 'relative' },
   searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12 },
@@ -1663,7 +1663,7 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 12 },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
   filterTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  filterCountBadge: { backgroundColor: '#007AFF', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  filterCountBadge: { backgroundColor: '#B8860B', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   filterCountText: { color: '#fff', fontSize: 12, fontWeight: '600' },
   clearText: { fontSize: 14, color: '#FF3B30', fontWeight: '600' },
   presetList: { paddingHorizontal: 20 },
@@ -1679,12 +1679,12 @@ const styles = StyleSheet.create({
   categoryTabs: { marginBottom: 12 },
   categoryTabsContent: { paddingHorizontal: 20 },
   categoryTab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#fff', marginRight: 8, borderWidth: 1, borderColor: '#E5E5E5' },
-  categoryTabActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+  categoryTabActive: { backgroundColor: '#B8860B', borderColor: '#B8860B' },
   categoryTabText: { fontSize: 13, color: '#666', fontWeight: '500' },
   categoryTabTextActive: { color: '#fff' },
   filterChipsContainer: { paddingHorizontal: 20, paddingBottom: 4 },
   filterChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: '#E5E5E5', gap: 6, maxWidth: 160 },
-  filterChipActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+  filterChipActive: { backgroundColor: '#B8860B', borderColor: '#B8860B' },
   filterChipPremium: { borderColor: '#E5E4E2', backgroundColor: '#F8F8F8' },
   filterChipText: { fontSize: 13, color: '#333', fontWeight: '500', flexShrink: 1 },
   filterChipTextActive: { color: '#fff' },
@@ -1695,7 +1695,7 @@ const styles = StyleSheet.create({
   sortButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#fff', marginRight: 8, gap: 4 },
   sortButtonActive: { backgroundColor: '#E8F2FF' },
   sortButtonText: { fontSize: 13, color: '#666', fontWeight: '500' },
-  sortButtonTextActive: { color: '#007AFF' },
+  sortButtonTextActive: { color: '#B8860B' },
   stockList: { backgroundColor: '#fff', marginHorizontal: 16, borderRadius: 16, overflow: 'hidden', ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 }, android: { elevation: 2 } }) },
   stockItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E8E8E8' },
   stockItemEven: { backgroundColor: '#FFFFFF' },
@@ -1722,7 +1722,7 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 14, color: '#666' },
   errorContainer: { padding: 40, alignItems: 'center', backgroundColor: '#fff', marginHorizontal: 20, borderRadius: 16 },
   errorText: { marginTop: 12, fontSize: 14, color: '#666', textAlign: 'center' },
-  retryButton: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: '#007AFF', borderRadius: 20 },
+  retryButton: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: '#B8860B', borderRadius: 20 },
   retryButtonText: { color: '#fff', fontWeight: '600' },
   emptyContainer: { padding: 40, alignItems: 'center' },
   emptyText: { marginTop: 12, fontSize: 16, fontWeight: '600', color: '#666' },
@@ -1735,7 +1735,7 @@ const styles = StyleSheet.create({
   modalOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   modalOptionSelected: { backgroundColor: '#F8F9FF', marginHorizontal: -20, paddingHorizontal: 20 },
   modalOptionText: { fontSize: 16, color: '#333' },
-  modalOptionTextSelected: { color: '#007AFF', fontWeight: '600' },
+  modalOptionTextSelected: { color: '#B8860B', fontWeight: '600' },
   fullModalContainer: { flex: 1, backgroundColor: '#F8F9FA' },
   fullModalHeader: {
     flexDirection: 'row',
@@ -1765,7 +1765,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5E5',
     minHeight: 100,
   },
-  filterGridItemActive: { borderColor: '#007AFF', backgroundColor: '#F0F7FF' },
+  filterGridItemActive: { borderColor: '#B8860B', backgroundColor: '#F0F7FF' },
   filterGridItemPremium: { borderColor: '#FFD700', backgroundColor: '#FFFEF5' },
   filterGridIconRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   filterGridIconBg: {
@@ -1787,10 +1787,10 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   filterGridLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 4 },
-  filterGridLabelActive: { color: '#007AFF' },
+  filterGridLabelActive: { color: '#B8860B' },
   filterGridLabelPremium: { color: '#B8860B' },
   filterActiveValue: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  filterGridValue: { fontSize: 12, color: '#007AFF', fontWeight: '500', flex: 1 },
+  filterGridValue: { fontSize: 12, color: '#B8860B', fontWeight: '500', flex: 1 },
   filterGridHint: { fontSize: 11, color: '#999' },
   fullModalFooter: {
     padding: 20,
@@ -1800,7 +1800,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   applyButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -1810,7 +1810,7 @@ const styles = StyleSheet.create({
   },
   applyButtonDisabled: { backgroundColor: '#B0B0B0' },
   applyButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  fab: { position: 'absolute', bottom: 100, left: 20, right: 20, borderRadius: 16, overflow: 'hidden', shadowColor: '#007AFF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
+  fab: { position: 'absolute', bottom: 100, left: 20, right: 20, borderRadius: 16, overflow: 'hidden', shadowColor: '#B8860B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
   fabGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 8 },
   fabText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   // Heat Map Styles
@@ -2078,7 +2078,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     alignItems: 'center',
   },
   savePresetSaveBtnDisabled: {

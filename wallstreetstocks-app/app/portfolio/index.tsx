@@ -182,7 +182,7 @@ export default function PortfolioScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            <Ionicons name="arrow-back" size={24} color="#B8860B" />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio</Text>
           <View style={{ width: 40 }} />
@@ -201,7 +201,7 @@ export default function PortfolioScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+            <Ionicons name="arrow-back" size={24} color="#B8860B" />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio</Text>
           <View style={{ width: 40 }} />
@@ -220,11 +220,11 @@ export default function PortfolioScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          <Ionicons name="arrow-back" size={24} color="#B8860B" />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio</Text>
         <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.addButton}>
-          <Ionicons name="add" size={24} color="#007AFF" />
+          <Ionicons name="add" size={24} color="#B8860B" />
         </TouchableOpacity>
       </View>
 
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryCard: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     margin: 16,
     borderRadius: 16,
     padding: 20,
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
   addFirstButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 25,
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

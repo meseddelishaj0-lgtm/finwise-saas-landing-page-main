@@ -40,7 +40,7 @@ interface InsiderTrade {
 const TRANSACTION_TYPES: { [key: string]: { label: string; color: string; icon: string } } = {
   'P-Purchase': { label: 'Purchase', color: '#34C759', icon: 'arrow-up' },
   'S-Sale': { label: 'Sale', color: '#FF3B30', icon: 'arrow-down' },
-  'A-Grant': { label: 'Grant', color: '#007AFF', icon: 'gift' },
+  'A-Grant': { label: 'Grant', color: '#B8860B', icon: 'gift' },
   'M-Exempt': { label: 'Option Exercise', color: '#FF9500', icon: 'swap-horizontal' },
   'G-Gift': { label: 'Gift', color: '#AF52DE', icon: 'heart' },
   'D-Sale to Issuer': { label: 'Sale to Issuer', color: '#FF3B30', icon: 'arrow-down' },
@@ -612,7 +612,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   searchButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 12,
@@ -641,10 +641,10 @@ const styles = StyleSheet.create({
   },
   searchedSymbol: {
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   clearSearchButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   popularChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   filterContainer: {
     flexDirection: 'row',
@@ -697,8 +697,8 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5EA',
   },
   filterTabActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#B8860B',
+    borderColor: '#B8860B',
   },
   filterTabText: {
     fontSize: 14,

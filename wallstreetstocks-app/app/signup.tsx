@@ -360,7 +360,7 @@ export default function Signup() {
             editable={!loading}
           />
           {checkingUsername && (
-            <ActivityIndicator size="small" color="#007AFF" style={styles.usernameLoader} />
+            <ActivityIndicator size="small" color="#B8860B" style={styles.usernameLoader} />
           )}
         </View>
         {usernameError ? (
@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   link: { 
-    color: '#007AFF', 
+    color: '#B8860B', 
     textAlign: 'center', 
     marginTop: 24, 
     textDecorationLine: 'underline' 

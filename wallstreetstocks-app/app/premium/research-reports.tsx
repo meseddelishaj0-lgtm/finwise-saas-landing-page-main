@@ -259,7 +259,7 @@ Return ONLY the JSON, no other text.`
         </View>
         {report && (
           <TouchableOpacity onPress={shareReport} style={styles.shareButton}>
-            <Ionicons name="share-outline" size={24} color="#007AFF" />
+            <Ionicons name="share-outline" size={24} color="#B8860B" />
           </TouchableOpacity>
         )}
         {!report && <View style={{ width: 40 }} />}
@@ -368,11 +368,11 @@ Return ONLY the JSON, no other text.`
                   <Text style={styles.priceValue}>${report.valuation.current_price.toFixed(2)}</Text>
                 </View>
                 <View style={styles.priceArrow}>
-                  <Ionicons name="arrow-forward" size={20} color="#007AFF" />
+                  <Ionicons name="arrow-forward" size={20} color="#B8860B" />
                 </View>
                 <View style={styles.priceItem}>
                   <Text style={styles.priceLabel}>Price Target</Text>
-                  <Text style={[styles.priceValue, { color: '#007AFF' }]}>
+                  <Text style={[styles.priceValue, { color: '#B8860B' }]}>
                     ${report.recommendation.price_target.toFixed(2)}
                   </Text>
                 </View>
@@ -409,7 +409,7 @@ Return ONLY the JSON, no other text.`
             {/* Financial Analysis */}
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeader}>
-                <Ionicons name="stats-chart" size={20} color="#007AFF" />
+                <Ionicons name="stats-chart" size={20} color="#B8860B" />
                 <Text style={styles.sectionTitle}>Financial Analysis</Text>
               </View>
               <View style={styles.financialGrid}>
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   quickChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
   },
   errorCard: {
     flexDirection: 'row',
@@ -790,7 +790,7 @@ const styles = StyleSheet.create({
   financialLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#B8860B',
     marginBottom: 4,
   },
   financialText: {

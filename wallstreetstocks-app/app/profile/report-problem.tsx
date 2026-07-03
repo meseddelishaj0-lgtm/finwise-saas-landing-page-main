@@ -35,7 +35,7 @@ export default function ReportProblem() {
     { id: 'app_crash', icon: 'bug', label: 'App Crash', color: '#FF3B30' },
     { id: 'ui_issue', icon: 'phone-portrait', label: 'UI Issue', color: '#FF9500' },
     { id: 'slow_laggy', icon: 'speedometer', label: 'Slow / Laggy', color: '#FFCC00' },
-    { id: 'data_error', icon: 'cloud-offline', label: 'Data Error', color: '#007AFF' },
+    { id: 'data_error', icon: 'cloud-offline', label: 'Data Error', color: '#B8860B' },
     { id: 'login_issue', icon: 'log-in', label: 'Login Issue', color: '#AF52DE' },
     { id: 'other', icon: 'ellipsis-horizontal', label: 'Other', color: '#8E8E93' },
   ];
@@ -109,7 +109,7 @@ export default function ReportProblem() {
         <Text style={[styles.title, { color: colors.text }]}>Report a Problem</Text>
         <TouchableOpacity onPress={handleSubmit} disabled={isSubmitting}>
           {isSubmitting ? (
-            <ActivityIndicator size="small" color="#007AFF" />
+            <ActivityIndicator size="small" color="#B8860B" />
           ) : (
             <Text style={styles.submitText}>Submit</Text>
           )}
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   },
   submitText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   content: { flex: 1 },
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     color: '#888',
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     marginHorizontal: 16,
     paddingVertical: 16,
     borderRadius: 12,

@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   forgot: {
-    color: '#007AFF',
+    color: '#B8860B',
     textAlign: 'right',
     marginBottom: 24,
     textDecorationLine: 'underline',
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   link: {
-    color: '#007AFF',
+    color: '#B8860B',
     textAlign: 'center',
     marginTop: 24,
     textDecorationLine: 'underline',

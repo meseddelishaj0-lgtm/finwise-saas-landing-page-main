@@ -133,7 +133,7 @@ export default function FundamentalsTab() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#B8860B" />
         <Text style={styles.loadingText}>Loading fundamentals...</Text>
       </View>
     );
@@ -165,7 +165,7 @@ export default function FundamentalsTab() {
             <Ionicons
               name={tab.icon as any}
               size={14}
-              color={activeTab === tab.key ? "#007AFF" : "#636366"}
+              color={activeTab === tab.key ? "#B8860B" : "#636366"}
             />
             <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
               {tab.label}
@@ -302,7 +302,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
 
           <View style={[incomeStyles.metricCard, { backgroundColor: '#1A1A2E' }]}>
             <View style={incomeStyles.metricHeader}>
-              <Ionicons name="cash" size={18} color="#007AFF" />
+              <Ionicons name="cash" size={18} color="#B8860B" />
               <Text style={incomeStyles.metricLabel}>Net Income</Text>
             </View>
             <Text style={[incomeStyles.metricValue, { color: (latest?.netIncome || 0) >= 0 ? '#00C853' : '#FF3B30' }]}>
@@ -323,7 +323,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
         <View style={incomeStyles.marginSection}>
           <Text style={incomeStyles.marginSectionTitle}>Profit Margins</Text>
           <MarginBar label="Gross Margin" value={grossMargin} color="#00C853" />
-          <MarginBar label="Operating Margin" value={operatingMargin} color="#007AFF" />
+          <MarginBar label="Operating Margin" value={operatingMargin} color="#B8860B" />
           <MarginBar label="Net Margin" value={netMargin} color="#AF52DE" />
         </View>
       </View>
@@ -331,7 +331,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
       {/* Waterfall Breakdown */}
       <View style={incomeStyles.waterfallSection}>
         <Text style={incomeStyles.sectionHeader}>
-          <Ionicons name="analytics" size={16} color="#007AFF" /> Revenue Breakdown
+          <Ionicons name="analytics" size={16} color="#B8860B" /> Revenue Breakdown
         </Text>
 
         <View style={incomeStyles.waterfallCard}>
@@ -398,7 +398,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
                   {fmtNum(item.netIncome)}
                 </Text>
                 <View style={incomeStyles.trendBarContainer}>
-                  <View style={[incomeStyles.trendBar, { height: barHeight, backgroundColor: '#007AFF' }]} />
+                  <View style={[incomeStyles.trendBar, { height: barHeight, backgroundColor: '#B8860B' }]} />
                 </View>
                 <Text style={incomeStyles.trendYear}>{new Date(item.date).getFullYear()}</Text>
                 <Text style={incomeStyles.trendRevenue}>{fmtNum(item.revenue)}</Text>
@@ -408,7 +408,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
         </View>
         <View style={incomeStyles.trendLegend}>
           <View style={incomeStyles.legendItem}>
-            <View style={[incomeStyles.legendDot, { backgroundColor: '#007AFF' }]} />
+            <View style={[incomeStyles.legendDot, { backgroundColor: '#B8860B' }]} />
             <Text style={incomeStyles.legendText}>Revenue</Text>
           </View>
           <View style={incomeStyles.legendItem}>
@@ -434,7 +434,7 @@ const WaterfallRow = ({ icon, label, value, type, isFirst }: {
       case 'positive': return { bg: '#0A2F1F', text: '#00C853', icon: '#00C853' };
       case 'negative': return { bg: '#2F0A0A', text: '#FF3B30', icon: '#FF3B30' };
       case 'subtotal': return { bg: '#1A2F1A', text: '#00C853', icon: '#00C853' };
-      case 'final': return { bg: '#0A1F2F', text: '#007AFF', icon: '#007AFF' };
+      case 'final': return { bg: '#0A1F2F', text: '#B8860B', icon: '#B8860B' };
       case 'expense': return { bg: '#2F2A0A', text: '#FF9500', icon: '#FF9500' };
       default: return { bg: '#1C1C1E', text: '#FFF', icon: '#8E8E93' };
     }
@@ -704,7 +704,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
   // Calculate percentages for visual breakdown
   const assetsBreakdown = [
     { label: 'Cash', value: latest?.cashAndCashEquivalents || 0, color: '#00C853' },
-    { label: 'Receivables', value: latest?.netReceivables || 0, color: '#007AFF' },
+    { label: 'Receivables', value: latest?.netReceivables || 0, color: '#B8860B' },
     { label: 'Inventory', value: latest?.inventory || 0, color: '#FF9500' },
     { label: 'PP&E', value: latest?.propertyPlantEquipmentNet || 0, color: '#AF52DE' },
     { label: 'Other', value: totalAssets - (latest?.cashAndCashEquivalents || 0) - (latest?.netReceivables || 0) - (latest?.inventory || 0) - (latest?.propertyPlantEquipmentNet || 0), color: '#5856D6' },
@@ -740,10 +740,10 @@ const BalanceTab = ({ data, fmtNum }: any) => {
 
           <View style={balanceStyles.equationItem}>
             <View style={[balanceStyles.equationIcon, { backgroundColor: '#0A1F2F' }]}>
-              <Ionicons name="shield-checkmark" size={20} color="#007AFF" />
+              <Ionicons name="shield-checkmark" size={20} color="#B8860B" />
             </View>
             <Text style={balanceStyles.equationLabel}>Equity</Text>
-            <Text style={[balanceStyles.equationValue, { color: '#007AFF' }]}>{fmtNum(totalEquity)}</Text>
+            <Text style={[balanceStyles.equationValue, { color: '#B8860B' }]}>{fmtNum(totalEquity)}</Text>
           </View>
         </View>
 
@@ -821,7 +821,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
 
         <View style={balanceStyles.detailCard}>
           <View style={balanceStyles.subHeader}>
-            <Ionicons name="business" size={14} color="#007AFF" />
+            <Ionicons name="business" size={14} color="#B8860B" />
             <Text style={balanceStyles.subHeaderText}>Non-Current Assets</Text>
           </View>
           <BalanceRow label="Property & Equipment" value={fmtNum(latest?.propertyPlantEquipmentNet)} icon="home" />
@@ -863,7 +863,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
       {/* Equity Detail */}
       <View style={balanceStyles.detailSection}>
         <Text style={balanceStyles.sectionHeader}>
-          <Ionicons name="shield-checkmark" size={16} color="#007AFF" /> Shareholders&apos; Equity
+          <Ionicons name="shield-checkmark" size={16} color="#B8860B" /> Shareholders&apos; Equity
         </Text>
 
         <View style={balanceStyles.detailCard}>
@@ -889,7 +889,7 @@ const BalanceRow = ({ label, value, icon, isTotal, isFinal, isNegative }: {
   <View style={[balanceStyles.row, isTotal && balanceStyles.rowTotal, isFinal && balanceStyles.rowFinal]}>
     <View style={balanceStyles.rowLeft}>
       <View style={[balanceStyles.rowIcon, isTotal && balanceStyles.rowIconTotal]}>
-        <Ionicons name={icon as any} size={14} color={isTotal ? '#007AFF' : '#8E8E93'} />
+        <Ionicons name={icon as any} size={14} color={isTotal ? '#B8860B' : '#8E8E93'} />
       </View>
       <Text style={[balanceStyles.rowLabel, isTotal && balanceStyles.rowLabelTotal]}>{label}</Text>
     </View>
@@ -1076,7 +1076,7 @@ const balanceStyles = StyleSheet.create({
     alignItems: 'center',
   },
   rowIconTotal: {
-    backgroundColor: '#007AFF20',
+    backgroundColor: '#B8860B20',
   },
   rowLabel: {
     color: '#AEAEB2',
@@ -1093,7 +1093,7 @@ const balanceStyles = StyleSheet.create({
     fontWeight: '500',
   },
   rowValueTotal: {
-    color: '#007AFF',
+    color: '#B8860B',
     fontSize: 15,
     fontWeight: '700',
   },
@@ -1161,9 +1161,9 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
               {fmtNum(operatingCF)}
             </Text>
           </View>
-          <View style={[cashFlowStyles.metricCard, { backgroundColor: '#0A1F2F', borderColor: '#007AFF30' }]}>
+          <View style={[cashFlowStyles.metricCard, { backgroundColor: '#0A1F2F', borderColor: '#B8860B30' }]}>
             <View style={cashFlowStyles.metricIcon}>
-              <Ionicons name="diamond" size={24} color="#007AFF" />
+              <Ionicons name="diamond" size={24} color="#B8860B" />
             </View>
             <Text style={cashFlowStyles.metricLabel}>Free Cash Flow</Text>
             <Text style={[cashFlowStyles.metricValue, { color: freeCashFlow >= 0 ? '#00C853' : '#FF3B30' }]}>
@@ -1180,7 +1180,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
           <CashFlowBar label="Financing" value={financingCF} color="#AF52DE" icon="card" />
           <View style={cashFlowStyles.cfNetChange}>
             <View style={cashFlowStyles.cfNetChangeLeft}>
-              <Ionicons name="swap-horizontal" size={18} color="#007AFF" />
+              <Ionicons name="swap-horizontal" size={18} color="#B8860B" />
               <Text style={cashFlowStyles.cfNetChangeLabel}>Net Change in Cash</Text>
             </View>
             <Text style={[cashFlowStyles.cfNetChangeValue, { color: netChange >= 0 ? '#00C853' : '#FF3B30' }]}>
@@ -1265,7 +1265,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
       {/* Cash Position */}
       <View style={cashFlowStyles.cashPositionSection}>
         <Text style={cashFlowStyles.sectionHeader}>
-          <Ionicons name="wallet" size={16} color="#007AFF" /> Cash Position
+          <Ionicons name="wallet" size={16} color="#B8860B" /> Cash Position
         </Text>
         <View style={cashFlowStyles.cashPositionCard}>
           <View style={cashFlowStyles.cashPositionRow}>
@@ -1281,7 +1281,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
             </View>
             <View style={cashFlowStyles.cashPositionItem}>
               <Text style={cashFlowStyles.cashPositionLabel}>Ending</Text>
-              <Text style={[cashFlowStyles.cashPositionValue, { color: '#007AFF' }]}>{fmtNum(latest?.cashAtEndOfPeriod)}</Text>
+              <Text style={[cashFlowStyles.cashPositionValue, { color: '#B8860B' }]}>{fmtNum(latest?.cashAtEndOfPeriod)}</Text>
             </View>
           </View>
         </View>
@@ -1332,7 +1332,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
                     cashFlowStyles.comparisonBar,
                     {
                       width: `${Math.min((Math.abs(item.operatingCashFlow || 0) / Math.max(...data.slice(0, 4).map((d: any) => Math.abs(d.operatingCashFlow || 0))) * 100), 100)}%`,
-                      backgroundColor: '#007AFF',
+                      backgroundColor: '#B8860B',
                     }
                   ]} />
                   <View style={[
@@ -1345,14 +1345,14 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
                 </View>
               </View>
               <View style={cashFlowStyles.comparisonValues}>
-                <Text style={[cashFlowStyles.comparisonValue, { color: '#007AFF' }]}>{fmtNum(item.operatingCashFlow)}</Text>
+                <Text style={[cashFlowStyles.comparisonValue, { color: '#B8860B' }]}>{fmtNum(item.operatingCashFlow)}</Text>
                 <Text style={[cashFlowStyles.comparisonValue, { color: '#00C853' }]}>{fmtNum(item.freeCashFlow)}</Text>
               </View>
             </View>
           ))}
           <View style={cashFlowStyles.comparisonLegend}>
             <View style={cashFlowStyles.legendItem}>
-              <View style={[cashFlowStyles.legendDot, { backgroundColor: '#007AFF' }]} />
+              <View style={[cashFlowStyles.legendDot, { backgroundColor: '#B8860B' }]} />
               <Text style={cashFlowStyles.legendText}>Operating CF</Text>
             </View>
             <View style={cashFlowStyles.legendItem}>
@@ -1900,7 +1900,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   sectionTitle: {
-    color: "#007AFF",
+    color: "#B8860B",
     fontSize: 13,
     fontWeight: "700",
     textTransform: "uppercase",

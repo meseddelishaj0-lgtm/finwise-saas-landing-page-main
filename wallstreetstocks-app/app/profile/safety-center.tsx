@@ -27,7 +27,7 @@ export default function SafetyCenter() {
       icon: 'lock-closed',
       title: 'Data Encryption',
       description: 'All your data is encrypted in transit and at rest using industry standards',
-      color: '#007AFF',
+      color: '#B8860B',
     },
     {
       icon: 'eye-off',
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

@@ -130,7 +130,7 @@ export default function SetupUsername() {
 
   const getInputBorderColor = () => {
     if (username.length < 3) return '#E0E0E0';
-    if (checking) return '#007AFF';
+    if (checking) return '#B8860B';
     if (isAvailable === true) return '#34C759';
     if (isAvailable === false) return '#FF3B30';
     return '#E0E0E0';
@@ -145,7 +145,7 @@ export default function SetupUsername() {
         {/* Logo */}
         <View style={styles.logoContainer}>
           <View style={styles.logoCircle}>
-            <Ionicons name="person-add" size={40} color="#007AFF" />
+            <Ionicons name="person-add" size={40} color="#B8860B" />
           </View>
         </View>
 
@@ -170,7 +170,7 @@ export default function SetupUsername() {
             maxLength={20}
           />
           <View style={styles.inputIcon}>
-            {checking && <ActivityIndicator size="small" color="#007AFF" />}
+            {checking && <ActivityIndicator size="small" color="#B8860B" />}
             {!checking && isAvailable === true && (
               <Ionicons name="checkmark-circle" size={24} color="#34C759" />
             )}
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#B8860B',
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',

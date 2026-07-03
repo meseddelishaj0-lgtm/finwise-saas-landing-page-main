@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   ticker: {
-    color: '#007AFF',
+    color: '#B8860B',
     fontWeight: '600',
   },
   mention: {
