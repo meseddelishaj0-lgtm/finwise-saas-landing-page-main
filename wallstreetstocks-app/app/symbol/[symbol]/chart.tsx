@@ -145,6 +145,54 @@ function parseTwelveDataTime(datetime: string, isCrypto: boolean = false): Date 
   return new Date(datetime.replace(' ', 'T') + offset);
 }
 
+// Reusable formatter: ET calendar date key (YYYY-MM-DD) for a bar
+const easternDayFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+const easternDateKey = (d: Date) => easternDayFormatter.format(d);
+
+/**
+ * 1D: keep only bars from the most recent trading session (the session
+ * of the newest bar), so the line and its baseline never mix in the
+ * previous day. Crypto trades 24/7, so keep the last 24 hours instead.
+ */
+function filterToLatestSession(points: ChartDataPoint[], isCrypto: boolean): ChartDataPoint[] {
+  if (points.length === 0) return points;
+  const last = points[points.length - 1];
+
+  if (isCrypto) {
+    const cutoff = last.date.getTime() - 24 * 60 * 60 * 1000;
+    const filtered = points.filter(p => p.date.getTime() > cutoff);
+    return filtered.length >= 2 ? filtered : points;
+  }
+
+  const lastKey = easternDateKey(last.date);
+  const filtered = points.filter(p => easternDateKey(p.date) === lastKey);
+  // Very early pre-market can have <2 bars for today; show recent bars instead of nothing
+  return filtered.length >= 2 ? filtered : points.slice(-60);
+}
+
+/**
+ * 5D: trim to the last N distinct ET trading days (the raw fetch can
+ * span more days than requested).
+ */
+function filterToRecentSessions(points: ChartDataPoint[], isCrypto: boolean, sessions: number): ChartDataPoint[] {
+  if (isCrypto || points.length === 0) return points;
+
+  const seen: string[] = [];
+  for (let i = points.length - 1; i >= 0; i--) {
+    const key = easternDateKey(points[i].date);
+    if (!seen.includes(key)) {
+      if (seen.length === sessions) return points.slice(i + 1);
+      seen.push(key);
+    }
+  }
+  return points;
+}
+
 /**
  * Format date for tooltip display
  */
@@ -500,8 +548,13 @@ export default function ChartTab() {
     }
 
     try {
-      const config = TIMEFRAME_CONFIG[timeframe];
-      const prepostParam = (timeframe === '1D' || timeframe === '5D') ? '&prepost=true' : '';
+      // Crypto trades 24/7: 1min x 960 only covers 16h, so use 5min bars for a full day
+      const config = (isCrypto && timeframe === '1D')
+        ? { interval: '5min', outputsize: 288 }
+        : TIMEFRAME_CONFIG[timeframe];
+      // Extended hours on 1D only; on 5D prepost bars would blow past the
+      // fetch window and shrink the visible range to ~2.5 days
+      const prepostParam = timeframe === '1D' ? '&prepost=true' : '';
       const url = `${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(apiSymbol)}&interval=${config.interval}&outputsize=${config.outputsize}${prepostParam}&apikey=${TWELVE_DATA_API_KEY}`;
 
       const res = await fetch(url);
@@ -526,11 +579,15 @@ export default function ChartTab() {
           }
 
           return { value: parseFloat(d.close), label, date };
-        });
+        }).filter(d => isFinite(d.value) && d.value > 0 && !isNaN(d.date.getTime()));
 
-        // Sample for ALL timeframe
         let finalData = formatted;
-        if (timeframe === 'ALL' && formatted.length > 200) {
+        if (timeframe === '1D') {
+          // Only the latest session — never mix in the previous day
+          finalData = filterToLatestSession(formatted, isCrypto);
+        } else if (timeframe === '5D') {
+          finalData = filterToRecentSessions(formatted, isCrypto, 5);
+        } else if (timeframe === 'ALL' && formatted.length > 200) {
           const sampleRate = Math.ceil(formatted.length / 200);
           finalData = formatted.filter((_, i) => i % sampleRate === 0);
         }
