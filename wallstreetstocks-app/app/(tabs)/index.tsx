@@ -520,7 +520,13 @@ export default function Dashboard() {
         if (cached) {
           const parsedCache = JSON.parse(cached);
           if (parsedCache && Array.isArray(parsedCache) && parsedCache.length > 0) {
-            setMajorIndices(parsedCache);
+            // Merge cached prices into the current symbol list instead of
+            // replacing it — caches from older versions may be missing
+            // symbols (e.g. SPY/QQQ) and must not remove them
+            setMajorIndices(prev => prev.map(item => {
+              const cachedItem = parsedCache.find((c: any) => c?.symbol === item.symbol);
+              return cachedItem && cachedItem.price > 0 ? { ...item, ...cachedItem } : item;
+            }));
             setIndicesLoading(false);
           }
         }
@@ -943,6 +949,8 @@ export default function Dashboard() {
             color: (storeQuote.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
           };
         }
+        // Keep symbols without a price yet as placeholders — they are
+        // hidden at render time and fill in live from the price store
         return {
           symbol,
           name: nameMap[symbol] || symbol,
@@ -951,9 +959,9 @@ export default function Dashboard() {
           changePercent: 0,
           color: '#34C759',
         };
-      }).filter(item => item.price > 0);
+      });
 
-      if (results.length > 0) {
+      if (results.some(item => item.price > 0)) {
         setMajorIndices(results);
         setIndicesLoading(false);
         return;
@@ -973,9 +981,9 @@ export default function Dashboard() {
         changePercent: storeQuote?.changePercent || 0,
         color: (storeQuote?.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30',
       };
-    }).filter(item => item.price > 0);
+    });
 
-    if (storeResults.length > 0) {
+    if (storeResults.some(item => item.price > 0)) {
       setMajorIndices(storeResults);
     }
     setIndicesLoading(false);
@@ -1917,7 +1925,7 @@ export default function Dashboard() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.indicesScrollContent}
             >
-              {liveMarketIndices.map((index) => (
+              {liveMarketIndices.filter((index) => index.price > 0).map((index) => (
                 <TouchableOpacity
                   key={index.symbol}
                   style={[styles.indexCard, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}

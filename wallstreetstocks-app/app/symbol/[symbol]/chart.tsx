@@ -553,8 +553,10 @@ export default function ChartTab() {
         ? { interval: '5min', outputsize: 288 }
         : TIMEFRAME_CONFIG[timeframe];
       // Extended hours on 1D only; on 5D prepost bars would blow past the
-      // fetch window and shrink the visible range to ~2.5 days
-      const prepostParam = timeframe === '1D' ? '&prepost=true' : '';
+      // fetch window and shrink the visible range to ~2.5 days.
+      // Never for crypto: it trades 24/7 and Twelve Data rejects prepost
+      // on any interval other than 1min (crypto 1D uses 5min bars)
+      const prepostParam = (timeframe === '1D' && !isCrypto) ? '&prepost=true' : '';
       const url = `${TWELVE_DATA_URL}/time_series?symbol=${encodeURIComponent(apiSymbol)}&interval=${config.interval}&outputsize=${config.outputsize}${prepostParam}&apikey=${TWELVE_DATA_API_KEY}`;
 
       const res = await fetch(url);
