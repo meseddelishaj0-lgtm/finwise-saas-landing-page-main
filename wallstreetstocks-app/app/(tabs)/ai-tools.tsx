@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import { useTheme } from '@/context/ThemeContext';
+import FadeSlideIn from '@/components/FadeSlideIn';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -768,15 +769,17 @@ Always remind users that this is educational information, not financial advice.`
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? 'transparent' : colors.borderLight }]}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerIconBg}>
-              <Ionicons name="sparkles" size={28} color="#B8860B" />
+          <FadeSlideIn distance={10}>
+            <View style={styles.headerContent}>
+              <View style={styles.headerIconBg}>
+                <Ionicons name="sparkles" size={28} color="#B8860B" />
+              </View>
+              <View style={styles.headerText}>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>AI Tools</Text>
+                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Powered by Advanced Analytics</Text>
+              </View>
             </View>
-            <View style={styles.headerText}>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>AI Tools</Text>
-              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Powered by Advanced Analytics</Text>
-            </View>
-          </View>
+          </FadeSlideIn>
         </View>
 
         {/* Tab Selector */}

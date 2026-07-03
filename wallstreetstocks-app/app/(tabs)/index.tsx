@@ -38,6 +38,7 @@ import { IndicesSkeletonList, WatchlistSkeletonList } from '@/components/Skeleto
 import StockLogo from '@/components/StockLogo';
 import { useAppReview } from '@/hooks/useAppReview';
 import { useTheme } from '@/context/ThemeContext';
+import FadeSlideIn from '@/components/FadeSlideIn';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -1891,13 +1892,15 @@ export default function Dashboard() {
 
         {/* Live Major Indices - Horizontal Scrollable */}
         <View style={styles.indicesSection}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Market Overview</Text>
-              <CryptoLiveIndicator />
+          <FadeSlideIn distance={10}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Market Overview</Text>
+                <CryptoLiveIndicator />
+              </View>
+              <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 4 }} />
             </View>
-            <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 4 }} />
-          </View>
+          </FadeSlideIn>
           
           {indicesLoading ? (
             <IndicesSkeletonList count={5} />

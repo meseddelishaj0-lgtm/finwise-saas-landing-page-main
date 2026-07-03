@@ -4,6 +4,7 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -30,6 +31,7 @@ import { FEATURE_TIERS } from '@/components/PremiumFeatureGate';
 import { SubscriptionBadgeInline } from '@/components/SubscriptionBadge';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { useTheme } from '@/context/ThemeContext';
+import FadeSlideIn from '@/components/FadeSlideIn';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -2194,7 +2196,9 @@ export default function CommunityPage() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? 'transparent' : colors.borderLight }]}>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Community</Text>
+        <FadeSlideIn distance={10}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Community</Text>
+        </FadeSlideIn>
         <View style={styles.headerActions}>
           <TouchableOpacity 
             style={[styles.headerButton, { backgroundColor: colors.surface }]}
@@ -2237,8 +2241,8 @@ export default function CommunityPage() {
         </View>
       </View>
 
-      {/* Posts List */}
-      <ScrollView
+      {/* Posts List (virtualized so off-screen posts don't render) */}
+      <FlatList
         style={[styles.scrollView, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.postsContainer}
         showsVerticalScrollIndicator={false}
@@ -2253,7 +2257,15 @@ export default function CommunityPage() {
             tintColor={colors.primary}
           />
         }
-      >
+        data={posts}
+        keyExtractor={(post) => String(post.id)}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
+        ListFooterComponent={<View style={{ height: 100 }} />}
+        ListHeaderComponent={
+          <>
         {/* Trending Tickers Section */}
         <TrendingTickers onTickerPress={handleTickerPress} />
 
@@ -2455,8 +2467,10 @@ export default function CommunityPage() {
           </ScrollView>
         </View>
 
-        {posts.map((post) => (
-          <View key={post.id} style={[styles.postCard, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : colors.borderLight }]}>
+          </>
+        }
+        renderItem={({ item: post }) => (
+          <View style={[styles.postCard, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : colors.borderLight }]}>
             {/* Post Header */}
             <View style={styles.postHeader}>
               <Avatar 
@@ -2642,24 +2656,23 @@ export default function CommunityPage() {
               )}
             </View>
           </View>
-        ))}
-
-        {posts.length === 0 && !loading && (
-          <View style={styles.emptyState}>
-            <Ionicons name="chatbubbles-outline" size={64} color={colors.textTertiary} />
-            <Text style={styles.emptyTitle}>No posts yet</Text>
-            <Text style={styles.emptySubtitle}>Be the first to share something!</Text>
-            <TouchableOpacity 
-              style={styles.emptyButton}
-              onPress={openCreatePostModal}
-            >
-              <Text style={styles.emptyButtonText}>Create Post</Text>
-            </TouchableOpacity>
-          </View>
         )}
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="chatbubbles-outline" size={64} color={colors.textTertiary} />
+              <Text style={styles.emptyTitle}>No posts yet</Text>
+              <Text style={styles.emptySubtitle}>Be the first to share something!</Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={openCreatePostModal}
+              >
+                <Text style={styles.emptyButtonText}>Create Post</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null
+        }
+      />
 
       {/* FAB */}
       <TouchableOpacity
