@@ -3193,7 +3193,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: '#F6EEDA',
     paddingVertical: 10,
     paddingHorizontal: 16,
     marginHorizontal: 16,

@@ -2521,7 +2521,7 @@ export default function CommunityPage() {
                 {post.tickers.map((ticker) => (
                   <TouchableOpacity
                     key={ticker}
-                    style={[styles.tickerPill, { backgroundColor: isDark ? "rgba(184, 134, 11,0.15)" : "#E3F2FD" }]}
+                    style={[styles.tickerPill, { backgroundColor: isDark ? "rgba(184, 134, 11,0.15)" : "#F6EEDA" }]}
                     onPress={() => handleTickerPress(ticker)}
                   >
                     <Text style={styles.tickerPillText}>${ticker}</Text>
@@ -3381,8 +3381,8 @@ export default function CommunityPage() {
                 style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
                 onPress={handleShareFromOptions}
               >
-                <View style={[styles.optionIconContainer, { backgroundColor: '#E3F2FD' }]}>
-                  <Ionicons name="share-outline" size={20} color="#2196F3" />
+                <View style={[styles.optionIconContainer, { backgroundColor: '#F6EEDA' }]}>
+                  <Ionicons name="share-outline" size={20} color="#B8860B" />
                 </View>
                 <Text style={[styles.optionText, { color: colors.text }]}>Share Post</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
@@ -4877,7 +4877,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   tickerPill: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: '#F6EEDA',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,

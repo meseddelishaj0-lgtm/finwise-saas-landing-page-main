@@ -1617,7 +1617,7 @@ export default function Explore() {
     
     // IPO-specific layout
     if (activeTab === "ipo") {
-      const statusColor = item.status === "Priced" ? "#00C853" : "#2196F3";
+      const statusColor = item.status === "Priced" ? "#00C853" : "#DAA520";
       
       return (
         <TouchableOpacity
@@ -1666,7 +1666,7 @@ export default function Explore() {
 
     // Dividends-specific layout
     if (activeTab === "dividends") {
-      const yieldColor = (item.dividendYield || 0) >= 3 ? "#00C853" : "#2196F3";
+      const yieldColor = (item.dividendYield || 0) >= 3 ? "#00C853" : "#DAA520";
       
       return (
         <TouchableOpacity

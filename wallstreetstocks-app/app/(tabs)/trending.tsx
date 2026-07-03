@@ -5,7 +5,6 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  ActivityIndicator,
   ScrollView,
   TouchableOpacity,
   StatusBar,
@@ -28,6 +27,39 @@ import StockLogo from "@/components/StockLogo";
 import { useTheme } from "@/context/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+// Theme-aware pulsing placeholder block
+const SkeletonPulse = ({ style, color }: { style?: any; color: string }) => {
+  const pulse = useRef(new Animated.Value(0.45)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.45, duration: 700, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  return <Animated.View style={[style, { backgroundColor: color, opacity: pulse }]} />;
+};
+
+// Placeholder mirroring the trending row layout, shown while data loads
+const TrendingRowSkeleton = ({ color, borderColor }: { color: string; borderColor: string }) => (
+  <View style={[styles.row, { borderBottomColor: borderColor }]}>
+    <View style={styles.left}>
+      <SkeletonPulse color={color} style={{ width: 28, height: 28, borderRadius: 14, marginRight: 10 }} />
+      <SkeletonPulse color={color} style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10 }} />
+      <SkeletonPulse color={color} style={{ width: 70, height: 14, borderRadius: 7 }} />
+    </View>
+    <View style={styles.right}>
+      <SkeletonPulse color={color} style={{ width: 64, height: 14, borderRadius: 7 }} />
+      <SkeletonPulse color={color} style={{ width: 52, height: 12, borderRadius: 6, marginTop: 8 }} />
+    </View>
+  </View>
+);
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
 const STOCK_ROW_HEIGHT = 76; // Fixed row height for getItemLayout optimization
 
@@ -731,9 +763,10 @@ export default function Trending() {
             <Text style={[styles.title, { color: colors.text }]}>Trending</Text>
           </View>
         </View>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#00C853" />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading market data...</Text>
+        <View>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <TrendingRowSkeleton key={i} color={colors.borderLight} borderColor={colors.borderLight} />
+          ))}
         </View>
       </View>
     );

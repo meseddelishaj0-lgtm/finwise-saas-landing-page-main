@@ -19,6 +19,7 @@ import {
   UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -99,8 +100,14 @@ const ScalePress = ({
 }) => {
   const scale = useRef(new Animated.Value(1)).current;
 
-  const pressIn = () =>
+  const pressIn = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } else {
+      Haptics.selectionAsync();
+    }
     Animated.spring(scale, { toValue: activeScale, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+  };
   const pressOut = () =>
     Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 24, bounciness: 9 }).start();
 
@@ -110,6 +117,47 @@ const ScalePress = ({
     </TouchableOpacity>
   );
 };
+
+// Theme-aware pulsing placeholder block
+const SkeletonPulse = ({ style, color }: { style?: any; color: string }) => {
+  const pulse = useRef(new Animated.Value(0.45)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.45, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  return <Animated.View style={[style, { backgroundColor: color, opacity: pulse }]} />;
+};
+
+// Placeholder mirroring the stock row layout, shown while results load
+const StockRowSkeleton = ({ color, borderColor }: { color: string; borderColor: string }) => (
+  <View style={[styles.stockItem, { borderBottomColor: borderColor }]}>
+    <View style={styles.stockLeft}>
+      <SkeletonPulse color={color} style={{ width: 40, height: 40, borderRadius: 20, marginRight: 12 }} />
+      <View style={styles.stockInfo}>
+        <SkeletonPulse color={color} style={{ width: 70, height: 14, borderRadius: 7 }} />
+        <SkeletonPulse color={color} style={{ width: 110, height: 10, borderRadius: 5, marginTop: 8 }} />
+      </View>
+    </View>
+    <View style={styles.stockMiddle}>
+      <SkeletonPulse color={color} style={{ width: 42, height: 12, borderRadius: 6 }} />
+    </View>
+    <View style={styles.stockMiddle}>
+      <SkeletonPulse color={color} style={{ width: 34, height: 12, borderRadius: 6 }} />
+    </View>
+    <View style={styles.stockRight}>
+      <SkeletonPulse color={color} style={{ width: 60, height: 14, borderRadius: 7 }} />
+      <SkeletonPulse color={color} style={{ width: 48, height: 12, borderRadius: 6, marginTop: 8 }} />
+    </View>
+  </View>
+);
 
 // Stock row height for getItemLayout optimization
 const STOCK_ROW_HEIGHT = 72;
@@ -1340,7 +1388,7 @@ export default function Screener() {
         />
       )}
 
-      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(activePreset, filters); }} />}>
+      <ScrollView showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.primary} colors={[colors.primary]} onRefresh={() => { setRefreshing(true); fetchData(activePreset, filters); }} />}>
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View>
@@ -1393,10 +1441,9 @@ export default function Screener() {
 
           {loading && !refreshing && (
             <FadeSlideIn distance={6}>
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
-                <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Scanning the market…</Text>
-              </View>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <StockRowSkeleton key={i} color={colors.borderLight} borderColor={colors.borderLight} />
+              ))}
             </FadeSlideIn>
           )}
           
