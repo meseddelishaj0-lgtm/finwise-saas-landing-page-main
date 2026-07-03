@@ -39,6 +39,7 @@ import StockLogo from '@/components/StockLogo';
 import { useAppReview } from '@/hooks/useAppReview';
 import { useTheme } from '@/context/ThemeContext';
 import FadeSlideIn from '@/components/FadeSlideIn';
+import Sparkline from '@/components/Sparkline';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -2366,10 +2367,12 @@ export default function Dashboard() {
           ) : (
             <View style={styles.watchlistList}>
               {filteredWatchlist.map((stock, idx) => {
-                // Compute chart data once per render
-                const rawChartData = stock.data?.length > 1 ? stock.data : [stock.price || 100, (stock.price || 100) * 0.98, (stock.price || 100) * 1.02, stock.price || 100];
-                const chartData = interpolateSparkline(rawChartData, 18);
-                
+                // Real intraday data drawn in true proportion; a flat line
+                // (not a fabricated wiggle) when no data is available yet
+                const chartData = stock.data?.length > 1
+                  ? stock.data
+                  : [stock.price || 1, stock.price || 1];
+
                 return (
                 <TouchableOpacity
                   key={stock.symbol}
@@ -2392,30 +2395,13 @@ export default function Dashboard() {
                   </View>
                   
                   <View style={styles.watchlistRowCenter}>
-                    <GiftedLineChart
-                      data={chartData.map(value => ({ value }))}
+                    <Sparkline
+                      data={chartData}
+                      color={stock.color}
                       width={Platform.OS === 'android' ? 55 : 85}
                       height={Platform.OS === 'android' ? 28 : 36}
-                      curved
-                      areaChart
-                      hideDataPoints
-                      hideRules
-                      hideYAxisText
-                      hideAxesAndRules
-                      disableScroll
-                      initialSpacing={0}
-                      endSpacing={0}
-                      spacing={(Platform.OS === 'android' ? 55 : 85) / 18}
-                      thickness={1.5}
-                      color={stock.color}
-                      startFillColor={stock.color}
-                      endFillColor={stock.color}
-                      startOpacity={0.2}
-                      endOpacity={0.02}
-                      yAxisOffset={0}
-                      maxValue={105}
-                      mostNegativeValue={-5}
-                      animateOnDataChange={false}
+                      strokeWidth={1.5}
+                      fillOpacity={0.2}
                     />
                   </View>
                   

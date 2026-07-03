@@ -121,30 +121,8 @@ function parseTwelveDataTime(datetime: string): Date {
 // SPARKLINE GENERATION
 // ============================================================================
 
-/**
- * Generate fallback sparkline data based on price direction
- * Creates a realistic-looking sparkline when API fails
- */
-function generateFallbackSparkline(isPositive: boolean, points: number = 24): number[] {
-  const data: number[] = [];
-  let value = 50; // Start at midpoint
-
-  for (let i = 0; i < points; i++) {
-    const trend = isPositive ? 0.3 : -0.3;
-    const noise = (Math.random() - 0.5) * 4;
-    value = Math.max(10, Math.min(90, value + trend + noise));
-    data.push(value);
-  }
-
-  // Ensure end point reflects direction
-  if (isPositive && data[data.length - 1] < data[0]) {
-    data[data.length - 1] = data[0] + Math.random() * 10 + 5;
-  } else if (!isPositive && data[data.length - 1] > data[0]) {
-    data[data.length - 1] = data[0] - Math.random() * 10 - 5;
-  }
-
-  return data;
-}
+// NOTE: charts never fabricate data — when the API has nothing for a
+// symbol we return [] and the UI renders an honest flat/empty sparkline.
 
 /**
  * Filter sparkline data to today's session and ensure minimum points
@@ -191,7 +169,7 @@ function filterToTodaySession(
   }
 
   // Fallback to generated data
-  return generateFallbackSparkline(isPositive);
+  return [];
 }
 
 // ============================================================================
@@ -249,18 +227,18 @@ export async function fetchSparkline(
       }
 
       // Too few points, use fallback
-      return generateFallbackSparkline(isPositive);
+      return [];
     }
 
     // No data, return fallback
-    return generateFallbackSparkline(isPositive);
+    return [];
   } catch (error: any) {
     // Log but don't spam console
     if (error.name !== 'AbortError') {
     }
 
     // Return fallback sparkline
-    return generateFallbackSparkline(isPositive);
+    return [];
   }
 }
 

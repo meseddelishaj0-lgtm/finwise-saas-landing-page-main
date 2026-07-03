@@ -15,7 +15,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
+import Sparkline from "@/components/Sparkline";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
 import { AnimatedPrice, AnimatedChange, MarketTimeLabel } from "@/components/AnimatedPrice";
 import { fetchSparklines } from "@/services/sparklineService";
@@ -117,7 +117,8 @@ const TAB_CONFIG: { id: TabType; label: string; icon: string }[] = [
   { id: "forex", label: "Forex", icon: "swap-horizontal" },
 ];
 
-// Mini Sparkline Component - Memoized for performance
+// Mini Sparkline — delegates to the shared true-scale Sparkline component
+// (stable gradient ids; honest flat/empty rendering instead of fake curves)
 const MiniSparkline = memo(({
   data,
   isPositive,
@@ -128,57 +129,16 @@ const MiniSparkline = memo(({
   isPositive: boolean;
   width?: number;
   height?: number;
-}) => {
-  if (!data || data.length < 2) {
-    data = isPositive 
-      ? [40, 42, 38, 45, 43, 48, 46, 52, 50, 55]
-      : [55, 52, 54, 48, 50, 45, 47, 42, 44, 40];
-  }
-
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-
-  const points = data.map((value, index) => {
-    const x = (index / (data.length - 1)) * width;
-    const y = height - ((value - min) / range) * (height - 4) - 2;
-    return { x, y };
-  });
-
-  let pathD = `M ${points[0].x} ${points[0].y}`;
-  
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1];
-    const curr = points[i];
-    const midX = (prev.x + curr.x) / 2;
-    pathD += ` Q ${prev.x + (midX - prev.x) * 0.5} ${prev.y}, ${midX} ${(prev.y + curr.y) / 2}`;
-    pathD += ` Q ${midX + (curr.x - midX) * 0.5} ${curr.y}, ${curr.x} ${curr.y}`;
-  }
-
-  const areaPath = `${pathD} L ${width} ${height} L 0 ${height} Z`;
-  const color = isPositive ? "#00C853" : "#FF1744";
-  const gradientId = `gradient-${isPositive ? 'green' : 'red'}-${Math.random().toString(36).slice(2, 11)}`;
-
-  return (
-    <Svg width={width} height={height}>
-      <Defs>
-        <LinearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
-          <Stop offset="0%" stopColor={color} stopOpacity={0.3} />
-          <Stop offset="100%" stopColor={color} stopOpacity={0} />
-        </LinearGradient>
-      </Defs>
-      <Path d={areaPath} fill={`url(#${gradientId})`} />
-      <Path
-        d={pathD}
-        stroke={color}
-        strokeWidth={2}
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-});
+}) => (
+  <Sparkline
+    data={data}
+    color={isPositive ? "#00C853" : "#FF1744"}
+    width={width}
+    height={height}
+    strokeWidth={2}
+    fillOpacity={0.3}
+  />
+));
 
 MiniSparkline.displayName = 'MiniSparkline';
 
