@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { heroDetails } from "@/data/hero";
+import AppStoreButton from "@/components/AppStoreButton";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -180,6 +181,17 @@ const Hero: React.FC = () => {
           >
             Explore AI Stock Picks
           </Link>
+        </motion.div>
+
+        {/* App Store download */}
+        <motion.div
+          custom={4}
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
+          className="mt-6 flex items-center justify-center"
+        >
+          <AppStoreButton />
         </motion.div>
 
         {/* Trust stats */}

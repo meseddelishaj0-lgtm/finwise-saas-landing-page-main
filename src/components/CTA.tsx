@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Reveal from "@/components/ui/Reveal";
+import AppStoreButton from "@/components/AppStoreButton";
 
 export default function CTA() {
   return (
@@ -41,6 +42,10 @@ export default function CTA() {
                   >
                     View Plans
                   </Link>
+                </div>
+
+                <div className="mt-6 flex items-center justify-center">
+                  <AppStoreButton />
                 </div>
               </div>
             </div>

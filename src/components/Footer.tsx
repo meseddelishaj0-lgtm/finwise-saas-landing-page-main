@@ -6,6 +6,7 @@ import { FaFingerprint } from "react-icons/fa";
 import { siteDetails } from "@/data/siteDetails";
 import { footerDetails } from "@/data/footer";
 import { getPlatformIconByName } from "@/utils";
+import AppStoreButton from "@/components/AppStoreButton";
 
 const Footer: React.FC = () => {
   return (
@@ -35,6 +36,9 @@ const Footer: React.FC = () => {
             Empowering smart investments with AI-powered financial insights and
             real-time market analytics.
           </p>
+          <div className="mt-6">
+            <AppStoreButton />
+          </div>
         </div>
 
         {/* Quick Links - Center */}
