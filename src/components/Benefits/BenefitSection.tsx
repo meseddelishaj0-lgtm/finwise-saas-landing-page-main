@@ -3,15 +3,26 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { IBenefit } from "@/types";
+import SmartAnalysisPanel from "./panels/SmartAnalysisPanel";
+import AIStockResearchPanel from "./panels/AIStockResearchPanel";
+import MarketDataPanel from "./panels/MarketDataPanel";
 
 interface Props {
   benefit: IBenefit;
   imageAtRight?: boolean;
 }
 
+// Custom visual panel per benefit section (replaces the old TradingView embeds,
+// whose <script> tags never execute through dangerouslySetInnerHTML)
+const PANELS: Record<string, React.FC> = {
+  "Smart Analysis": SmartAnalysisPanel,
+  "AI Stock Research": AIStockResearchPanel,
+  "Market Data": MarketDataPanel,
+};
+
 const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }) => {
   const { title, description, bullets } = benefit || {};
-  const widget = (benefit as any)?.widget || "";
+  const Panel = PANELS[title];
 
   return (
     <section
@@ -47,17 +58,18 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }) => {
         </ul>
       </motion.div>
 
-      {/* ✅ Right Widget */}
+      {/* ✅ Right Visual Panel */}
       <motion.div
         initial={{ opacity: 0, x: imageAtRight ? -40 : 40 }}
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-        className="flex-1 w-full h-[650px] md:h-[700px] overflow-hidden rounded-2xl
+        className="flex-1 w-full max-w-xl overflow-hidden rounded-2xl
         border border-white/10 bg-white/[0.02]
         shadow-[0_0_40px_rgba(255,215,0,0.12),0_25px_50px_rgba(0,0,0,0.5)]"
-        dangerouslySetInnerHTML={{ __html: widget || "" }}
-      />
+      >
+        {Panel ? <Panel /> : null}
+      </motion.div>
     </section>
   );
 };
