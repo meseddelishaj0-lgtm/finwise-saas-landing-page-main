@@ -27,6 +27,7 @@ export const footerDetails: {
     telephone: "+1(216)548-33-78",
     socials: {
         instagram: "https://www.instagram.com/wallstreetstocks",
+        tiktok: "https://www.tiktok.com/@wallstreetstocks1",
     },
     disclaimer: `Disclaimer:
 WallStreetStocks.ai is a financial research and analytics platform powered by artificial intelligence and real-time market data. The information, tools, and insights provided are for educational and informational purposes only and do not constitute investment, legal, or tax advice.
