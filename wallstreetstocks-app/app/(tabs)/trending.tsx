@@ -799,23 +799,10 @@ export default function Trending() {
     );
   }, [router, colors, isDark]);
 
-  if (loading && data.length === 0) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
-        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
-          <View style={styles.headerTopRow}>
-            <Text style={[styles.title, { color: colors.text }]}>Trending</Text>
-          </View>
-        </View>
-        <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
-          {Array.from({ length: 10 }).map((_, i) => (
-            <TrendingRowSkeleton key={i} color={colors.borderLight} borderColor={colors.borderLight} backgroundColor={colors.card} />
-          ))}
-        </View>
-      </View>
-    );
-  }
+  // NOTE: no full-screen loading early-return here — unmounting the animated
+  // content view mid tab-transition left its native fade value at 0 on
+  // remount (black screen). Loading skeletons render via ListEmptyComponent
+  // so the animated view stays mounted through every tab switch.
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -921,14 +908,22 @@ export default function Trending() {
           {...FLATLIST_PERFORMANCE_PROPS}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <FadeSlideIn distance={10}>
-              <View style={styles.emptyState}>
-                <View style={[styles.emptyIconCircle, { backgroundColor: colors.surface }]}>
-                  <Ionicons name="trending-up" size={30} color={colors.textTertiary} />
-                </View>
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No data available</Text>
+            loading ? (
+              <View>
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <TrendingRowSkeleton key={i} color={colors.borderLight} borderColor={colors.borderLight} backgroundColor={colors.card} />
+                ))}
               </View>
-            </FadeSlideIn>
+            ) : (
+              <FadeSlideIn distance={10}>
+                <View style={styles.emptyState}>
+                  <View style={[styles.emptyIconCircle, { backgroundColor: colors.surface }]}>
+                    <Ionicons name="trending-up" size={30} color={colors.textTertiary} />
+                  </View>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No data available</Text>
+                </View>
+              </FadeSlideIn>
+            )
           }
           ListFooterComponent={<InlineAdBanner />}
         />

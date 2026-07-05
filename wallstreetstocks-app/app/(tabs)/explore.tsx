@@ -1919,19 +1919,11 @@ export default function Explore() {
     );
   };
 
-  if (loading && data.length === 0) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
-        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Explore</Text>
-          </View>
-        </View>
-        <ExploreSkeleton />
-      </View>
-    );
-  }
+  // NOTE: no full-screen loading early-return here. It unmounted the animated
+  // content view mid tab-transition, leaving its native fade value at 0 when
+  // it remounted — the whole content area rendered invisible (black screen).
+  // Loading is shown by ExploreSkeleton inside ListEmptyComponent instead,
+  // so the animated view stays mounted through every tab switch.
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -2369,8 +2361,17 @@ export default function Explore() {
                   </View>
                 </FadeSlideIn>
               )
-            ) : (
+            ) : loading ? (
               <ExploreSkeleton padded={false} />
+            ) : (
+              <FadeSlideIn distance={10}>
+                <View style={styles.emptyState}>
+                  <View style={[styles.emptyIconCircle, { backgroundColor: colors.surface }]}>
+                    <Ionicons name="bar-chart-outline" size={30} color={colors.textTertiary} />
+                  </View>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No data available</Text>
+                </View>
+              </FadeSlideIn>
             )
           }
           ListHeaderComponent={
