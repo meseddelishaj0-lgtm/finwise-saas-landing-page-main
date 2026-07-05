@@ -18,6 +18,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Svg, { Path, Defs, LinearGradient, Stop } from "react-native-svg";
+import * as Haptics from "expo-haptics";
+import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
+import FadeSlideIn from "@/components/FadeSlideIn";
 import { fetchWithTimeout } from "@/utils/performance";
 import { AnimatedPrice, AnimatedChange, MarketTimeLabel } from "@/components/AnimatedPrice";
 import { fetchQuotesWithCache } from "@/services/quoteService";
@@ -111,6 +114,106 @@ const MiniSparkline = memo(({
 ));
 
 MiniSparkline.displayName = 'MiniSparkline';
+
+// Gold gradients from the app design system
+const GOLD_GRADIENT_DARK = ["#FFD60A", "#DAA520"] as const;
+const GOLD_GRADIENT_LIGHT = ["#B8860B", "#8B6914"] as const;
+
+// Springy press wrapper with haptic feedback (UI only — same onPress behavior)
+const ScalePress = ({
+  children,
+  onPress,
+  style,
+  activeScale = 0.96,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style?: any;
+  activeScale?: number;
+}) => {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const pressIn = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } else {
+      Haptics.selectionAsync();
+    }
+    Animated.spring(scale, { toValue: activeScale, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+  };
+  const pressOut = () =>
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 24, bounciness: 9 }).start();
+
+  return (
+    <TouchableOpacity activeOpacity={1} onPress={onPress} onPressIn={pressIn} onPressOut={pressOut}>
+      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    </TouchableOpacity>
+  );
+};
+
+// Theme-aware skeleton shimmer (opacity pulse, native driver)
+const SkeletonPulse = ({ style }: { style?: any }) => {
+  const { isDark } = useTheme();
+  const opacity = useRef(new Animated.Value(0.35)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.8, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.35, duration: 700, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+
+  return (
+    <Animated.View
+      style={[
+        { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', borderRadius: 8 },
+        style,
+        { opacity },
+      ]}
+    />
+  );
+};
+
+// Skeleton layout shown while market data loads (replaces bare spinners)
+const ExploreSkeleton = ({ padded = true }: { padded?: boolean }) => {
+  const { colors } = useTheme();
+  return (
+    <View style={{ paddingHorizontal: padded ? 16 : 0, paddingTop: 16 }}>
+      <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+        {[0, 1, 2].map((i) => (
+          <View
+            key={i}
+            style={{ width: CARD_WIDTH, borderRadius: 18, backgroundColor: colors.card, padding: 14, marginRight: 10 }}
+          >
+            <SkeletonPulse style={{ width: 70, height: 10, marginBottom: 10 }} />
+            <SkeletonPulse style={{ width: 92, height: 16, marginBottom: 12 }} />
+            <SkeletonPulse style={{ width: 54, height: 16, borderRadius: 8 }} />
+          </View>
+        ))}
+      </View>
+      {[...Array(8)].map((_, i) => (
+        <View
+          key={i}
+          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 16, padding: 14, marginBottom: 8 }}
+        >
+          <SkeletonPulse style={{ width: 36, height: 36, borderRadius: 18, marginRight: 12 }} />
+          <View style={{ flex: 1 }}>
+            <SkeletonPulse style={{ width: 78, height: 13, marginBottom: 8 }} />
+            <SkeletonPulse style={{ width: 130, height: 10 }} />
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <SkeletonPulse style={{ width: 64, height: 13, marginBottom: 8 }} />
+            <SkeletonPulse style={{ width: 48, height: 20, borderRadius: 10 }} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
 
 // Yield Curve Chart Component
 const YieldCurveChart = ({
@@ -275,61 +378,76 @@ const HeaderCard = memo(({
   const priceValue = item.value !== "..." ? Number(item.value) : 0;
   const changeValue = parseFloat(item.change) || 0;
 
+  const tint = item.isPositive ? "0,200,83" : "255,23,68";
+
   return (
-    <TouchableOpacity
+    <ScalePress
+      onPress={onPress}
+      activeScale={0.95}
       style={[
         styles.headerCard,
-        item.isPositive ? styles.headerCardPositive : styles.headerCardNegative,
-        { backgroundColor: item.isPositive ? (isDark ? 'rgba(0,200,83,0.1)' : '#f0fdf4') : (isDark ? 'rgba(255,23,68,0.1)' : '#fef2f2'), borderColor: item.isPositive ? (isDark ? 'rgba(0,200,83,0.3)' : '#bbf7d0') : (isDark ? 'rgba(255,23,68,0.3)' : '#fecaca') }
+        {
+          backgroundColor: colors.card,
+          borderColor: item.isPositive
+            ? (isDark ? 'rgba(0,200,83,0.35)' : '#bbf7d0')
+            : (isDark ? 'rgba(255,23,68,0.35)' : '#fecaca'),
+        },
       ]}
-      activeOpacity={0.7}
-      onPress={onPress}
     >
-      <View style={styles.headerCardTop}>
-        <View style={styles.headerCardInfo}>
-          <Text style={[styles.headerCardSymbol, { color: colors.textSecondary }]}>{item.name}</Text>
-          {item.value !== "..." ? (
-            <AnimatedPrice
-              value={priceValue}
-              style={{ ...styles.headerCardPrice, color: colors.text }}
-              flashOnChange={true}
-              decimals={2}
-            />
-          ) : (
-            <Text style={[styles.headerCardPrice, { color: colors.text }]}>$...</Text>
+      <ExpoLinearGradient
+        colors={[`rgba(${tint},${isDark ? 0.18 : 0.1})`, `rgba(${tint},0.02)`]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={styles.headerCardGradient}
+      >
+        <View style={styles.headerCardTop}>
+          <View style={styles.headerCardInfo}>
+            <Text style={[styles.headerCardSymbol, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.name}
+            </Text>
+            {item.value !== "..." ? (
+              <AnimatedPrice
+                value={priceValue}
+                style={{ ...styles.headerCardPrice, color: colors.text }}
+                flashOnChange={true}
+                decimals={2}
+              />
+            ) : (
+              <Text style={[styles.headerCardPrice, { color: colors.text }]}>$...</Text>
+            )}
+          </View>
+          {showSparkline && (
+            <View style={styles.headerCardSparkline}>
+              <MiniSparkline
+                data={item.sparklineData}
+                isPositive={item.isPositive}
+                width={52}
+                height={26}
+              />
+            </View>
           )}
         </View>
-        {showSparkline && (
-          <View style={styles.headerCardSparkline}>
-            <MiniSparkline
-              data={item.sparklineData}
-              isPositive={item.isPositive}
-              width={40}
-              height={22}
-            />
-          </View>
-        )}
-      </View>
-      <View style={[
-        styles.headerCardChangeBadge,
-        item.isPositive ? styles.headerCardChangeBadgePositive : styles.headerCardChangeBadgeNegative
-      ]}>
-        <Ionicons
-          name={item.isPositive ? "trending-up" : "trending-down"}
-          size={10}
-          color={item.isPositive ? "#00C853" : "#FF1744"}
-        />
-        <AnimatedChange
-          value={changeValue}
-          style={{
-            ...styles.headerCardChangeText,
-            color: item.isPositive ? "#00C853" : "#FF1744"
-          }}
-          showArrow={false}
-          flashOnChange={true}
-        />
-      </View>
-    </TouchableOpacity>
+        <View style={[
+          styles.headerCardChangeBadge,
+          { backgroundColor: `rgba(${tint},${isDark ? 0.22 : 0.12})` },
+        ]}>
+          <Ionicons
+            name={item.isPositive ? "trending-up" : "trending-down"}
+            size={11}
+            color={item.isPositive ? "#00C853" : "#FF1744"}
+          />
+          <AnimatedChange
+            value={changeValue}
+            style={{
+              ...styles.headerCardChangeText,
+              color: item.isPositive ? "#00C853" : "#FF1744"
+            }}
+            showArrow={false}
+            flashOnChange={true}
+          />
+        </View>
+      </ExpoLinearGradient>
+    </ScalePress>
   );
 });
 
@@ -1511,10 +1629,11 @@ export default function Explore() {
     // M&A-specific layout
     if (activeTab === "ma") {
       return (
-        <TouchableOpacity
+        <FadeSlideIn delay={Math.min(index, 12) * 30} distance={10}>
+        <ScalePress
           style={[styles.maCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-          activeOpacity={0.7}
-          onPress={() => item.symbol !== "N/A" && router.push(`/symbol/${item.symbol}/chart`)}
+          activeScale={0.97}
+          onPress={() => { if (item.symbol !== "N/A") router.push(`/symbol/${item.symbol}/chart`); }}
         >
           <View style={styles.maTopSection}>
             <View style={styles.maCompanyBox}>
@@ -1572,18 +1691,20 @@ export default function Explore() {
               </Text>
             </View>
           </View>
-        </TouchableOpacity>
+        </ScalePress>
+        </FadeSlideIn>
       );
     }
-    
+
     // IPO-specific layout
     if (activeTab === "ipo") {
       const statusColor = item.status === "Priced" ? "#00C853" : "#DAA520";
       
       return (
-        <TouchableOpacity
+        <FadeSlideIn delay={Math.min(index, 12) * 30} distance={10}>
+        <ScalePress
           style={[styles.ipoCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-          activeOpacity={0.7}
+          activeScale={0.97}
           onPress={() => router.push(`/symbol/${item.symbol}/chart`)}
         >
           <View style={styles.ipoHeader}>
@@ -1621,7 +1742,8 @@ export default function Explore() {
               <Text style={[styles.ipoDetailValue, { color: colors.text }]}>{item.priceRange}</Text>
             </View>
           </View>
-        </TouchableOpacity>
+        </ScalePress>
+        </FadeSlideIn>
       );
     }
 
@@ -1630,9 +1752,10 @@ export default function Explore() {
       const yieldColor = (item.dividendYield || 0) >= 3 ? "#00C853" : "#DAA520";
       
       return (
-        <TouchableOpacity
+        <FadeSlideIn delay={Math.min(index, 12) * 30} distance={10}>
+        <ScalePress
           style={[styles.dividendCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-          activeOpacity={0.7}
+          activeScale={0.97}
           onPress={() => router.push(`/symbol/${item.symbol}/chart`)}
         >
           <View style={styles.dividendHeader}>
@@ -1691,54 +1814,67 @@ export default function Explore() {
               </Text>
             </View>
           </View>
-        </TouchableOpacity>
+        </ScalePress>
+        </FadeSlideIn>
       );
     }
-    
+
     // Regular layout for other tabs
+    const isTopRank = index < 3;
+    const goldInk = isDark ? '#FFD60A' : '#B8860B';
     return (
-      <TouchableOpacity
-        style={[styles.itemRow, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}
-        activeOpacity={0.7}
-        onPress={() => router.push(`/symbol/${item.symbol}/chart`)}
-      >
-        <View style={styles.itemLeft}>
-          <View style={[styles.rankBadge, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.itemRank, { color: colors.textSecondary }]}>{index + 1}</Text>
-          </View>
-          <StockLogo 
-            symbol={item.symbol} 
-            size={Platform.OS === 'android' ? 32 : 36} 
-            style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
-          />
-          <View style={styles.itemInfo}>
-            <Text style={[styles.itemSymbol, { color: colors.text }]}>{item.symbol}</Text>
-          </View>
-        </View>
-        <View style={styles.itemRight}>
-          <AnimatedPrice
-            value={item.price}
-            style={{ ...styles.itemPrice, color: colors.text }}
-            flashOnChange={true}
-            decimals={2}
-          />
-          <View style={[styles.changeBadge, isPositive ? styles.changeBadgePositive : styles.changeBadgeNegative]}>
-            <Ionicons
-              name={isPositive ? "arrow-up" : "arrow-down"}
-              size={12}
-              color={isPositive ? "#00C853" : "#FF1744"}
+      <FadeSlideIn delay={Math.min(index, 12) * 30} distance={10}>
+        <ScalePress
+          style={[styles.itemRow, { backgroundColor: colors.card, borderColor: colors.borderLight }]}
+          activeScale={0.97}
+          onPress={() => router.push(`/symbol/${item.symbol}/chart`)}
+        >
+          <View style={styles.itemLeft}>
+            <View style={[
+              styles.rankBadge,
+              { backgroundColor: isTopRank ? (isDark ? 'rgba(255,214,10,0.14)' : 'rgba(184,134,11,0.12)') : colors.surface },
+            ]}>
+              <Text style={[styles.itemRank, { color: isTopRank ? goldInk : colors.textSecondary }]}>{index + 1}</Text>
+            </View>
+            <StockLogo
+              symbol={item.symbol}
+              size={Platform.OS === 'android' ? 32 : 36}
+              style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
             />
-            <AnimatedChange
-              value={item.changePercent}
-              style={{ ...styles.changeText, color: isPositive ? "#00C853" : "#FF1744" }}
-              showArrow={false}
+            <View style={styles.itemInfo}>
+              <Text style={[styles.itemSymbol, { color: colors.text }]}>{item.symbol}</Text>
+              {!!item.name && (
+                <Text style={[styles.itemName, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {item.name}
+                </Text>
+              )}
+            </View>
+          </View>
+          <View style={styles.itemRight}>
+            <AnimatedPrice
+              value={item.price}
+              style={{ ...styles.itemPrice, color: colors.text }}
               flashOnChange={true}
+              decimals={2}
             />
+            <View style={[styles.changeBadge, isPositive ? styles.changeBadgePositive : styles.changeBadgeNegative]}>
+              <Ionicons
+                name={isPositive ? "arrow-up" : "arrow-down"}
+                size={12}
+                color={isPositive ? "#00C853" : "#FF1744"}
+              />
+              <AnimatedChange
+                value={item.changePercent}
+                style={{ ...styles.changeText, color: isPositive ? "#00C853" : "#FF1744" }}
+                showArrow={false}
+                flashOnChange={true}
+              />
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
+        </ScalePress>
+      </FadeSlideIn>
     );
-  }, [activeTab, router]);
+  }, [activeTab, router, colors, isDark]);
 
   // Header Cards Section
   const renderHeaderCards = () => {
@@ -1768,18 +1904,20 @@ export default function Explore() {
   if (loading && data.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor="#fff" />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color="#00C853" />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading markets...</Text>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
+        <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
+          <View style={styles.headerLeft}>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Explore</Text>
+          </View>
         </View>
+        <ExploreSkeleton />
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor="#fff" />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.background} />
 
       {/* Header with Search */}
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
@@ -1823,23 +1961,43 @@ export default function Explore() {
       {/* Sticky Tabs */}
       <View style={[styles.tabBar, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {(["stocks", "crypto", "etf", "bonds", "treasury", "ipo", "ma", "dividends"] as Tab[]).map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              onPress={() => handleTabChange(tab)}
-              style={[styles.tab, activeTab === tab && styles.tabActive, activeTab !== tab && { backgroundColor: colors.surface }, activeTab === tab && { backgroundColor: isDark ? '#fff' : '#111827' }]}
-            >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive, activeTab !== tab && { color: colors.textSecondary }, activeTab === tab && { color: isDark ? '#000' : '#fff' }]}>
-                {tab === "stocks" ? "Stocks" :
-                 tab === "crypto" ? "Crypto" :
-                 tab === "etf" ? "ETFs" :
-                 tab === "bonds" ? "Bonds" :
-                 tab === "treasury" ? "Treasury" :
-                 tab === "ipo" ? "IPOs" :
-                 tab === "ma" ? "M&A" : "Dividends"}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {([
+            { key: "stocks", label: "Stocks", icon: "trending-up" },
+            { key: "crypto", label: "Crypto", icon: "logo-bitcoin" },
+            { key: "etf", label: "ETFs", icon: "layers" },
+            { key: "bonds", label: "Bonds", icon: "shield-checkmark" },
+            { key: "treasury", label: "Treasury", icon: "cash" },
+            { key: "ipo", label: "IPOs", icon: "rocket" },
+            { key: "ma", label: "M&A", icon: "git-merge" },
+            { key: "dividends", label: "Dividends", icon: "wallet" },
+          ] as { key: Tab; label: string; icon: any }[]).map((tab) => {
+            const isActive = activeTab === tab.key;
+            const activeInk = isDark ? '#000' : '#fff';
+            return (
+              <ScalePress
+                key={tab.key}
+                onPress={() => handleTabChange(tab.key)}
+                activeScale={0.93}
+              >
+                {isActive ? (
+                  <ExpoLinearGradient
+                    colors={(isDark ? GOLD_GRADIENT_DARK : GOLD_GRADIENT_LIGHT) as unknown as [string, string]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.tab, styles.tabActive]}
+                  >
+                    <Ionicons name={tab.icon} size={14} color={activeInk} />
+                    <Text style={[styles.tabText, styles.tabTextActive, { color: activeInk }]}>{tab.label}</Text>
+                  </ExpoLinearGradient>
+                ) : (
+                  <View style={[styles.tab, { backgroundColor: colors.surface }]}>
+                    <Ionicons name={tab.icon} size={14} color={colors.textTertiary} />
+                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>{tab.label}</Text>
+                  </View>
+                )}
+              </ScalePress>
+            );
+          })}
         </ScrollView>
       </View>
 
@@ -1851,27 +2009,43 @@ export default function Explore() {
               { key: "us", label: "US", subLabel: "S&P 500", icon: "flag" },
               { key: "europe", label: "Europe", subLabel: "STOXX", icon: "globe" },
               { key: "asia", label: "Asia", subLabel: "SSE・N225・HSI・ASX", icon: "earth" },
-            ] as { key: StockRegion; label: string; subLabel: string; icon: string }[]).map((region) => (
-              <TouchableOpacity
-                key={region.key}
-                onPress={() => setStockRegion(region.key)}
-                style={[styles.regionChip, stockRegion === region.key && styles.regionChipActive, stockRegion !== region.key && { backgroundColor: colors.surface }]}
-              >
-                <Ionicons
-                  name={region.icon as any}
-                  size={14}
-                  color={stockRegion === region.key ? "#fff" : colors.textSecondary}
-                />
-                <View>
-                  <Text style={[styles.regionText, stockRegion === region.key && styles.regionTextActive, stockRegion !== region.key && { color: colors.textSecondary }]}>
-                    {region.label}
-                  </Text>
-                  {stockRegion === region.key && (
-                    <Text style={styles.regionSubText}>{region.subLabel}</Text>
+            ] as { key: StockRegion; label: string; subLabel: string; icon: string }[]).map((region) => {
+              const isActive = stockRegion === region.key;
+              const activeInk = isDark ? '#000' : '#fff';
+              return (
+                <ScalePress
+                  key={region.key}
+                  onPress={() => setStockRegion(region.key)}
+                  activeScale={0.94}
+                >
+                  {isActive ? (
+                    <ExpoLinearGradient
+                      colors={(isDark ? GOLD_GRADIENT_DARK : GOLD_GRADIENT_LIGHT) as unknown as [string, string]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.regionChip}
+                    >
+                      <Ionicons name={region.icon as any} size={14} color={activeInk} />
+                      <View>
+                        <Text style={[styles.regionText, styles.regionTextActive, { color: activeInk }]}>
+                          {region.label}
+                        </Text>
+                        <Text style={[styles.regionSubText, { color: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.75)' }]}>
+                          {region.subLabel}
+                        </Text>
+                      </View>
+                    </ExpoLinearGradient>
+                  ) : (
+                    <View style={[styles.regionChip, { backgroundColor: colors.surface }]}>
+                      <Ionicons name={region.icon as any} size={14} color={colors.textSecondary} />
+                      <Text style={[styles.regionText, { color: colors.textSecondary }]}>
+                        {region.label}
+                      </Text>
+                    </View>
                   )}
-                </View>
-              </TouchableOpacity>
-            ))}
+                </ScalePress>
+              );
+            })}
           </ScrollView>
           <View style={styles.regionInfo}>
             <Text style={styles.regionInfoText}>
@@ -1883,12 +2057,15 @@ export default function Explore() {
 
       {/* Error Banner */}
       {error && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={fetchLiveData} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
+        <FadeSlideIn distance={8}>
+          <View style={styles.errorBanner}>
+            <Ionicons name="cloud-offline-outline" size={18} color="#FF1744" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity onPress={fetchLiveData} style={styles.retryBtn}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        </FadeSlideIn>
       )}
 
       {/* Live Results */}
@@ -1907,7 +2084,7 @@ export default function Explore() {
         >
           {treasuryLoading ? (
             <View style={styles.treasuryLoadingState}>
-              <ActivityIndicator size="large" color="#00C853" />
+              <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Loading treasury rates...</Text>
             </View>
           ) : treasuryRates ? (
@@ -2160,21 +2337,22 @@ export default function Explore() {
             searchQuery ? (
               searchLoading ? (
                 <View style={styles.emptyState}>
-                  <ActivityIndicator size="large" color="#00C853" />
+                  <ActivityIndicator size="large" color={colors.primary} />
                   <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Searching...</Text>
                 </View>
               ) : (
-                <View style={styles.emptyState}>
-                  <Ionicons name="search" size={64} color={colors.border} />
-                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No results for &quot;{searchQuery}&quot;</Text>
-                  <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Try another symbol or company name</Text>
-                </View>
+                <FadeSlideIn distance={10}>
+                  <View style={styles.emptyState}>
+                    <View style={[styles.emptyIconCircle, { backgroundColor: colors.surface }]}>
+                      <Ionicons name="search" size={30} color={colors.textTertiary} />
+                    </View>
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No results for &quot;{searchQuery}&quot;</Text>
+                    <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Try another symbol or company name</Text>
+                  </View>
+                </FadeSlideIn>
               )
             ) : (
-              <View style={styles.emptyState}>
-                <ActivityIndicator size="large" color="#00C853" />
-                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No data available</Text>
-              </View>
+              <ExploreSkeleton padded={false} />
             )
           }
           ListHeaderComponent={
@@ -2184,14 +2362,23 @@ export default function Explore() {
 
               {/* Section Title */}
               {!searchQuery && data.length > 0 ? (
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {activeTab === "stocks" ? "Most Active" :
-                   activeTab === "crypto" ? "Top Cryptos" :
-                   activeTab === "etf" ? "Popular ETFs" :
-                   activeTab === "bonds" ? "Bond ETFs" :
-                   activeTab === "ipo" ? "IPO Calendar" :
-                   activeTab === "ma" ? "Latest M&A Deals" : "Top Dividend Stocks"}
-                </Text>
+                <FadeSlideIn delay={60} distance={8}>
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      {activeTab === "stocks" ? "Most Active" :
+                       activeTab === "crypto" ? "Top Cryptos" :
+                       activeTab === "etf" ? "Popular ETFs" :
+                       activeTab === "bonds" ? "Bond ETFs" :
+                       activeTab === "ipo" ? "IPO Calendar" :
+                       activeTab === "ma" ? "Latest M&A Deals" : "Top Dividend Stocks"}
+                    </Text>
+                    <View style={[styles.sectionCountPill, { backgroundColor: colors.surface }]}>
+                      <Text style={[styles.sectionCountText, { color: colors.textSecondary }]}>
+                        {displayData.length}
+                      </Text>
+                    </View>
+                  </View>
+                </FadeSlideIn>
               ) : searchQuery ? (
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   Search Results
@@ -2254,35 +2441,33 @@ const styles = StyleSheet.create({
   // Header Cards Styles
   headerCardsContainer: {
     marginBottom: 16,
+    marginHorizontal: -16,
   },
   headerCardsContent: {
+    paddingHorizontal: 16,
     paddingRight: 20,
+    paddingVertical: 4,
   },
   headerCard: {
     width: CARD_WIDTH,
-    padding: 10,
-    borderRadius: 12,
-    marginRight: 8,
+    borderRadius: 18,
+    marginRight: 10,
     borderWidth: 1,
+    overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  headerCardPositive: {
-    backgroundColor: "#f0fdf4",
-    borderColor: "#bbf7d0",
-  },
-  headerCardNegative: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
+  headerCardGradient: {
+    padding: 12,
   },
   headerCardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   headerCardInfo: {
     flex: 1,
@@ -2291,10 +2476,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     color: "#374151",
-    marginBottom: 2,
+    marginBottom: 3,
+    letterSpacing: 0.2,
   },
   headerCardPrice: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: "800",
     color: "#111827",
   },
@@ -2329,18 +2515,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
-  tab: { 
-    marginRight: 8, 
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+  tab: {
+    marginRight: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 15,
+    borderRadius: 22,
     backgroundColor: "#f3f4f6",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
-  tabActive: { 
-    backgroundColor: "#111827",
+  tabActive: {
+    shadowColor: "#FFD60A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tabText: { fontSize: 14, color: "#6b7280", fontWeight: "600" },
-  tabTextActive: { color: "#fff", fontWeight: "700" },
+  tabTextActive: { fontWeight: "800" },
   regionBar: {
     backgroundColor: "#fff",
     paddingHorizontal: 20,
@@ -2386,54 +2579,71 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   errorBanner: {
-    backgroundColor: "#FF1744",
+    backgroundColor: "rgba(255,23,68,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,23,68,0.3)",
     padding: 12,
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     marginTop: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: 10,
   },
-  errorText: { color: "#fff", fontSize: 14, flex: 1 },
-  retryBtn: { 
-    backgroundColor: "#fff",
+  errorText: { color: "#FF1744", fontSize: 14, flex: 1, fontWeight: "600" },
+  retryBtn: {
+    backgroundColor: "#FF1744",
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 16,
   },
-  retryText: { color: "#FF1744", fontWeight: "700", fontSize: 14 },
-  listContainer: { paddingBottom: 100, backgroundColor: "#fff" },
-  sectionTitle: { 
-    fontSize: 20, 
-    fontWeight: "700", 
-    color: "#111827", 
-    marginBottom: 16, 
-    marginTop: 8 
+  retryText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  listContainer: { paddingBottom: 100, paddingHorizontal: 16, paddingTop: 12 },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+    marginTop: 4,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#111827",
+    letterSpacing: -0.3,
+  },
+  sectionCountPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  sectionCountText: {
+    fontSize: 12,
+    fontWeight: "700",
   },
   itemRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#fff",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 8,
   },
   itemLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
   rankBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: "#f3f4f6",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 10,
   },
   itemRank: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "800",
     color: "#6b7280",
   },
   itemInfo: { flex: 1 },
@@ -2452,6 +2662,13 @@ const styles = StyleSheet.create({
   changeBadgeNegative: { backgroundColor: "#FF174415" },
   changeText: { fontSize: 13, fontWeight: "700", marginLeft: 4 },
   emptyState: { padding: 60, alignItems: "center" },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   emptyText: { fontSize: 18, color: "#6b7280", marginTop: 16, fontWeight: "600" },
   emptySubtext: { fontSize: 14, color: "#9ca3af", marginTop: 8 },
   // IPO-specific styles
