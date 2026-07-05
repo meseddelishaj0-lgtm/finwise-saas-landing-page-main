@@ -1,5 +1,5 @@
 // app/(tabs)/community.tsx - Optimized with expo-image for caching
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   KeyboardAvoidingView,
   Dimensions,
   Share,
+  Animated,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
@@ -32,8 +33,106 @@ import { SubscriptionBadgeInline } from '@/components/SubscriptionBadge';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { useTheme } from '@/context/ThemeContext';
 import FadeSlideIn from '@/components/FadeSlideIn';
+import * as Haptics from 'expo-haptics';
+import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Gold gradients from the app design system
+const GOLD_GRADIENT_DARK = ['#FFD60A', '#DAA520'] as const;
+const GOLD_GRADIENT_LIGHT = ['#B8860B', '#8B6914'] as const;
+
+// Springy press wrapper with haptic feedback (UI only — same onPress behavior)
+const ScalePress = ({
+  children,
+  onPress,
+  style,
+  activeScale = 0.96,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style?: any;
+  activeScale?: number;
+}) => {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const pressIn = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } else {
+      Haptics.selectionAsync();
+    }
+    Animated.spring(scale, { toValue: activeScale, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+  };
+  const pressOut = () =>
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 24, bounciness: 9 }).start();
+
+  return (
+    <TouchableOpacity activeOpacity={1} onPress={onPress} onPressIn={pressIn} onPressOut={pressOut}>
+      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    </TouchableOpacity>
+  );
+};
+
+// Compact follower counts: 1234 -> "1.2K"
+const formatFollowerCount = (n: number): string =>
+  n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : `${n}`;
+
+// Premium tool cards config (tint = rgb for the tier-colored gradient wash)
+const PREMIUM_TOOLS = [
+  {
+    key: 'ai-analysis',
+    icon: 'analytics' as const,
+    title: 'AI Analysis',
+    desc: 'AI-powered stock insights',
+    tier: FEATURE_TIERS.BASIC_ANALYSIS,
+    tierLabel: 'Gold',
+    color: '#FFD700',
+    tint: '255,215,0',
+    route: '/premium/ai-analysis',
+    alertTitle: 'Gold Feature',
+    alertMessage: 'AI Stock Analysis requires a Gold subscription.',
+  },
+  {
+    key: 'price-alerts',
+    icon: 'notifications' as const,
+    title: 'Price Alerts',
+    desc: 'Real-time notifications',
+    tier: FEATURE_TIERS.REALTIME_ALERTS,
+    tierLabel: 'Platinum',
+    color: '#E5E4E2',
+    tint: '229,228,226',
+    route: '/premium/price-alerts',
+    alertTitle: 'Platinum Feature',
+    alertMessage: 'Real-time Alerts requires a Platinum subscription.',
+  },
+  {
+    key: 'research',
+    icon: 'document-text' as const,
+    title: 'Research',
+    desc: 'Pro research reports',
+    tier: FEATURE_TIERS.RESEARCH_REPORTS,
+    tierLabel: 'Diamond',
+    color: '#B9F2FF',
+    tint: '185,242,255',
+    route: '/premium/research-reports',
+    alertTitle: 'Diamond Feature',
+    alertMessage: 'Research Reports requires a Diamond subscription.',
+  },
+  {
+    key: 'optimizer',
+    icon: 'pie-chart' as const,
+    title: 'Optimizer',
+    desc: 'Portfolio allocation AI',
+    tier: FEATURE_TIERS.PORTFOLIO_OPTIMIZATION,
+    tierLabel: 'Diamond',
+    color: '#B9F2FF',
+    tint: '185,242,255',
+    route: '/premium/portfolio-optimizer',
+    alertTitle: 'Diamond Feature',
+    alertMessage: 'Portfolio Optimization requires a Diamond subscription.',
+  },
+];
 
 // ===== DIRECT API CALLS =====
 const API_BASE = 'https://www.wallstreetstocks.ai';
@@ -2273,65 +2372,92 @@ export default function CommunityPage() {
         {visibleSuggestedUsers.length > 0 && (
           <View style={[styles.suggestedSection, { backgroundColor: colors.background }]}>
             <View style={styles.suggestedHeader}>
-              <Text style={[styles.suggestedTitle, { color: colors.text }]}>Accounts to Follow</Text>
-              <TouchableOpacity onPress={() => setDismissedUsers([])}>
-                <Text style={styles.seeAllText}>Refresh</Text>
+              <View style={styles.sectionTitleRow}>
+                <View style={[styles.sectionTitleIcon, { backgroundColor: isDark ? 'rgba(255,214,10,0.14)' : 'rgba(184,134,11,0.12)' }]}>
+                  <Ionicons name="person-add" size={13} color={isDark ? '#FFD60A' : '#B8860B'} />
+                </View>
+                <Text style={[styles.suggestedTitle, { color: colors.text }]}>Accounts to Follow</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.sectionActionPill, { backgroundColor: colors.surface }]}
+                onPress={() => setDismissedUsers([])}
+              >
+                <Ionicons name="refresh" size={13} color={isDark ? '#FFD60A' : '#B8860B'} />
+                <Text style={[styles.sectionActionText, { color: isDark ? '#FFD60A' : '#B8860B' }]}>Refresh</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView 
-              horizontal 
+            <ScrollView
+              horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.suggestedList}
             >
-              {visibleSuggestedUsers.map((user) => (
-                <View key={user.id} style={[styles.suggestedCard, { backgroundColor: colors.surface }]}>
+              {visibleSuggestedUsers.map((user, idx) => (
+                <FadeSlideIn key={user.id} delay={Math.min(idx, 6) * 60} distance={10}>
+                <View style={[styles.suggestedCard, { backgroundColor: colors.card, borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E5E5EA' }]}>
                   {/* Dismiss Button */}
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.dismissButton, { backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "#E5E5EA" }]}
                     onPress={() => handleDismissSuggested(user.id)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="close" size={16} color={colors.textTertiary} />
+                    <Ionicons name="close" size={14} color={colors.textTertiary} />
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     onPress={() => handleOpenProfile(user)}
-                    style={styles.suggestedAvatarContainer}
+                    style={[styles.suggestedAvatarRing, { borderColor: isDark ? 'rgba(255,214,10,0.45)' : 'rgba(184,134,11,0.35)' }]}
                   >
                     <Avatar user={user} size={56} />
                   </TouchableOpacity>
-                  
+
                   <TouchableOpacity onPress={() => handleOpenProfile(user)}>
                     <Text style={[styles.suggestedName, { color: colors.text }]} numberOfLines={1}>
                       {getUserDisplayName(user)}
                     </Text>
                   </TouchableOpacity>
-                  
+
                   <Text style={[styles.suggestedHandle, { color: colors.textSecondary }]} numberOfLines={1}>
                     @{getUserHandle(user)}
                   </Text>
-                  
+
                   {user._count?.followers !== undefined && (
-                    <Text style={[styles.suggestedFollowers, { color: colors.textSecondary }]}>
-                      {user._count.followers} followers
-                    </Text>
+                    <View style={styles.suggestedFollowersRow}>
+                      <Ionicons name="people" size={11} color={colors.textTertiary} />
+                      <Text style={[styles.suggestedFollowers, { color: colors.textSecondary }]}>
+                        {formatFollowerCount(user._count.followers)} followers
+                      </Text>
+                    </View>
                   )}
-                  
-                  <TouchableOpacity
-                    style={[
-                      styles.suggestedFollowBtn,
-                      user.isFollowing && [styles.suggestedFollowingBtn, { backgroundColor: isDark ? 'transparent' : '#FFF' }]
-                    ]}
-                    onPress={() => handleQuickFollow(user.id)}
-                  >
-                    <Text style={[
-                      styles.suggestedFollowText,
-                      user.isFollowing && styles.suggestedFollowingText
-                    ]}>
-                      {user.isFollowing ? 'Following' : 'Follow'}
-                    </Text>
-                  </TouchableOpacity>
+
+                  {user.isFollowing ? (
+                    <ScalePress
+                      style={[styles.suggestedFollowBtn, styles.suggestedFollowingBtn, {
+                        backgroundColor: 'transparent',
+                        borderColor: isDark ? 'rgba(255,214,10,0.5)' : '#B8860B',
+                      }]}
+                      activeScale={0.93}
+                      onPress={() => handleQuickFollow(user.id)}
+                    >
+                      <Text style={[styles.suggestedFollowText, { color: isDark ? '#FFD60A' : '#B8860B' }]}>
+                        Following
+                      </Text>
+                    </ScalePress>
+                  ) : (
+                    <ScalePress activeScale={0.93} onPress={() => handleQuickFollow(user.id)}>
+                      <ExpoLinearGradient
+                        colors={(isDark ? GOLD_GRADIENT_DARK : GOLD_GRADIENT_LIGHT) as unknown as [string, string]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.suggestedFollowBtn}
+                      >
+                        <Text style={[styles.suggestedFollowText, { color: isDark ? '#000' : '#FFF' }]}>
+                          Follow
+                        </Text>
+                      </ExpoLinearGradient>
+                    </ScalePress>
+                  )}
                 </View>
+                </FadeSlideIn>
               ))}
             </ScrollView>
           </View>
@@ -2347,9 +2473,18 @@ export default function CommunityPage() {
         {/* Premium Tools Section */}
         <View style={[styles.premiumSection, { backgroundColor: colors.background }]}>
           <View style={styles.premiumHeader}>
-            <Text style={[styles.premiumTitle, { color: colors.text }]}>Premium Tools</Text>
-            <TouchableOpacity onPress={() => navRouter.push('/(modals)/paywall' as any)}>
-              <Text style={styles.seeAllText}>See Plans</Text>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionTitleIcon, { backgroundColor: isDark ? 'rgba(255,214,10,0.14)' : 'rgba(184,134,11,0.12)' }]}>
+                <Ionicons name="diamond" size={13} color={isDark ? '#FFD60A' : '#B8860B'} />
+              </View>
+              <Text style={[styles.premiumTitle, { color: colors.text }]}>Premium Tools</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.sectionActionPill, { backgroundColor: colors.surface }]}
+              onPress={() => navRouter.push('/(modals)/paywall' as any)}
+            >
+              <Ionicons name="sparkles" size={13} color={isDark ? '#FFD60A' : '#B8860B'} />
+              <Text style={[styles.sectionActionText, { color: isDark ? '#FFD60A' : '#B8860B' }]}>See Plans</Text>
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -2357,116 +2492,52 @@ export default function CommunityPage() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.premiumList}
           >
-            {/* Gold Feature - AI Stock Analysis */}
-            <TouchableOpacity
-              style={[
-                styles.premiumCard, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' },
-                canAccess(FEATURE_TIERS.BASIC_ANALYSIS) && styles.premiumCardUnlocked,
-              ]}
-              onPress={() => {
-                withPremiumAccess(
-                  FEATURE_TIERS.BASIC_ANALYSIS,
-                  () => navRouter.push('/premium/ai-analysis' as any),
-                  { alertTitle: 'Gold Feature', alertMessage: 'AI Stock Analysis requires a Gold subscription.' }
-                );
-              }}
-            >
-              <View style={[styles.premiumIconContainer, { backgroundColor: '#FFD700' }]}>
-                <Ionicons name="analytics" size={24} color={colors.text} />
-              </View>
-              {!canAccess(FEATURE_TIERS.BASIC_ANALYSIS) && (
-                <View style={[styles.premiumBadge, { backgroundColor: '#FFD700' }]}>
-                  <Ionicons name="lock-closed" size={10} color={colors.text} />
-                  <Text style={[styles.premiumBadgeText, { color: colors.text }]}>Gold</Text>
-                </View>
-              )}
-              <Text style={[styles.premiumCardTitle, { color: colors.text }]}>AI Analysis</Text>
-              <Text style={[styles.premiumCardDesc, { color: colors.textSecondary }]}>Get AI-powered stock insights</Text>
-            </TouchableOpacity>
-
-            {/* Platinum Feature - Real-time Alerts */}
-            <TouchableOpacity
-              style={[
-                styles.premiumCard, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' },
-                canAccess(FEATURE_TIERS.REALTIME_ALERTS) && styles.premiumCardUnlocked,
-              ]}
-              onPress={() => {
-                withPremiumAccess(
-                  FEATURE_TIERS.REALTIME_ALERTS,
-                  () => navRouter.push('/premium/price-alerts' as any),
-                  { alertTitle: 'Platinum Feature', alertMessage: 'Real-time Alerts requires a Platinum subscription.' }
-                );
-              }}
-            >
-              <View style={[styles.premiumIconContainer, { backgroundColor: '#E5E4E2' }]}>
-                <Ionicons name="notifications" size={24} color={colors.text} />
-              </View>
-              {!canAccess(FEATURE_TIERS.REALTIME_ALERTS) && (
-                <View style={[styles.premiumBadge, { backgroundColor: '#E5E4E2' }]}>
-                  <Ionicons name="lock-closed" size={10} color={colors.text} />
-                  <Text style={[styles.premiumBadgeText, { color: colors.text }]}>Platinum</Text>
-                </View>
-              )}
-              <Text style={[styles.premiumCardTitle, { color: colors.text }]}>Price Alerts</Text>
-              <Text style={[styles.premiumCardDesc, { color: colors.textSecondary }]}>Real-time notifications</Text>
-            </TouchableOpacity>
-
-            {/* Diamond Feature - Research Reports */}
-            <TouchableOpacity
-              style={[
-                styles.premiumCard, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' },
-                canAccess(FEATURE_TIERS.RESEARCH_REPORTS) && styles.premiumCardUnlocked,
-              ]}
-              onPress={() => {
-                withPremiumAccess(
-                  FEATURE_TIERS.RESEARCH_REPORTS,
-                  () => navRouter.push('/premium/research-reports' as any),
-                  { alertTitle: 'Diamond Feature', alertMessage: 'Research Reports requires a Diamond subscription.' }
-                );
-              }}
-            >
-              <View style={[styles.premiumIconContainer, { backgroundColor: '#B9F2FF' }]}>
-                <Ionicons name="document-text" size={24} color={colors.text} />
-              </View>
-              {!canAccess(FEATURE_TIERS.RESEARCH_REPORTS) && (
-                <View style={[styles.premiumBadge, { backgroundColor: '#B9F2FF' }]}>
-                  <Ionicons name="lock-closed" size={10} color={colors.text} />
-                  <Text style={[styles.premiumBadgeText, { color: colors.text }]}>Diamond</Text>
-                </View>
-              )}
-              <Text style={[styles.premiumCardTitle, { color: colors.text }]}>Research</Text>
-              <Text style={[styles.premiumCardDesc, { color: colors.textSecondary }]}>Pro research reports</Text>
-            </TouchableOpacity>
-
-            {/* Diamond Feature - Portfolio Optimization */}
-            <TouchableOpacity
-              style={[
-                styles.premiumCard, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : '#E5E5EA' },
-                canAccess(FEATURE_TIERS.PORTFOLIO_OPTIMIZATION) && styles.premiumCardUnlocked,
-              ]}
-              onPress={() => {
-                withPremiumAccess(
-                  FEATURE_TIERS.PORTFOLIO_OPTIMIZATION,
-                  () => navRouter.push('/premium/portfolio-optimizer' as any),
-                  { alertTitle: 'Diamond Feature', alertMessage: 'Portfolio Optimization requires a Diamond subscription.' }
-                );
-              }}
-            >
-              <View style={[styles.premiumIconContainer, { backgroundColor: '#B9F2FF' }]}>
-                <Ionicons name="pie-chart" size={24} color={colors.text} />
-              </View>
-              {!canAccess(FEATURE_TIERS.PORTFOLIO_OPTIMIZATION) && (
-                <View style={[styles.premiumBadge, { backgroundColor: '#B9F2FF' }]}>
-                  <Ionicons name="lock-closed" size={10} color={colors.text} />
-                  <Text style={[styles.premiumBadgeText, { color: colors.text }]}>Diamond</Text>
-                </View>
-              )}
-              <Text style={[styles.premiumCardTitle, { color: colors.text }]}>Optimizer</Text>
-              <Text style={[styles.premiumCardDesc, { color: colors.textSecondary }]}>Portfolio allocation AI</Text>
-            </TouchableOpacity>
+            {PREMIUM_TOOLS.map((tool, idx) => {
+              const unlocked = canAccess(tool.tier);
+              return (
+                <FadeSlideIn key={tool.key} delay={Math.min(idx, 6) * 60} distance={10}>
+                  <ScalePress
+                    style={[styles.premiumCard, { backgroundColor: colors.card, borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#E5E5EA' }]}
+                    activeScale={0.95}
+                    onPress={() => {
+                      withPremiumAccess(
+                        tool.tier,
+                        () => navRouter.push(tool.route as any),
+                        { alertTitle: tool.alertTitle, alertMessage: tool.alertMessage }
+                      );
+                    }}
+                  >
+                    <ExpoLinearGradient
+                      colors={[`rgba(${tool.tint},${isDark ? 0.16 : 0.25})`, `rgba(${tool.tint},0.02)`]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 0.8, y: 1 }}
+                      style={styles.premiumCardGradient}
+                    >
+                      <View style={[styles.premiumIconContainer, { backgroundColor: tool.color }]}>
+                        <Ionicons name={tool.icon} size={22} color="#1a1a1a" />
+                      </View>
+                      <Text style={[styles.premiumCardTitle, { color: colors.text }]}>{tool.title}</Text>
+                      <Text style={[styles.premiumCardDesc, { color: colors.textSecondary }]} numberOfLines={2}>
+                        {tool.desc}
+                      </Text>
+                      {unlocked ? (
+                        <View style={[styles.premiumStatusChip, { backgroundColor: 'rgba(0,200,83,0.14)' }]}>
+                          <Ionicons name="checkmark-circle" size={11} color="#00C853" />
+                          <Text style={[styles.premiumStatusText, { color: '#00C853' }]}>Unlocked</Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.premiumStatusChip, { backgroundColor: `rgba(${tool.tint},${isDark ? 0.22 : 0.45})` }]}>
+                          <Ionicons name="lock-closed" size={10} color={colors.text} />
+                          <Text style={[styles.premiumStatusText, { color: colors.text }]}>{tool.tierLabel}</Text>
+                        </View>
+                      )}
+                    </ExpoLinearGradient>
+                  </ScalePress>
+                </FadeSlideIn>
+              );
+            })}
           </ScrollView>
         </View>
-
           </>
         }
         renderItem={({ item: post }) => (
@@ -3782,35 +3853,52 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   premiumTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#000',
+    letterSpacing: -0.3,
   },
   premiumList: {
     paddingHorizontal: 12,
     gap: 10,
+    paddingVertical: 4,
   },
   premiumCard: {
-    width: 130,
-    backgroundColor: '#F9F9FB',
-    borderRadius: 16,
+    width: 150,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  premiumCardGradient: {
     padding: 14,
     alignItems: 'center',
-    position: 'relative',
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
   },
-  premiumCardUnlocked: {
-    borderColor: '#34C759',
-    borderWidth: 2,
+  premiumStatusChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  premiumStatusText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   premiumIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   premiumBadge: {
     position: 'absolute',
@@ -3830,7 +3918,7 @@ const styles = StyleSheet.create({
   },
   premiumCardTitle: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#000',
     textAlign: 'center',
   },
@@ -3838,7 +3926,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#8E8E93',
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: 3,
+    lineHeight: 15,
   },
   suggestedHeader: {
     flexDirection: 'row',
@@ -3847,10 +3936,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 14,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionTitleIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionActionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 16,
+  },
+  sectionActionText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
   suggestedTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#000',
+    letterSpacing: -0.3,
   },
   seeAllText: {
     fontSize: 15,
@@ -3860,14 +3974,20 @@ const styles = StyleSheet.create({
   suggestedList: {
     paddingHorizontal: 12,
     gap: 10,
+    paddingVertical: 4,
   },
   suggestedCard: {
-    width: 140,
-    backgroundColor: '#F9F9FB',
-    borderRadius: 16,
+    width: 150,
+    borderRadius: 20,
+    borderWidth: 1,
     padding: 14,
     alignItems: 'center',
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   dismissButton: {
     position: 'absolute',
@@ -3881,13 +4001,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 1,
   },
-  suggestedAvatarContainer: {
-    marginTop: 4,
+  suggestedAvatarRing: {
+    marginTop: 6,
     marginBottom: 4,
+    padding: 3,
+    borderWidth: 1.5,
+    borderRadius: 34,
   },
   suggestedName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#000',
     marginTop: 8,
     textAlign: 'center',
@@ -3899,32 +4022,30 @@ const styles = StyleSheet.create({
     marginTop: 2,
     maxWidth: 120,
   },
+  suggestedFollowersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 5,
+  },
   suggestedFollowers: {
     fontSize: 11,
     color: '#8E8E93',
-    marginTop: 4,
   },
   suggestedFollowBtn: {
-    backgroundColor: '#B8860B',
     paddingHorizontal: 24,
     paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 18,
     marginTop: 12,
-    minWidth: 100,
+    minWidth: 104,
     alignItems: 'center',
   },
   suggestedFollowingBtn: {
-    backgroundColor: '#FFF',
     borderWidth: 1.5,
-    borderColor: '#B8860B',
   },
   suggestedFollowText: {
-    color: '#FFF',
     fontSize: 13,
-    fontWeight: '600',
-  },
-  suggestedFollowingText: {
-    color: '#B8860B',
+    fontWeight: '700',
   },
   suggestedLoadingContainer: {
     backgroundColor: '#FFF',
