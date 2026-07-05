@@ -15,6 +15,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import * as Haptics from "expo-haptics";
+import { LinearGradient as ExpoLinearGradient } from "expo-linear-gradient";
+import FadeSlideIn from "@/components/FadeSlideIn";
 import Sparkline from "@/components/Sparkline";
 import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
 import { AnimatedPrice, AnimatedChange, MarketTimeLabel } from "@/components/AnimatedPrice";
@@ -27,6 +30,42 @@ import StockLogo from "@/components/StockLogo";
 import { useTheme } from "@/context/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+// Gold gradients from the app design system
+const GOLD_GRADIENT_DARK = ["#FFD60A", "#DAA520"] as const;
+const GOLD_GRADIENT_LIGHT = ["#B8860B", "#8B6914"] as const;
+
+// Springy press wrapper with haptic feedback (UI only — same onPress behavior)
+const ScalePress = ({
+  children,
+  onPress,
+  style,
+  activeScale = 0.96,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  style?: any;
+  activeScale?: number;
+}) => {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const pressIn = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } else {
+      Haptics.selectionAsync();
+    }
+    Animated.spring(scale, { toValue: activeScale, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+  };
+  const pressOut = () =>
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 24, bounciness: 9 }).start();
+
+  return (
+    <TouchableOpacity activeOpacity={1} onPress={onPress} onPressIn={pressIn} onPressOut={pressOut}>
+      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    </TouchableOpacity>
+  );
+};
 
 // Theme-aware pulsing placeholder block
 const SkeletonPulse = ({ style, color }: { style?: any; color: string }) => {
@@ -47,10 +86,10 @@ const SkeletonPulse = ({ style, color }: { style?: any; color: string }) => {
 };
 
 // Placeholder mirroring the trending row layout, shown while data loads
-const TrendingRowSkeleton = ({ color, borderColor }: { color: string; borderColor: string }) => (
-  <View style={[styles.row, { borderBottomColor: borderColor }]}>
+const TrendingRowSkeleton = ({ color, borderColor, backgroundColor }: { color: string; borderColor: string; backgroundColor?: string }) => (
+  <View style={[styles.row, { borderColor, backgroundColor }]}>
     <View style={styles.left}>
-      <SkeletonPulse color={color} style={{ width: 28, height: 28, borderRadius: 14, marginRight: 10 }} />
+      <SkeletonPulse color={color} style={{ width: 26, height: 26, borderRadius: 13, marginRight: 10 }} />
       <SkeletonPulse color={color} style={{ width: 36, height: 36, borderRadius: 18, marginRight: 10 }} />
       <SkeletonPulse color={color} style={{ width: 70, height: 14, borderRadius: 7 }} />
     </View>
@@ -154,58 +193,74 @@ const HeaderCard = memo(({
   const priceValue = item.value !== "..." ? Number(item.value) : 0;
   const changeValue = parseFloat(item.change) || 0;
 
+  const tint = item.isPositive ? "0,200,83" : "255,23,68";
+
   return (
-    <TouchableOpacity
+    <ScalePress
+      onPress={onPress}
+      activeScale={0.95}
       style={[
         styles.headerCard,
-        { borderColor: item.isPositive ? (isDark ? 'rgba(0,200,83,0.3)' : '#bbf7d0') : (isDark ? 'rgba(255,23,68,0.3)' : '#fecaca'), backgroundColor: item.isPositive ? (isDark ? 'rgba(0,200,83,0.1)' : '#f0fdf4') : (isDark ? 'rgba(255,23,68,0.1)' : '#fef2f2') }
+        {
+          backgroundColor: colors.card,
+          borderColor: item.isPositive
+            ? (isDark ? 'rgba(0,200,83,0.35)' : '#bbf7d0')
+            : (isDark ? 'rgba(255,23,68,0.35)' : '#fecaca'),
+        },
       ]}
-      activeOpacity={0.7}
-      onPress={onPress}
     >
-      <View style={styles.headerCardTop}>
-        <View style={styles.headerCardInfo}>
-          <Text style={[styles.headerCardSymbol, { color: colors.textSecondary }]}>{item.name}</Text>
-          {item.value !== "..." ? (
-            <AnimatedPrice
-              value={priceValue}
-              style={[styles.headerCardPrice, { color: colors.text }]}
-              flashOnChange={true}
-              decimals={2}
+      <ExpoLinearGradient
+        colors={[`rgba(${tint},${isDark ? 0.18 : 0.1})`, `rgba(${tint},0.02)`]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={styles.headerCardGradient}
+      >
+        <View style={styles.headerCardTop}>
+          <View style={styles.headerCardInfo}>
+            <Text style={[styles.headerCardSymbol, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.name}
+            </Text>
+            {item.value !== "..." ? (
+              <AnimatedPrice
+                value={priceValue}
+                style={[styles.headerCardPrice, { color: colors.text }]}
+                flashOnChange={true}
+                decimals={2}
+              />
+            ) : (
+              <Text style={[styles.headerCardPrice, { color: colors.text }]}>$...</Text>
+            )}
+          </View>
+          <View style={styles.headerCardSparkline}>
+            <MiniSparkline
+              data={item.sparklineData}
+              isPositive={item.isPositive}
+              width={52}
+              height={26}
             />
-          ) : (
-            <Text style={[styles.headerCardPrice, { color: colors.text }]}>$...</Text>
-          )}
+          </View>
         </View>
-        <View style={styles.headerCardSparkline}>
-          <MiniSparkline
-            data={item.sparklineData}
-            isPositive={item.isPositive}
-            width={40}
-            height={22}
+        <View style={[
+          styles.headerCardChangeBadge,
+          { backgroundColor: `rgba(${tint},${isDark ? 0.22 : 0.12})` },
+        ]}>
+          <Ionicons
+            name={item.isPositive ? "trending-up" : "trending-down"}
+            size={11}
+            color={item.isPositive ? "#00C853" : "#FF1744"}
+          />
+          <AnimatedChange
+            value={changeValue}
+            style={{
+              ...styles.headerCardChangeText,
+              color: item.isPositive ? "#00C853" : "#FF1744"
+            }}
+            showArrow={false}
+            flashOnChange={true}
           />
         </View>
-      </View>
-      <View style={[
-        styles.headerCardChangeBadge,
-        item.isPositive ? styles.headerCardChangeBadgePositive : styles.headerCardChangeBadgeNegative
-      ]}>
-        <Ionicons
-          name={item.isPositive ? "trending-up" : "trending-down"}
-          size={10}
-          color={item.isPositive ? "#00C853" : "#FF1744"}
-        />
-        <AnimatedChange
-          value={changeValue}
-          style={{
-            ...styles.headerCardChangeText,
-            color: item.isPositive ? "#00C853" : "#FF1744"
-          }}
-          showArrow={false}
-          flashOnChange={true}
-        />
-      </View>
-    </TouchableOpacity>
+      </ExpoLinearGradient>
+    </ScalePress>
   );
 });
 
@@ -665,54 +720,68 @@ export default function Trending() {
       : (item.changesPercentage || 0);
     const positive = numChange >= 0;
 
+    const isTopRank = index < 3;
+    const goldInk = isDark ? '#FFD60A' : '#B8860B';
+    const displayName = item.companyName || item.name;
+
     return (
-      <TouchableOpacity
-        style={[styles.row, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}
-        onPress={() => {
-          const encodedSymbol = encodeURIComponent(item.symbol);
-          router.push(`/symbol/${encodedSymbol}/chart`);
-        }}
-        activeOpacity={0.7}
-      >
-        <View style={styles.left}>
-          <View style={[styles.rankBadge, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.rank, { color: colors.textSecondary }]}>{index + 1}</Text>
-          </View>
-          <StockLogo
-            symbol={item.symbol}
-            size={Platform.OS === 'android' ? 32 : 36}
-            style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
-          />
-          <View style={styles.info}>
-            <Text style={[styles.symbol, { color: colors.text }]}>{item.symbol}</Text>
-          </View>
-        </View>
-        <View style={styles.right}>
-          {item.price != null && (
-            <AnimatedPrice
-              value={item.price}
-              style={[styles.price, { color: colors.text }]}
-              flashOnChange={true}
-              decimals={2}
+      <FadeSlideIn delay={Math.min(index, 12) * 30} distance={10}>
+        <ScalePress
+          style={[styles.row, { backgroundColor: colors.card, borderColor: colors.borderLight }]}
+          activeScale={0.97}
+          onPress={() => {
+            const encodedSymbol = encodeURIComponent(item.symbol);
+            router.push(`/symbol/${encodedSymbol}/chart`);
+          }}
+        >
+          <View style={styles.left}>
+            <View style={[
+              styles.rankBadge,
+              { backgroundColor: isTopRank ? (isDark ? 'rgba(255,214,10,0.14)' : 'rgba(184,134,11,0.12)') : colors.surface },
+            ]}>
+              <Text style={[styles.rank, { color: isTopRank ? goldInk : colors.textSecondary }]}>{index + 1}</Text>
+            </View>
+            <StockLogo
+              symbol={item.symbol}
+              size={Platform.OS === 'android' ? 32 : 36}
+              style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
             />
-          )}
-          <View style={[styles.changeBadge, positive ? styles.changeBadgePositive : styles.changeBadgeNegative]}>
-            <Ionicons
-              name={positive ? "arrow-up" : "arrow-down"}
-              size={14}
-              color={positive ? "#00C853" : "#FF1744"}
-            />
-            <AnimatedChange
-              value={numChange}
-              style={{ ...styles.changeText, color: positive ? "#00C853" : "#FF1744" }}
-              showArrow={false}
-              flashOnChange={true}
-            />
+            <View style={styles.info}>
+              <Text style={[styles.symbol, { color: colors.text }]}>{item.symbol}</Text>
+              {!!displayName && displayName !== item.symbol && (
+                <Text style={[styles.name, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {displayName}
+                </Text>
+              )}
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
+          <View style={styles.right}>
+            {item.price != null && (
+              <AnimatedPrice
+                value={item.price}
+                style={[styles.price, { color: colors.text }]}
+                flashOnChange={true}
+                decimals={2}
+              />
+            )}
+            <View style={[styles.changeBadge, positive ? styles.changeBadgePositive : styles.changeBadgeNegative]}>
+              <Ionicons
+                name={positive ? "arrow-up" : "arrow-down"}
+                size={14}
+                color={positive ? "#00C853" : "#FF1744"}
+              />
+              <AnimatedChange
+                value={numChange}
+                style={{ ...styles.changeText, color: positive ? "#00C853" : "#FF1744" }}
+                showArrow={false}
+                flashOnChange={true}
+              />
+            </View>
+          </View>
+        </ScalePress>
+      </FadeSlideIn>
     );
-  }, [router, colors]);
+  }, [router, colors, isDark]);
 
   if (loading && data.length === 0) {
     return (
@@ -723,9 +792,9 @@ export default function Trending() {
             <Text style={[styles.title, { color: colors.text }]}>Trending</Text>
           </View>
         </View>
-        <View>
+        <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
           {Array.from({ length: 10 }).map((_, i) => (
-            <TrendingRowSkeleton key={i} color={colors.borderLight} borderColor={colors.borderLight} />
+            <TrendingRowSkeleton key={i} color={colors.borderLight} borderColor={colors.borderLight} backgroundColor={colors.card} />
           ))}
         </View>
       </View>
@@ -741,9 +810,9 @@ export default function Trending() {
         <View style={styles.headerTopRow}>
           <Text style={[styles.title, { color: colors.text }]}>Trending</Text>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={[styles.refreshBtn, { backgroundColor: colors.surface }]} onPress={fetchLiveData}>
-              <Ionicons name="refresh" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
+            <ScalePress style={[styles.refreshBtn, { backgroundColor: colors.surface }]} onPress={fetchLiveData} activeScale={0.88}>
+              <Ionicons name="refresh" size={20} color={isDark ? '#FFD60A' : '#B8860B'} />
+            </ScalePress>
           </View>
         </View>
 
@@ -780,34 +849,45 @@ export default function Trending() {
         >
           {TAB_CONFIG.map((tab) => {
             const isActive = activeTab === tab.id;
+            const activeInk = isDark ? '#000' : '#fff';
             return (
-              <TouchableOpacity
+              <ScalePress
                 key={tab.id}
                 onPress={() => handleTabChange(tab.id)}
-                style={[styles.tabPill, { backgroundColor: colors.surface }, isActive && { backgroundColor: isDark ? '#fff' : '#111827' }]}
-                activeOpacity={0.7}
+                activeScale={0.93}
               >
-                <Ionicons
-                  name={tab.icon as any}
-                  size={16}
-                  color={isActive ? (isDark ? '#000' : '#fff') : colors.textSecondary}
-                />
-                <Text style={[styles.tabText, { color: colors.textSecondary }, isActive && { color: isDark ? '#000' : '#fff' }]}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
+                {isActive ? (
+                  <ExpoLinearGradient
+                    colors={(isDark ? GOLD_GRADIENT_DARK : GOLD_GRADIENT_LIGHT) as unknown as [string, string]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[styles.tabPill, styles.tabPillActive]}
+                  >
+                    <Ionicons name={tab.icon as any} size={16} color={activeInk} />
+                    <Text style={[styles.tabText, styles.tabTextActive, { color: activeInk }]}>{tab.label}</Text>
+                  </ExpoLinearGradient>
+                ) : (
+                  <View style={[styles.tabPill, { backgroundColor: colors.surface }]}>
+                    <Ionicons name={tab.icon as any} size={16} color={colors.textTertiary} />
+                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>{tab.label}</Text>
+                  </View>
+                )}
+              </ScalePress>
             );
           })}
         </ScrollView>
       </View>
 
       {error && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={fetchLiveData} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
+        <FadeSlideIn distance={8}>
+          <View style={styles.errorBanner}>
+            <Ionicons name="cloud-offline-outline" size={18} color="#FF1744" />
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity onPress={fetchLiveData} style={styles.retryBtn}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        </FadeSlideIn>
       )}
 
       <Animated.View
@@ -825,10 +905,14 @@ export default function Trending() {
           {...FLATLIST_PERFORMANCE_PROPS}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="trending-up" size={64} color={colors.borderLight} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No data available</Text>
-            </View>
+            <FadeSlideIn distance={10}>
+              <View style={styles.emptyState}>
+                <View style={[styles.emptyIconCircle, { backgroundColor: colors.surface }]}>
+                  <Ionicons name="trending-up" size={30} color={colors.textTertiary} />
+                </View>
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No data available</Text>
+              </View>
+            </FadeSlideIn>
           }
           ListFooterComponent={<InlineAdBanner />}
         />
@@ -910,29 +994,24 @@ const styles = StyleSheet.create({
   },
   headerCard: {
     width: CARD_WIDTH,
-    padding: 10,
-    borderRadius: 12,
-    marginRight: 8,
+    borderRadius: 18,
+    marginRight: 10,
     borderWidth: 1,
+    overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  headerCardPositive: {
-    backgroundColor: "#f0fdf4",
-    borderColor: "#bbf7d0",
-  },
-  headerCardNegative: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
+  headerCardGradient: {
+    padding: 12,
   },
   headerCardTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   headerCardInfo: {
     flex: 1,
@@ -941,10 +1020,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     color: "#374151",
-    marginBottom: 2,
+    marginBottom: 3,
+    letterSpacing: 0.2,
   },
   headerCardPrice: {
-    fontSize: 14,
+    fontSize: 17,
     fontWeight: "800",
     color: "#111827",
   },
@@ -989,7 +1069,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabPillActive: {
-    backgroundColor: "#111827",
+    shadowColor: "#FFD60A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tabText: {
     fontSize: 13,
@@ -997,7 +1081,7 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
   tabTextActive: {
-    color: "#fff",
+    fontWeight: "800",
   },
   // Loading & Error
   center: { 
@@ -1012,45 +1096,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   errorBanner: {
-    backgroundColor: "#FF1744",
+    backgroundColor: "rgba(255,23,68,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,23,68,0.3)",
     padding: 12,
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     marginTop: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: 10,
   },
-  errorText: { 
-    color: "#fff", 
-    fontSize: 14, 
-    flex: 1 
+  errorText: {
+    color: "#FF1744",
+    fontSize: 14,
+    flex: 1,
+    fontWeight: "600",
   },
-  retryBtn: { 
-    backgroundColor: "#fff",
+  retryBtn: {
+    backgroundColor: "#FF1744",
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 16,
   },
-  retryText: { 
-    color: "#FF1744", 
-    fontWeight: "700", 
-    fontSize: 14 
+  retryText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 13,
   },
   // List
   listContent: {
     paddingBottom: 120,
+    paddingHorizontal: 16,
+    paddingTop: 12,
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#fff",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    height: STOCK_ROW_HEIGHT, // Fixed height for getItemLayout optimization
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 8,
+    // 68 + 8 margin = STOCK_ROW_HEIGHT (76) so getItemLayout stays exact
+    height: STOCK_ROW_HEIGHT - 8,
   },
   left: { 
     flexDirection: "row", 
@@ -1058,17 +1147,17 @@ const styles = StyleSheet.create({
     flex: 1 
   },
   rankBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: "#f3f4f6",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 14,
+    marginRight: 10,
   },
-  rank: { 
-    fontSize: 14, 
-    fontWeight: "700", 
+  rank: {
+    fontSize: 12,
+    fontWeight: "800",
     color: "#6b7280",
   },
   info: {
@@ -1113,6 +1202,13 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     padding: 60,
+    alignItems: "center",
+  },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: "center",
     alignItems: "center",
   },
   emptyText: {

@@ -162,7 +162,8 @@
           "project": "wallstreetstocks-app"
         }
       ],
-      "expo-tracking-transparency"
+      "expo-tracking-transparency",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,
