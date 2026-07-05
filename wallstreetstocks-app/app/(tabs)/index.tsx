@@ -198,6 +198,8 @@ const interpolateData = (data: { value: number; label: string; dataPointText?: s
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 // Format news date to relative time
 const formatNewsDate = (dateString: string) => {
@@ -1384,72 +1386,69 @@ export default function Dashboard() {
         return;
       }
 
-      const today = new Date();
-      let daysBack = 365;
-
+      // Twelve Data interval + bar count per range (all holdings in ONE
+      // batched time_series call — same provider as the WebSocket/charts)
+      let interval = '1day';
+      let outputsize = 365;
       switch (portfolioTimeRange) {
-        case '1D': daysBack = 1; break;
-        case '5D': daysBack = 5; break;
-        case '1M': daysBack = 30; break;
-        case '6M': daysBack = 180; break;
-        case 'YTD':
-          const yearStart = new Date(today.getFullYear(), 0, 1);
-          daysBack = Math.floor((today.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
+        case '1D': interval = '15min'; outputsize = 30; break;
+        case '5D': interval = '1h'; outputsize = 40; break;
+        case '1M': interval = '1day'; outputsize = 23; break;
+        case '6M': interval = '1day'; outputsize = 130; break;
+        case 'YTD': {
+          const yearStart = new Date(new Date().getFullYear(), 0, 1);
+          const calendarDays = Math.floor((Date.now() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
+          interval = '1day';
+          outputsize = Math.max(5, Math.ceil(calendarDays * 0.72));
           break;
-        case '1Y': daysBack = 365; break;
-        case '5Y': daysBack = 1825; break;
-        case 'ALL': daysBack = 3650; break;
+        }
+        case '1Y': interval = '1day'; outputsize = 252; break;
+        case '5Y': interval = '1week'; outputsize = 260; break;
+        case 'ALL': interval = '1week'; outputsize = 520; break;
       }
 
       // Cover the biggest positions; anything beyond rides along as a constant
       const holdingValue = (h: any) => h.currentValue || h.shares * (h.currentPrice || h.avgCost);
       const ranked = [...holdings].sort((a, b) => holdingValue(b) - holdingValue(a));
-      const covered = ranked.slice(0, portfolioTimeRange === '1D' ? 5 : 10);
+      const covered = ranked.slice(0, 10);
       const residual = ranked.slice(covered.length).reduce((sum, h) => sum + holdingValue(h), 0);
+
+      // Twelve Data symbol format (BTCUSD -> BTC/USD), same rule as the
+      // WebSocket subscriptions above
+      const toTwelveSymbol = (symbol: string) =>
+        symbol.endsWith('USD') && !symbol.includes('/') && symbol.length >= 6 && symbol.length <= 10
+          ? symbol.slice(0, -3) + '/USD'
+          : symbol;
+
+      const twelveSymbols = covered.map(h => toTwelveSymbol(h.symbol));
+      const res = await fetch(
+        `${TWELVE_DATA_URL}/time_series?symbol=${twelveSymbols.map(encodeURIComponent).join(',')}&interval=${interval}&outputsize=${outputsize}&apikey=${TWELVE_DATA_API_KEY}`
+      );
+      const json = await res.json();
+
+      // Batch responses are keyed by symbol; a single-symbol request
+      // returns the series object directly
+      const getSeries = (twelveSym: string): any[] | null => {
+        const node = json?.values ? json : json?.[twelveSym];
+        if (!node || node.status === 'error' || !Array.isArray(node.values)) return null;
+        return node.values;
+      };
 
       // Per-symbol time series, oldest → newest
       const seriesBySymbol: Record<string, { t: string; close: number }[]> = {};
-
-      if (portfolioTimeRange === '1D') {
-        // Intraday 15min bars, latest session only (one call per holding, parallel)
-        await Promise.all(covered.map(async (h) => {
-          try {
-            const res = await fetch(`${BASE_URL}/historical-chart/15min/${h.symbol}?apikey=${FMP_API_KEY}`);
-            const bars = await res.json();
-            if (Array.isArray(bars) && bars.length > 0) {
-              const latestDay = String(bars[0].date).split(' ')[0];
-              seriesBySymbol[h.symbol] = bars
-                .filter((b: any) => String(b.date).startsWith(latestDay))
-                .reverse()
-                .map((b: any) => ({ t: String(b.date), close: b.close }));
-            }
-          } catch {}
-        }));
-      } else {
-        // Daily bars, batched up to 5 symbols per request
-        const fromDate = new Date(today.getTime() - daysBack * 24 * 60 * 60 * 1000)
-          .toISOString().split('T')[0];
-        const toDate = today.toISOString().split('T')[0];
-        const chunks: any[][] = [];
-        for (let i = 0; i < covered.length; i += 5) chunks.push(covered.slice(i, i + 5));
-
-        await Promise.all(chunks.map(async (chunk) => {
-          try {
-            const res = await fetch(
-              `${BASE_URL}/historical-price-full/${chunk.map(h => h.symbol).join(',')}?from=${fromDate}&to=${toDate}&apikey=${FMP_API_KEY}`
-            );
-            const json = await res.json();
-            const lists = json?.historicalStockList ?? (json?.historical ? [json] : []);
-            for (const item of lists) {
-              if (item?.symbol && Array.isArray(item.historical)) {
-                seriesBySymbol[item.symbol] = item.historical
-                  .slice()
-                  .reverse()
-                  .map((p: any) => ({ t: String(p.date), close: p.close }));
-              }
-            }
-          } catch {}
-        }));
+      for (const h of covered) {
+        let values = getSeries(toTwelveSymbol(h.symbol));
+        if (!values || values.length === 0) continue;
+        if (portfolioTimeRange === '1D') {
+          // Latest session only (values arrive newest-first)
+          const latestDay = String(values[0].datetime).split(' ')[0];
+          values = values.filter((v: any) => String(v.datetime).startsWith(latestDay));
+        }
+        seriesBySymbol[h.symbol] = values
+          .slice()
+          .reverse()
+          .map((v: any) => ({ t: String(v.datetime), close: parseFloat(v.close) }))
+          .filter((p) => isFinite(p.close) && p.close > 0);
       }
 
       // Timeline = covered symbol with the most data points
@@ -1487,10 +1486,13 @@ export default function Dashboard() {
       const sampled = values.filter((_, i) => i % step === 0 || i === values.length - 1);
 
       const historicalData = sampled.map(({ t, total }) => {
-        const date = new Date(t.includes(' ') ? t.replace(' ', 'T') : t);
+        const hasTime = t.includes(' ');
+        const date = new Date(hasTime ? t.replace(' ', 'T') : t);
         const fullLabel = portfolioTimeRange === '1D'
           ? date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-          : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          : hasTime
+            ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' } as any)
+            : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         return { value: total, label: '', dataPointText: fullLabel };
       });
 
