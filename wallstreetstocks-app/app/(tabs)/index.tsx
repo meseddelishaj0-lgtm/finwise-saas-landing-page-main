@@ -20,6 +20,9 @@ import {
   Animated,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Image as ExpoImage } from 'expo-image';
+import { Swipeable } from 'react-native-gesture-handler';
+import { fetchSparklines } from '@/services/sparklineService';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useFocusEffect } from '@react-navigation/native';
@@ -48,7 +51,7 @@ const { width } = Dimensions.get('window');
 const chartWidth = 110;
 const portfolioChartWidth = width - 80;
 // Full-bleed chart width: spans the hero card edge-to-edge (card margins only)
-const portfolioChartBleedWidth = width - (Platform.OS === 'android' ? 32 : 40);
+const portfolioChartBleedWidth = width - 32;
 
 // Fetch with timeout - fail fast if API is slow
 const fetchWithTimeout = async (url: string, timeout: number = 5000): Promise<Response> => {
@@ -458,6 +461,7 @@ export default function Dashboard() {
   ]);
   const [indicesLoading, setIndicesLoading] = useState(true);
   const [indicesCacheLoaded, setIndicesCacheLoaded] = useState(false);
+  const [indexSparklines, setIndexSparklines] = useState<Record<string, number[]>>({});
 
   // Market News
   const NEWS_CACHE_KEY = 'cached_market_news';
@@ -630,6 +634,17 @@ export default function Dashboard() {
       wsSubscribe(MARKET_OVERVIEW_SYMBOLS);
     }
   }, [wsConnected, wsSubscribe]);
+
+  // Sparklines for the market overview cards (service caches per symbol)
+  useEffect(() => {
+    if (indicesLoading || majorIndices.length === 0) return;
+    const pcts: Record<string, number> = {};
+    majorIndices.forEach(i => { pcts[i.symbol] = i.changePercent; });
+    fetchSparklines(majorIndices.map(i => i.symbol), pcts)
+      .then(setIndexSparklines)
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indicesLoading]);
 
   // Load cached market indices on mount (show last prices instantly)
   useEffect(() => {
@@ -1971,6 +1986,15 @@ export default function Dashboard() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Gold ambient glow behind the header */}
+      <LinearGradient
+        colors={isDark
+          ? ['rgba(255,214,10,0.14)', 'rgba(255,214,10,0)']
+          : ['rgba(184,134,11,0.10)', 'rgba(184,134,11,0)']}
+        style={styles.headerGlow}
+        pointerEvents="none"
+      />
+
       {/* Floating + Button */}
       <View style={styles.fabWrapper} pointerEvents="box-none">
         <ScalePress style={styles.fab} activeScale={0.88} onPress={() => setAddStockModal(true)}>
@@ -1979,7 +2003,7 @@ export default function Dashboard() {
       </View>
 
       <ScrollView
-        style={[styles.scrollView, { backgroundColor: colors.background }]}
+        style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -2079,13 +2103,16 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        {/* Greeting */}
+        {/* Greeting + market status */}
         <FadeSlideIn distance={8}>
           <View style={styles.greetingRow}>
-            <Text style={[styles.greetingText, { color: colors.text }]}>{getGreeting()} 👋</Text>
-            <Text style={[styles.greetingDate, { color: colors.textTertiary }]}>
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </Text>
+            <View>
+              <Text style={[styles.greetingText, { color: colors.text }]}>{getGreeting()} 👋</Text>
+              <Text style={[styles.greetingDate, { color: colors.textTertiary }]}>
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </Text>
+            </View>
+            <MarketStatusIndicator />
           </View>
         </FadeSlideIn>
 
@@ -2105,7 +2132,7 @@ export default function Dashboard() {
               : ['rgba(184,134,11,0.08)', 'rgba(184,134,11,0)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0.7, y: 0.9 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: Platform.OS === 'android' ? 16 : 20 }]}
+            style={[StyleSheet.absoluteFill, { borderRadius: 18 }]}
             pointerEvents="none"
           />
           <View style={styles.portfolioTopRow}>
@@ -2451,18 +2478,30 @@ export default function Dashboard() {
                     style={{ ...styles.indexPrice, color: colors.text }}
                     flashOnChange={true}
                   />
-                  <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
-                    <Ionicons
-                      name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'}
-                      size={12}
-                      color={index.color}
-                    />
-                    <AnimatedChange
-                      value={index.changePercent}
-                      style={{ ...styles.indexChange, color: index.color }}
-                      showArrow={false}
-                      flashOnChange={true}
-                    />
+                  <View style={styles.indexCardFooter}>
+                    <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
+                      <Ionicons
+                        name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'}
+                        size={12}
+                        color={index.color}
+                      />
+                      <AnimatedChange
+                        value={index.changePercent}
+                        style={{ ...styles.indexChange, color: index.color }}
+                        showArrow={false}
+                        flashOnChange={true}
+                      />
+                    </View>
+                    {(indexSparklines[index.symbol]?.length ?? 0) > 1 && (
+                      <Sparkline
+                        data={indexSparklines[index.symbol]}
+                        color={index.color}
+                        width={34}
+                        height={20}
+                        strokeWidth={1.5}
+                        fillOpacity={0.15}
+                      />
+                    )}
                   </View>
                 </ScalePress>
               ))}
@@ -2603,8 +2642,20 @@ export default function Dashboard() {
 
                 return (
                 <FadeSlideIn key={stock.symbol} delay={Math.min(idx, 8) * 40} distance={8}>
+                <Swipeable
+                  overshootRight={false}
+                  renderRightActions={() => (
+                    <TouchableOpacity
+                      style={styles.watchlistDeleteAction}
+                      onPress={() => handleRemoveFromWatchlist(stock.symbol)}
+                    >
+                      <Ionicons name="trash" size={18} color="#fff" />
+                      <Text style={styles.watchlistDeleteText}>Remove</Text>
+                    </TouchableOpacity>
+                  )}
+                >
                 <ScalePress
-                  style={[styles.watchlistRow, { borderBottomColor: colors.borderLight }]}
+                  style={[styles.watchlistRow, { borderBottomColor: colors.borderLight, backgroundColor: isDark ? colors.card : '#F5F5F7' }]}
                   activeScale={0.98}
                   onPress={() => {
                     trackAction(); // Track stock view for app review
@@ -2653,6 +2704,7 @@ export default function Dashboard() {
                     </View>
                   </View>
                 </ScalePress>
+                </Swipeable>
                 </FadeSlideIn>
                 );
               })}
@@ -2840,13 +2892,23 @@ export default function Dashboard() {
                           <Text style={styles.newsSymbolText}>{item.symbol}</Text>
                         </View>
                       )}
-                      <Text style={[styles.newsSource, { color: colors.textTertiary }]}>{item.site}</Text>
-                      <Text style={styles.newsDot}>•</Text>
+                      <View style={[styles.newsSourceChip, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' }]}>
+                        <Text style={[styles.newsSource, { color: colors.textSecondary }]} numberOfLines={1}>{item.site}</Text>
+                      </View>
                       <Text style={[styles.newsTime, { color: colors.textTertiary }]}>{formatNewsDate(item.publishedDate)}</Text>
                     </View>
-                    <Text style={[styles.newsTitle, { color: colors.text }]} numberOfLines={2}>{item.title}</Text>
+                    <Text style={[styles.newsTitle, { color: colors.text }]} numberOfLines={3}>{item.title}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                  {item.image ? (
+                    <ExpoImage
+                      source={{ uri: item.image }}
+                      style={styles.newsThumb}
+                      contentFit="cover"
+                      transition={150}
+                    />
+                  ) : (
+                    <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                  )}
                 </ScalePress>
                 </FadeSlideIn>
               ))}
@@ -3448,7 +3510,7 @@ const styles = StyleSheet.create({
   // FAB
   fabWrapper: {
     position: 'absolute',
-    right: 20,
+    right: 16,
     bottom: Platform.OS === 'ios' ? 110 : 90,
     zIndex: 10,
   },
@@ -3490,11 +3552,18 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    paddingHorizontal: 16,
     paddingTop: Platform.OS === 'android' ? 40 : 50,
     paddingBottom: Platform.OS === 'android' ? 12 : 20,
     alignItems: 'center',
     backgroundColor: '#F5F5F7'
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 240,
   },
   avatarButton: {
     width: 40,
@@ -3505,7 +3574,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   greetingRow: {
-    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
     marginBottom: Platform.OS === 'android' ? 12 : 16,
   },
   greetingText: {
@@ -3628,8 +3700,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   sectionTitle: {
-    fontSize: Platform.OS === 'android' ? 16 : 22,
-    fontWeight: '700',
+    fontSize: Platform.OS === 'android' ? 17 : 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
     color: '#000',
     includeFontPadding: false,
   },
@@ -3662,8 +3735,14 @@ const styles = StyleSheet.create({
   
   // Market Indices - Horizontal Scroll
   indicesSection: {
-    paddingLeft: Platform.OS === 'android' ? 16 : 20,
+    paddingLeft: 16,
     marginBottom: Platform.OS === 'android' ? 16 : 24,
+  },
+  indexCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
   },
   indicesLoadingContainer: {
     height: 130,
@@ -3675,10 +3754,10 @@ const styles = StyleSheet.create({
   },
   indexCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.OS === 'android' ? 12 : 14,
-    padding: Platform.OS === 'android' ? 8 : 11,
+    borderRadius: 16,
+    padding: Platform.OS === 'android' ? 9 : 11,
     marginRight: Platform.OS === 'android' ? 8 : 10,
-    width: Platform.OS === 'android' ? 94 : 112,
+    width: Platform.OS === 'android' ? 108 : 124,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -3737,10 +3816,10 @@ const styles = StyleSheet.create({
   // Portfolio Section
   portfolioSection: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: Platform.OS === 'android' ? 16 : 20,
+    marginHorizontal: 16,
     marginBottom: Platform.OS === 'android' ? 16 : 24,
-    borderRadius: Platform.OS === 'android' ? 16 : 20,
-    padding: Platform.OS === 'android' ? 14 : 20,
+    borderRadius: 18,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -3885,7 +3964,7 @@ const styles = StyleSheet.create({
   },
   // Chart escapes the card padding so the line runs edge-to-edge
   portfolioChartBleed: {
-    marginHorizontal: Platform.OS === 'android' ? -14 : -20,
+    marginHorizontal: -16,
   },
   portfolioTooltip: {
     paddingHorizontal: 14,
@@ -4056,10 +4135,10 @@ const styles = StyleSheet.create({
   // Watchlist Section
   watchlistSection: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: Platform.OS === 'android' ? 16 : 20,
+    marginHorizontal: 16,
     marginBottom: Platform.OS === 'android' ? 16 : 24,
-    borderRadius: Platform.OS === 'android' ? 16 : 20,
-    padding: Platform.OS === 'android' ? 14 : 20,
+    borderRadius: 18,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -4150,6 +4229,20 @@ const styles = StyleSheet.create({
   },
   watchlistList: {
     marginTop: 8,
+  },
+  watchlistDeleteAction: {
+    width: 84,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 14,
+    marginLeft: 8,
+    gap: 3,
+  },
+  watchlistDeleteText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   watchlistRow: {
     flexDirection: 'row',
@@ -4260,7 +4353,7 @@ const styles = StyleSheet.create({
   
   // News
   newsSection: {
-    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    paddingHorizontal: 16,
     marginBottom: Platform.OS === 'android' ? 16 : 24,
   },
   newsLoadingContainer: {
@@ -4273,7 +4366,7 @@ const styles = StyleSheet.create({
   },
   newsCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.OS === 'android' ? 12 : 14,
+    borderRadius: 16,
     padding: Platform.OS === 'android' ? 12 : 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -4285,7 +4378,19 @@ const styles = StyleSheet.create({
   },
   newsContent: {
     flex: 1,
-    marginRight: 8,
+    marginRight: 10,
+  },
+  newsThumb: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: 'rgba(127,127,127,0.1)',
+  },
+  newsSourceChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 7,
+    maxWidth: 140,
   },
   newsHeader: {
     flexDirection: 'row',
@@ -4533,12 +4638,12 @@ const styles = StyleSheet.create({
 
   // Stock Picks Section
   stockPicksSection: {
-    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    paddingHorizontal: 16,
     marginBottom: Platform.OS === 'android' ? 16 : 24,
   },
   // Strategy discovery cards
   strategiesSection: {
-    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    paddingHorizontal: 16,
     marginBottom: Platform.OS === 'android' ? 16 : 24,
   },
   strategiesSeeAll: {
@@ -4613,8 +4718,8 @@ const styles = StyleSheet.create({
   },
   stockPicksCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Platform.OS === 'android' ? 16 : 20,
-    padding: Platform.OS === 'android' ? 14 : 20,
+    borderRadius: 18,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
