@@ -22,7 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
@@ -1194,6 +1194,25 @@ export default function Screener() {
   const handlePremiumPress = () => {
     router.push('/(modals)/paywall' as any);
   };
+
+  // Apply a preset passed via route param (e.g. home-page strategy cards
+  // navigate to /screener?preset=momentum). Same gating as tapping the card.
+  const { preset: presetParam } = useLocalSearchParams<{ preset?: string }>();
+  useEffect(() => {
+    if (!presetParam) return;
+    const preset = presets.find(p => p.id === presetParam);
+    if (!preset || preset.id === 'heatmap') return;
+    if (preset.isPremium && !hasPlatinumAccess) {
+      handlePremiumPress();
+      return;
+    }
+    if (activePreset !== preset.id) {
+      setActivePreset(preset.id);
+      setFilters({});
+      fetchData(preset.id, {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetParam]);
 
   const renderPreset = ({ item, index }: { item: Preset; index: number }) => {
     const isLocked = item.isPremium && !hasPlatinumAccess;

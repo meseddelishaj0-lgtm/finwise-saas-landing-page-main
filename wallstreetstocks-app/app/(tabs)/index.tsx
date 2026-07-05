@@ -40,6 +40,7 @@ import { useAppReview } from '@/hooks/useAppReview';
 import { useTheme } from '@/context/ThemeContext';
 import FadeSlideIn from '@/components/FadeSlideIn';
 import Sparkline from '@/components/Sparkline';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
@@ -229,6 +230,17 @@ const STOCK_PICKS_PREVIEW = [
   { symbol: 'AAPL', category: 'Tech Giant', reason: 'Services growth' },
   { symbol: 'MSFT', category: 'Cloud & AI', reason: 'Azure expansion' },
 ];
+
+// Strategy discovery cards — deep-link into the screener with a preset
+// applied (ids/gradients match the screener's own preset cards)
+const STRATEGY_CARDS = [
+  { id: 'momentum', name: 'Momentum', icon: 'flash', gradient: ['#E91E63', '#F06292'], description: 'Stocks in strong uptrends', isPremium: true },
+  { id: 'breakout', name: 'Swing Trades', icon: 'pulse', gradient: ['#D500F9', '#E040FB'], description: 'Breakouts near 52W highs', isPremium: true },
+  { id: 'quality', name: 'Fundamentals', icon: 'shield-checkmark', gradient: ['#5C6BC0', '#7986CB'], description: 'Elite ROE & margins', isPremium: false },
+  { id: 'growth', name: 'High Growth', icon: 'rocket', gradient: ['#FF9800', '#FFB74D'], description: 'Revenue compounding fast', isPremium: false },
+  { id: 'undervalued', name: 'Undervalued', icon: 'diamond', gradient: ['#7C4DFF', '#B388FF'], description: 'Bargains under 15x P/E', isPremium: false },
+  { id: 'dividend', name: 'Dividends', icon: 'cash', gradient: ['#00BCD4', '#4DD0E1'], description: 'Yields of 4% and up', isPremium: false },
+] as const;
 
 // Market Overview symbols - crypto (24/7 movement for Apple review) + major index ETFs
 const MARKET_OVERVIEW_SYMBOLS = [
@@ -2548,6 +2560,53 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
+        {/* Strategy Discovery Cards */}
+        <View style={styles.strategiesSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Strategies</Text>
+            <TouchableOpacity onPress={() => router.push('/screener' as any)}>
+              <Text style={[styles.strategiesSeeAll, { color: colors.primary }]}>Open Screener</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.strategiesScrollContent}
+          >
+            {STRATEGY_CARDS.map((strategy, idx) => (
+              <FadeSlideIn key={strategy.id} delay={Math.min(idx, 6) * 50} distance={10}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => router.push(`/screener?preset=${strategy.id}` as any)}
+                >
+                  <LinearGradient
+                    colors={strategy.gradient as unknown as [string, string]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.strategyCard}
+                  >
+                    {strategy.isPremium && (
+                      <View style={styles.strategyProBadge}>
+                        <Ionicons name="lock-closed" size={8} color="#fff" />
+                        <Text style={styles.strategyProText}>PRO</Text>
+                      </View>
+                    )}
+                    <View style={styles.strategyIconCircle}>
+                      <Ionicons name={strategy.icon as any} size={20} color="#fff" />
+                    </View>
+                    <Text style={styles.strategyName}>{strategy.name}</Text>
+                    <Text style={styles.strategyDesc} numberOfLines={2}>{strategy.description}</Text>
+                    <View style={styles.strategyExploreRow}>
+                      <Text style={styles.strategyExploreText}>Explore</Text>
+                      <Ionicons name="arrow-forward" size={12} color="rgba(255,255,255,0.9)" />
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </FadeSlideIn>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* News Section */}
         <View style={styles.newsSection}>
           <View style={styles.sectionHeader}>
@@ -4236,6 +4295,81 @@ const styles = StyleSheet.create({
   stockPicksSection: {
     paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
     marginBottom: Platform.OS === 'android' ? 16 : 24,
+  },
+  // Strategy discovery cards
+  strategiesSection: {
+    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    marginBottom: Platform.OS === 'android' ? 16 : 24,
+  },
+  strategiesSeeAll: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  strategiesScrollContent: {
+    paddingRight: 20,
+    paddingVertical: 4,
+  },
+  strategyCard: {
+    width: 148,
+    borderRadius: 18,
+    padding: 14,
+    marginRight: 10,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  strategyProBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  strategyProText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  strategyIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  strategyName: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  strategyDesc: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 11,
+    marginTop: 3,
+    lineHeight: 15,
+  },
+  strategyExploreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 10,
+  },
+  strategyExploreText: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 11,
+    fontWeight: '700',
   },
   stockPicksCard: {
     backgroundColor: '#FFFFFF',
