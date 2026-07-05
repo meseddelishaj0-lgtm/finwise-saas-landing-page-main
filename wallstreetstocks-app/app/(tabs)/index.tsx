@@ -47,6 +47,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 const { width } = Dimensions.get('window');
 const chartWidth = 110;
 const portfolioChartWidth = width - 80;
+// Full-bleed chart width: spans the hero card edge-to-edge (card margins only)
+const portfolioChartBleedWidth = width - (Platform.OS === 'android' ? 32 : 40);
 
 // Fetch with timeout - fail fast if API is slow
 const fetchWithTimeout = async (url: string, timeout: number = 5000): Promise<Response> => {
@@ -2141,15 +2143,16 @@ export default function Dashboard() {
           {livePortfolioChartData.length > 1 && (() => {
             // Smooth and interpolate data for cleaner curves - uses live data
             const smoothedChartData = interpolateData(livePortfolioChartData, 80);
-            const chartSpacing = Math.max(2, (portfolioChartWidth - 40) / smoothedChartData.length);
+            const chartSpacing = Math.max(2, portfolioChartBleedWidth / smoothedChartData.length);
 
             return (
-            <View style={[styles.portfolioChartContainer, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}>
+            <View style={styles.portfolioChartContainer}>
+              <View style={styles.portfolioChartBleed}>
               <GiftedLineChart
                 areaChart
                 data={smoothedChartData}
                 height={220}
-                width={portfolioChartWidth}
+                width={portfolioChartBleedWidth}
                 curved
                 curvature={0.2}
                 curveType={1}
@@ -2162,6 +2165,7 @@ export default function Dashboard() {
                 hideDataPoints
                 hideAxesAndRules
                 hideYAxisText
+                yAxisLabelWidth={0}
                 xAxisLabelsHeight={0}
                 yAxisLabelPrefix="$"
                 backgroundColor="transparent"
@@ -2195,6 +2199,7 @@ export default function Dashboard() {
                 }}
                 animateOnDataChange={false}
               />
+              </View>
 
               {/* Time Range Selector */}
               <View style={[styles.timeRangeSelectorContainer, { marginTop: 16 }]}>
@@ -2211,15 +2216,14 @@ export default function Dashboard() {
                       key={range}
                       style={[
                         styles.timeRangeButton,
-                        { backgroundColor: isDark ? '#1C1C1E' : '#EDEDF0' },
-                        isActive && { backgroundColor: isDark ? `${gainColor}20` : `${gainColor}15` }
+                        isActive && { backgroundColor: isDark ? `${gainColor}22` : `${gainColor}18` }
                       ]}
                       onPress={() => setPortfolioTimeRange(range)}
                     >
                       <Text style={[
                         styles.timeRangeText,
                         { color: isDark ? '#8E8E93' : '#666' },
-                        isActive && { color: gainColor, fontWeight: '700' }
+                        isActive && { color: gainColor, fontWeight: '800' }
                       ]}>
                         {range}
                       </Text>
@@ -2227,8 +2231,8 @@ export default function Dashboard() {
                     );
                   })}
                 </ScrollView>
-                <TouchableOpacity style={[styles.expandButton, { backgroundColor: isDark ? '#1C1C1E' : '#EDEDF0' }]}>
-                  <Ionicons name="expand-outline" size={20} color={colors.textTertiary} />
+                <TouchableOpacity style={styles.expandButton}>
+                  <Ionicons name="expand-outline" size={18} color={colors.textTertiary} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -3807,7 +3811,11 @@ const styles = StyleSheet.create({
   // Chart
   portfolioChartContainer: {
     marginTop: 8,
-    paddingHorizontal: 4,
+    backgroundColor: 'transparent',
+  },
+  // Chart escapes the card padding so the line runs edge-to-edge
+  portfolioChartBleed: {
+    marginHorizontal: Platform.OS === 'android' ? -14 : -20,
   },
   portfolioTooltip: {
     paddingHorizontal: 14,
@@ -3848,9 +3856,9 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   timeRangeButton: {
-    paddingVertical: Platform.OS === 'android' ? 6 : 8,
-    paddingHorizontal: Platform.OS === 'android' ? 12 : 16,
-    borderRadius: 8,
+    paddingVertical: Platform.OS === 'android' ? 6 : 7,
+    paddingHorizontal: Platform.OS === 'android' ? 10 : 13,
+    borderRadius: 14,
   },
   timeRangeButtonActive: {
   },
