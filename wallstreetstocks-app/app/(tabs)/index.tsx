@@ -17,7 +17,9 @@ import {
   AppStateStatus,
   BackHandler,
   ToastAndroid,
+  Animated,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useFocusEffect } from '@react-navigation/native';
@@ -34,7 +36,7 @@ import { priceStore } from '@/stores/priceStore';
 import { AnimatedPrice, AnimatedChange, MarketStatusIndicator, LastUpdated, CryptoLiveIndicator, MarketTimeLabel } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
-import { IndicesSkeletonList, WatchlistSkeletonList } from '@/components/SkeletonLoader';
+// Home uses theme-aware local skeletons (shared SkeletonLoader is light-only)
 import StockLogo from '@/components/StockLogo';
 import { useAppReview } from '@/hooks/useAppReview';
 import { useTheme } from '@/context/ThemeContext';
@@ -230,6 +232,107 @@ const STOCK_PICKS_PREVIEW = [
   { symbol: 'AAPL', category: 'Tech Giant', reason: 'Services growth' },
   { symbol: 'MSFT', category: 'Cloud & AI', reason: 'Azure expansion' },
 ];
+
+// Time-of-day greeting for the header
+const getGreeting = (): string => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+};
+
+// Springy press wrapper with haptic feedback (UI only — same onPress behavior)
+const ScalePress = ({
+  children,
+  onPress,
+  onLongPress,
+  style,
+  activeScale = 0.96,
+}: {
+  children: React.ReactNode;
+  onPress: () => void;
+  onLongPress?: () => void;
+  style?: any;
+  activeScale?: number;
+}) => {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const pressIn = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } else {
+      Haptics.selectionAsync();
+    }
+    Animated.spring(scale, { toValue: activeScale, useNativeDriver: true, speed: 40, bounciness: 0 }).start();
+  };
+  const pressOut = () =>
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 24, bounciness: 9 }).start();
+
+  return (
+    <TouchableOpacity activeOpacity={1} onPress={onPress} onLongPress={onLongPress} onPressIn={pressIn} onPressOut={pressOut}>
+      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    </TouchableOpacity>
+  );
+};
+
+// Theme-aware skeleton shimmer (opacity pulse, native driver)
+const SkeletonPulse = ({ style, isDark }: { style?: any; isDark: boolean }) => {
+  const opacity = useRef(new Animated.Value(0.35)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.8, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.35, duration: 700, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+
+  return (
+    <Animated.View
+      style={[
+        { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', borderRadius: 8 },
+        style,
+        { opacity },
+      ]}
+    />
+  );
+};
+
+// Market overview loading placeholder (theme-aware, matches indexCard size)
+const HomeIndicesSkeleton = ({ isDark, cardColor }: { isDark: boolean; cardColor: string }) => (
+  <View style={{ flexDirection: 'row' }}>
+    {[0, 1, 2, 3].map((i) => (
+      <View key={i} style={{ width: 112, borderRadius: 14, backgroundColor: cardColor, padding: 11, marginRight: 10 }}>
+        <SkeletonPulse isDark={isDark} style={{ width: 60, height: 12, marginBottom: 8 }} />
+        <SkeletonPulse isDark={isDark} style={{ width: 44, height: 9, marginBottom: 8 }} />
+        <SkeletonPulse isDark={isDark} style={{ width: 70, height: 14, marginBottom: 8 }} />
+        <SkeletonPulse isDark={isDark} style={{ width: 52, height: 18, borderRadius: 9 }} />
+      </View>
+    ))}
+  </View>
+);
+
+// Watchlist loading placeholder (theme-aware, mirrors row layout)
+const HomeWatchlistSkeleton = ({ isDark }: { isDark: boolean }) => (
+  <View>
+    {[0, 1, 2, 3].map((i) => (
+      <View key={i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <SkeletonPulse isDark={isDark} style={{ width: 34, height: 34, borderRadius: 17, marginRight: 10 }} />
+          <SkeletonPulse isDark={isDark} style={{ width: 64, height: 13 }} />
+        </View>
+        <SkeletonPulse isDark={isDark} style={{ width: 85, height: 28, borderRadius: 6 }} />
+        <View style={{ alignItems: 'flex-end', width: 90 }}>
+          <SkeletonPulse isDark={isDark} style={{ width: 64, height: 13, marginBottom: 6 }} />
+          <SkeletonPulse isDark={isDark} style={{ width: 76, height: 10 }} />
+        </View>
+      </View>
+    ))}
+  </View>
+);
 
 // Strategy discovery cards — deep-link into the screener with a preset
 // applied (ids/gradients match the screener's own preset cards)
@@ -1805,9 +1908,11 @@ export default function Dashboard() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Floating + Button */}
-      <TouchableOpacity style={styles.fab} onPress={() => setAddStockModal(true)}>
-        <Ionicons name="add" size={32} color="#fff" />
-      </TouchableOpacity>
+      <View style={styles.fabWrapper} pointerEvents="box-none">
+        <ScalePress style={styles.fab} activeScale={0.88} onPress={() => setAddStockModal(true)}>
+          <Ionicons name="add" size={32} color="#fff" />
+        </ScalePress>
+      </View>
 
       <ScrollView
         style={[styles.scrollView, { backgroundColor: colors.background }]}
@@ -1823,12 +1928,13 @@ export default function Dashboard() {
       >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.background }]}>
-          <TouchableOpacity
-            style={[styles.menuButton, { borderColor: colors.border }]}
+          <ScalePress
+            style={[styles.avatarButton, { backgroundColor: colors.surface, borderColor: isDark ? 'rgba(255,214,10,0.35)' : 'rgba(184,134,11,0.3)' }]}
+            activeScale={0.9}
             onPress={() => router.push('/menu')}
           >
-            <Text style={[styles.menu, { color: colors.text }]}>Menu</Text>
-          </TouchableOpacity>
+            <Ionicons name="person" size={19} color={colors.primary} />
+          </ScalePress>
 
           <View style={styles.searchWrapper}>
             <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -1909,6 +2015,16 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
+        {/* Greeting */}
+        <FadeSlideIn distance={8}>
+          <View style={styles.greetingRow}>
+            <Text style={[styles.greetingText, { color: colors.text }]}>{getGreeting()} 👋</Text>
+            <Text style={[styles.greetingDate, { color: colors.textTertiary }]}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </Text>
+          </View>
+        </FadeSlideIn>
+
         {/* Connection Status Banner - Shows during initial connection */}
         {!wsConnected && (
           <View style={styles.connectionBanner}>
@@ -1917,69 +2033,17 @@ export default function Dashboard() {
           </View>
         )}
 
-        {/* Live Major Indices - Horizontal Scrollable */}
-        <View style={styles.indicesSection}>
-          <FadeSlideIn distance={10}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleRow}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Market Overview</Text>
-                <CryptoLiveIndicator />
-              </View>
-              <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 4 }} />
-            </View>
-          </FadeSlideIn>
-          
-          {indicesLoading ? (
-            <IndicesSkeletonList count={5} />
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.indicesScrollContent}
-            >
-              {liveMarketIndices.filter((index) => index.price > 0).map((index) => (
-                <TouchableOpacity
-                  key={index.symbol}
-                  style={[styles.indexCard, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}
-                  onPress={() => router.push(`/symbol/${encodeURIComponent(index.symbol)}/chart`)}
-                >
-                  <View style={styles.indexCardHeader}>
-                    <StockLogo
-                      symbol={index.symbol}
-                      size={Platform.OS === 'android' ? 20 : 24}
-                      style={{ marginRight: Platform.OS === 'android' ? 5 : 6 }}
-                    />
-                    <Text style={[styles.indexSymbol, { color: colors.text }]}>{index.symbol.replace('/USD', '')}</Text>
-                  </View>
-                  <Text style={[styles.indexName, { color: colors.textTertiary }]} numberOfLines={1}>{index.name}</Text>
-                  <AnimatedPrice
-                    value={index.price}
-                    prefix="$"
-                    decimals={index.price >= 1000 ? 0 : index.price >= 100 ? 1 : 2}
-                    style={{ ...styles.indexPrice, color: colors.text }}
-                    flashOnChange={true}
-                  />
-                  <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
-                    <Ionicons
-                      name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'}
-                      size={12}
-                      color={index.color}
-                    />
-                    <AnimatedChange
-                      value={index.changePercent}
-                      style={{ ...styles.indexChange, color: index.color }}
-                      showArrow={false}
-                      flashOnChange={true}
-                    />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        {/* Enhanced Portfolio Section */}
+        {/* Enhanced Portfolio Section (hero — leads the page) */}
         <View style={[styles.portfolioSection, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}>
+          <LinearGradient
+            colors={isDark
+              ? ['rgba(255,214,10,0.10)', 'rgba(255,214,10,0)']
+              : ['rgba(184,134,11,0.08)', 'rgba(184,134,11,0)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0.7, y: 0.9 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: Platform.OS === 'android' ? 16 : 20 }]}
+            pointerEvents="none"
+          />
           <View style={styles.portfolioTopRow}>
             <View style={styles.portfolioSelectorContainer}>
               <TouchableOpacity
@@ -2057,9 +2121,20 @@ export default function Dashboard() {
             <Text style={[styles.portfolioValue, { color: colors.text }]}>
               ${(livePortfolioData?.totalValue || contextCurrentPortfolio?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
-            <Text style={[styles.portfolioChange, { color: (livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? "#00C853" : "#FF3B30" }]}>
-              {(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '+' : ''}${Math.abs(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0).toFixed(2)} ({(livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0) >= 0 ? '+' : ''}{(livePortfolioData?.totalGainPercent ?? contextCurrentPortfolio?.totalGainPercent ?? 0).toFixed(2)}%)
-            </Text>
+            {(() => {
+              const gain = livePortfolioData?.totalGain ?? contextCurrentPortfolio?.totalGain ?? 0;
+              const gainPct = livePortfolioData?.totalGainPercent ?? contextCurrentPortfolio?.totalGainPercent ?? 0;
+              const up = gain >= 0;
+              const tone = up ? '#00C853' : '#FF3B30';
+              return (
+                <View style={[styles.portfolioChangePill, { backgroundColor: up ? 'rgba(0,200,83,0.12)' : 'rgba(255,59,48,0.12)' }]}>
+                  <Ionicons name={up ? 'trending-up' : 'trending-down'} size={16} color={tone} />
+                  <Text style={[styles.portfolioChange, { color: tone }]}>
+                    {up ? '+' : ''}${Math.abs(gain).toFixed(2)} ({up ? '+' : ''}{gainPct.toFixed(2)}%)
+                  </Text>
+                </View>
+              );
+            })()}
           </View>
 
           {/* Portfolio Chart */}
@@ -2268,6 +2343,68 @@ export default function Dashboard() {
           })()}
         </View>
 
+        {/* Live Major Indices - Horizontal Scrollable */}
+        <View style={styles.indicesSection}>
+          <FadeSlideIn distance={10}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Market Overview</Text>
+                <CryptoLiveIndicator />
+              </View>
+              <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 4 }} />
+            </View>
+          </FadeSlideIn>
+
+          {indicesLoading ? (
+            <HomeIndicesSkeleton isDark={isDark} cardColor={isDark ? colors.card : '#F5F5F7'} />
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.indicesScrollContent}
+            >
+              {liveMarketIndices.filter((index) => index.price > 0).map((index) => (
+                <ScalePress
+                  key={index.symbol}
+                  style={[styles.indexCard, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}
+                  activeScale={0.94}
+                  onPress={() => router.push(`/symbol/${encodeURIComponent(index.symbol)}/chart`)}
+                >
+                  <View style={styles.indexCardHeader}>
+                    <StockLogo
+                      symbol={index.symbol}
+                      size={Platform.OS === 'android' ? 20 : 24}
+                      style={{ marginRight: Platform.OS === 'android' ? 5 : 6 }}
+                    />
+                    <Text style={[styles.indexSymbol, { color: colors.text }]}>{index.symbol.replace('/USD', '')}</Text>
+                  </View>
+                  <Text style={[styles.indexName, { color: colors.textTertiary }]} numberOfLines={1}>{index.name}</Text>
+                  <AnimatedPrice
+                    value={index.price}
+                    prefix="$"
+                    decimals={index.price >= 1000 ? 0 : index.price >= 100 ? 1 : 2}
+                    style={{ ...styles.indexPrice, color: colors.text }}
+                    flashOnChange={true}
+                  />
+                  <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
+                    <Ionicons
+                      name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'}
+                      size={12}
+                      color={index.color}
+                    />
+                    <AnimatedChange
+                      value={index.changePercent}
+                      style={{ ...styles.indexChange, color: index.color }}
+                      showArrow={false}
+                      flashOnChange={true}
+                    />
+                  </View>
+                </ScalePress>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+
         {/* Watchlist Section */}
         <View style={[styles.watchlistSection, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}>
           <View style={styles.watchlistHeader}>
@@ -2369,7 +2506,7 @@ export default function Dashboard() {
           </View>
 
           {watchlistDataLoading ? (
-            <WatchlistSkeletonList count={4} />
+            <HomeWatchlistSkeleton isDark={isDark} />
           ) : liveWatchlistData.length === 0 ? (
             <View style={styles.emptyWatchlist}>
               <View style={styles.emptyWatchlistIconContainer}>
@@ -2400,9 +2537,10 @@ export default function Dashboard() {
                   : [stock.price || 1, stock.price || 1];
 
                 return (
-                <TouchableOpacity
-                  key={stock.symbol}
+                <FadeSlideIn key={stock.symbol} delay={Math.min(idx, 8) * 40} distance={8}>
+                <ScalePress
                   style={[styles.watchlistRow, { borderBottomColor: colors.borderLight }]}
+                  activeScale={0.98}
                   onPress={() => {
                     trackAction(); // Track stock view for app review
                     router.push(`/symbol/${encodeURIComponent(stock.symbol)}/chart`);
@@ -2449,7 +2587,8 @@ export default function Dashboard() {
                       </Text>
                     </View>
                   </View>
-                </TouchableOpacity>
+                </ScalePress>
+                </FadeSlideIn>
                 );
               })}
             </View>
@@ -2458,10 +2597,10 @@ export default function Dashboard() {
 
         {/* Stock Picks Section */}
         <View style={styles.stockPicksSection}>
-          <TouchableOpacity
+          <ScalePress
             style={[styles.stockPicksCard, { backgroundColor: isDark ? colors.surface : '#F5F5F7', borderColor: isDark ? colors.border : '#FFD70030', shadowOpacity: isDark ? 0 : 0.08, elevation: isDark ? 0 : 3 }]}
+            activeScale={0.98}
             onPress={() => router.push('/premium/stock-picks')}
-            activeOpacity={0.9}
           >
             {/* Header */}
             <View style={styles.stockPicksHeader}>
@@ -2557,7 +2696,7 @@ export default function Dashboard() {
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.primary} />
             </View>
-          </TouchableOpacity>
+          </ScalePress>
         </View>
 
         {/* Strategy Discovery Cards */}
@@ -2575,8 +2714,8 @@ export default function Dashboard() {
           >
             {STRATEGY_CARDS.map((strategy, idx) => (
               <FadeSlideIn key={strategy.id} delay={Math.min(idx, 6) * 50} distance={10}>
-                <TouchableOpacity
-                  activeOpacity={0.85}
+                <ScalePress
+                  activeScale={0.93}
                   onPress={() => router.push(`/screener?preset=${strategy.id}` as any)}
                 >
                   <LinearGradient
@@ -2601,7 +2740,7 @@ export default function Dashboard() {
                       <Ionicons name="arrow-forward" size={12} color="rgba(255,255,255,0.9)" />
                     </View>
                   </LinearGradient>
-                </TouchableOpacity>
+                </ScalePress>
               </FadeSlideIn>
             ))}
           </ScrollView>
@@ -2620,14 +2759,14 @@ export default function Dashboard() {
           ) : news.length > 0 ? (
             <View style={styles.newsContainer}>
               {news.slice(0, 5).map((item, i) => (
-                <TouchableOpacity
-                  key={i}
+                <FadeSlideIn key={i} delay={Math.min(i, 5) * 45} distance={8}>
+                <ScalePress
                   style={[styles.newsCard, { backgroundColor: isDark ? colors.card : '#F5F5F7' }]}
+                  activeScale={0.97}
                   onPress={async () => {
                     trackAction();
                     await WebBrowser.openBrowserAsync(item.url);
                   }}
-                  activeOpacity={0.7}
                 >
                   <View style={styles.newsContent}>
                     <View style={styles.newsHeader}>
@@ -2643,7 +2782,8 @@ export default function Dashboard() {
                     <Text style={[styles.newsTitle, { color: colors.text }]} numberOfLines={2}>{item.title}</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-                </TouchableOpacity>
+                </ScalePress>
+                </FadeSlideIn>
               ))}
             </View>
           ) : (
@@ -3232,17 +3372,19 @@ const styles = StyleSheet.create({
   content: { paddingBottom: 20 },
   
   // FAB
-  fab: {
+  fabWrapper: {
     position: 'absolute',
     right: 20,
     bottom: Platform.OS === 'ios' ? 110 : 90,
+    zIndex: 10,
+  },
+  fab: {
     backgroundColor: '#B8860B',
     width: 56,
     height: 56,
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 10,
     shadowColor: '#B8860B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
@@ -3280,17 +3422,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F5F5F7'
   },
-  menuButton: {
-    paddingHorizontal: Platform.OS === 'android' ? 12 : 16,
-    paddingVertical: Platform.OS === 'android' ? 6 : 8,
+  avatarButton: {
+    width: 40,
+    height: 40,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#E5E5EA'
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  menu: {
-    fontSize: Platform.OS === 'android' ? 12 : 15,
-    fontWeight: '600',
-    color: '#000',
+  greetingRow: {
+    paddingHorizontal: Platform.OS === 'android' ? 16 : 20,
+    marginBottom: Platform.OS === 'android' ? 12 : 16,
+  },
+  greetingText: {
+    fontSize: Platform.OS === 'android' ? 20 : 24,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+    includeFontPadding: false,
+  },
+  greetingDate: {
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 2,
     includeFontPadding: false,
   },
   searchWrapper: {
@@ -3637,9 +3790,18 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   portfolioChange: {
-    fontSize: Platform.OS === 'android' ? 14 : 20,
+    fontSize: Platform.OS === 'android' ? 14 : 17,
     fontWeight: '700',
     includeFontPadding: false,
+  },
+  portfolioChangePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
   },
   
   // Chart
