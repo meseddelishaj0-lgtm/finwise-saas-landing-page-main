@@ -2962,9 +2962,9 @@ export default function Dashboard() {
                 <View style={[styles.watchlistSearchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <Ionicons name="search" size={20} color={colors.textTertiary} style={{ marginRight: 8 }} />
                   <TextInput
-                    style={styles.watchlistSearchInput}
+                    style={[styles.watchlistSearchInput, { color: colors.text }]}
                     placeholder="Search by symbol or company name"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={colors.textTertiary}
                     value={newStockSymbol}
                     onChangeText={(text) => {
                       setNewStockSymbol(text);
@@ -3103,9 +3103,9 @@ export default function Dashboard() {
                 <View style={[styles.watchlistSearchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <Ionicons name="search" size={20} color={colors.textTertiary} style={{ marginRight: 8 }} />
                   <TextInput
-                    style={styles.watchlistSearchInput}
+                    style={[styles.watchlistSearchInput, { color: colors.text }]}
                     placeholder="Search by symbol or company name"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={colors.textTertiary}
                     value={watchlistSymbol}
                     onChangeText={(text) => {
                       setWatchlistSymbol(text);
@@ -4532,7 +4532,6 @@ const styles = StyleSheet.create({
   watchlistSearchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000',
   },
   watchlistSearchDropdown: {
     backgroundColor: '#FFFFFF',
