@@ -1004,8 +1004,19 @@ export default function Dashboard() {
     };
     
     return result;
+    // NOTE: deliberately NOT keyed on priceUpdateTrigger — recomputing (and
+    // re-rendering the chart) every 100ms tick made range switching laggy.
+    // totalValue only changes identity when the number actually moves.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [portfolio.chartData, livePortfolioData?.totalValue, priceUpdateTrigger]);
+  }, [portfolio.chartData, livePortfolioData?.totalValue]);
+
+  // Smooth once per data change, not on every render
+  const smoothedPortfolioChartData = useMemo(
+    () => (livePortfolioChartData && livePortfolioChartData.length > 1
+      ? interpolateData(livePortfolioChartData, 80)
+      : []),
+    [livePortfolioChartData]
+  );
 
   // Fetch live market overview data - INSTANT from pre-loaded crypto + ETF data
   const fetchMarketChips = async () => {
@@ -1356,21 +1367,32 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch portfolio historical chart data
+  // Per-range chart cache so switching time ranges is instant
+  const portfolioChartCacheRef = useRef<Record<string, { data: any[]; ts: number }>>({});
+
+  // Fetch portfolio historical chart data — a true dollar-value series
+  // built from EVERY holding's price history (top 10 by value), not just
+  // the first holding scaled off cost basis. 1D uses intraday 15min bars.
   const fetchPortfolioChart = async (currentValue: number, holdings: any[]) => {
     try {
-      let historicalData: any[] = [];
-      let labels: string[] = [];
+      if (!holdings || holdings.length === 0) return;
+
+      const cacheKey = `${selectedPortfolioId ?? 'default'}-${portfolioTimeRange}-${holdings.length}`;
+      const cached = portfolioChartCacheRef.current[cacheKey];
+      if (cached && Date.now() - cached.ts < 5 * 60 * 1000) {
+        setPortfolio(prev => ({ ...prev, chartData: cached.data }));
+        return;
+      }
 
       const today = new Date();
       let daysBack = 365;
-      
+
       switch (portfolioTimeRange) {
         case '1D': daysBack = 1; break;
         case '5D': daysBack = 5; break;
         case '1M': daysBack = 30; break;
         case '6M': daysBack = 180; break;
-        case 'YTD': 
+        case 'YTD':
           const yearStart = new Date(today.getFullYear(), 0, 1);
           daysBack = Math.floor((today.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24));
           break;
@@ -1379,80 +1401,113 @@ export default function Dashboard() {
         case 'ALL': daysBack = 3650; break;
       }
 
-      const primarySymbol = holdings[0]?.symbol;
-      if (!primarySymbol) return;
+      // Cover the biggest positions; anything beyond rides along as a constant
+      const holdingValue = (h: any) => h.currentValue || h.shares * (h.currentPrice || h.avgCost);
+      const ranked = [...holdings].sort((a, b) => holdingValue(b) - holdingValue(a));
+      const covered = ranked.slice(0, portfolioTimeRange === '1D' ? 5 : 10);
+      const residual = ranked.slice(covered.length).reduce((sum, h) => sum + holdingValue(h), 0);
 
-      const fromDate = new Date(today.getTime() - daysBack * 24 * 60 * 60 * 1000)
-        .toISOString().split('T')[0];
-      const toDate = today.toISOString().split('T')[0];
+      // Per-symbol time series, oldest → newest
+      const seriesBySymbol: Record<string, { t: string; close: number }[]> = {};
 
-      const histRes = await fetch(
-        `${BASE_URL}/historical-price-full/${primarySymbol}?from=${fromDate}&to=${toDate}&apikey=${FMP_API_KEY}`
-      );
-      const histData = await histRes.json();
+      if (portfolioTimeRange === '1D') {
+        // Intraday 15min bars, latest session only (one call per holding, parallel)
+        await Promise.all(covered.map(async (h) => {
+          try {
+            const res = await fetch(`${BASE_URL}/historical-chart/15min/${h.symbol}?apikey=${FMP_API_KEY}`);
+            const bars = await res.json();
+            if (Array.isArray(bars) && bars.length > 0) {
+              const latestDay = String(bars[0].date).split(' ')[0];
+              seriesBySymbol[h.symbol] = bars
+                .filter((b: any) => String(b.date).startsWith(latestDay))
+                .reverse()
+                .map((b: any) => ({ t: String(b.date), close: b.close }));
+            }
+          } catch {}
+        }));
+      } else {
+        // Daily bars, batched up to 5 symbols per request
+        const fromDate = new Date(today.getTime() - daysBack * 24 * 60 * 60 * 1000)
+          .toISOString().split('T')[0];
+        const toDate = today.toISOString().split('T')[0];
+        const chunks: any[][] = [];
+        for (let i = 0; i < covered.length; i += 5) chunks.push(covered.slice(i, i + 5));
 
-      if (histData?.historical && Array.isArray(histData.historical)) {
-        const dataPoints = histData.historical.reverse();
-        
-        const portfolioValues = dataPoints.map((point: any) => {
-          const dayValue = point.close;
-          const baseValue = dataPoints[0].close;
-          const percentChange = (dayValue - baseValue) / baseValue;
-          const costBasis = holdings.reduce((sum, h) => sum + h.shares * h.avgCost, 0);
-          return costBasis * (1 + percentChange);
-        });
-
-        const step = Math.max(1, Math.floor(portfolioValues.length / 100));
-        const sampledValues = portfolioValues.filter((_: number, i: number) => i % step === 0);
-        const sampledDates = dataPoints.filter((_: any, i: number) => i % step === 0);
-        
-        // Create data array with labels for each point
-        historicalData = sampledValues.map((value: number, idx: number) => {
-          const date = new Date(sampledDates[idx].date);
-
-          // Full label for tooltip
-          let fullLabel = '';
-          if (portfolioTimeRange === '1D') {
-            fullLabel = date.toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit'
-            });
-          } else {
-            fullLabel = date.toLocaleDateString('en-US', { 
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric'
-            });
-          }
-          
-          return {
-            value: value,
-            label: '',
-            dataPointText: fullLabel
-          };
-        });
-
-        // Generate visible labels (fewer for x-axis)
-        const labelStep = Math.ceil(historicalData.length / 6);
-        labels = historicalData.map((d: any, i: number) => 
-          i % labelStep === 0 ? d.label : ''
-        );
-
-        const startValue = sampledValues[0] || currentValue;
-        const endValue = sampledValues[sampledValues.length - 1] || currentValue;
-        const yearChange = endValue - startValue;
-        const yearChangePercent = startValue > 0 ? (yearChange / startValue) * 100 : 0;
-
-        setPortfolio(prev => ({
-          ...prev,
-          chartData: historicalData,
-          chartLabels: labels,
-          yearChange,
-          yearChangePercent
+        await Promise.all(chunks.map(async (chunk) => {
+          try {
+            const res = await fetch(
+              `${BASE_URL}/historical-price-full/${chunk.map(h => h.symbol).join(',')}?from=${fromDate}&to=${toDate}&apikey=${FMP_API_KEY}`
+            );
+            const json = await res.json();
+            const lists = json?.historicalStockList ?? (json?.historical ? [json] : []);
+            for (const item of lists) {
+              if (item?.symbol && Array.isArray(item.historical)) {
+                seriesBySymbol[item.symbol] = item.historical
+                  .slice()
+                  .reverse()
+                  .map((p: any) => ({ t: String(p.date), close: p.close }));
+              }
+            }
+          } catch {}
         }));
       }
+
+      // Timeline = covered symbol with the most data points
+      const timelineSym = covered
+        .map(h => h.symbol)
+        .filter(s => seriesBySymbol[s]?.length)
+        .sort((a, b) => seriesBySymbol[b].length - seriesBySymbol[a].length)[0];
+      if (!timelineSym) throw new Error('no history');
+
+      const timeline = seriesBySymbol[timelineSym].map(p => p.t);
+
+      // Sum shares * close across holdings, forward-filling missing bars
+      const cursor: Record<string, number> = {};
+      const lastClose: Record<string, number> = {};
+      const values = timeline.map((t) => {
+        let total = residual;
+        for (const h of covered) {
+          const series = seriesBySymbol[h.symbol];
+          if (!series || series.length === 0) {
+            total += holdingValue(h);
+            continue;
+          }
+          let i = cursor[h.symbol] ?? 0;
+          while (i < series.length && series[i].t <= t) {
+            lastClose[h.symbol] = series[i].close;
+            i++;
+          }
+          cursor[h.symbol] = i;
+          total += h.shares * (lastClose[h.symbol] ?? series[0].close);
+        }
+        return { t, total };
+      });
+
+      const step = Math.max(1, Math.floor(values.length / 100));
+      const sampled = values.filter((_, i) => i % step === 0 || i === values.length - 1);
+
+      const historicalData = sampled.map(({ t, total }) => {
+        const date = new Date(t.includes(' ') ? t.replace(' ', 'T') : t);
+        const fullLabel = portfolioTimeRange === '1D'
+          ? date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+          : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        return { value: total, label: '', dataPointText: fullLabel };
+      });
+
+      if (historicalData.length < 2) throw new Error('not enough points');
+
+      const startValue = historicalData[0].value;
+      const endValue = historicalData[historicalData.length - 1].value;
+
+      portfolioChartCacheRef.current[cacheKey] = { data: historicalData, ts: Date.now() };
+
+      setPortfolio(prev => ({
+        ...prev,
+        chartData: historicalData,
+        chartLabels: [],
+        yearChange: endValue - startValue,
+        yearChangePercent: startValue > 0 ? ((endValue - startValue) / startValue) * 100 : 0,
+      }));
     } catch {
       setPortfolio(prev => ({
         ...prev,
@@ -1809,10 +1864,15 @@ export default function Dashboard() {
     };
   }, [holdingsInitialized, contextWatchlistLoading]);
 
-  // Refetch portfolio chart when time range changes
+  // Refetch ONLY the chart when the time range changes — refetching the whole
+  // portfolio (quotes + chart) on every range tap is what made it laggy
   useEffect(() => {
-    if (contextCurrentPortfolio && contextCurrentPortfolio.holdings.length > 0) {
-      fetchPortfolio();
+    const holdings = livePortfolioData?.holdings ?? contextCurrentPortfolio?.holdings;
+    if (holdings && holdings.length > 0) {
+      fetchPortfolioChart(
+        livePortfolioData?.totalValue ?? contextCurrentPortfolio?.totalValue ?? 0,
+        holdings
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portfolioTimeRange, contextCurrentPortfolio?.holdings?.length]);
@@ -2140,9 +2200,8 @@ export default function Dashboard() {
           </View>
 
           {/* Portfolio Chart */}
-          {livePortfolioChartData.length > 1 && (() => {
-            // Smooth and interpolate data for cleaner curves - uses live data
-            const smoothedChartData = interpolateData(livePortfolioChartData, 80);
+          {smoothedPortfolioChartData.length > 1 && (() => {
+            const smoothedChartData = smoothedPortfolioChartData;
             const chartSpacing = Math.max(2, portfolioChartBleedWidth / smoothedChartData.length);
 
             return (
