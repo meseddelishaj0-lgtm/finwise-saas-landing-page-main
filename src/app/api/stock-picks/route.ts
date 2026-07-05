@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+// Claude generation with adaptive thinking can take longer than the default
+// serverless window; only paid on the one cache-miss request per day.
+export const maxDuration = 60;
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const FMP_API_KEY = process.env.FMP_API_KEY || "";
 const FMP_BASE_URL = "https://financialmodelingprep.com/api/v3";
 
@@ -97,41 +99,73 @@ async function resolveTier(userId: number): Promise<string> {
   return "free";
 }
 
+// Structured-output schema: guarantees valid JSON in the exact shape we
+// consume (no markdown fences or bracket-slicing needed)
+const PICKS_SCHEMA = {
+  type: "object" as const,
+  properties: {
+    picks: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          symbol: {
+            type: "string",
+            description: "Valid US-listed stock ticker symbol, uppercase",
+          },
+          category: {
+            type: "string",
+            description: 'Short category, 2-3 words, e.g. "AI & Tech"',
+          },
+          reason: {
+            type: "string",
+            description: "One sentence on why this is a good pick right now",
+          },
+        },
+        required: ["symbol", "category", "reason"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["picks"],
+  additionalProperties: false,
+};
+
 async function generateAIStockPicks(): Promise<AIPick[]> {
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.7,
-      max_tokens: 2000,
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert stock analyst. Generate a list of ${TOTAL_PICKS} top stock picks for investors.
+    // Constructed lazily so a missing ANTHROPIC_API_KEY throws here (caught
+    // below -> fallback picks) instead of failing the whole route at load
+    const anthropic = new Anthropic();
+
+    const response = await anthropic.messages.create({
+      model: "claude-opus-4-8",
+      max_tokens: 16000,
+      thinking: { type: "adaptive" },
+      output_config: {
+        format: { type: "json_schema", schema: PICKS_SCHEMA },
+      },
+      system: `You are an expert stock analyst. Generate a list of ${TOTAL_PICKS} top stock picks for investors.
 Focus on stocks with strong fundamentals, growth potential, and current market momentum.
 Consider various sectors for diversification: Technology, Healthcare, Financials, Consumer, Energy, etc.
 Only include US-listed stocks with valid ticker symbols.`,
-        },
+      messages: [
         {
           role: "user",
-          content: `Generate ${TOTAL_PICKS} top stock picks for today. For each stock provide:
-1. The ticker symbol (must be a valid US stock ticker)
-2. A short category (2-3 words like "AI & Tech", "Healthcare", "Financials")
-3. A brief reason for the pick (1 sentence explaining why it's a good investment right now)
-
-Return ONLY a valid JSON array with no markdown formatting, like this:
-[{"symbol":"AAPL","category":"Tech Giant","reason":"Strong services growth and loyal customer ecosystem"},...]`,
+          content: `Generate exactly ${TOTAL_PICKS} top stock picks for today. For each stock provide the ticker symbol, a short category, and a brief reason for the pick.`,
         },
       ],
     });
 
-    let content = completion.choices[0]?.message?.content?.trim() || "";
-    content = content.replace(/```json\n?/g, "").replace(/```\n?/g, "");
-    const start = content.indexOf("[");
-    const end = content.lastIndexOf("]");
-    if (start !== -1 && end !== -1) {
-      content = content.slice(start, end + 1);
+    if (response.stop_reason === "refusal") {
+      throw new Error("Model refused");
     }
-    const picks = JSON.parse(content);
+
+    const textBlock = response.content.find(
+      (b): b is Anthropic.TextBlock => b.type === "text"
+    );
+    if (!textBlock) throw new Error("No text block in response");
+
+    const picks = JSON.parse(textBlock.text)?.picks;
     if (Array.isArray(picks) && picks.length > 0) {
       return picks
         .filter((p) => p && typeof p.symbol === "string")
