@@ -310,7 +310,12 @@ export default function Trending() {
     ]).start(() => {
       // Check if still mounted before continuing
       if (!isMountedRef.current) return;
-      
+
+      // Clear the previous tab's list BEFORE switching so it can never be
+      // shown (or cached) under the new tab while its data loads
+      setData([]);
+      setLoading(true);
+
       // Change tab
       setActiveTab(newTab);
       
@@ -335,6 +340,11 @@ export default function Trending() {
 
   // Cache for tab data to avoid re-fetching on tab switch
   const tabDataCache = useRef<Record<string, { data: StockItem[]; timestamp: number }>>({})
+
+  // Which tab the current `data` state belongs to — guards the cache-write
+  // effect from writing the previous tab's rows under the new tab's key
+  // when activeTab changes before the new data arrives
+  const dataOwnerTabRef = useRef<string>("");
 
   // WebSocket for real-time forex/commodities prices
   const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
@@ -530,6 +540,8 @@ export default function Trending() {
   // Update cache when data changes successfully
   useEffect(() => {
     if (data.length > 0 && !loading) {
+      // Only cache data that was actually loaded for this tab
+      if (dataOwnerTabRef.current !== activeTab) return;
       tabDataCache.current[activeTab] = {
         data: data,
         timestamp: Date.now(),
@@ -608,6 +620,10 @@ export default function Trending() {
   // Main tab switching - ALWAYS fetch fresh data (gainers/losers change frequently)
   useEffect(() => {
     const cached = tabDataCache.current[activeTab];
+
+    // Everything set from here on (cache or fetch) belongs to this tab —
+    // mark ownership for the cache-write effect
+    dataOwnerTabRef.current = activeTab;
 
     // CLEAR old data first to prevent showing wrong tab's data
     setData([]);

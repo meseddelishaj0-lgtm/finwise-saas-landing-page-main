@@ -523,7 +523,13 @@ export default function Explore() {
     ]).start(() => {
       // Check if still mounted before continuing
       if (!isMountedRef.current) return;
-      
+
+      // Clear the previous tab's list BEFORE switching so it can never be
+      // shown (or cached) under the new tab while its data loads
+      setData([]);
+      setHeaderCards([]);
+      setLoading(true);
+
       // Change tab
       setActiveTab(newTab);
       
@@ -547,6 +553,12 @@ export default function Explore() {
 
   // Cache for tab data to avoid re-fetching on tab switch
   const tabDataCache = useRef<Record<string, { data: MarketItem[]; headerCards: ChipData[]; timestamp: number }>>({})
+
+  // Which tab/region cache key the current `data` state belongs to.
+  // Guards the cache-write effect: when activeTab changes, that effect fires
+  // while `data` still holds the previous tab's list — without this guard it
+  // wrote stocks into the etf/bonds cache and the new tab showed stale rows.
+  const dataOwnerKeyRef = useRef<string>("");
 
   // WebSocket for real-time prices
   const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
@@ -1363,6 +1375,8 @@ export default function Explore() {
   useEffect(() => {
     if (data.length > 0 && !loading) {
       const cacheKey = activeTab === "stocks" ? `${activeTab}-${stockRegion}` : activeTab;
+      // Only cache data that was actually loaded for this tab/region
+      if (dataOwnerKeyRef.current !== cacheKey) return;
       tabDataCache.current[cacheKey] = {
         data: data,
         headerCards: headerCards,
@@ -1375,6 +1389,10 @@ export default function Explore() {
     // Generate cache key based on tab and region
     const cacheKey = activeTab === "stocks" ? `${activeTab}-${stockRegion}` : activeTab;
     const cached = tabDataCache.current[cacheKey];
+
+    // Everything set from here on (instant paths, cache, or fetch) belongs
+    // to this tab/region — mark ownership for the cache-write effect
+    dataOwnerKeyRef.current = cacheKey;
 
     // Reset WebSocket subscription tracking
     lastSubscribedTabRef.current = '';
