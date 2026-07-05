@@ -190,13 +190,24 @@ export async function PUT(
     if (profileImage !== undefined) updateData.profileImage = profileImage;
     if (bannerImage !== undefined) updateData.bannerImage = bannerImage;
 
-    // Handle subscription tier update
+    // Handle subscription tier update (synced from the app's RevenueCat
+    // state on launch). Tier-gated endpoints (e.g. /api/stock-picks) require
+    // an ACTIVE status AND an unexpired subscriptionExpiry, so set a rolling
+    // 35-day expiry here — the app re-syncs on every launch while the
+    // subscription is live, so the window keeps sliding; if the user cancels,
+    // the sync stops and access lapses within the window.
     if (subscriptionTier !== undefined) {
       const validTiers = ['free', 'gold', 'platinum', 'diamond'];
       const tier = subscriptionTier.toLowerCase();
       if (validTiers.includes(tier)) {
         updateData.subscriptionTier = tier;
-        updateData.subscriptionStatus = tier !== 'free' ? 'active' : null;
+        if (tier !== 'free') {
+          updateData.subscriptionStatus = 'active';
+          updateData.subscriptionExpiry = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000);
+        } else {
+          updateData.subscriptionStatus = null;
+          updateData.subscriptionExpiry = null;
+        }
       }
     }
 
