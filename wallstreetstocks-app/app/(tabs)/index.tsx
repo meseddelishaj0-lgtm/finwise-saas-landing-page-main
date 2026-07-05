@@ -3204,29 +3204,38 @@ export default function Dashboard() {
 
                 <View style={styles.holdingOptionsButtons}>
                   <TouchableOpacity
-                    style={styles.holdingOptionButton}
+                    style={[styles.holdingOptionButton, { backgroundColor: colors.surface }]}
+                    activeOpacity={0.7}
                     onPress={() => {
                       setHoldingOptionsModal(false);
                       router.push(`/symbol/${encodeURIComponent(selectedHolding.symbol)}/chart`);
                     }}
                   >
-                    <Ionicons name="stats-chart" size={24} color={colors.primary} />
-                    <Text style={styles.holdingOptionButtonText}>View Chart</Text>
+                    <View style={[styles.holdingOptionIconBubble, { backgroundColor: isDark ? 'rgba(255,214,10,0.16)' : 'rgba(184,134,11,0.12)' }]}>
+                      <Ionicons name="stats-chart" size={22} color={colors.primary} />
+                    </View>
+                    <Text style={[styles.holdingOptionButtonText, { color: colors.text }]}>View Chart</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.holdingOptionButton}
+                    style={[styles.holdingOptionButton, { backgroundColor: colors.surface }]}
+                    activeOpacity={0.7}
                     onPress={handleOpenEditModal}
                   >
-                    <Ionicons name="create-outline" size={24} color="#FF9500" />
-                    <Text style={styles.holdingOptionButtonText}>Edit</Text>
+                    <View style={[styles.holdingOptionIconBubble, { backgroundColor: 'rgba(255,149,0,0.16)' }]}>
+                      <Ionicons name="create-outline" size={22} color="#FF9500" />
+                    </View>
+                    <Text style={[styles.holdingOptionButtonText, { color: colors.text }]}>Edit</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.holdingOptionButton}
+                    style={[styles.holdingOptionButton, { backgroundColor: 'rgba(255,59,48,0.10)' }]}
+                    activeOpacity={0.7}
                     onPress={() => handleRemoveStock(selectedHolding.symbol)}
                   >
-                    <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+                    <View style={[styles.holdingOptionIconBubble, { backgroundColor: 'rgba(255,59,48,0.16)' }]}>
+                      <Ionicons name="trash-outline" size={22} color="#FF3B30" />
+                    </View>
                     <Text style={[styles.holdingOptionButtonText, { color: '#FF3B30' }]}>Remove</Text>
                   </TouchableOpacity>
                 </View>
@@ -3238,7 +3247,7 @@ export default function Dashboard() {
                     setSelectedHolding(null);
                   }}
                 >
-                  <Text style={styles.holdingOptionsCancelText}>Cancel</Text>
+                  <Text style={[styles.holdingOptionsCancelText, { color: colors.text }]}>Cancel</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -4835,19 +4844,26 @@ const styles = StyleSheet.create({
   },
   holdingOptionsButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    gap: 10,
     marginBottom: 16,
   },
   holdingOptionButton: {
+    flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 16,
+  },
+  holdingOptionIconBubble: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   holdingOptionButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#000',
-    marginTop: 6,
+    fontSize: 14,
+    fontWeight: '700',
   },
   holdingOptionsCancelButton: {
     backgroundColor: '#F5F5F7',
@@ -4857,8 +4873,7 @@ const styles = StyleSheet.create({
   },
   holdingOptionsCancelText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#8E8E93',
+    fontWeight: '700',
   },
 
   // Edit Holding Modal
