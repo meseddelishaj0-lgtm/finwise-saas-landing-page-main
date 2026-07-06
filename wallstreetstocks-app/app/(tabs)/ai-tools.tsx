@@ -1121,15 +1121,15 @@ Always remind users that this is educational information, not financial advice.`
                     <View style={styles.priceTargetRow}>
                       <View style={styles.priceTargetItem}>
                         <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>Bear Case</Text>
-                        <Text style={[styles.priceTargetValue, { color: '#FF3B30' }]}>${analysisResult.priceTarget.low}</Text>
+                        <Text style={[styles.priceTargetValue, { color: '#FF3B30' }]}>${Math.round(analysisResult.priceTarget.low).toLocaleString()}</Text>
                       </View>
                       <View style={styles.priceTargetItem}>
                         <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>Base Case</Text>
-                        <Text style={[styles.priceTargetValue, { color: '#B8860B' }]}>${analysisResult.priceTarget.mid}</Text>
+                        <Text style={[styles.priceTargetValue, { color: '#B8860B' }]}>${Math.round(analysisResult.priceTarget.mid).toLocaleString()}</Text>
                       </View>
                       <View style={styles.priceTargetItem}>
                         <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>Bull Case</Text>
-                        <Text style={[styles.priceTargetValue, { color: '#00C853' }]}>${analysisResult.priceTarget.high}</Text>
+                        <Text style={[styles.priceTargetValue, { color: '#00C853' }]}>${Math.round(analysisResult.priceTarget.high).toLocaleString()}</Text>
                       </View>
                     </View>
                   </View>
