@@ -22,7 +22,6 @@ import {
 import * as Haptics from 'expo-haptics';
 import { Image as ExpoImage } from 'expo-image';
 import { Swipeable } from 'react-native-gesture-handler';
-import { fetchSparklines } from '@/services/sparklineService';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useFocusEffect } from '@react-navigation/native';
@@ -461,7 +460,6 @@ export default function Dashboard() {
   ]);
   const [indicesLoading, setIndicesLoading] = useState(true);
   const [indicesCacheLoaded, setIndicesCacheLoaded] = useState(false);
-  const [indexSparklines, setIndexSparklines] = useState<Record<string, number[]>>({});
 
   // Market News
   const NEWS_CACHE_KEY = 'cached_market_news';
@@ -634,17 +632,6 @@ export default function Dashboard() {
       wsSubscribe(MARKET_OVERVIEW_SYMBOLS);
     }
   }, [wsConnected, wsSubscribe]);
-
-  // Sparklines for the market overview cards (service caches per symbol)
-  useEffect(() => {
-    if (indicesLoading || majorIndices.length === 0) return;
-    const pcts: Record<string, number> = {};
-    majorIndices.forEach(i => { pcts[i.symbol] = i.changePercent; });
-    fetchSparklines(majorIndices.map(i => i.symbol), pcts)
-      .then(setIndexSparklines)
-      .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [indicesLoading]);
 
   // Load cached market indices on mount (show last prices instantly)
   useEffect(() => {
@@ -2478,30 +2465,18 @@ export default function Dashboard() {
                     style={{ ...styles.indexPrice, color: colors.text }}
                     flashOnChange={true}
                   />
-                  <View style={styles.indexCardFooter}>
-                    <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
-                      <Ionicons
-                        name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'}
-                        size={12}
-                        color={index.color}
-                      />
-                      <AnimatedChange
-                        value={index.changePercent}
-                        style={{ ...styles.indexChange, color: index.color }}
-                        showArrow={false}
-                        flashOnChange={true}
-                      />
-                    </View>
-                    {(indexSparklines[index.symbol]?.length ?? 0) > 1 && (
-                      <Sparkline
-                        data={indexSparklines[index.symbol]}
-                        color={index.color}
-                        width={34}
-                        height={20}
-                        strokeWidth={1.5}
-                        fillOpacity={0.15}
-                      />
-                    )}
+                  <View style={[styles.indexChangePill, { backgroundColor: index.color + '15' }]}>
+                    <Ionicons
+                      name={index.changePercent >= 0 ? 'trending-up' : 'trending-down'}
+                      size={12}
+                      color={index.color}
+                    />
+                    <AnimatedChange
+                      value={index.changePercent}
+                      style={{ ...styles.indexChange, color: index.color }}
+                      showArrow={false}
+                      flashOnChange={true}
+                    />
                   </View>
                 </ScalePress>
               ))}
@@ -3737,12 +3712,6 @@ const styles = StyleSheet.create({
   indicesSection: {
     paddingLeft: 16,
     marginBottom: Platform.OS === 'android' ? 16 : 24,
-  },
-  indexCardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 4,
   },
   indicesLoadingContainer: {
     height: 130,
