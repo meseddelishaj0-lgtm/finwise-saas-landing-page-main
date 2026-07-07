@@ -177,7 +177,13 @@ export default function EarningsTab() {
         const epsEstimated = earning.epsEstimated ?? 0;
         const revenue = earning.revenue ?? 0;
         const revenueEstimated = earning.revenueEstimated ?? 0;
-        
+
+        // Not yet reported: no actual EPS (null from the API) or the
+        // earnings date is still in the future
+        const isUpcoming =
+          earning.eps == null ||
+          new Date(earning.date).getTime() > Date.now();
+
         const epsBeat = eps > epsEstimated;
         const revenueBeat = revenue > revenueEstimated;
         const epsDiff = eps - epsEstimated;
@@ -194,14 +200,14 @@ export default function EarningsTab() {
                 </Text>
               </View>
               <View style={[
-                styles.badge, 
-                { backgroundColor: (epsBeat && revenueBeat) ? '#00C85320' : '#FF174420' }
+                styles.badge,
+                { backgroundColor: isUpcoming ? '#B8860B20' : (epsBeat && revenueBeat) ? '#00C85320' : '#FF174420' }
               ]}>
                 <Text style={[
                   styles.badgeText,
-                  { color: (epsBeat && revenueBeat) ? '#00C853' : '#FF1744' }
+                  { color: isUpcoming ? '#FFD60A' : (epsBeat && revenueBeat) ? '#00C853' : '#FF1744' }
                 ]}>
-                  {(epsBeat && revenueBeat) ? 'Beat' : 'Miss'}
+                  {isUpcoming ? 'Upcoming' : (epsBeat && revenueBeat) ? 'Beat' : 'Miss'}
                 </Text>
               </View>
             </View>
@@ -210,7 +216,7 @@ export default function EarningsTab() {
             <View style={styles.metricRow}>
               <View style={styles.metricLeft}>
                 <Text style={styles.metricLabel}>EPS (Actual)</Text>
-                <Text style={styles.metricValue}>${eps.toFixed(2)}</Text>
+                <Text style={styles.metricValue}>{isUpcoming ? '—' : `$${eps.toFixed(2)}`}</Text>
               </View>
               <View style={styles.metricRight}>
                 <Text style={styles.metricLabel}>EPS (Expected)</Text>
@@ -218,13 +224,19 @@ export default function EarningsTab() {
               </View>
             </View>
             <View style={styles.differenceRow}>
-              <Text style={[
-                styles.differenceText,
-                { color: epsBeat ? '#00C853' : '#FF1744' }
-              ]}>
-                {epsBeat ? '↑' : '↓'} ${Math.abs(epsDiff).toFixed(2)} 
-                {epsBeat ? ' above' : ' below'} estimate
-              </Text>
+              {isUpcoming ? (
+                <Text style={[styles.differenceText, { color: '#8E8E93' }]}>
+                  Report expected {formatDate(earning.date)}
+                </Text>
+              ) : (
+                <Text style={[
+                  styles.differenceText,
+                  { color: epsBeat ? '#00C853' : '#FF1744' }
+                ]}>
+                  {epsBeat ? '↑' : '↓'} ${Math.abs(epsDiff).toFixed(2)}
+                  {epsBeat ? ' above' : ' below'} estimate
+                </Text>
+              )}
             </View>
 
             {/* Revenue */}
