@@ -238,6 +238,7 @@ export default function StockPicksScreen() {
       ) : (
         <ScrollView
           style={styles.scrollView}
+          contentContainerStyle={{ paddingTop: 12 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
