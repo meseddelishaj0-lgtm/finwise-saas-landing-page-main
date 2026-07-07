@@ -48,21 +48,21 @@ let cache: {
 // first 8, Diamond all 15. Keep exactly TOTAL_PICKS entries.
 // ============================================================================
 const MANUAL_PICKS: Pick[] = [
-  { symbol: "NVDA", category: "AI & Tech", reason: "AI chip leader with strong earnings growth" },
-  { symbol: "AAPL", category: "Tech Giant", reason: "Services revenue expansion & loyal ecosystem" },
-  { symbol: "MSFT", category: "Cloud & AI", reason: "Azure growth and AI integration" },
-  { symbol: "GOOGL", category: "AI & Ads", reason: "Search dominance and Gemini AI rollout" },
-  { symbol: "AMZN", category: "E-commerce & Cloud", reason: "AWS leader with retail recovery" },
-  { symbol: "META", category: "Social & AI", reason: "Reels monetization and AI investments" },
-  { symbol: "TSLA", category: "EV & Energy", reason: "FSD progress and energy storage growth" },
-  { symbol: "LLY", category: "Healthcare", reason: "GLP-1 drug dominance (Mounjaro/Zepbound)" },
-  { symbol: "AVGO", category: "Semiconductors", reason: "AI networking chips and VMware synergies" },
-  { symbol: "JPM", category: "Financials", reason: "Best-in-class bank with strong NII" },
-  { symbol: "V", category: "Payments", reason: "Cross-border travel recovery" },
-  { symbol: "UNH", category: "Healthcare", reason: "Optum growth and aging demographics" },
-  { symbol: "XOM", category: "Energy", reason: "Strong cash flow and Permian expansion" },
-  { symbol: "COST", category: "Retail", reason: "Membership loyalty and market share gains" },
-  { symbol: "HD", category: "Retail", reason: "Pro segment growth and housing demand" },
+  { symbol: "FLG", category: "Regional Banking", reason: "Flagstar turnaround: cleaner balance sheet and a path back to profitability" },
+  { symbol: "CVS", category: "Healthcare", reason: "Integrated healthcare value play with Aetna and Caremark at a cheap multiple" },
+  { symbol: "CLF", category: "Steel & Materials", reason: "Leading US steelmaker leveraged to domestic demand and tariff protection" },
+  { symbol: "FOUR", category: "Payments", reason: "Fast-growing integrated payments platform expanding internationally" },
+  { symbol: "DUOL", category: "EdTech", reason: "Strong user growth with AI-driven subscription monetization" },
+  { symbol: "OXLC", category: "Income & CLO Fund", reason: "Double-digit distribution yield from CLO equity exposure" },
+  { symbol: "FFTY", category: "Growth ETF", reason: "Basket of top-rated growth and momentum leaders (IBD 50)" },
+  { symbol: "KSS", category: "Retail Value", reason: "Deep-value retail turnaround backed by real estate assets" },
+  { symbol: "OMF", category: "Consumer Finance", reason: "High dividend yield with resilient consumer lending margins" },
+  { symbol: "PYPL", category: "Payments", reason: "Turnaround momentum, Venmo monetization and aggressive buybacks" },
+  { symbol: "MCFT", category: "Consumer Leisure", reason: "Premium boat maker with recovery upside as rates ease" },
+  { symbol: "ASO", category: "Sporting Goods", reason: "Value sporting-goods retailer with store expansion and buybacks" },
+  { symbol: "CF", category: "Agriculture", reason: "Nitrogen fertilizer cash-flow machine with clean ammonia optionality" },
+  { symbol: "GRBK", category: "Homebuilders", reason: "High-margin homebuilder in supply-constrained Sun Belt markets" },
+  { symbol: "BCC", category: "Building Products", reason: "Wood products and distribution leader tied to housing construction demand" },
 ];
 
 // Resolve the user's tier from the database (same logic as
