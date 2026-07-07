@@ -1328,9 +1328,39 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch stock picks preview data
+  // Fetch stock picks preview data. Premium users get the REAL top 3 from
+  // the server (the manually curated list); free users keep the hardcoded
+  // teaser symbols, which are masked in the UI anyway.
   const fetchStockPicks = async () => {
     try {
+      if (isPremium) {
+        try {
+          const userDataStr = await AsyncStorage.getItem('userData');
+          const userId = userDataStr ? JSON.parse(userDataStr)?.id?.toString() : null;
+          if (userId) {
+            const res = await fetch('https://www.wallstreetstocks.ai/api/stock-picks', {
+              headers: { 'x-user-id': userId, 'Cache-Control': 'no-cache' },
+            });
+            const data = await res.json().catch(() => null);
+            if (res.ok && Array.isArray(data?.picks) && data.picks.length > 0) {
+              const top3 = data.picks.slice(0, 3).map((p: any) => ({
+                symbol: p.symbol,
+                category: p.category,
+                price: p.price || 0,
+                change: p.change || 0,
+                changePercent: p.changePercent || 0,
+              }));
+              setStockPicksData(top3);
+              // Live updates: subscribe the real pick symbols
+              if (wsConnected) wsSubscribe(top3.map((p: any) => p.symbol));
+              return;
+            }
+          }
+        } catch {
+          // Fall through to the teaser fallback below
+        }
+      }
+
       const symbols = STOCK_PICKS_PREVIEW.map(p => p.symbol);
       // Use batch quotes endpoint with KV caching
       const data = await fetchBatchQuotes(symbols);
@@ -1860,6 +1890,16 @@ export default function Dashboard() {
     ]);
     setRefreshing(false);
   };
+
+  // Refetch the picks preview once premium status resolves — RevenueCat
+  // initializes async, so the initial staggered fetch can run while
+  // isPremium is still false and miss the real server picks
+  useEffect(() => {
+    if (isPremium && holdingsInitialized) {
+      fetchStockPicks();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPremium]);
 
   // App state tracking for refreshing data when app comes to foreground
   const appState = useRef(AppState.currentState);

@@ -245,6 +245,19 @@ export default function StockPicksScreen() {
             />
           }
         >
+          {/* Failed/empty fetch: visible retry instead of a silent void */}
+          {stockPicks.length === 0 && (
+            <View style={styles.emptyPicksContainer}>
+              <Ionicons name="cloud-offline-outline" size={44} color="#8E8E93" />
+              <Text style={styles.emptyPicksText}>Couldn&apos;t load your picks</Text>
+              <Text style={styles.emptyPicksSubtext}>Check your connection and try again</Text>
+              <TouchableOpacity style={styles.emptyPicksRetry} onPress={() => fetchStockData()}>
+                <Ionicons name="refresh" size={16} color="#000" />
+                <Text style={styles.emptyPicksRetryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {stockPicks.map((stock, index) => {
             const isLocked = index >= picksLimit;
             const isExpanded = expandedCard === stock.symbol;
@@ -417,6 +430,38 @@ const getRankColor = (index: number) => {
 };
 
 const styles = StyleSheet.create({
+  emptyPicksContainer: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 32,
+  },
+  emptyPicksText: {
+    color: '#FFF',
+    fontSize: 17,
+    fontWeight: '700',
+    marginTop: 14,
+  },
+  emptyPicksSubtext: {
+    color: '#8E8E93',
+    fontSize: 14,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  emptyPicksRetry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginTop: 18,
+  },
+  emptyPicksRetryText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   container: {
     flex: 1,
     backgroundColor: '#000',
