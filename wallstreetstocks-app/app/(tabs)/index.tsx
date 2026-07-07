@@ -2905,20 +2905,20 @@ export default function Dashboard() {
               <View style={styles.stockPicksPreview}>
                 {card.data.map((pick, idx) => (
                   <View key={`${card.key}-${pick.symbol}-${idx}`} style={[styles.pickPreviewCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#EDEDF0' }]}>
-                    <View style={styles.pickPreviewLeft}>
+                    <View style={[styles.pickPreviewLeft, { flex: 1, marginRight: 8 }]}>
                       <View style={[styles.pickRankBadge, {
                         backgroundColor: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : '#CD7F32'
                       }]}>
                         <Text style={styles.pickRankText}>#{idx + 1}</Text>
                       </View>
-                      <View style={{ flex: 1, marginRight: 8 }}>
+                      <View style={{ flex: 1 }}>
                         <Text style={[styles.pickSymbol, { color: colors.text }]}>{pick.symbol}</Text>
                         <Text style={[styles.pickCategory, { color: colors.textSecondary }]} numberOfLines={1}>
                           {pick.category}
                         </Text>
                       </View>
                     </View>
-                    <View style={styles.pickPreviewRight}>
+                    <View style={[styles.pickPreviewRight, { flexShrink: 0 }]}>
                       <Text style={[styles.pickPrice, { color: colors.text }]}>
                         ${(pick.price || 0).toFixed(2)}
                       </Text>
