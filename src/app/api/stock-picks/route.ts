@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
-// Claude generation with adaptive thinking can take longer than the default
-// serverless window; only paid on the one cache-miss request per day.
-export const maxDuration = 60;
 
 const FMP_API_KEY = process.env.FMP_API_KEY || "";
 const FMP_BASE_URL = "https://financialmodelingprep.com/api/v3";
@@ -21,16 +17,15 @@ const PICKS_BY_TIER: Record<string, number> = {
 };
 
 const TOTAL_PICKS = 15;
-const AI_REFRESH_MS = 24 * 60 * 60 * 1000; // regenerate AI picks once a day
 const QUOTE_REFRESH_MS = 5 * 60 * 1000; // refresh prices every 5 minutes
 
-interface AIPick {
+interface Pick {
   symbol: string;
   category: string;
   reason: string;
 }
 
-interface EnrichedPick extends AIPick {
+interface EnrichedPick extends Pick {
   name: string;
   price: number | null;
   change: number | null;
@@ -41,17 +36,18 @@ interface EnrichedPick extends AIPick {
   weekLow52: number | null;
 }
 
-// Server-side cache shared across requests on a warm instance. Picks are the
-// same for everyone (we only vary how many we return per tier), so this keeps
-// OpenAI/FMP usage to roughly one generation per day + price refreshes.
+// Server-side quote cache shared across requests on a warm instance
 let cache: {
-  aiPicks: AIPick[];
-  aiAt: number;
   enriched: EnrichedPick[];
   enrichedAt: number;
 } | null = null;
 
-const FALLBACK_PICKS: AIPick[] = [
+// ============================================================================
+// MANUAL STOCK PICKS — edit this list to change the picks, then deploy.
+// Order matters: index 0 is pick #1. Gold sees the first 5, Platinum the
+// first 8, Diamond all 15. Keep exactly TOTAL_PICKS entries.
+// ============================================================================
+const MANUAL_PICKS: Pick[] = [
   { symbol: "NVDA", category: "AI & Tech", reason: "AI chip leader with strong earnings growth" },
   { symbol: "AAPL", category: "Tech Giant", reason: "Services revenue expansion & loyal ecosystem" },
   { symbol: "MSFT", category: "Cloud & AI", reason: "Azure growth and AI integration" },
@@ -99,90 +95,7 @@ async function resolveTier(userId: number): Promise<string> {
   return "free";
 }
 
-// Structured-output schema: guarantees valid JSON in the exact shape we
-// consume (no markdown fences or bracket-slicing needed)
-const PICKS_SCHEMA = {
-  type: "object" as const,
-  properties: {
-    picks: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: {
-          symbol: {
-            type: "string",
-            description: "Valid US-listed stock ticker symbol, uppercase",
-          },
-          category: {
-            type: "string",
-            description: 'Short category, 2-3 words, e.g. "AI & Tech"',
-          },
-          reason: {
-            type: "string",
-            description: "One sentence on why this is a good pick right now",
-          },
-        },
-        required: ["symbol", "category", "reason"],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ["picks"],
-  additionalProperties: false,
-};
-
-async function generateAIStockPicks(): Promise<AIPick[]> {
-  try {
-    // Constructed lazily so a missing ANTHROPIC_API_KEY throws here (caught
-    // below -> fallback picks) instead of failing the whole route at load
-    const anthropic = new Anthropic();
-
-    const response = await anthropic.messages.create({
-      model: "claude-opus-4-8",
-      max_tokens: 16000,
-      thinking: { type: "adaptive" },
-      output_config: {
-        format: { type: "json_schema", schema: PICKS_SCHEMA },
-      },
-      system: `You are an expert stock analyst. Generate a list of ${TOTAL_PICKS} top stock picks for investors.
-Focus on stocks with strong fundamentals, growth potential, and current market momentum.
-Consider various sectors for diversification: Technology, Healthcare, Financials, Consumer, Energy, etc.
-Only include US-listed stocks with valid ticker symbols.`,
-      messages: [
-        {
-          role: "user",
-          content: `Generate exactly ${TOTAL_PICKS} top stock picks for today. For each stock provide the ticker symbol, a short category, and a brief reason for the pick.`,
-        },
-      ],
-    });
-
-    if (response.stop_reason === "refusal") {
-      throw new Error("Model refused");
-    }
-
-    const textBlock = response.content.find(
-      (b): b is Anthropic.TextBlock => b.type === "text"
-    );
-    if (!textBlock) throw new Error("No text block in response");
-
-    const picks = JSON.parse(textBlock.text)?.picks;
-    if (Array.isArray(picks) && picks.length > 0) {
-      return picks
-        .filter((p) => p && typeof p.symbol === "string")
-        .slice(0, TOTAL_PICKS)
-        .map((p) => ({
-          symbol: String(p.symbol).toUpperCase(),
-          category: String(p.category || ""),
-          reason: String(p.reason || ""),
-        }));
-    }
-    throw new Error("Invalid AI response");
-  } catch {
-    return FALLBACK_PICKS;
-  }
-}
-
-async function enrichWithQuotes(picks: AIPick[]): Promise<EnrichedPick[]> {
+async function enrichWithQuotes(picks: Pick[]): Promise<EnrichedPick[]> {
   let quotes: any[] = [];
   try {
     const symbols = picks.map((p) => p.symbol).join(",");
@@ -212,22 +125,14 @@ async function enrichWithQuotes(picks: AIPick[]): Promise<EnrichedPick[]> {
 async function getEnrichedPicks(): Promise<EnrichedPick[]> {
   const now = Date.now();
 
-  if (!cache || now - cache.aiAt > AI_REFRESH_MS) {
-    const aiPicks = await generateAIStockPicks();
-    const enriched = await enrichWithQuotes(aiPicks);
-    cache = { aiPicks, aiAt: now, enriched, enrichedAt: now };
-    return enriched;
-  }
-
-  if (now - cache.enrichedAt > QUOTE_REFRESH_MS) {
-    cache.enriched = await enrichWithQuotes(cache.aiPicks);
-    cache.enrichedAt = now;
+  if (!cache || now - cache.enrichedAt > QUOTE_REFRESH_MS) {
+    cache = { enriched: await enrichWithQuotes(MANUAL_PICKS), enrichedAt: now };
   }
 
   return cache.enriched;
 }
 
-// GET /api/stock-picks - returns AI stock picks limited to the caller's tier.
+// GET /api/stock-picks - returns the curated stock picks limited to the caller's tier.
 // Requires an authenticated user id via the `x-user-id` header.
 export async function GET(req: NextRequest) {
   const userIdRaw = req.headers.get("x-user-id");
