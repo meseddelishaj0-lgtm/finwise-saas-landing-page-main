@@ -12,15 +12,66 @@ import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-r
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
-const SENTIMENT_CACHE_PREFIX = 'sentiment_cache_';
+// v2: cache now stores daily-aggregated rows (old caches held raw hourly rows)
+const SENTIMENT_CACHE_PREFIX = 'sentiment_cache_v2_';
 const SENTIMENT_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
 
 interface SentimentData {
-  symbol: string;
   date: string;
-  label: string;
   score: number;
+  mentions: number;
 }
+
+// FMP returns HOURLY rows with twitterSentiment/stocktwitsSentiment (0-1)
+// and activity counts — there is no `score` field. Aggregate into one row
+// per day, weighting each platform's sentiment by its post+comment volume.
+const processSentiment = (rows: any[]): SentimentData[] => {
+  const byDay: Record<string, { weighted: number; weight: number; mentions: number }> = {};
+
+  for (const r of rows) {
+    const day = String(r.date || '').split(' ')[0];
+    if (!day) continue;
+
+    const twWeight = (r.twitterPosts || 0) + (r.twitterComments || 0);
+    const stWeight = (r.stocktwitsPosts || 0) + (r.stocktwitsComments || 0);
+
+    let rowScore = 0;
+    let rowWeight = 0;
+    if (typeof r.twitterSentiment === 'number' && twWeight > 0) {
+      rowScore += r.twitterSentiment * twWeight;
+      rowWeight += twWeight;
+    }
+    if (typeof r.stocktwitsSentiment === 'number' && stWeight > 0) {
+      rowScore += r.stocktwitsSentiment * stWeight;
+      rowWeight += stWeight;
+    }
+    if (rowWeight === 0) {
+      // No activity counts — fall back to a plain average of what exists
+      const vals = [r.twitterSentiment, r.stocktwitsSentiment]
+        .filter((v: any) => typeof v === 'number' && isFinite(v));
+      if (vals.length === 0) continue;
+      rowScore = vals.reduce((a: number, b: number) => a + b, 0) / vals.length;
+      rowWeight = 1;
+    } else {
+      rowScore = rowScore / rowWeight;
+    }
+
+    if (!byDay[day]) byDay[day] = { weighted: 0, weight: 0, mentions: 0 };
+    byDay[day].weighted += rowScore * rowWeight;
+    byDay[day].weight += rowWeight;
+    byDay[day].mentions += twWeight + stWeight;
+  }
+
+  return Object.entries(byDay)
+    .map(([day, v]) => ({
+      date: day,
+      score: v.weight > 0 ? v.weighted / v.weight : 0.5,
+      mentions: v.mentions,
+    }))
+    .filter((d) => isFinite(d.score))
+    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .slice(0, 14);
+};
 
 interface AnalystRating {
   symbol: string;
@@ -122,12 +173,15 @@ export default function SentimentTab() {
       let newSentiment = null;
       let newRatings = null;
 
-      // Process sentiment data
+      // Process sentiment data (hourly rows -> daily aggregates)
       if (sentimentRes.ok) {
         const sentimentData = await sentimentRes.json();
         if (sentimentData && Array.isArray(sentimentData) && sentimentData.length > 0) {
-          newSentiment = sentimentData.slice(0, 30);
-          setSentiment(newSentiment);
+          const daily = processSentiment(sentimentData);
+          if (daily.length > 0) {
+            newSentiment = daily;
+            setSentiment(daily);
+          }
         }
       }
 
@@ -181,8 +235,11 @@ export default function SentimentTab() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
+    // Parse "YYYY-MM-DD" as local time (new Date(string) would parse UTC and
+    // can render the previous day in western timezones)
+    const [y, m, d] = dateString.split('-').map(Number);
+    const date = new Date(y, (m || 1) - 1, d || 1);
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -337,7 +394,14 @@ export default function SentimentTab() {
           {sentiment.map((item, index) => (
             <View key={`${item.date}-${index}`} style={styles.sentimentCard}>
               <View style={styles.sentimentHeader}>
-                <Text style={styles.sentimentDate}>{formatDate(item.date)}</Text>
+                <View>
+                  <Text style={styles.sentimentDate}>{formatDate(item.date)}</Text>
+                  {item.mentions > 0 && (
+                    <Text style={styles.sentimentMentions}>
+                      {item.mentions.toLocaleString()} mentions
+                    </Text>
+                  )}
+                </View>
                 <View style={[
                   styles.sentimentBadge,
                   { backgroundColor: `${getSentimentColor(item.score)}20` }
@@ -505,6 +569,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  sentimentMentions: {
+    color: '#666',
+    fontSize: 12,
+    marginTop: 2,
   },
   sentimentBadge: {
     paddingHorizontal: 12,
