@@ -10,11 +10,11 @@
     },
     {
       "path": "/api/cron/market-movers",
-      "schedule": "*/30 13-21 * * 1-5"
+      "schedule": "0 14,18 * * 1-5"
     },
     {
       "path": "/api/cron/market-news",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 */4 * * *"
     },
     {
       "path": "/api/cron/daily-recap",
