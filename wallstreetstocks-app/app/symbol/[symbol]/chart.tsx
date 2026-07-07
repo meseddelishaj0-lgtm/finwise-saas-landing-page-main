@@ -129,8 +129,13 @@ function isExtendedHours(): boolean {
  * Twelve Data returns times in exchange timezone (ET for US stocks)
  */
 function parseTwelveDataTime(datetime: string, isCrypto: boolean = false): Date {
+  // 1day/1week bars come as date-only ("2026-07-06") — appending an offset
+  // or 'Z' directly produces an Invalid Date, which the NaN filter then
+  // drops, blanking the 1Y/ALL charts. Give them an explicit time first.
+  const isDateOnly = !datetime.includes(' ') && !datetime.includes('T');
+
   if (isCrypto) {
-    return new Date(datetime + 'Z');
+    return new Date(isDateOnly ? datetime + 'T00:00:00Z' : datetime + 'Z');
   }
 
   // US stocks - time is in Eastern Time
@@ -142,7 +147,8 @@ function parseTwelveDataTime(datetime: string, isCrypto: boolean = false): Date 
   const isDST = month >= 2 && month <= 10;
   const offset = isDST ? '-04:00' : '-05:00';
 
-  return new Date(datetime.replace(' ', 'T') + offset);
+  const isoLocal = isDateOnly ? datetime + 'T12:00:00' : datetime.replace(' ', 'T');
+  return new Date(isoLocal + offset);
 }
 
 // Reusable formatter: ET calendar date key (YYYY-MM-DD) for a bar
