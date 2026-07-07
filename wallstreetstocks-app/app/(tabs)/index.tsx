@@ -2882,7 +2882,7 @@ export default function Dashboard() {
                 elevation: isDark ? 0 : 3,
               }]}
               activeScale={0.98}
-              onPress={() => router.push(card.route as any)}
+              onPress={() => router.push((isPremium ? card.route : '/(modals)/paywall') as any)}
             >
               {/* Header */}
               <View style={styles.stockPicksHeader}>
@@ -2895,10 +2895,17 @@ export default function Dashboard() {
                     <Text style={[styles.stockPicksSubtitle, { color: colors.textTertiary }]}>{card.subtitle}</Text>
                   </View>
                 </View>
-                <View style={[styles.picksLiveBadge, { backgroundColor: `${card.badgeColor}1A` }]}>
-                  {card.key === 'momentum' && <View style={[styles.picksLiveDot, { backgroundColor: card.badgeColor }]} />}
-                  <Text style={[styles.picksLiveBadgeText, { color: card.badgeColor }]}>{card.badgeLabel}</Text>
-                </View>
+                {isPremium ? (
+                  <View style={[styles.picksLiveBadge, { backgroundColor: `${card.badgeColor}1A` }]}>
+                    {card.key === 'momentum' && <View style={[styles.picksLiveDot, { backgroundColor: card.badgeColor }]} />}
+                    <Text style={[styles.picksLiveBadgeText, { color: card.badgeColor }]}>{card.badgeLabel}</Text>
+                  </View>
+                ) : (
+                  <View style={styles.premiumBadge}>
+                    <Ionicons name="lock-closed" size={12} color="#FFD700" />
+                    <Text style={styles.premiumBadgeText}>Premium</Text>
+                  </View>
+                )}
               </View>
 
               {/* Preview Rows */}
@@ -2912,30 +2919,47 @@ export default function Dashboard() {
                         <Text style={styles.pickRankText}>#{idx + 1}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.pickSymbol, { color: colors.text }]}>{pick.symbol}</Text>
-                        <Text style={[styles.pickCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                          {pick.category}
-                        </Text>
+                        {isPremium ? (
+                          <>
+                            <Text style={[styles.pickSymbol, { color: colors.text }]}>{pick.symbol}</Text>
+                            <Text style={[styles.pickCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                              {pick.category}
+                            </Text>
+                          </>
+                        ) : (
+                          <>
+                            <Text style={[styles.pickSymbol, { color: colors.textTertiary, letterSpacing: 2 }]}>•••••</Text>
+                            <Text style={[styles.pickCategory, { color: colors.textTertiary }]}>Unlock to reveal</Text>
+                          </>
+                        )}
                       </View>
                     </View>
                     <View style={[styles.pickPreviewRight, { flexShrink: 0 }]}>
-                      <Text style={[styles.pickPrice, { color: colors.text }]}>
-                        ${(pick.price || 0).toFixed(2)}
-                      </Text>
-                      <View style={[styles.pickChangeContainer, {
-                        backgroundColor: (pick.changePercent || 0) >= 0 ? '#34C75915' : '#FF3B3015'
-                      }]}>
-                        <Ionicons
-                          name={(pick.changePercent || 0) >= 0 ? 'arrow-up' : 'arrow-down'}
-                          size={10}
-                          color={(pick.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30'}
-                        />
-                        <Text style={[styles.pickChange, {
-                          color: (pick.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30'
-                        }]}>
-                          {Math.abs(pick.changePercent || 0).toFixed(2)}%
-                        </Text>
-                      </View>
+                      {isPremium ? (
+                        <>
+                          <Text style={[styles.pickPrice, { color: colors.text }]}>
+                            ${(pick.price || 0).toFixed(2)}
+                          </Text>
+                          <View style={[styles.pickChangeContainer, {
+                            backgroundColor: (pick.changePercent || 0) >= 0 ? '#34C75915' : '#FF3B3015'
+                          }]}>
+                            <Ionicons
+                              name={(pick.changePercent || 0) >= 0 ? 'arrow-up' : 'arrow-down'}
+                              size={10}
+                              color={(pick.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30'}
+                            />
+                            <Text style={[styles.pickChange, {
+                              color: (pick.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30'
+                            }]}>
+                              {Math.abs(pick.changePercent || 0).toFixed(2)}%
+                            </Text>
+                          </View>
+                        </>
+                      ) : (
+                        <View style={styles.pickLockedOverlay}>
+                          <Ionicons name="lock-closed" size={14} color={colors.textTertiary} />
+                        </View>
+                      )}
                     </View>
                   </View>
                 ))}
@@ -2943,7 +2967,9 @@ export default function Dashboard() {
 
               {/* CTA */}
               <View style={[styles.stockPicksCTA, { borderTopColor: isDark ? colors.border : "#F2F2F7" }]}>
-                <Text style={[styles.stockPicksCTAText, { color: colors.primary }]}>{card.cta}</Text>
+                <Text style={[styles.stockPicksCTAText, { color: colors.primary }]}>
+                  {isPremium ? card.cta : `Unlock ${card.title}`}
+                </Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.primary} />
               </View>
             </ScalePress>
