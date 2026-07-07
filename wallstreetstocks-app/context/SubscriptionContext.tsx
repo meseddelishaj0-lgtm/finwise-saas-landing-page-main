@@ -304,10 +304,11 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       let hasReferralPremium = false;
       let referralPremiumExpiry: string | null = null;
 
-      // Get userId from AsyncStorage for backend check
-      const userDataStr = await AsyncStorage.getItem('userData');
-      const userData = userDataStr ? JSON.parse(userDataStr) : null;
-      const userId = userData?.id?.toString();
+      // Get userId from AsyncStorage for backend check ('userId' is what
+      // lib/auth writes; 'userData' is a legacy blob kept as fallback)
+      const userId = (await AsyncStorage.getItem('userId'))
+        || JSON.parse((await AsyncStorage.getItem('userData')) || 'null')?.id?.toString()
+        || null;
 
       // Also check backend for referral premium
       if (userId) {
@@ -408,9 +409,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         }));
 
         // Sync subscription tier to database for badge display
-        const userDataStr = await AsyncStorage.getItem('userData');
-        const userData = userDataStr ? JSON.parse(userDataStr) : null;
-        const userId = userData?.id?.toString();
+        const userId = (await AsyncStorage.getItem('userId'))
+          || JSON.parse((await AsyncStorage.getItem('userData')) || 'null')?.id?.toString()
+          || null;
         if (userId && currentTier) {
           await syncSubscriptionToDatabase(
             userId,
@@ -471,9 +472,9 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         }));
 
         // Sync subscription tier to database for badge display
-        const userDataStr = await AsyncStorage.getItem('userData');
-        const userData = userDataStr ? JSON.parse(userDataStr) : null;
-        const userId = userData?.id?.toString();
+        const userId = (await AsyncStorage.getItem('userId'))
+          || JSON.parse((await AsyncStorage.getItem('userData')) || 'null')?.id?.toString()
+          || null;
         if (userId && currentTier) {
           await syncSubscriptionToDatabase(
             userId,

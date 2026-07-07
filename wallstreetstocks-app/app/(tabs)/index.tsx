@@ -1335,8 +1335,9 @@ export default function Dashboard() {
     try {
       if (isPremium) {
         try {
-          const userDataStr = await AsyncStorage.getItem('userData');
-          const userId = userDataStr ? JSON.parse(userDataStr)?.id?.toString() : null;
+          const userId = (await AsyncStorage.getItem('userId'))
+            || JSON.parse((await AsyncStorage.getItem('userData')) || 'null')?.id?.toString()
+            || null;
           if (userId) {
             const res = await fetch('https://www.wallstreetstocks.ai/api/stock-picks', {
               headers: { 'x-user-id': userId, 'Cache-Control': 'no-cache' },

@@ -79,9 +79,11 @@ export default function StockPicksScreen() {
           : 0
       );
 
-      const userDataStr = await AsyncStorage.getItem('userData');
-      const userData = userDataStr ? JSON.parse(userDataStr) : null;
-      const userId = userData?.id?.toString();
+      // 'userId' is the key lib/auth actually writes; 'userData' is a legacy
+      // blob from old app versions, kept only as a fallback
+      const userId = (await AsyncStorage.getItem('userId'))
+        || JSON.parse((await AsyncStorage.getItem('userData')) || 'null')?.id?.toString()
+        || null;
 
       if (!userId) {
         setStockPicks([]);
