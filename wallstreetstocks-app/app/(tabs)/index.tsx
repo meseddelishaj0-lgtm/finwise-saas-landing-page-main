@@ -233,6 +233,18 @@ async function fetchBatchQuotes(symbols: string[]): Promise<any[]> {
 }
 
 // Stock picks preview data
+// Growth card teaser symbols — all in marketDataService's pre-loaded core
+// list so prices are instant (ungated for now; paywall to be added later)
+const GROWTH_STOCKS_PREVIEW = [
+  { symbol: 'TSLA', category: 'EV & Energy' },
+  { symbol: 'AMD', category: 'Semiconductors' },
+  { symbol: 'LLY', category: 'Healthcare' },
+];
+
+// Picks carousel geometry: full-width cards, 12px gap, snap per card
+const pickCardWidth = width - 32;
+const pickCardSnap = pickCardWidth + 12;
+
 const STOCK_PICKS_PREVIEW = [
   { symbol: 'NVDA', category: 'AI & Tech', reason: 'AI chip leader' },
   { symbol: 'AAPL', category: 'Tech Giant', reason: 'Services growth' },
@@ -398,6 +410,7 @@ export default function Dashboard() {
   
   const [refreshing, setRefreshing] = useState(false);
   const [stockPicksData, setStockPicksData] = useState<any[]>([]);
+  const [picksPage, setPicksPage] = useState(0);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -987,6 +1000,33 @@ export default function Dashboard() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stockPicksData, priceUpdateTrigger]);
+
+  // Momentum card: today's top 3 movers among the pre-loaded core stocks
+  const liveMomentumStocks = useMemo(() => {
+    const merged = marketDataService.getLiveData('stock')
+      .map(item => {
+        const q = priceStore.getQuote(item.symbol);
+        return {
+          symbol: item.symbol,
+          category: item.name || item.symbol,
+          price: q?.price || item.price,
+          changePercent: q?.changePercent ?? item.changePercent ?? 0,
+        };
+      })
+      .filter(s => s.price > 0);
+    merged.sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
+    return merged.slice(0, 3);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceUpdateTrigger]);
+
+  // Growth card: curated high-growth names with live prices
+  const liveGrowthStocks = useMemo(() => {
+    return GROWTH_STOCKS_PREVIEW.map(p => {
+      const q = priceStore.getQuote(p.symbol);
+      return { ...p, price: q?.price || 0, changePercent: q?.changePercent || 0 };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceUpdateTrigger]);
 
   // Live portfolio chart data - appends current live portfolio value to historical chart
   // This makes the chart follow real-time price changes
@@ -2687,10 +2727,22 @@ export default function Dashboard() {
           )}
         </View>
 
-        {/* Stock Picks Section */}
+        {/* Picks Carousel: Stock Picks / Momentum / Growth */}
         <View style={styles.stockPicksSection}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToOffsets={[0, pickCardSnap, pickCardSnap * 2]}
+            decelerationRate="fast"
+            disableIntervalMomentum
+            onMomentumScrollEnd={(e) =>
+              setPicksPage(Math.min(2, Math.max(0, Math.round(e.nativeEvent.contentOffset.x / pickCardSnap))))
+            }
+            style={styles.picksCarousel}
+            contentContainerStyle={styles.picksCarouselContent}
+          >
           <ScalePress
-            style={[styles.stockPicksCard, { backgroundColor: isDark ? colors.surface : '#F5F5F7', borderColor: isDark ? colors.border : '#FFD70030', shadowOpacity: isDark ? 0 : 0.08, elevation: isDark ? 0 : 3 }]}
+            style={[styles.stockPicksCard, { width: pickCardWidth, marginRight: 12, backgroundColor: isDark ? colors.surface : '#F5F5F7', borderColor: isDark ? colors.border : '#FFD70030', shadowOpacity: isDark ? 0 : 0.08, elevation: isDark ? 0 : 3 }]}
             activeScale={0.98}
             onPress={() => router.push('/premium/stock-picks')}
           >
@@ -2789,6 +2841,128 @@ export default function Dashboard() {
               <Ionicons name="chevron-forward" size={18} color={colors.primary} />
             </View>
           </ScalePress>
+
+          {/* Momentum + Growth cards (same layout; ungated for now) */}
+          {([
+            {
+              key: 'momentum',
+              title: 'Momentum Stocks',
+              subtitle: "Today's strongest movers",
+              icon: 'flash' as const,
+              iconColor: '#FF9500',
+              iconBg: isDark ? 'rgba(255,149,0,0.15)' : '#FFF3E0',
+              badgeLabel: 'Live',
+              badgeColor: '#00C853',
+              data: liveMomentumStocks,
+              cta: 'View All Momentum',
+              route: '/screener?preset=momentum',
+            },
+            {
+              key: 'growth',
+              title: 'Growth Stocks',
+              subtitle: 'High-growth compounders',
+              icon: 'rocket' as const,
+              iconColor: '#00C853',
+              iconBg: isDark ? 'rgba(0,200,83,0.15)' : '#E8F5E9',
+              badgeLabel: 'Curated',
+              badgeColor: isDark ? '#FFD60A' : '#B8860B',
+              data: liveGrowthStocks,
+              cta: 'View All Growth',
+              route: '/screener?preset=growth',
+            },
+          ]).map((card, cardIdx) => (
+            <ScalePress
+              key={card.key}
+              style={[styles.stockPicksCard, {
+                width: pickCardWidth,
+                marginRight: cardIdx === 0 ? 12 : 0,
+                backgroundColor: isDark ? colors.surface : '#F5F5F7',
+                borderColor: isDark ? colors.border : '#FFD70030',
+                shadowOpacity: isDark ? 0 : 0.08,
+                elevation: isDark ? 0 : 3,
+              }]}
+              activeScale={0.98}
+              onPress={() => router.push(card.route as any)}
+            >
+              {/* Header */}
+              <View style={styles.stockPicksHeader}>
+                <View style={styles.stockPicksHeaderLeft}>
+                  <View style={[styles.stockPicksIconBg, { backgroundColor: card.iconBg }]}>
+                    <Ionicons name={card.icon} size={20} color={card.iconColor} />
+                  </View>
+                  <View>
+                    <Text style={[styles.stockPicksTitle, { color: colors.text }]}>{card.title}</Text>
+                    <Text style={[styles.stockPicksSubtitle, { color: colors.textTertiary }]}>{card.subtitle}</Text>
+                  </View>
+                </View>
+                <View style={[styles.picksLiveBadge, { backgroundColor: `${card.badgeColor}1A` }]}>
+                  {card.key === 'momentum' && <View style={[styles.picksLiveDot, { backgroundColor: card.badgeColor }]} />}
+                  <Text style={[styles.picksLiveBadgeText, { color: card.badgeColor }]}>{card.badgeLabel}</Text>
+                </View>
+              </View>
+
+              {/* Preview Rows */}
+              <View style={styles.stockPicksPreview}>
+                {card.data.map((pick, idx) => (
+                  <View key={`${card.key}-${pick.symbol}-${idx}`} style={[styles.pickPreviewCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#EDEDF0' }]}>
+                    <View style={styles.pickPreviewLeft}>
+                      <View style={[styles.pickRankBadge, {
+                        backgroundColor: idx === 0 ? '#FFD700' : idx === 1 ? '#C0C0C0' : '#CD7F32'
+                      }]}>
+                        <Text style={styles.pickRankText}>#{idx + 1}</Text>
+                      </View>
+                      <View style={{ flex: 1, marginRight: 8 }}>
+                        <Text style={[styles.pickSymbol, { color: colors.text }]}>{pick.symbol}</Text>
+                        <Text style={[styles.pickCategory, { color: colors.textSecondary }]} numberOfLines={1}>
+                          {pick.category}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.pickPreviewRight}>
+                      <Text style={[styles.pickPrice, { color: colors.text }]}>
+                        ${(pick.price || 0).toFixed(2)}
+                      </Text>
+                      <View style={[styles.pickChangeContainer, {
+                        backgroundColor: (pick.changePercent || 0) >= 0 ? '#34C75915' : '#FF3B3015'
+                      }]}>
+                        <Ionicons
+                          name={(pick.changePercent || 0) >= 0 ? 'arrow-up' : 'arrow-down'}
+                          size={10}
+                          color={(pick.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30'}
+                        />
+                        <Text style={[styles.pickChange, {
+                          color: (pick.changePercent || 0) >= 0 ? '#34C759' : '#FF3B30'
+                        }]}>
+                          {Math.abs(pick.changePercent || 0).toFixed(2)}%
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              {/* CTA */}
+              <View style={[styles.stockPicksCTA, { borderTopColor: isDark ? colors.border : "#F2F2F7" }]}>
+                <Text style={[styles.stockPicksCTAText, { color: colors.primary }]}>{card.cta}</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+              </View>
+            </ScalePress>
+          ))}
+          </ScrollView>
+
+          {/* Page dots */}
+          <View style={styles.picksPageDots}>
+            {[0, 1, 2].map((i) => (
+              <View
+                key={i}
+                style={[
+                  styles.picksPageDot,
+                  { backgroundColor: picksPage === i ? colors.primary : (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)') },
+                  picksPage === i && styles.picksPageDotActive,
+                ]}
+              />
+            ))}
+          </View>
         </View>
 
         {/* Strategy Discovery Cards */}
@@ -4608,6 +4782,45 @@ const styles = StyleSheet.create({
   stockPicksSection: {
     paddingHorizontal: 16,
     marginBottom: Platform.OS === 'android' ? 16 : 24,
+  },
+  // Picks carousel (Stock Picks / Momentum / Growth)
+  picksCarousel: {
+    marginHorizontal: -16,
+  },
+  picksCarouselContent: {
+    paddingHorizontal: 16,
+  },
+  picksLiveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  picksLiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  picksLiveBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  picksPageDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  picksPageDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  picksPageDotActive: {
+    width: 18,
   },
   // Strategy discovery cards
   strategiesSection: {
