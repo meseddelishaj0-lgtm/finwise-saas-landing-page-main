@@ -2594,7 +2594,7 @@ export default function Dashboard() {
                   <Ionicons name="chevron-down" size={16} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {showFilterDropdown && (
-                  <View style={[styles.dropdownMenu, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <View style={styles.dropdownMenu}>
                     {(['All', 'Gainers', 'Losers'] as const).map((option) => (
                       <TouchableOpacity
                         key={option}
