@@ -82,7 +82,7 @@ export default function DropdownMenu({
 
       {/* 🧭 Dropdown Container */}
       <div
-        className={`absolute left-0 mt-1 w-56 rounded-xl shadow-xl z-[9999] p-2 transition-all duration-200 ease-out border ${
+        className={`absolute left-0 mt-1 w-56 max-h-[70vh] overflow-y-auto rounded-xl shadow-xl z-[9999] p-2 transition-all duration-200 ease-out border ${
           open
             ? "opacity-100 translate-y-0 visible"
             : "opacity-0 -translate-y-2 invisible pointer-events-none"

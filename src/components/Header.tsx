@@ -10,6 +10,67 @@ import Container from "./Container";
 import DropdownMenu from "@/components/ui/DropdownMenu";
 import SymbolSearch from "@/components/market/SymbolSearch";
 
+// Consolidated nav — shared by desktop and mobile
+const NAV_MENUS: { label: string; items: { title: string; href: string }[] }[] = [
+  {
+    label: "Markets",
+    items: [
+      { title: "Equities", href: "/equities" },
+      { title: "ETFs", href: "/etfs" },
+      { title: "Bonds", href: "/bonds" },
+      { title: "Crypto", href: "/crypto" },
+      { title: "Derivatives", href: "/derivatives" },
+      { title: "Forex", href: "/forex" },
+      { title: "Alternatives", href: "/alternatives" },
+      { title: "Commodities", href: "/commodities" },
+      { title: "IPO", href: "/ipo" },
+      { title: "Money Market", href: "/money-market" },
+    ],
+  },
+  {
+    label: "Products",
+    items: [
+      { title: "AI Dashboard", href: "/ai-dashboard" },
+      { title: "Market Screener", href: "/screeners" },
+      { title: "Market Calendar", href: "/calendars" },
+      { title: "Market News", href: "/news" },
+      { title: "AI Stock Picks", href: "/ai-stock-picks" },
+      { title: "AI Assistant", href: "/ai-assistant" },
+      { title: "Mergers & Acquisitions", href: "/mergers-aquisitions" },
+      { title: "Valuation Models", href: "/valuation-models" },
+    ],
+  },
+  {
+    label: "Research",
+    items: [
+      { title: "WallStreetStocks vs S&P 500", href: "/WallStreetStocks-vs-SP500" },
+      { title: "Track Record", href: "/WallStreetStocks-Track-Record" },
+      { title: "Risk & Volatility Analysis", href: "/Risk-Volatility-Analysis" },
+      { title: "Backtesting Results", href: "/Backtesting-Results" },
+      { title: "Performance Reports", href: "/Performance-Reports" },
+      { title: "Compare Platforms", href: "/Compare-Research-Platforms" },
+      { title: "Finance", href: "/resources/finance" },
+      { title: "Accounting", href: "/resources/accounting" },
+      { title: "Real Estate", href: "/resources/real-estate" },
+      { title: "Insurance", href: "/resources/insurance" },
+      { title: "Taxes", href: "/resources/taxes" },
+      { title: "Market Basics", href: "/resources/market" },
+      { title: "Tools & Calculators", href: "/resources/tools-calculator" },
+      { title: "Business & Entrepreneurship", href: "/resources/business-entrepreneurship" },
+      { title: "Institutional Access", href: "/institutional-access" },
+    ],
+  },
+  {
+    label: "Community",
+    items: [
+      { title: "Forums", href: "/community/forums" },
+      { title: "Members", href: "/community/members" },
+      { title: "Rooms", href: "/community/rooms" },
+      { title: "About Us", href: "/about-us" },
+    ],
+  },
+];
+
 const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -31,16 +92,19 @@ const Header: React.FC = () => {
   const displayName =
     userName.charAt(0).toUpperCase() + userName.slice(1).toLowerCase();
 
+  // Inline search fits when logged out; logged-in users get the icon toggle
+  const showInlineSearch = !session;
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
         isScrolled
-          ? "bg-black/80 backdrop-blur-lg py-2 border-b border-gray-900/50"
-          : "bg-gradient-to-b from-black/80 via-black/40 to-transparent backdrop-blur-sm py-4 border-none"
+          ? "bg-black/85 backdrop-blur-lg py-2 border-b border-yellow-500/15"
+          : "bg-gradient-to-b from-black/85 via-black/45 to-transparent backdrop-blur-sm py-3 border-none"
       }`}
     >
       <Container>
-        <nav className="flex items-center justify-between text-white">
+        <nav className="flex items-center text-white gap-3">
           {/* ✅ Logo */}
           <Link
             href="/"
@@ -49,125 +113,62 @@ const Header: React.FC = () => {
             <Image
               src="/images/wallstreetstocks.png"
               alt="WallStreetStocks Logo"
-              width={isScrolled ? 42 : 56}
-              height={42}
+              width={isScrolled ? 38 : 46}
+              height={38}
               className="rounded-md transition-all duration-300 group-hover:scale-105"
             />
-            <span className="text-xl font-extrabold tracking-tight">
+            <span className="text-lg font-extrabold tracking-tight whitespace-nowrap">
               WallStreetStocks
             </span>
           </Link>
 
-          {/* ✅ Global symbol search toggle */}
-          <button
-            onClick={() => setSearchOpen((o) => !o)}
-            aria-label="Search symbols"
-            className={`hidden md:flex items-center justify-center w-9 h-9 ml-4 rounded-full border transition-all flex-shrink-0 ${
-              searchOpen
-                ? "bg-yellow-400 text-black border-yellow-400"
-                : "bg-white/[0.06] border-white/10 text-gray-300 hover:text-yellow-300 hover:border-yellow-400/50"
-            }`}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
-              <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
+          {/* ✅ Inline symbol search (desktop, logged out) */}
+          {showInlineSearch && (
+            <div className="hidden xl:block w-[230px] ml-3 flex-shrink-0">
+              <SymbolSearch variant="header" />
+            </div>
+          )}
 
           {/* ✅ Desktop Menu */}
-          <div
-            className={`hidden md:flex items-center space-x-6 transition-all duration-300 relative z-50 ${
-              session ? "ml-2" : ""
-            }`}
-          >
+          <div className="hidden md:flex items-center gap-6 ml-auto relative z-50">
+            {/* Search icon (when inline input is hidden) */}
+            <button
+              onClick={() => setSearchOpen((o) => !o)}
+              aria-label="Search symbols"
+              className={`${showInlineSearch ? "xl:hidden" : ""} flex items-center justify-center w-9 h-9 rounded-full border transition-all flex-shrink-0 ${
+                searchOpen
+                  ? "bg-yellow-400 text-black border-yellow-400"
+                  : "bg-white/[0.06] border-white/10 text-gray-300 hover:text-yellow-300 hover:border-yellow-400/50"
+              }`}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+                <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+
             <Link
               href="/terminal"
-              className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 font-semibold transition-all duration-200"
+              className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 font-semibold transition-all duration-200 whitespace-nowrap"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               Terminal
             </Link>
-            <DropdownMenu
-              label="Products"
-              items={[
-                { title: "AI Dashboard", href: "/ai-dashboard" },
-                { title: "Market Screener", href: "/screeners" },
-                { title: "Market Calendar", href: "/calendars" },
-                { title: "Market News", href: "/news" },
-                { title: "AI Stock Picks", href: "/ai-stock-picks" },
-                { title: "AI Assistant", href: "/ai-assistant" },
-                { title: "Mergers & Acquisitions", href: "/mergers-aquisitions" },
-                { title: "Valuation Models", href: "/valuation-models" },
-              ]}
-              textColor="text-white"
-            />
-            <DropdownMenu
-              label="Markets"
-              items={[
-                { title: "Equities", href: "/equities" },
-                { title: "ETFs", href: "/etfs" },
-                { title: "Bonds", href: "/bonds" },
-                { title: "Crypto", href: "/crypto" },
-                { title: "Derivatives", href: "/derivatives" },
-                { title: "Forex", href: "/forex" },
-                { title: "Alternatives", href: "/alternatives" },
-                { title: "Commodities", href: "/commodities" },
-                { title: "IPO", href: "/ipo" },
-                { title: "Money Market", href: "/money-market" },
-              ]}
-              textColor="text-white"
-            />
-            <DropdownMenu
-              label="Community"
-              items={[
-                { title: "Forums", href: "/community/forums" },
-                { title: "Members", href: "/community/members" },
-                { title: "Rooms", href: "/community/rooms" },
-              ]}
-              textColor="text-white"
-            />
-            <DropdownMenu
-              label="Plans"
-              items={[
-                { title: "Gold", href: "/plans" },
-                { title: "Platinum", href: "/plans" },
-                { title: "Diamond", href: "/plans" },
-                { title: "Institutional", href: "/institutional-access" },
-              ]}
-              textColor="text-white"
-            />
-            <DropdownMenu
-              label="Performance"
-              items={[
-                { title: "WallStreetStocks vs S&P 500", href: "/WallStreetStocks-vs-SP500" },
-                { title: "WallStreetStocks Track Record", href: "/WallStreetStocks-Track-Record" },
-                { title: "Risk & Volatility Analysis", href: "/Risk-Volatility-Analysis" },
-                { title: "Backtesting Results", href: "/Backtesting-Results" },
-                { title: "Performance Reports", href: "/Performance-Reports" },
-                { title: "Compare Research Platforms", href: "/Compare-Research-Platforms" },
-              ]}
-              textColor="text-white"
-            />
-            <DropdownMenu
-              label="Resources"
-              items={[
-                { title: "Finance", href: "/resources/finance" },
-                { title: "Accounting", href: "/resources/accounting" },
-                { title: "Real Estate", href: "/resources/real-estate" },
-                { title: "Insurance", href: "/resources/insurance" },
-                { title: "Taxes", href: "/resources/taxes" },
-                { title: "Market", href: "/resources/market" },
-                { title: "Tools & Calculator", href: "/resources/tools-calculator" },
-                { title: "Business & Entrepreneurship", href: "/resources/business-entrepreneurship" },
-              ]}
-              textColor="text-white"
-            />
+
+            {NAV_MENUS.map((menu) => (
+              <DropdownMenu
+                key={menu.label}
+                label={menu.label}
+                items={menu.items}
+                textColor="text-white"
+              />
+            ))}
 
             <Link
-              href="/about-us"
+              href="/plans"
               className="text-white hover:text-yellow-400 font-medium transition-all duration-200"
             >
-              About Us
+              Plans
             </Link>
 
             {/* ✅ Login / Logout */}
@@ -175,13 +176,13 @@ const Header: React.FC = () => {
               <>
                 <Link
                   href="/dashboard"
-                  className="text-black bg-yellow-400 hover:bg-yellow-500 px-6 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap"
+                  className="text-black bg-yellow-400 hover:bg-yellow-500 px-5 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap"
                 >
                   {displayName}'s Dashboard
                 </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="text-white bg-gray-800 hover:bg-gray-700 px-6 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap"
+                  className="text-white bg-gray-800 hover:bg-gray-700 px-5 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap"
                 >
                   Logout
                 </button>
@@ -197,7 +198,7 @@ const Header: React.FC = () => {
           </div>
 
           {/* ✅ Mobile Menu Button */}
-          <div className="md:hidden">
+          <div className="md:hidden ml-auto">
             <button
               onClick={toggleMenu}
               className="bg-yellow-400 text-black rounded-full w-9 h-9 flex items-center justify-center shadow-md hover:shadow-yellow-300/50 transition-all"
@@ -254,77 +255,7 @@ const Header: React.FC = () => {
                 Terminal
               </Link>
             </li>
-            {[ /* (mobile nav unchanged) */
-              {
-                label: "Products",
-                items: [
-                  { title: "AI Dashboard", href: "/ai-dashboard" },
-                  { title: "Market Screener", href: "/screeners" },
-                  { title: "Market Calendar", href: "/calendars" },
-                  { title: "Market News", href: "/news" },
-                  { title: "AI Stock Picks", href: "/ai-stock-picks" },
-                  { title: "AI Assistant", href: "/ai-assistant" },
-                  { title: "Mergers & Acquisitions", href: "/mergers-aquisitions" },
-                  { title: "Valuation Models", href: "/valuation-models" },
-                ],
-              },
-              {
-                label: "Markets",
-                items: [
-                  { title: "Equities", href: "/equities" },
-                  { title: "ETFs", href: "/etfs" },
-                  { title: "Bonds", href: "/bonds" },
-                  { title: "Crypto", href: "/crypto" },
-                  { title: "Derivatives", href: "/derivatives" },
-                  { title: "Forex", href: "/forex" },
-                  { title: "Alternatives", href: "/alternatives" },
-                  { title: "Commodities", href: "/commodities" },
-                  { title: "IPO", href: "/ipo" },
-                  { title: "Money Market", href: "/money-market" },
-                ],
-              },
-              {
-                label: "Community",
-                items: [
-                  { title: "Forums", href: "/community/forums" },
-                  { title: "Members", href: "/community/members" },
-                  { title: "Rooms", href: "/community/rooms" },
-                ],
-              },
-              {
-                label: "Plans",
-                items: [
-                  { title: "Gold", href: "/plans" },
-                  { title: "Platinum", href: "/plans" },
-                  { title: "Diamond", href: "/plans" },
-                  { title: "Institutional", href: "/institutional-access" },
-                ],
-              },
-              {
-                label: "Performance",
-                items: [
-                  { title: "WallStreetStocks vs S&P 500", href: "/WallStreetStocks-vs-SP500" },
-                  { title: "WallStreetStocks Track Record", href: "/WallStreetStocks-Track-Record" },
-                  { title: "Risk & Volatility Analysis", href: "/Risk-Volatility-Analysis" },
-                  { title: "Backtesting Results", href: "/Backtesting-Results" },
-                  { title: "Performance Reports", href: "/Performance-Reports" },
-                  { title: "Compare Research Platforms", href: "/Compare-Research-Platforms" },
-                ],
-              },
-              {
-                label: "Resources",
-                items: [
-                  { title: "Finance", href: "/resources/finance" },
-                  { title: "Accounting", href: "/resources/accounting" },
-                  { title: "Real Estate", href: "/resources/real-estate" },
-                  { title: "Insurance", href: "/resources/insurance" },
-                  { title: "Taxes", href: "/resources/taxes" },
-                  { title: "Market", href: "/resources/market" },
-                  { title: "Tools & Calculator", href: "/resources/tools-calculator" },
-                  { title: "Business & Entrepreneurship", href: "/resources/business-entrepreneurship" },
-                ],
-              },
-            ].map(({ label, items }) => (
+            {NAV_MENUS.map(({ label, items }) => (
               <li key={label}>
                 <button
                   onClick={() => toggleSubmenu(label)}
@@ -357,11 +288,11 @@ const Header: React.FC = () => {
 
             <li>
               <Link
-                href="/about-us"
+                href="/plans"
                 onClick={() => setIsOpen(false)}
-                className="block text-gray-300 hover:text-yellow-400 py-2"
+                className="block text-gray-300 hover:text-yellow-400 py-2 font-medium"
               >
-                About Us
+                Plans
               </Link>
             </li>
 

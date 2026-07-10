@@ -1,67 +1,54 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React from "react";
+import Reveal from "@/components/ui/Reveal";
+
+// Trust band — stat tiles in the terminal aesthetic (replaced the old
+// third-party ticker widget).
+
+const STATS = [
+  { value: "10K+", label: "Active Investors" },
+  { value: "200+", label: "Hedge Funds & RIAs" },
+  { value: "1M+", label: "Data Points Daily" },
+  { value: "24/7", label: "AI Market Coverage" },
+];
 
 const Logos: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current || containerRef.current.querySelector("script")) return;
-
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      symbols: [
-        { proName: "FOREXCOM:SPXUSD", title: "S&P 500 Index" },
-        { proName: "FOREXCOM:NSXUSD", title: "US 100 Cash CFD" },
-        { proName: "FX_IDC:EURUSD", title: "EUR/USD" },
-        { proName: "BITSTAMP:BTCUSD", title: "Bitcoin" },
-        { proName: "BITSTAMP:ETHUSD", title: "Ethereum" },
-      ],
-      colorTheme: "dark",
-      locale: "en",
-      isTransparent: true,
-      showSymbolLogo: true,
-      displayMode: "adaptive",
-    });
-
-    containerRef.current.appendChild(script);
-  }, []);
-
   return (
     <section
       id="logos"
-      className="relative py-28 px-5 text-center bg-gradient-to-b from-black via-zinc-900 to-black text-white overflow-hidden"
+      className="relative py-20 md:py-24 px-5 text-center bg-black text-white overflow-hidden"
     >
-      {/* 🌟 Heading */}
-      <p className="text-xl md:text-2xl font-semibold text-gray-100 tracking-tight">
-        Trusted by{" "}
-        <span className="bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent font-extrabold">200+</span>{" "}
-        Hedge Funds & RIAs worldwide
-      </p>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[260px] bg-yellow-400/[0.05] rounded-full blur-[120px] pointer-events-none" />
 
-      {/* ✨ Gradient Accent Line */}
-      <div className="mx-auto mt-4 h-1 w-32 bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 rounded-full shadow-md shadow-yellow-400/40"></div>
+      <div className="relative z-10 max-w-6xl mx-auto">
+        <Reveal>
+          <p className="text-xl md:text-2xl font-semibold text-gray-100 tracking-tight">
+            Trusted by{" "}
+            <span className="bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent font-extrabold">
+              200+
+            </span>{" "}
+            Hedge Funds & RIAs worldwide
+          </p>
+          <p className="text-gray-400 mt-4 max-w-2xl mx-auto leading-relaxed">
+            Empowering every investor with AI-driven research, analytics, and
+            market intelligence to deliver consistent alpha.
+          </p>
+        </Reveal>
 
-      {/* 🧠 Supporting Text */}
-      <p className="text-gray-400 mt-5 max-w-2xl mx-auto leading-relaxed">
-        Empowering every investor with AI-driven research, analytics, and
-        market intelligence to deliver consistent alpha.
-      </p>
-
-      {/* 📊 TradingView Widget */}
-      <div className="mt-10 flex justify-center">
-        <div
-          className="tradingview-widget-container w-full max-w-6xl border border-white/10 bg-white/[0.02] backdrop-blur-md rounded-2xl shadow-[0_0_40px_rgba(255,215,0,0.08)] overflow-hidden"
-          ref={containerRef}
-        >
-          <div className="tradingview-widget-container__widget"></div>
+        <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
+          {STATS.map((s, i) => (
+            <Reveal key={s.label} delay={i * 0.1}>
+              <div className="group rounded-2xl border border-white/10 bg-[#0b0b09] px-6 py-7 hover:border-yellow-400/40 hover:shadow-[0_0_30px_rgba(255,215,0,0.12)] transition-all duration-300">
+                <p className="font-mono text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent tabular-nums">
+                  {s.value}
+                </p>
+                <p className="mt-2 text-sm text-gray-400">{s.label}</p>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </div>
-
-      {/* ✨ Glow Effect (optional aesthetic) */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-yellow-400/5 to-transparent pointer-events-none"></div>
     </section>
   );
 };
