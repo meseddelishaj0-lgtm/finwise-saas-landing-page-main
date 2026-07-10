@@ -98,6 +98,14 @@ function TerminalInner() {
                 {s}
               </button>
             ))}
+            <Link href="/heatmap"
+              className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 border border-white/10 hover:text-yellow-300 hover:border-yellow-400/40 transition-colors">
+              🗺️ Heatmap
+            </Link>
+            <Link href="/screener"
+              className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 border border-white/10 hover:text-yellow-300 hover:border-yellow-400/40 transition-colors">
+              ⚙️ Screener
+            </Link>
           </div>
 
           <div className="ml-auto flex items-center gap-4">

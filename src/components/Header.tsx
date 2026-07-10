@@ -30,8 +30,9 @@ const NAV_MENUS: { label: string; items: { title: string; href: string }[] }[] =
   {
     label: "Products",
     items: [
+      { title: "Stock Screener", href: "/screener" },
+      { title: "Market Heatmap", href: "/heatmap" },
       { title: "AI Dashboard", href: "/ai-dashboard" },
-      { title: "Market Screener", href: "/screeners" },
       { title: "Market Calendar", href: "/calendars" },
       { title: "Market News", href: "/news" },
       { title: "AI Stock Picks", href: "/ai-stock-picks" },
