@@ -62,6 +62,13 @@ const Header: React.FC = () => {
               session ? "ml-2" : ""
             }`}
           >
+            <Link
+              href="/terminal"
+              className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 font-semibold transition-all duration-200"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              Terminal
+            </Link>
             <DropdownMenu
               label="Products"
               items={[
@@ -199,7 +206,17 @@ const Header: React.FC = () => {
       >
         <div className="md:hidden bg-black/95 text-white backdrop-blur-md shadow-2xl border-t border-gray-800">
           <ul className="flex flex-col space-y-2 py-4 px-6">
-            {[ /* (mobile nav unchanged) */ 
+            <li>
+              <Link
+                href="/terminal"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 text-yellow-400 hover:text-yellow-300 py-2 font-semibold"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                Terminal
+              </Link>
+            </li>
+            {[ /* (mobile nav unchanged) */
               {
                 label: "Products",
                 items: [

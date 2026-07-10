@@ -1,15 +1,12 @@
-import Hero from "@/components/Hero";
-import Testimonials from "@/components/Testimonials";
-import Pricing from "@/components/Pricing/Pricing";
-import FAQ from "@/components/FAQ";
 import Logos from "@/components/Logos";
 import Benefits from "@/components/Benefits/Benefits";
 import Container from "@/components/Container";
-import Section from "@/components/Section";
-import Stats from "@/components/Stats";
 import CTA from "@/components/CTA";
-import Features from "@/components/Features";
 import Reveal from "@/components/ui/Reveal";
+import TickerTape from "@/components/market/TickerTape";
+import TerminalHero from "@/components/market/TerminalHero";
+import MarketsBoard from "@/components/market/MarketsBoard";
+import NewsAndTrending from "@/components/market/NewsAndTrending";
 
 
 
@@ -17,8 +14,17 @@ import Reveal from "@/components/ui/Reveal";
 const HomePage: React.FC = () => {
   return (
     <>
-      {/* Hero Section */}
-      <Hero />
+      {/* Terminal-style hero with live quotes */}
+      <TerminalHero />
+
+      {/* Scrolling ticker tape */}
+      <TickerTape />
+
+      {/* Live markets board: indices/stocks/crypto/ETFs + gainers/losers */}
+      <MarketsBoard />
+
+      {/* Market news + trending tickers */}
+      <NewsAndTrending />
 
       {/* Company Logos */}
       <Logos />
