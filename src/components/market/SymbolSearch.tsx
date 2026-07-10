@@ -10,7 +10,7 @@ interface Result {
   symbol: string;
   name: string;
   exchange: string;
-  type: "stock" | "etf" | "index" | "crypto";
+  type: "stock" | "etf" | "index" | "crypto" | "forex" | "commodity";
 }
 
 const TYPE_BADGE: Record<Result["type"], { label: string; cls: string }> = {
@@ -18,6 +18,8 @@ const TYPE_BADGE: Record<Result["type"], { label: string; cls: string }> = {
   etf: { label: "ETF", cls: "text-purple-300 bg-purple-400/10" },
   index: { label: "Index", cls: "text-yellow-300 bg-yellow-400/10" },
   crypto: { label: "Crypto", cls: "text-orange-300 bg-orange-400/10" },
+  forex: { label: "Forex", cls: "text-teal-300 bg-teal-400/10" },
+  commodity: { label: "Cmdty", cls: "text-amber-300 bg-amber-400/10" },
 };
 
 interface Props {

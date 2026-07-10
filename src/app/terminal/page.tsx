@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuotes, fmtPrice, fmtCap, Quote } from "@/components/market/useQuotes";
 import TerminalChart from "@/components/market/TerminalChart";
 import SymbolSearch from "@/components/market/SymbolSearch";
+import MarketsPanel from "@/components/market/MarketsPanel";
 
 const DEFAULT_WATCHLIST = ["NVDA", "AAPL", "MSFT", "META", "TSLA", "AMZN", "SPY", "BTCUSD"];
 const WATCHLIST_KEY = "wss_terminal_watchlist";
@@ -51,7 +52,6 @@ function TerminalInner() {
     try { localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list)); } catch {}
   };
 
-  const { quotes: watchQuotes } = useQuotes(watchlist, 30000);
   const symbolArr = useMemo(() => [symbol], [symbol]);
   const { quotes: symQuotes } = useQuotes(symbolArr, 30000);
   const q: Quote | undefined = symQuotes[0];
@@ -122,39 +122,17 @@ function TerminalInner() {
         </div>
 
         {/* Main grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-4">
-          {/* Watchlist */}
-          <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden order-2 lg:order-1">
-            <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-              <h3 className="font-bold text-sm">Watchlist</h3>
-              <span className="text-[10px] text-gray-600 font-mono">30s</span>
-            </div>
-            <div className="p-1.5 max-h-[70vh] overflow-y-auto">
-              {watchQuotes.length === 0
-                ? [...Array(8)].map((_, i) => (
-                    <div key={i} className="h-[52px] m-1 rounded-lg bg-white/[0.03] animate-pulse" />
-                  ))
-                : watchQuotes.map((w) => {
-                    const wUp = (w.changePercent || 0) >= 0;
-                    const active = w.symbol === symbol;
-                    return (
-                      <button key={w.symbol} onClick={() => go(w.symbol)}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-left transition-colors ${
-                          active ? "bg-yellow-400/10 border border-yellow-400/25" : "hover:bg-white/[0.04] border border-transparent"
-                        }`}>
-                        <div>
-                          <span className={`font-mono font-bold text-sm ${active ? "text-yellow-300" : "text-white"}`}>
-                            {w.symbol.replace("^", "")}
-                          </span>
-                          <span className={`block font-mono text-[11px] tabular-nums ${wUp ? "text-green-400" : "text-red-400"}`}>
-                            {wUp ? "+" : ""}{(w.changePercent || 0).toFixed(2)}%
-                          </span>
-                        </div>
-                        <span className="font-mono text-sm tabular-nums text-gray-200">${fmtPrice(w.price)}</span>
-                      </button>
-                    );
-                  })}
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr_300px] gap-4">
+          {/* Watchlist + Markets browser */}
+          <div className="order-2 lg:order-1">
+            <MarketsPanel
+              activeSymbol={symbol}
+              watchlist={watchlist}
+              onSelect={go}
+              onToggleWatch={(s) =>
+                persist(watchlist.includes(s) ? watchlist.filter((w) => w !== s) : [...watchlist, s])
+              }
+            />
           </div>
 
           {/* Chart — our own engine, Twelve Data + FMP */}

@@ -9,7 +9,7 @@ interface Result {
   symbol: string;
   name: string;
   exchange: string;
-  type: "stock" | "etf" | "index" | "crypto";
+  type: "stock" | "etf" | "index" | "crypto" | "forex" | "commodity";
 }
 
 const STATIC: Result[] = [
@@ -18,12 +18,25 @@ const STATIC: Result[] = [
   { symbol: "^DJI", name: "Dow Jones Industrial Average", exchange: "INDEX", type: "index" },
   { symbol: "^RUT", name: "Russell 2000", exchange: "INDEX", type: "index" },
   { symbol: "^VIX", name: "CBOE Volatility Index", exchange: "INDEX", type: "index" },
+  { symbol: "^TNX", name: "US 10 Year Treasury Yield", exchange: "INDEX", type: "index" },
+  { symbol: "^TYX", name: "US 30 Year Treasury Yield", exchange: "INDEX", type: "index" },
   { symbol: "BTCUSD", name: "Bitcoin", exchange: "CRYPTO", type: "crypto" },
   { symbol: "ETHUSD", name: "Ethereum", exchange: "CRYPTO", type: "crypto" },
   { symbol: "SOLUSD", name: "Solana", exchange: "CRYPTO", type: "crypto" },
   { symbol: "XRPUSD", name: "XRP", exchange: "CRYPTO", type: "crypto" },
   { symbol: "DOGEUSD", name: "Dogecoin", exchange: "CRYPTO", type: "crypto" },
   { symbol: "ADAUSD", name: "Cardano", exchange: "CRYPTO", type: "crypto" },
+  { symbol: "EURUSD", name: "Euro / US Dollar", exchange: "FOREX", type: "forex" },
+  { symbol: "GBPUSD", name: "British Pound / US Dollar", exchange: "FOREX", type: "forex" },
+  { symbol: "USDJPY", name: "US Dollar / Japanese Yen", exchange: "FOREX", type: "forex" },
+  { symbol: "AUDUSD", name: "Australian Dollar / US Dollar", exchange: "FOREX", type: "forex" },
+  { symbol: "USDCAD", name: "US Dollar / Canadian Dollar", exchange: "FOREX", type: "forex" },
+  { symbol: "GCUSD", name: "Gold Futures", exchange: "COMMODITY", type: "commodity" },
+  { symbol: "SIUSD", name: "Silver Futures", exchange: "COMMODITY", type: "commodity" },
+  { symbol: "CLUSD", name: "Crude Oil WTI", exchange: "COMMODITY", type: "commodity" },
+  { symbol: "BZUSD", name: "Brent Crude Oil", exchange: "COMMODITY", type: "commodity" },
+  { symbol: "NGUSD", name: "Natural Gas", exchange: "COMMODITY", type: "commodity" },
+  { symbol: "HGUSD", name: "Copper", exchange: "COMMODITY", type: "commodity" },
 ];
 
 const US_EXCHANGES = new Set(["NASDAQ", "NYSE", "AMEX", "CBOE", "ETF", "CRYPTO"]);

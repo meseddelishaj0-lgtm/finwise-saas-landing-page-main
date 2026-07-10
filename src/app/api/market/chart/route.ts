@@ -37,6 +37,15 @@ const ttlFor = (range: RangeKey) => (range === "1D" || range === "5D" ? 60_000 :
 const isCrypto = (s: string) => /^[A-Z]{2,6}USD$/.test(s) && !["GLD", "USO", "TLT"].includes(s);
 const isIndex = (s: string) => s.startsWith("^");
 
+// 6-letter currency pairs (USDJPY, EURGBP…) → Twelve Data slash format
+const FX_CODES = new Set(["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD", "MXN", "CNY"]);
+const asFxPair = (s: string): string | null => {
+  if (s.length !== 6) return null;
+  const a = s.slice(0, 3);
+  const b = s.slice(3);
+  return FX_CODES.has(a) && FX_CODES.has(b) ? `${a}/${b}` : null;
+};
+
 const num = (x: unknown) => {
   const n = typeof x === "string" ? parseFloat(x) : (x as number);
   return Number.isFinite(n) ? n : 0;
@@ -70,9 +79,11 @@ async function fromTwelveData(symbol: string, range: RangeKey): Promise<Bar[] | 
   const key = process.env.TWELVE_DATA_API_KEY;
   if (!key) return null;
   const cfg = RANGES[range];
-  const crypto = isCrypto(symbol);
-  const tdSymbol = crypto ? `${symbol.slice(0, -3)}/USD` : symbol;
-  const outputsize = crypto ? cfg.cryptoOutputsize : cfg.outputsize;
+  const fxPair = asFxPair(symbol);
+  const crypto = isCrypto(symbol) && !fxPair;
+  const tdSymbol = fxPair || (crypto ? `${symbol.slice(0, -3)}/USD` : symbol);
+  // Crypto and forex trade around the clock — need more bars per range
+  const outputsize = crypto || fxPair ? cfg.cryptoOutputsize : cfg.outputsize;
   const url =
     `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(tdSymbol)}` +
     `&interval=${cfg.tdInterval}&outputsize=${outputsize}&timezone=America/New_York&apikey=${key}`;
