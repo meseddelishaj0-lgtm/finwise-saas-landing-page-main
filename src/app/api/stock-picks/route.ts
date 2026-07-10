@@ -36,11 +36,8 @@ interface EnrichedPick extends Pick {
   weekLow52: number | null;
 }
 
-// Server-side quote cache shared across requests on a warm instance
-let cache: {
-  enriched: EnrichedPick[];
-  enrichedAt: number;
-} | null = null;
+// Server-side quote cache shared across requests on a warm instance (per list)
+const cache: Record<string, { enriched: EnrichedPick[]; enrichedAt: number }> = {};
 
 // ============================================================================
 // MANUAL STOCK PICKS — edit this list to change the picks, then deploy.
@@ -64,6 +61,40 @@ const MANUAL_PICKS: Pick[] = [
   { symbol: "GRBK", category: "Homebuilders", reason: "High-margin homebuilder in supply-constrained Sun Belt markets" },
   { symbol: "BCC", category: "Building Products", reason: "Wood products and distribution leader tied to housing construction demand" },
 ];
+
+// ============================================================================
+// MANUAL MOMENTUM LIST — edit and deploy, same rules as MANUAL_PICKS.
+// ============================================================================
+const MANUAL_MOMENTUM: Pick[] = [
+  { symbol: "META", category: "Social & AI", reason: "Breaking out on strong ad revenue and AI momentum" },
+  { symbol: "NVDA", category: "AI & Tech", reason: "Sustained uptrend on relentless AI infrastructure demand" },
+  { symbol: "AVGO", category: "Semiconductors", reason: "Momentum from custom AI chips and networking strength" },
+  { symbol: "PLTR", category: "AI & Data", reason: "Accelerating commercial AI adoption driving the trend" },
+  { symbol: "NFLX", category: "Streaming", reason: "Ad-tier growth and price momentum near highs" },
+  { symbol: "SHOP", category: "E-Commerce", reason: "Merchant growth re-accelerating with strong price action" },
+  { symbol: "CRWD", category: "Cybersecurity", reason: "Category leader in a strong relative-strength uptrend" },
+  { symbol: "AMD", category: "Semiconductors", reason: "Riding the AI accelerator cycle with improving momentum" },
+];
+
+// ============================================================================
+// MANUAL GROWTH LIST — edit and deploy, same rules as MANUAL_PICKS.
+// ============================================================================
+const MANUAL_GROWTH: Pick[] = [
+  { symbol: "TSLA", category: "EV & Energy", reason: "FSD progress and energy storage compounding growth" },
+  { symbol: "AMD", category: "Semiconductors", reason: "Data-center share gains compounding revenue growth" },
+  { symbol: "LLY", category: "Healthcare", reason: "GLP-1 franchise driving multi-year earnings growth" },
+  { symbol: "DUOL", category: "EdTech", reason: "Rapid user growth with expanding subscription monetization" },
+  { symbol: "PLTR", category: "AI & Data", reason: "Commercial segment compounding at high growth rates" },
+  { symbol: "SHOP", category: "E-Commerce", reason: "Take-rate expansion on growing merchant volume" },
+  { symbol: "NOW", category: "Enterprise Software", reason: "Durable 20%+ growth from workflow automation demand" },
+  { symbol: "CRWD", category: "Cybersecurity", reason: "Land-and-expand model compounding ARR growth" },
+];
+
+const MANUAL_LISTS: Record<string, Pick[]> = {
+  picks: MANUAL_PICKS,
+  momentum: MANUAL_MOMENTUM,
+  growth: MANUAL_GROWTH,
+};
 
 // Resolve the user's tier from the database (same logic as
 // /api/subscription/status). This is the trusted source of truth — we do not
@@ -122,14 +153,15 @@ async function enrichWithQuotes(picks: Pick[]): Promise<EnrichedPick[]> {
   });
 }
 
-async function getEnrichedPicks(): Promise<EnrichedPick[]> {
+async function getEnrichedPicks(list: string): Promise<EnrichedPick[]> {
   const now = Date.now();
+  const entry = cache[list];
 
-  if (!cache || now - cache.enrichedAt > QUOTE_REFRESH_MS) {
-    cache = { enriched: await enrichWithQuotes(MANUAL_PICKS), enrichedAt: now };
+  if (!entry || now - entry.enrichedAt > QUOTE_REFRESH_MS) {
+    cache[list] = { enriched: await enrichWithQuotes(MANUAL_LISTS[list]), enrichedAt: now };
   }
 
-  return cache.enriched;
+  return cache[list].enriched;
 }
 
 // GET /api/stock-picks - returns the curated stock picks limited to the caller's tier.
@@ -142,26 +174,31 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "User ID required" }, { status: 401 });
   }
 
+  // Which curated list to serve: picks (default), momentum, or growth
+  const listParam = req.nextUrl.searchParams.get("list") || "picks";
+  const list = listParam in MANUAL_LISTS ? listParam : "picks";
+  const listTotal = MANUAL_LISTS[list].length;
+
   try {
     const tier = await resolveTier(userId);
-    const limit = PICKS_BY_TIER[tier] ?? 0;
+    const limit = Math.min(PICKS_BY_TIER[tier] ?? 0, listTotal);
 
     // Non-premium users get nothing — names are never sent to the client.
     if (limit <= 0) {
       return NextResponse.json(
-        { tier, limit: 0, total: TOTAL_PICKS, picks: [] },
+        { tier, list, limit: 0, total: listTotal, picks: [] },
         { status: 403 }
       );
     }
 
-    const enriched = await getEnrichedPicks();
+    const enriched = await getEnrichedPicks(list);
 
     // Only serialize the picks this tier is entitled to. Higher-tier picks
     // never leave the server, so they can't be read by inspecting the response.
     const picks = enriched.slice(0, limit).map((p, idx) => ({ rank: idx + 1, ...p }));
 
     return NextResponse.json(
-      { tier, limit, total: TOTAL_PICKS, picks },
+      { tier, list, limit, total: listTotal, picks },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (err) {
