@@ -13,7 +13,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useSubscription } from '@/context/SubscriptionContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -70,6 +70,12 @@ export default function StockPicksScreen() {
   // Fetch the tier-gated stock picks from the server. The backend verifies the
   // subscription and only returns the symbols this user has paid for, so no
   // pick names (or API keys) ever live in the client bundle.
+  // Which curated list this screen shows (?list=momentum|growth; default picks)
+  const { list } = useLocalSearchParams<{ list?: string }>();
+  const listKey = list === 'momentum' || list === 'growth' ? list : 'picks';
+  const listTitle =
+    listKey === 'momentum' ? 'Momentum Stocks' : listKey === 'growth' ? 'Growth Stocks' : 'Stock Picks';
+
   const fetchStockData = useCallback(async () => {
     try {
       // Optimistic counter value until the server responds authoritatively.
@@ -90,7 +96,7 @@ export default function StockPicksScreen() {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/stock-picks`, {
+      const response = await fetch(`${API_URL}/api/stock-picks?list=${listKey}`, {
         headers: {
           'x-user-id': userId,
           'Cache-Control': 'no-cache',
@@ -112,7 +118,7 @@ export default function StockPicksScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [isPremium, currentTier]);
+  }, [isPremium, currentTier, listKey]);
 
   useEffect(() => {
     if (isPremium) {
@@ -148,7 +154,7 @@ export default function StockPicksScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Stock Picks</Text>
+          <Text style={styles.headerTitle}>{listTitle}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -203,7 +209,7 @@ export default function StockPicksScreen() {
             <Ionicons name={tierInfo.icon as any} size={12} color="#000" />
             <Text style={styles.tierBadgeText}>{tierInfo.name}</Text>
           </View>
-          <Text style={styles.headerTitle}>Stock Picks</Text>
+          <Text style={styles.headerTitle}>{listTitle}</Text>
         </View>
         <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
           <Ionicons name="refresh" size={22} color="#FFF" />
@@ -213,7 +219,7 @@ export default function StockPicksScreen() {
       {/* Picks Counter */}
       <View style={styles.counterContainer}>
         <View style={styles.counterCard}>
-          <Text style={styles.counterLabel}>Your Stock Picks</Text>
+          <Text style={styles.counterLabel}>Your {listTitle}</Text>
           <View style={styles.counterRow}>
             <Text style={[styles.counterValue, { color: tierInfo.color }]}>{picksLimit}</Text>
             <Text style={styles.counterTotal}>/ {totalPicks}</Text>

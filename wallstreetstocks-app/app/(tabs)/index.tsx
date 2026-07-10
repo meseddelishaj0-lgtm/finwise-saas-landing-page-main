@@ -410,6 +410,8 @@ export default function Dashboard() {
   
   const [refreshing, setRefreshing] = useState(false);
   const [stockPicksData, setStockPicksData] = useState<any[]>([]);
+  const [serverMomentum, setServerMomentum] = useState<any[]>([]);
+  const [serverGrowth, setServerGrowth] = useState<any[]>([]);
   const [picksPage, setPicksPage] = useState(0);
 
   // Search state
@@ -1001,8 +1003,19 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stockPicksData, priceUpdateTrigger]);
 
-  // Momentum card: today's top 3 movers among the pre-loaded core stocks
+  // Momentum card: the manually curated server list (live-price overlaid);
+  // falls back to today's top 3 movers if the server list isn't loaded
   const liveMomentumStocks = useMemo(() => {
+    if (serverMomentum.length > 0) {
+      return serverMomentum.map(p => {
+        const q = priceStore.getQuote(p.symbol);
+        return {
+          ...p,
+          price: q?.price || p.price,
+          changePercent: q?.changePercent ?? p.changePercent,
+        };
+      });
+    }
     const merged = marketDataService.getLiveData('stock')
       .map(item => {
         const q = priceStore.getQuote(item.symbol);
@@ -1017,16 +1030,27 @@ export default function Dashboard() {
     merged.sort((a, b) => (b.changePercent || 0) - (a.changePercent || 0));
     return merged.slice(0, 3);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [priceUpdateTrigger]);
+  }, [priceUpdateTrigger, serverMomentum]);
 
-  // Growth card: curated high-growth names with live prices
+  // Growth card: the manually curated server list (live-price overlaid);
+  // falls back to the hardcoded teaser names
   const liveGrowthStocks = useMemo(() => {
+    if (serverGrowth.length > 0) {
+      return serverGrowth.map(p => {
+        const q = priceStore.getQuote(p.symbol);
+        return {
+          ...p,
+          price: q?.price || p.price,
+          changePercent: q?.changePercent ?? p.changePercent,
+        };
+      });
+    }
     return GROWTH_STOCKS_PREVIEW.map(p => {
       const q = priceStore.getQuote(p.symbol);
       return { ...p, price: q?.price || 0, changePercent: q?.changePercent || 0 };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [priceUpdateTrigger]);
+  }, [priceUpdateTrigger, serverGrowth]);
 
   // Live portfolio chart data - appends current live portfolio value to historical chart
   // This makes the chart follow real-time price changes
@@ -1339,23 +1363,43 @@ export default function Dashboard() {
             || JSON.parse((await AsyncStorage.getItem('userData')) || 'null')?.id?.toString()
             || null;
           if (userId) {
-            const res = await fetch('https://www.wallstreetstocks.ai/api/stock-picks', {
-              headers: { 'x-user-id': userId, 'Cache-Control': 'no-cache' },
-            });
-            const data = await res.json().catch(() => null);
-            if (res.ok && Array.isArray(data?.picks) && data.picks.length > 0) {
-              const top3 = data.picks.slice(0, 3).map((p: any) => ({
-                symbol: p.symbol,
-                category: p.category,
-                price: p.price || 0,
-                change: p.change || 0,
-                changePercent: p.changePercent || 0,
-              }));
-              setStockPicksData(top3);
-              // Live updates: subscribe the real pick symbols
-              if (wsConnected) wsSubscribe(top3.map((p: any) => p.symbol));
-              return;
+            const fetchList = async (list: string) => {
+              const res = await fetch(`https://www.wallstreetstocks.ai/api/stock-picks?list=${list}`, {
+                headers: { 'x-user-id': userId, 'Cache-Control': 'no-cache' },
+              });
+              const data = await res.json().catch(() => null);
+              return res.ok && Array.isArray(data?.picks) && data.picks.length > 0 ? data.picks : null;
+            };
+            const top3 = (arr: any[]) => arr.slice(0, 3).map((p: any) => ({
+              symbol: p.symbol,
+              category: p.category,
+              price: p.price || 0,
+              change: p.change || 0,
+              changePercent: p.changePercent || 0,
+            }));
+
+            const [picks, momentum, growth] = await Promise.all([
+              fetchList('picks'), fetchList('momentum'), fetchList('growth'),
+            ]);
+
+            const liveSymbols: string[] = [];
+            if (momentum) {
+              const t = top3(momentum);
+              setServerMomentum(t);
+              liveSymbols.push(...t.map((p: any) => p.symbol));
             }
+            if (growth) {
+              const t = top3(growth);
+              setServerGrowth(t);
+              liveSymbols.push(...t.map((p: any) => p.symbol));
+            }
+            if (picks) {
+              const t = top3(picks);
+              setStockPicksData(t);
+              liveSymbols.push(...t.map((p: any) => p.symbol));
+            }
+            if (wsConnected && liveSymbols.length > 0) wsSubscribe(liveSymbols);
+            if (picks) return;
           }
         } catch {
           // Fall through to the teaser fallback below
@@ -2896,7 +2940,7 @@ export default function Dashboard() {
               badgeColor: '#00C853',
               data: liveMomentumStocks,
               cta: 'View All Momentum',
-              route: '/screener?preset=momentum',
+              route: '/premium/stock-picks?list=momentum',
             },
             {
               key: 'growth',
@@ -2909,7 +2953,7 @@ export default function Dashboard() {
               badgeColor: isDark ? '#FFD60A' : '#B8860B',
               data: liveGrowthStocks,
               cta: 'View All Growth',
-              route: '/screener?preset=growth',
+              route: '/premium/stock-picks?list=growth',
             },
           ]).map((card, cardIdx) => (
             <ScalePress
