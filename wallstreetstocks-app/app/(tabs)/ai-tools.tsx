@@ -1625,7 +1625,7 @@ Always remind users that this is educational information, not financial advice.`
                           <Text style={[styles.targetLabelName, { color: colors.textSecondary }]}>Bear</Text>
                         </View>
                         <View style={[styles.targetLabelItem, { alignItems: 'center' }]}>
-                          <Text style={[styles.targetLabelPrice, { color: '#5856D6' }]}>${forecastResult.priceTargets.base.toFixed(0)}</Text>
+                          <Text style={[styles.targetLabelPrice, { color: isDark ? '#9D9BFF' : '#5856D6' }]}>${forecastResult.priceTargets.base.toFixed(0)}</Text>
                           <Text style={[styles.targetLabelName, { color: colors.textSecondary }]}>Base</Text>
                         </View>
                         <View style={[styles.targetLabelItem, { alignItems: 'flex-end' }]}>
@@ -1650,7 +1650,7 @@ Always remind users that this is educational information, not financial advice.`
 
                     {/* Target Cards */}
                     <View style={styles.targetCardsRow}>
-                      <View style={[styles.targetCard, { borderColor: '#FF3B3030' }]}>
+                      <View style={[styles.targetCard, { borderColor: '#FF3B3040', backgroundColor: isDark ? 'rgba(255,59,48,0.10)' : '#FFF5F5' }]}>
                         <Ionicons name="trending-down" size={18} color="#FF3B30" />
                         <Text style={[styles.targetCardLabel, { color: colors.textSecondary }]}>Conservative</Text>
                         <Text style={[styles.targetCardValue, { color: '#FF3B30' }]}>${forecastResult.priceTargets.conservative.toFixed(2)}</Text>
@@ -1658,15 +1658,15 @@ Always remind users that this is educational information, not financial advice.`
                           {(((forecastResult.priceTargets.conservative - forecastResult.currentPrice) / forecastResult.currentPrice) * 100).toFixed(1)}%
                         </Text>
                       </View>
-                      <View style={[styles.targetCard, { borderColor: '#5856D630', backgroundColor: '#5856D610' }]}>
+                      <View style={[styles.targetCard, { borderColor: '#5856D650', backgroundColor: isDark ? 'rgba(124,122,255,0.14)' : '#F0F0FF' }]}>
                         <Ionicons name="remove" size={18} color="#5856D6" />
                         <Text style={[styles.targetCardLabel, { color: colors.textSecondary }]}>Base Case</Text>
-                        <Text style={[styles.targetCardValue, { color: '#5856D6' }]}>${forecastResult.priceTargets.base.toFixed(2)}</Text>
-                        <Text style={[styles.targetCardPercent, { color: '#5856D6' }]}>
+                        <Text style={[styles.targetCardValue, { color: isDark ? '#9D9BFF' : '#5856D6' }]}>${forecastResult.priceTargets.base.toFixed(2)}</Text>
+                        <Text style={[styles.targetCardPercent, { color: isDark ? '#9D9BFF' : '#5856D6' }]}>
                           +{(((forecastResult.priceTargets.base - forecastResult.currentPrice) / forecastResult.currentPrice) * 100).toFixed(1)}%
                         </Text>
                       </View>
-                      <View style={[styles.targetCard, { borderColor: '#00C85330' }]}>
+                      <View style={[styles.targetCard, { borderColor: '#00C85340', backgroundColor: isDark ? 'rgba(0,200,83,0.10)' : '#F0FDF4' }]}>
                         <Ionicons name="trending-up" size={18} color="#00C853" />
                         <Text style={[styles.targetCardLabel, { color: colors.textSecondary }]}>Bullish</Text>
                         <Text style={[styles.targetCardValue, { color: '#00C853' }]}>${forecastResult.priceTargets.bullish.toFixed(2)}</Text>
@@ -1683,7 +1683,7 @@ Always remind users that this is educational information, not financial advice.`
                   <Text style={[styles.probabilityTitle, { color: colors.text }]}>Probability Assessment</Text>
                   <View style={styles.probabilityRow}>
                     <View style={styles.probabilityItem}>
-                      <View style={styles.probabilityCircle}>
+                      <View style={[styles.probabilityCircle, { backgroundColor: isDark ? 'rgba(0,200,83,0.10)' : '#F9F9FB', borderColor: isDark ? 'rgba(0,200,83,0.45)' : '#E5E5EA' }]}>
                         <Text style={[styles.probabilityValue, { color: '#00C853' }]}>{forecastResult.probabilities.upside}%</Text>
                       </View>
                       <Text style={[styles.probabilityLabel, { color: colors.textSecondary }]}>Upside</Text>
@@ -1693,7 +1693,7 @@ Always remind users that this is educational information, not financial advice.`
                       <View style={[styles.probabilityBar, { backgroundColor: '#FF3B30', flex: forecastResult.probabilities.downside }]} />
                     </View>
                     <View style={styles.probabilityItem}>
-                      <View style={styles.probabilityCircle}>
+                      <View style={[styles.probabilityCircle, { backgroundColor: isDark ? 'rgba(255,59,48,0.10)' : '#F9F9FB', borderColor: isDark ? 'rgba(255,59,48,0.45)' : '#E5E5EA' }]}>
                         <Text style={[styles.probabilityValue, { color: '#FF3B30' }]}>{forecastResult.probabilities.downside}%</Text>
                       </View>
                       <Text style={[styles.probabilityLabel, { color: colors.textSecondary }]}>Downside</Text>
