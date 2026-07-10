@@ -17,6 +17,10 @@ const config: Config = {
         "primary-accent": "var(--primary-accent)",
         "foreground-accent": "var(--foreground-accent)",
         "hero-background": "var(--hero-background)",
+
+        // Terminal dark theme: warm near-black bg + raised card surface
+        night: "#0D0C09",
+        surface: "#161410",
       },
     },
   },

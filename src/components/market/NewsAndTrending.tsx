@@ -49,7 +49,7 @@ const NewsAndTrending: React.FC = () => {
   const [lead, ...rest] = news;
 
   return (
-    <section className="relative w-screen text-white bg-black pb-20" style={{ marginLeft: "calc(-50vw + 50%)" }}>
+    <section className="relative w-screen text-white bg-night pb-20" style={{ marginLeft: "calc(-50vw + 50%)" }}>
       <div className="max-w-7xl mx-auto px-6 md:px-10">
         <div className="flex items-end justify-between mb-8">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">
@@ -62,7 +62,7 @@ const NewsAndTrending: React.FC = () => {
           <div className="lg:col-span-2">
             {lead && (
               <a href={lead.url} target="_blank" rel="noopener noreferrer"
-                className="group block rounded-2xl overflow-hidden border border-white/10 bg-[#0b0b09] hover:border-yellow-400/30 transition-colors">
+                className="group block rounded-2xl overflow-hidden border border-white/10 bg-surface hover:border-yellow-400/30 transition-colors">
                 {lead.image && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={lead.image} alt="" className="w-full h-64 md:h-80 object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
@@ -87,7 +87,7 @@ const NewsAndTrending: React.FC = () => {
             <div className="grid sm:grid-cols-2 gap-4 mt-4">
               {rest.slice(0, 6).map((n, i) => (
                 <a key={i} href={n.url} target="_blank" rel="noopener noreferrer"
-                  className="group flex gap-3 rounded-xl border border-white/10 bg-[#0b0b09] p-3 hover:border-yellow-400/30 transition-colors">
+                  className="group flex gap-3 rounded-xl border border-white/10 bg-surface p-3 hover:border-yellow-400/30 transition-colors">
                   {n.image && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={n.image} alt="" className="w-20 h-20 rounded-lg object-cover flex-shrink-0" />
@@ -109,7 +109,7 @@ const NewsAndTrending: React.FC = () => {
           </div>
 
           {/* Trending tickers */}
-          <div className="rounded-2xl border border-white/10 bg-[#0b0b09] overflow-hidden h-fit">
+          <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden h-fit">
             <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2">
               <span className="text-yellow-400">🔥</span>
               <h3 className="font-bold">Trending Tickers</h3>

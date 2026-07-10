@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
   return (
     <footer
       id="footer"
-      className="relative w-screen overflow-hidden text-gray-300 bg-gradient-to-b from-black to-[#0b0b09] border-t border-yellow-500/15 py-16"
+      className="relative w-screen overflow-hidden text-gray-300 bg-gradient-to-b from-night to-surface border-t border-yellow-500/15 py-16"
       style={{ marginLeft: "calc(-50vw + 50%)" }}
     >
       {/* Subtle golden radial glow */}

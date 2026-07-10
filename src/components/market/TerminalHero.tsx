@@ -41,7 +41,7 @@ const TerminalHero: React.FC = () => {
   return (
     <section className="relative w-screen overflow-hidden text-white" style={{ marginLeft: "calc(-50vw + 50%)" }}>
       {/* Backdrop: black + terminal grid + gold glow */}
-      <div className="absolute inset-0 bg-black" />
+      <div className="absolute inset-0 bg-night" />
       <div
         className="absolute inset-0 opacity-[0.13]"
         style={{
@@ -106,7 +106,7 @@ const TerminalHero: React.FC = () => {
 
         {/* Right: live terminal window */}
         <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp}
-          className="rounded-2xl border border-yellow-500/20 bg-[#0b0b09]/90 backdrop-blur
+          className="rounded-2xl border border-yellow-500/20 bg-surface/90 backdrop-blur
           shadow-[0_0_60px_rgba(255,215,0,0.12),0_30px_60px_rgba(0,0,0,0.6)] overflow-hidden">
           {/* Window chrome */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/[0.02]">

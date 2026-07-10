@@ -76,10 +76,10 @@ function TerminalInner() {
   const up = (q?.changePercent || 0) >= 0;
 
   return (
-    <main className="min-h-screen bg-black text-white pt-24 pb-10 px-4 md:px-6">
+    <main className="min-h-screen bg-night text-white pt-24 pb-10 px-4 md:px-6">
       <div className="max-w-[1600px] mx-auto">
         {/* Terminal top bar */}
-        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-yellow-500/20 bg-[#0b0b09] px-4 py-3 mb-4">
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-yellow-500/20 bg-surface px-4 py-3 mb-4">
           <div className="flex items-center gap-2 mr-1">
             <span className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
             <span className="font-mono text-xs text-gray-400 tracking-widest hidden sm:inline">TERMINAL</span>
@@ -124,7 +124,7 @@ function TerminalInner() {
         {/* Main grid */}
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr_300px] gap-4">
           {/* Watchlist */}
-          <div className="rounded-2xl border border-white/10 bg-[#0b0b09] overflow-hidden order-2 lg:order-1">
+          <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden order-2 lg:order-1">
             <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
               <h3 className="font-bold text-sm">Watchlist</h3>
               <span className="text-[10px] text-gray-600 font-mono">30s</span>
@@ -158,7 +158,7 @@ function TerminalInner() {
           </div>
 
           {/* Chart — our own engine, Twelve Data + FMP */}
-          <div className="rounded-2xl border border-white/10 bg-[#0b0b09] overflow-hidden order-1 lg:order-2">
+          <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden order-1 lg:order-2">
             <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
               <div>
                 <span className="font-mono font-bold">{symbol.replace("^", "")}</span>
@@ -170,7 +170,7 @@ function TerminalInner() {
           </div>
 
           {/* Right panel */}
-          <div className="rounded-2xl border border-white/10 bg-[#0b0b09] overflow-hidden order-3">
+          <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden order-3">
             <div className="flex gap-1 p-2 border-b border-white/5">
               {(["overview", "news"] as const).map((t) => (
                 <button key={t} onClick={() => setRightTab(t)}
@@ -230,7 +230,7 @@ function TerminalInner() {
 
 export default function TerminalPage() {
   return (
-    <Suspense fallback={<main className="min-h-screen bg-black" />}>
+    <Suspense fallback={<main className="min-h-screen bg-night" />}>
       <TerminalInner />
     </Suspense>
   );

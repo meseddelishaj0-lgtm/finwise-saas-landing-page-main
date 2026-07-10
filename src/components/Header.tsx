@@ -99,8 +99,8 @@ const Header: React.FC = () => {
     <header
       className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
         isScrolled
-          ? "bg-black/85 backdrop-blur-lg py-2 border-b border-yellow-500/15"
-          : "bg-gradient-to-b from-black/85 via-black/45 to-transparent backdrop-blur-sm py-3 border-none"
+          ? "bg-night/90 backdrop-blur-lg py-2 border-b border-yellow-500/15"
+          : "bg-gradient-to-b from-night/90 via-night/45 to-transparent backdrop-blur-sm py-3 border-none"
       }`}
     >
       <Container>

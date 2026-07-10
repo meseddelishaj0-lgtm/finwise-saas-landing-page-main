@@ -33,7 +33,7 @@ const MarketsBoard: React.FC = () => {
   }, [moverTab]);
 
   return (
-    <section className="relative w-screen text-white bg-black py-16 md:py-20" style={{ marginLeft: "calc(-50vw + 50%)" }}>
+    <section className="relative w-screen text-white bg-night py-16 md:py-20" style={{ marginLeft: "calc(-50vw + 50%)" }}>
       <div className="max-w-7xl mx-auto px-6 md:px-10">
         <div className="flex items-end justify-between mb-8">
           <div>
@@ -51,7 +51,7 @@ const MarketsBoard: React.FC = () => {
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main quotes table */}
-          <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-[#0b0b09] overflow-hidden">
+          <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-surface overflow-hidden">
             <div className="flex gap-1 p-3 border-b border-white/5 overflow-x-auto">
               {Object.keys(TABS).map((t) => (
                 <button key={t} onClick={() => setTab(t)}
@@ -124,7 +124,7 @@ const MarketsBoard: React.FC = () => {
           </div>
 
           {/* Movers sidebar */}
-          <div className="rounded-2xl border border-white/10 bg-[#0b0b09] overflow-hidden">
+          <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden">
             <div className="flex gap-1 p-3 border-b border-white/5">
               {(["Gainers", "Losers"] as MoverTab[]).map((t) => (
                 <button key={t} onClick={() => setMoverTab(t)}

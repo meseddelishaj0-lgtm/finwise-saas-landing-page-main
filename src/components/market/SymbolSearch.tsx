@@ -130,7 +130,7 @@ const SymbolSearch: React.FC<Props> = ({ variant = "header", autoFocus, onNaviga
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-2 z-[70] rounded-xl border border-yellow-500/20 bg-[#0e0e0c] shadow-[0_20px_50px_rgba(0,0,0,0.7)] overflow-hidden min-w-[300px]">
+        <div className="absolute left-0 right-0 top-full mt-2 z-[70] rounded-xl border border-yellow-500/20 bg-surface shadow-[0_20px_50px_rgba(0,0,0,0.7)] overflow-hidden min-w-[300px]">
           {results.map((r, i) => {
             const badge = TYPE_BADGE[r.type] || TYPE_BADGE.stock;
             return (

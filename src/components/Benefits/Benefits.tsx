@@ -13,7 +13,7 @@ const Benefits: React.FC = () => {
     >
       {/* ✅ Full-width radiant background */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1000]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-night via-night to-[#1a1000]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.15)_0%,rgba(0,0,0,1)_85%)] opacity-70" />
       </div>
 
@@ -52,7 +52,7 @@ const Benefits: React.FC = () => {
       </div>
 
       {/* ✅ Bottom fade to black for smooth transition */}
-      <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-b from-transparent to-black" />
+      <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-b from-transparent to-night" />
     </section>
   );
 };

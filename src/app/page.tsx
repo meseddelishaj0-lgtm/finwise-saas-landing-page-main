@@ -38,7 +38,7 @@ const HomePage: React.FC = () => {
         {/* ✅ Renamed from Pricing to Plans */}
         <section
           id="plans"
-          className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-black via-[#0a0a0a] to-[#0f0d05]"
+          className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-night via-night to-[#15120a]"
           style={{ marginLeft: 'calc(-50vw + 50%)' }}
         >
           {/* Gold glow background */}
@@ -132,7 +132,7 @@ const HomePage: React.FC = () => {
         {/* Testimonials Section */}
         <section
   id="testimonials"
-  className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a]"
+  className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-night via-night to-[#17150f]"
   style={{ marginLeft: 'calc(-50vw + 50%)' }}
 >
   {/* Soft gold glow overlay */}
@@ -206,7 +206,7 @@ const HomePage: React.FC = () => {
         {/* FAQ Section */}
         <section
   id="faq"
-  className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a]"
+  className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-night via-night to-[#17150f]"
   style={{ marginLeft: 'calc(-50vw + 50%)' }}
 >
   {/* Gold Glow Overlay */}
@@ -281,7 +281,7 @@ const HomePage: React.FC = () => {
         {/* Terms and Conditions Section */}
         <section
           id="terms"
-          className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a]"
+          className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-night via-night to-[#17150f]"
           style={{ marginLeft: 'calc(-50vw + 50%)' }}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
@@ -376,7 +376,7 @@ const HomePage: React.FC = () => {
         {/* Privacy Policy Section */}
         <section
           id="privacy"
-          className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-[#1a1a1a] via-[#0a0a0a] to-black"
+          className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-[#17150f] via-night to-night"
           style={{ marginLeft: 'calc(-50vw + 50%)' }}
         >
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />

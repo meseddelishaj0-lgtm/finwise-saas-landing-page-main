@@ -399,7 +399,7 @@ const TerminalChart: React.FC<Props> = ({ symbol, prevClose, height = 500 }) => 
               <g pointerEvents="none">
                 <line x1={x(hover)} x2={x(hover)} y1={PAD_TOP} y2={volTop + VOL_H} stroke="rgba(255,214,10,0.45)" strokeDasharray="3 3" />
                 <line x1={0} x2={plotW} y1={y(hb.c)} y2={y(hb.c)} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />
-                <circle cx={x(hover)} cy={y(hb.c)} r="3.5" fill={lineColor} stroke="#0b0b09" strokeWidth="1.5" />
+                <circle cx={x(hover)} cy={y(hb.c)} r="3.5" fill={lineColor} stroke="#161410" strokeWidth="1.5" />
               </g>
             )}
           </svg>
