@@ -1634,16 +1634,19 @@ Always remind users that this is educational information, not financial advice.`
                         </View>
                       </View>
                       {/* Gradient Bar */}
-                      <View style={styles.targetRangeBar}>
-                        <View style={[styles.gradientSegment, { flex: 1, backgroundColor: '#FF3B3040', borderTopLeftRadius: 6, borderBottomLeftRadius: 6 }]} />
-                        <View style={[styles.gradientSegment, { flex: 1, backgroundColor: '#5856D640' }]} />
-                        <View style={[styles.gradientSegment, { flex: 1, backgroundColor: '#00C85340', borderTopRightRadius: 6, borderBottomRightRadius: 6 }]} />
+                      <View style={[styles.targetRangeBar, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#E5E5EA' }]}>
+                        <View style={[styles.gradientSegment, { flex: 1, backgroundColor: '#FF3B30', borderTopLeftRadius: 6, borderBottomLeftRadius: 6 }]} />
+                        <View style={[styles.gradientSegment, { flex: 1, backgroundColor: isDark ? '#7C7AFF' : '#5856D6' }]} />
+                        <View style={[styles.gradientSegment, { flex: 1, backgroundColor: '#00C853', borderTopRightRadius: 6, borderBottomRightRadius: 6 }]} />
                         {/* Current Price Indicator */}
                         <View style={[styles.currentPriceIndicator, {
                           left: `${Math.min(Math.max(((forecastResult.currentPrice - forecastResult.priceTargets.conservative) / (forecastResult.priceTargets.bullish - forecastResult.priceTargets.conservative)) * 100, 0), 100)}%`
                         }]}>
                           <View style={styles.currentPriceDot} />
-                          <Text style={[styles.currentPriceLabel, { color: colors.textSecondary }]}>Current: ${forecastResult.currentPrice.toFixed(0)}</Text>
+                          <Text style={[styles.currentPriceLabel, {
+                            color: isDark ? '#FFF' : '#1C1C1E',
+                            backgroundColor: isDark ? '#2C2C2E' : '#FFF',
+                          }]}>Current: ${forecastResult.currentPrice.toFixed(0)}</Text>
                         </View>
                       </View>
                     </View>
