@@ -8,10 +8,12 @@ import { HiOutlineXMark, HiBars3, HiChevronDown } from "react-icons/hi2";
 import { useSession, signOut } from "next-auth/react";
 import Container from "./Container";
 import DropdownMenu from "@/components/ui/DropdownMenu";
+import SymbolSearch from "@/components/market/SymbolSearch";
 
 const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [openMobileMenu, setOpenMobileMenu] = useState<string | null>(null);
   const { data: session } = useSession();
 
@@ -56,9 +58,25 @@ const Header: React.FC = () => {
             </span>
           </Link>
 
+          {/* ✅ Global symbol search toggle */}
+          <button
+            onClick={() => setSearchOpen((o) => !o)}
+            aria-label="Search symbols"
+            className={`hidden md:flex items-center justify-center w-9 h-9 ml-4 rounded-full border transition-all flex-shrink-0 ${
+              searchOpen
+                ? "bg-yellow-400 text-black border-yellow-400"
+                : "bg-white/[0.06] border-white/10 text-gray-300 hover:text-yellow-300 hover:border-yellow-400/50"
+            }`}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+
           {/* ✅ Desktop Menu */}
           <div
-            className={`hidden md:flex items-center space-x-10 transition-all duration-300 relative z-50 ${
+            className={`hidden md:flex items-center space-x-6 transition-all duration-300 relative z-50 ${
               session ? "ml-2" : ""
             }`}
           >
@@ -194,6 +212,23 @@ const Header: React.FC = () => {
         </nav>
       </Container>
 
+      {/* ✅ Expanding search panel (desktop) */}
+      {searchOpen && (
+        <div
+          className="hidden md:block absolute left-0 right-0 top-full bg-black/95 backdrop-blur-lg border-b border-yellow-500/15 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
+          onKeyDown={(e) => e.key === "Escape" && setSearchOpen(false)}
+        >
+          <Container>
+            <div className="max-w-xl mx-auto">
+              <SymbolSearch variant="terminal" autoFocus onNavigate={() => setSearchOpen(false)} />
+              <p className="mt-2 text-center text-[11px] text-gray-600">
+                Search any stock, ETF, index, or crypto — opens in the Terminal
+              </p>
+            </div>
+          </Container>
+        </div>
+      )}
+
       {/* ✅ Mobile Dropdown Menu */}
       <Transition
         show={isOpen}
@@ -206,6 +241,9 @@ const Header: React.FC = () => {
       >
         <div className="md:hidden bg-black/95 text-white backdrop-blur-md shadow-2xl border-t border-gray-800">
           <ul className="flex flex-col space-y-2 py-4 px-6">
+            <li className="pb-1">
+              <SymbolSearch variant="terminal" onNavigate={() => setIsOpen(false)} />
+            </li>
             <li>
               <Link
                 href="/terminal"

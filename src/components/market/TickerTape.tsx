@@ -1,44 +1,69 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React from "react";
+import Link from "next/link";
+import { useQuotes, fmtPrice } from "./useQuotes";
 
-// TradingView ticker tape — the thin scrolling strip of live quotes at the
-// very top of the page (Barchart/Yahoo style). Script must be injected via
-// createElement; scripts inside dangerouslySetInnerHTML never execute.
+// Custom scrolling ticker tape — our own data via /api/market/quotes,
+// no third-party widgets. Seamless loop: the row is rendered twice and
+// animated -50%; pauses on hover.
+
+const TAPE_SYMBOLS = [
+  "^GSPC", "^IXIC", "^DJI", "^RUT", "^VIX",
+  "NVDA", "AAPL", "MSFT", "TSLA", "AMZN", "META",
+  "BTCUSD", "ETHUSD", "SOLUSD", "GLD", "USO",
+];
+
+const NAMES: Record<string, string> = {
+  "^GSPC": "S&P 500", "^IXIC": "NASDAQ", "^DJI": "DOW", "^RUT": "RUSSELL", "^VIX": "VIX",
+  BTCUSD: "BTC", ETHUSD: "ETH", SOLUSD: "SOL", GLD: "GOLD", USO: "OIL",
+};
+
 const TickerTape: React.FC = () => {
-  const ref = useRef<HTMLDivElement>(null);
+  const { quotes } = useQuotes(TAPE_SYMBOLS, 30000);
 
-  useEffect(() => {
-    if (!ref.current || ref.current.querySelector("script")) return;
-    const script = document.createElement("script");
-    script.src =
-      "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      symbols: [
-        { proName: "FOREXCOM:SPXUSD", title: "S&P 500" },
-        { proName: "FOREXCOM:NSXUSD", title: "NASDAQ 100" },
-        { proName: "FOREXCOM:DJI", title: "DOW" },
-        { proName: "CBOE:VX1!", title: "VIX" },
-        { proName: "BITSTAMP:BTCUSD", title: "BTC" },
-        { proName: "BITSTAMP:ETHUSD", title: "ETH" },
-        { proName: "TVC:GOLD", title: "GOLD" },
-        { proName: "TVC:USOIL", title: "OIL" },
-        { proName: "FX:EURUSD", title: "EUR/USD" },
-      ],
-      showSymbolLogo: true,
-      isTransparent: true,
-      displayMode: "regular",
-      colorTheme: "dark",
-      locale: "en",
-    });
-    ref.current.appendChild(script);
-  }, []);
+  if (quotes.length === 0) {
+    return (
+      <div className="w-screen h-[44px] border-y border-yellow-500/10 bg-[#0b0b09]" style={{ marginLeft: "calc(-50vw + 50%)" }} />
+    );
+  }
+
+  const items = quotes.map((q) => {
+    const up = (q.changePercent || 0) >= 0;
+    return (
+      <Link
+        key={q.symbol}
+        href={`/terminal?symbol=${encodeURIComponent(q.symbol)}`}
+        className="inline-flex items-center gap-2 px-5 border-r border-white/[0.06] hover:bg-white/[0.04] h-full transition-colors"
+      >
+        <span className="font-mono font-bold text-[13px] text-white">
+          {NAMES[q.symbol] || q.symbol}
+        </span>
+        <span className="font-mono text-[13px] tabular-nums text-gray-300">{fmtPrice(q.price)}</span>
+        <span className={`font-mono text-[12px] font-bold tabular-nums ${up ? "text-green-400" : "text-red-400"}`}>
+          {up ? "▲" : "▼"} {Math.abs(q.changePercent || 0).toFixed(2)}%
+        </span>
+      </Link>
+    );
+  });
 
   return (
-    <div className="w-screen border-b border-yellow-500/10 bg-black/80" style={{ marginLeft: "calc(-50vw + 50%)" }}>
-      <div className="tradingview-widget-container h-[46px] overflow-hidden" ref={ref}>
-        <div className="tradingview-widget-container__widget" />
+    <div
+      className="group w-screen h-[44px] overflow-hidden border-y border-yellow-500/10 bg-[#0b0b09]"
+      style={{ marginLeft: "calc(-50vw + 50%)" }}
+    >
+      <style>{`
+        @keyframes wss-marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+      `}</style>
+      <div
+        className="flex h-full w-max items-stretch group-hover:[animation-play-state:paused]"
+        style={{ animation: "wss-marquee 60s linear infinite" }}
+      >
+        <div className="flex h-full items-stretch">{items}</div>
+        <div className="flex h-full items-stretch" aria-hidden="true">{items}</div>
       </div>
     </div>
   );

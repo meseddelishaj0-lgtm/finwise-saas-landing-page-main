@@ -1,9 +1,11 @@
 "use client";
 
-import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuotes, fmtPrice, fmtCap, Quote } from "@/components/market/useQuotes";
+import TerminalChart from "@/components/market/TerminalChart";
+import SymbolSearch from "@/components/market/SymbolSearch";
 
 const DEFAULT_WATCHLIST = ["NVDA", "AAPL", "MSFT", "META", "TSLA", "AMZN", "SPY", "BTCUSD"];
 const WATCHLIST_KEY = "wss_terminal_watchlist";
@@ -25,30 +27,14 @@ const timeAgo = (dateStr: string) => {
   return `${Math.floor(hrs / 24)}d`;
 };
 
-// Map our symbols to something TradingView resolves cleanly
-const tvSymbol = (s: string) => {
-  const up = s.toUpperCase();
-  if (up.startsWith("^")) {
-    const map: Record<string, string> = {
-      "^GSPC": "FOREXCOM:SPXUSD", "^IXIC": "NASDAQ:IXIC", "^DJI": "FOREXCOM:DJI",
-      "^RUT": "FOREXCOM:RTYUSD", "^VIX": "TVC:VIX",
-    };
-    return map[up] || up.replace("^", "");
-  }
-  if (up.endsWith("USD") && up.length <= 8 && !up.includes(":")) return `BITSTAMP:${up}`;
-  return up;
-};
-
 function TerminalInner() {
   const router = useRouter();
   const params = useSearchParams();
   const symbol = (params.get("symbol") || "NVDA").toUpperCase();
 
-  const [search, setSearch] = useState("");
   const [watchlist, setWatchlist] = useState<string[]>(DEFAULT_WATCHLIST);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [rightTab, setRightTab] = useState<"overview" | "news">("overview");
-  const chartRef = useRef<HTMLDivElement>(null);
 
   // Watchlist persistence
   useEffect(() => {
@@ -69,53 +55,6 @@ function TerminalInner() {
   const symbolArr = useMemo(() => [symbol], [symbol]);
   const { quotes: symQuotes } = useQuotes(symbolArr, 30000);
   const q: Quote | undefined = symQuotes[0];
-
-  // TradingView advanced chart
-  const loadChart = useCallback(() => {
-    if (!chartRef.current) return;
-    chartRef.current.innerHTML = "";
-    const container = document.createElement("div");
-    container.id = "tv_terminal_chart";
-    container.style.height = "100%";
-    chartRef.current.appendChild(container);
-
-    const init = () => {
-      // @ts-ignore
-      if (typeof TradingView === "undefined") return;
-      // @ts-ignore
-      new TradingView.widget({
-        autosize: true,
-        symbol: tvSymbol(symbol),
-        interval: "D",
-        timezone: "America/New_York",
-        theme: "dark",
-        style: "1",
-        locale: "en",
-        toolbar_bg: "#0b0b09",
-        enable_publishing: false,
-        allow_symbol_change: false,
-        hide_side_toolbar: false,
-        container_id: "tv_terminal_chart",
-      });
-    };
-
-    const existing = document.getElementById("tv-lib-script");
-    if (existing) {
-      init();
-    } else {
-      const script = document.createElement("script");
-      script.id = "tv-lib-script";
-      script.src = "https://s3.tradingview.com/tv.js";
-      script.async = true;
-      script.onload = init;
-      document.body.appendChild(script);
-    }
-  }, [symbol]);
-
-  useEffect(() => {
-    const t = setTimeout(loadChart, 50);
-    return () => clearTimeout(t);
-  }, [loadChart]);
 
   // Symbol news
   useEffect(() => {
@@ -146,17 +85,9 @@ function TerminalInner() {
             <span className="font-mono text-xs text-gray-400 tracking-widest hidden sm:inline">TERMINAL</span>
           </div>
 
-          <form
-            onSubmit={(e) => { e.preventDefault(); go(search); setSearch(""); }}
-            className="flex items-center gap-2 flex-1 min-w-[180px] max-w-xs bg-white/[0.05] border border-white/10 rounded-xl px-3 py-2 focus-within:border-yellow-400/50 transition-colors">
-            <span className="text-gray-500 text-sm">🔍</span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Symbol… (e.g. NVDA)"
-              className="bg-transparent outline-none text-sm font-mono uppercase placeholder:normal-case placeholder:font-sans w-full"
-            />
-          </form>
+          <div className="flex-1 min-w-[200px] max-w-xs">
+            <SymbolSearch variant="terminal" />
+          </div>
 
           <div className="hidden md:flex items-center gap-1.5">
             {["NVDA", "SPY", "QQQ", "BTCUSD", "TSLA"].map((s) => (
@@ -226,16 +157,16 @@ function TerminalInner() {
             </div>
           </div>
 
-          {/* Chart */}
+          {/* Chart — our own engine, Twelve Data + FMP */}
           <div className="rounded-2xl border border-white/10 bg-[#0b0b09] overflow-hidden order-1 lg:order-2">
             <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
               <div>
                 <span className="font-mono font-bold">{symbol.replace("^", "")}</span>
                 <span className="ml-2 text-xs text-gray-500">{q?.name || ""}</span>
               </div>
-              <span className="text-[10px] text-gray-600 font-mono">Chart by TradingView</span>
+              <span className="text-[10px] text-gray-600 font-mono">WSS Charts</span>
             </div>
-            <div ref={chartRef} className="h-[420px] md:h-[560px]" />
+            <TerminalChart symbol={symbol} prevClose={q?.previousClose} height={460} />
           </div>
 
           {/* Right panel */}
