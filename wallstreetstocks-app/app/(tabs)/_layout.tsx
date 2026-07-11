@@ -99,7 +99,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: t('tabs.home'),
+          title: t('Home'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="home" color={color} focused={focused} accentColor={colors.primary} />
           ),
@@ -108,7 +108,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: t('tabs.markets'),
+          title: t('Markets'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="globe" color={color} focused={focused} accentColor={colors.primary} />
           ),
@@ -117,7 +117,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="trending"
         options={{
-          title: t('tabs.trending'),
+          title: t('Trending'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="flame" color={color} focused={focused} accentColor={colors.primary} />
           ),
@@ -126,7 +126,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="ai-tools"
         options={{
-          title: t('tabs.ai'),
+          title: t('AI'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="sparkles" color={color} focused={focused} accentColor={colors.primary} />
           ),
@@ -135,7 +135,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="community"
         options={{
-          title: t('tabs.social'),
+          title: t('Social'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="chatbubbles" color={color} focused={focused} accentColor={colors.primary} />
           ),
@@ -144,7 +144,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="screener"
         options={{
-          title: t('tabs.screen'),
+          title: t('Screen'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="funnel" color={color} focused={focused} accentColor={colors.primary} />
           ),

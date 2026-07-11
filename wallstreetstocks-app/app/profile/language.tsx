@@ -35,7 +35,7 @@ export default function LanguageScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.titleContainer}>
-          <Text style={[styles.titleText, { color: colors.text }]}>{t('language.title')}</Text>
+          <Text style={[styles.titleText, { color: colors.text }]}>{t('Language')}</Text>
         </View>
         <View style={{ width: 24 }} />
       </View>
@@ -46,7 +46,7 @@ export default function LanguageScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          {t('language.subtitle')}
+          {t('Choose your preferred language')}
         </Text>
 
         {LANGUAGES.map((item) => {
@@ -76,7 +76,7 @@ export default function LanguageScreen() {
           );
         })}
 
-        <Text style={[styles.note, { color: colors.textTertiary }]}>{t('language.note')}</Text>
+        <Text style={[styles.note, { color: colors.textTertiary }]}>{t('Changes apply instantly across the app.')}</Text>
       </ScrollView>
     </SafeAreaView>
   );
