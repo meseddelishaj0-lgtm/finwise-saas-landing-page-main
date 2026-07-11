@@ -46,6 +46,7 @@ import { ReferralProvider, useReferral } from "../context/ReferralContext";
 import { WebSocketProvider } from "../context/WebSocketContext";
 import { PortfolioProvider } from "../context/PortfolioContext";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
+import { LanguageProvider } from "../context/LanguageContext";
 import { useAuth } from "@/lib/auth";
 import { preloadAppData } from "../utils/preload";
 import { ErrorBoundary } from "../components/ErrorBoundary";
@@ -343,6 +344,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
+        <LanguageProvider>
         <QueryClientProvider client={queryClient}>
           <SafeAreaProvider>
             <SubscriptionProvider>
@@ -367,6 +369,7 @@ export default function RootLayout() {
           </SubscriptionProvider>
           </SafeAreaProvider>
         </QueryClientProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

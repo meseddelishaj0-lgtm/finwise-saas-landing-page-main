@@ -5,6 +5,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { HapticTab } from '@/components/haptic-tab';
 
 // Custom tab bar icon with soft glow pill behind the active icon
@@ -40,6 +41,7 @@ const TabIcon = ({
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   // Calculate proper bottom padding for Android navigation bar
   // Android needs extra padding to clear the system navigation bar
@@ -97,7 +99,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('tabs.home'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="home" color={color} focused={focused} accentColor={colors.primary} />
           ),
@@ -106,7 +108,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Markets',
+          title: t('tabs.markets'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="globe" color={color} focused={focused} accentColor={colors.primary} />
           ),
@@ -115,7 +117,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="trending"
         options={{
-          title: 'Trending',
+          title: t('tabs.trending'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="flame" color={color} focused={focused} accentColor={colors.primary} />
           ),
@@ -124,7 +126,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="ai-tools"
         options={{
-          title: 'AI',
+          title: t('tabs.ai'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="sparkles" color={color} focused={focused} accentColor={colors.primary} />
           ),
@@ -133,7 +135,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="community"
         options={{
-          title: 'Social',
+          title: t('tabs.social'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="chatbubbles" color={color} focused={focused} accentColor={colors.primary} />
           ),
@@ -142,7 +144,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="screener"
         options={{
-          title: 'Screen',
+          title: t('tabs.screen'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="funnel" color={color} focused={focused} accentColor={colors.primary} />
           ),

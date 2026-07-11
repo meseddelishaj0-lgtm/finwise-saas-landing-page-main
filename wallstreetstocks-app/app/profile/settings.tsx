@@ -11,24 +11,27 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
-
-const settingsItems = [
-  { title: 'Personal Info', icon: 'person', route: '/profile/personal-info', color: '#B8860B', bgColor: '#B8860B15' },
-  { title: 'Display', icon: 'color-palette', route: '/profile/display', color: '#AF52DE', bgColor: '#AF52DE15' },
-  { title: 'Experience', icon: 'sparkles', route: '/profile/experience', color: '#FF9500', bgColor: '#FF950015' },
-  { title: 'Notifications', icon: 'notifications', route: '/profile/notifications', color: '#FF3B30', bgColor: '#FF3B3015' },
-  { title: 'Password', icon: 'lock-closed', route: '/profile/password', color: '#34C759', bgColor: '#34C75915' },
-  { title: 'Muted', icon: 'volume-mute', route: '/profile/muted', color: '#8E8E93', bgColor: '#8E8E9315' },
-  { title: 'Blocked', icon: 'ban', route: '/profile/blocked', color: '#FF2D55', bgColor: '#FF2D5515' },
-];
-
-const dangerItems = [
-  { title: 'Delete Account', icon: 'trash', route: '/profile/delete-account', color: '#FF3B30', bgColor: '#FF3B3015' },
-];
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useLanguage();
+
+  const settingsItems = [
+    { title: t('settings.personalInfo'), icon: 'person', route: '/profile/personal-info', color: '#B8860B', bgColor: '#B8860B15' },
+    { title: t('settings.display'), icon: 'color-palette', route: '/profile/display', color: '#AF52DE', bgColor: '#AF52DE15' },
+    { title: t('settings.language'), icon: 'globe', route: '/profile/language', color: '#0A84FF', bgColor: '#0A84FF15' },
+    { title: t('settings.experience'), icon: 'sparkles', route: '/profile/experience', color: '#FF9500', bgColor: '#FF950015' },
+    { title: t('settings.notifications'), icon: 'notifications', route: '/profile/notifications', color: '#FF3B30', bgColor: '#FF3B3015' },
+    { title: t('settings.password'), icon: 'lock-closed', route: '/profile/password', color: '#34C759', bgColor: '#34C75915' },
+    { title: t('settings.muted'), icon: 'volume-mute', route: '/profile/muted', color: '#8E8E93', bgColor: '#8E8E9315' },
+    { title: t('settings.blocked'), icon: 'ban', route: '/profile/blocked', color: '#FF2D55', bgColor: '#FF2D5515' },
+  ];
+
+  const dangerItems = [
+    { title: t('settings.deleteAccount'), icon: 'trash', route: '/profile/delete-account', color: '#FF3B30', bgColor: '#FF3B3015' },
+  ];
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -39,7 +42,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
 
         <View style={styles.titleContainer}>
-          <Text style={[styles.titleText, { color: colors.text }]}>Settings</Text>
+          <Text style={[styles.titleText, { color: colors.text }]}>{t('settings.title')}</Text>
         </View>
 
         <View style={{ width: 24 }} />
@@ -70,7 +73,7 @@ export default function SettingsScreen() {
 
         {/* Danger Zone */}
         <View style={[styles.dangerSection, { borderTopColor: colors.danger + '20' }]}>
-          <Text style={[styles.dangerSectionTitle, { color: colors.danger }]}>Danger Zone</Text>
+          <Text style={[styles.dangerSectionTitle, { color: colors.danger }]}>{t('settings.dangerZone')}</Text>
           {dangerItems.map((item, index) => (
             <TouchableOpacity
               key={index}
