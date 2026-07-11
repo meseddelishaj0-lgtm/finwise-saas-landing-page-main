@@ -42,6 +42,7 @@ import { marketDataService } from '@/services/marketDataService';
 import StockLogo from '@/components/StockLogo';
 import { useAppReview } from '@/hooks/useAppReview';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import FadeSlideIn from '@/components/FadeSlideIn';
 import Sparkline from '@/components/Sparkline';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -387,6 +388,7 @@ const MARKET_OVERVIEW_SYMBOLS = [
 
 export default function Dashboard() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const router = useRouter();
   const { isPremium, currentTier } = useSubscription();
   const { subscribe: wsSubscribe, isConnected: wsConnected } = useWebSocket();
@@ -564,16 +566,16 @@ export default function Dashboard() {
   // Delete current portfolio using context
   const deleteCurrentPortfolio = () => {
     if (userPortfolios.length <= 1) {
-      Alert.alert('Cannot Delete', 'You must have at least one portfolio.');
+      Alert.alert(t('Cannot Delete'), t('You must have at least one portfolio.'));
       return;
     }
     Alert.alert(
-      'Delete Portfolio',
+      t('Delete Portfolio'),
       `Are you sure you want to delete "${currentPortfolio?.name}"? This cannot be undone.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('Delete'),
           style: 'destructive',
           onPress: async () => {
             await contextDeletePortfolio(selectedPortfolioId);
@@ -1644,7 +1646,7 @@ export default function Dashboard() {
   // Add stock to portfolio
   const handleAddStock = async () => {
     if (!newStockSymbol.trim() || !newStockShares.trim() || !newStockAvgCost.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('Error'), t('Please fill in all fields'));
       return;
     }
 
@@ -1657,7 +1659,7 @@ export default function Dashboard() {
       const quoteData = await fetchBatchQuotes([symbol]);
 
       if (!quoteData || !Array.isArray(quoteData) || quoteData.length === 0) {
-        Alert.alert('Error', `Stock ${symbol} not found`);
+        Alert.alert(t('Error'), `Stock ${symbol} not found`);
         setAddingStock(false);
         return;
       }
@@ -1679,9 +1681,9 @@ export default function Dashboard() {
         fetchPortfolio();
       }, 500);
 
-      Alert.alert('Success', `${symbol} added to your portfolio!`);
+      Alert.alert(t('Success'), `${symbol} added to your portfolio!`);
     } catch {
-      Alert.alert('Error', 'Failed to add stock. Please try again.');
+      Alert.alert(t('Error'), t('Failed to add stock. Please try again.'));
     } finally {
       setAddingStock(false);
     }
@@ -1690,12 +1692,12 @@ export default function Dashboard() {
   // Remove stock from portfolio using context
   const handleRemoveStock = (symbol: string) => {
     Alert.alert(
-      'Remove Stock',
+      t('Remove Stock'),
       `Are you sure you want to remove ${symbol} from your portfolio?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('Remove'),
           style: 'destructive',
           onPress: async () => {
             await contextRemoveHolding(symbol);
@@ -1734,7 +1736,7 @@ export default function Dashboard() {
   // Save edited holding
   const handleSaveEdit = async () => {
     if (!editingHolding || !editShares.trim() || !editAvgCost.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('Error'), t('Please fill in all fields'));
       return;
     }
 
@@ -1742,12 +1744,12 @@ export default function Dashboard() {
     const newAvgCost = parseFloat(editAvgCost);
 
     if (isNaN(newShares) || newShares <= 0) {
-      Alert.alert('Error', 'Please enter a valid number of shares');
+      Alert.alert(t('Error'), t('Please enter a valid number of shares'));
       return;
     }
 
     if (isNaN(newAvgCost) || newAvgCost <= 0) {
-      Alert.alert('Error', 'Please enter a valid average cost');
+      Alert.alert(t('Error'), t('Please enter a valid average cost'));
       return;
     }
 
@@ -1766,9 +1768,9 @@ export default function Dashboard() {
         fetchPortfolio();
       }, 500);
 
-      Alert.alert('Success', `${editingHolding.symbol} updated successfully!`);
+      Alert.alert(t('Success'), `${editingHolding.symbol} updated successfully!`);
     } catch {
-      Alert.alert('Error', 'Failed to update holding. Please try again.');
+      Alert.alert(t('Error'), t('Failed to update holding. Please try again.'));
     } finally {
       setSavingEdit(false);
     }
@@ -1787,7 +1789,7 @@ export default function Dashboard() {
     const symbolToAdd = symbol || watchlistSymbol.toUpperCase().trim();
 
     if (!symbolToAdd) {
-      Alert.alert('Error', 'Please enter a stock symbol');
+      Alert.alert(t('Error'), t('Please enter a stock symbol'));
       return;
     }
 
@@ -1808,12 +1810,12 @@ export default function Dashboard() {
   // Remove from watchlist (uses context)
   const handleRemoveFromWatchlist = (symbol: string) => {
     Alert.alert(
-      'Remove from Watchlist',
+      t('Remove from Watchlist'),
       `Remove ${symbol} from your watchlist?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('Remove'),
           style: 'destructive',
           onPress: async () => {
             await removeFromWatchlist(symbol);
@@ -2141,7 +2143,7 @@ export default function Dashboard() {
               <Ionicons name="search" size={20} color={colors.textTertiary} style={styles.searchIconHeader} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search stocks, ETFs, bonds..."
+                placeholder={t('Search stocks, ETFs, bonds...')}
                 placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
                 onChangeText={(text) => {
@@ -2219,7 +2221,7 @@ export default function Dashboard() {
         <FadeSlideIn distance={8}>
           <View style={styles.greetingRow}>
             <View>
-              <Text style={[styles.greetingText, { color: colors.text }]}>{getGreeting()} 👋</Text>
+              <Text style={[styles.greetingText, { color: colors.text }]}>{t(getGreeting())} 👋</Text>
               <Text style={[styles.greetingDate, { color: colors.textTertiary }]}>
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </Text>
@@ -2232,7 +2234,7 @@ export default function Dashboard() {
         {!wsConnected && (
           <View style={styles.connectionBanner}>
             <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={styles.connectionText}>Connecting to live markets...</Text>
+            <Text style={styles.connectionText}>{t('Connecting to live markets...')}</Text>
           </View>
         )}
 
@@ -2254,7 +2256,7 @@ export default function Dashboard() {
                 onPress={() => setShowPortfolioDropdown(!showPortfolioDropdown)}
               >
                 <Text style={styles.portfolioDropdownText} numberOfLines={1}>
-                  {currentPortfolio?.name || 'Select Portfolio'}
+                  {currentPortfolio?.name || t('Select Portfolio')}
                 </Text>
                 <Ionicons name="chevron-down" size={20} color={colors.primary} />
               </TouchableOpacity>
@@ -2295,7 +2297,7 @@ export default function Dashboard() {
                     }}
                   >
                     <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
-                    <Text style={styles.portfolioDropdownAddText}>Create New Portfolio</Text>
+                    <Text style={styles.portfolioDropdownAddText}>{t('Create New Portfolio')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -2443,7 +2445,7 @@ export default function Dashboard() {
           {(livePortfolioData?.holdings || contextCurrentPortfolio?.holdings || []).length > 0 && (
             <View style={[styles.holdingsList, { borderTopColor: colors.borderLight }]}>
               <View style={styles.holdingsTitleRow}>
-                <Text style={[styles.holdingsTitle, { color: '#B8860B' }]}>Holdings</Text>
+                <Text style={[styles.holdingsTitle, { color: '#B8860B' }]}>{t('Holdings')}</Text>
                 <TouchableOpacity
                   style={styles.addHoldingButton}
                   onPress={() => setAddStockModal(true)}
@@ -2488,8 +2490,8 @@ export default function Dashboard() {
               <View style={styles.emptyIconContainer}>
                 <Ionicons name="pie-chart-outline" size={48} color={colors.primary} />
               </View>
-              <Text style={[styles.emptyText, { color: colors.text }]}>Start Building Your Portfolio</Text>
-              <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Tap the + button to add your first stock</Text>
+              <Text style={[styles.emptyText, { color: colors.text }]}>{t('Start Building Your Portfolio')}</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>{t('Tap the + button to add your first stock')}</Text>
             </View>
           )}
 
@@ -2515,21 +2517,21 @@ export default function Dashboard() {
                     <Ionicons name="analytics" size={24} color={colors.primary} />
                   </View>
                   <View style={styles.analyticsPreviewTitleContainer}>
-                    <Text style={[styles.analyticsPreviewTitle, { color: colors.text }]}>Portfolio Analytics</Text>
-                    <Text style={[styles.analyticsPreviewSubtitle, { color: colors.textTertiary }]}>View detailed insights</Text>
+                    <Text style={[styles.analyticsPreviewTitle, { color: colors.text }]}>{t('Portfolio Analytics')}</Text>
+                    <Text style={[styles.analyticsPreviewSubtitle, { color: colors.textTertiary }]}>{t('View detailed insights')}</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
                 </View>
                 <View style={[styles.analyticsPreviewStats, { backgroundColor: isDark ? colors.surface : '#EDEDF0' }]}>
                   <View style={styles.analyticsPreviewStat}>
-                    <Text style={[styles.analyticsPreviewStatLabel, { color: colors.textTertiary }]}>Total P&L</Text>
+                    <Text style={[styles.analyticsPreviewStatLabel, { color: colors.textTertiary }]}>{t('Total P&L')}</Text>
                     <Text style={[styles.analyticsPreviewStatValue, { color: totalGain >= 0 ? '#34C759' : '#FF3B30' }]}>
                       {totalGain >= 0 ? '+' : ''}{totalGainPercent.toFixed(2)}%
                     </Text>
                   </View>
                   <View style={styles.analyticsPreviewDivider} />
                   <View style={styles.analyticsPreviewStat}>
-                    <Text style={[styles.analyticsPreviewStatLabel, { color: colors.textTertiary }]}>Diversification</Text>
+                    <Text style={[styles.analyticsPreviewStatLabel, { color: colors.textTertiary }]}>{t('Diversification')}</Text>
                     <Text style={[styles.analyticsPreviewStatValue, {
                       color: diversificationScore >= 70 ? '#34C759' : diversificationScore >= 40 ? '#FF9500' : '#FF3B30'
                     }]}>
@@ -2538,7 +2540,7 @@ export default function Dashboard() {
                   </View>
                   <View style={styles.analyticsPreviewDivider} />
                   <View style={styles.analyticsPreviewStat}>
-                    <Text style={[styles.analyticsPreviewStatLabel, { color: colors.textTertiary }]}>Holdings</Text>
+                    <Text style={[styles.analyticsPreviewStatLabel, { color: colors.textTertiary }]}>{t('Holdings')}</Text>
                     <Text style={styles.analyticsPreviewStatValue}>{holdings.length}</Text>
                   </View>
                 </View>
@@ -2552,7 +2554,7 @@ export default function Dashboard() {
           <FadeSlideIn distance={10}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Market Overview</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Market Overview')}</Text>
                 <CryptoLiveIndicator />
               </View>
               <LastUpdated timestamp={Date.now() - (priceUpdateTrigger % 10) * 100} prefix="" style={{ marginTop: 4 }} />
@@ -2614,7 +2616,7 @@ export default function Dashboard() {
           <View style={styles.watchlistHeader}>
             <View style={styles.watchlistHeaderLeft}>
               <View style={styles.sectionTitleRow}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Watchlist</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Watchlist')}</Text>
                 <TouchableOpacity
                   style={styles.addWatchlistButtonHeader}
                   onPress={() => setWatchlistModal(true)}
@@ -2634,7 +2636,7 @@ export default function Dashboard() {
                     setShowSortDropdown(false);
                   }}
                 >
-                  <Text style={[styles.filterButtonText, { color: colors.text }]}>{watchlistFilter}</Text>
+                  <Text style={[styles.filterButtonText, { color: colors.text }]}>{t(watchlistFilter)}</Text>
                   <Ionicons name="chevron-down" size={16} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {showFilterDropdown && (
@@ -2655,7 +2657,7 @@ export default function Dashboard() {
                           styles.dropdownItemText,
                           watchlistFilter === option && styles.dropdownItemTextActive
                         ]}>
-                          {option}
+                          {t(option)}
                         </Text>
                         {watchlistFilter === option && (
                           <Ionicons name="checkmark" size={16} color={colors.primary} />
@@ -2675,7 +2677,7 @@ export default function Dashboard() {
                     setShowFilterDropdown(false);
                   }}
                 >
-                  <Text style={[styles.filterButtonText, { color: colors.text }]}>{watchlistSort}</Text>
+                  <Text style={[styles.filterButtonText, { color: colors.text }]}>{t(watchlistSort)}</Text>
                   <Ionicons name="chevron-down" size={16} color={colors.textTertiary} />
                 </TouchableOpacity>
                 {showSortDropdown && (
@@ -2696,7 +2698,7 @@ export default function Dashboard() {
                           styles.dropdownItemText,
                           watchlistSort === option && styles.dropdownItemTextActive
                         ]}>
-                          {option}
+                          {t(option)}
                         </Text>
                         {watchlistSort === option && (
                           <Ionicons name="checkmark" size={16} color={colors.primary} />
@@ -2716,20 +2718,20 @@ export default function Dashboard() {
               <View style={styles.emptyWatchlistIconContainer}>
                 <Ionicons name="star-outline" size={40} color={colors.primary} />
               </View>
-              <Text style={[styles.emptyWatchlistText, { color: colors.text }]}>Your watchlist is empty</Text>
-              <Text style={[styles.emptyWatchlistSubtext, { color: colors.textTertiary }]}>Add stocks to track their performance</Text>
-              <TouchableOpacity 
+              <Text style={[styles.emptyWatchlistText, { color: colors.text }]}>{t('Your watchlist is empty')}</Text>
+              <Text style={[styles.emptyWatchlistSubtext, { color: colors.textTertiary }]}>{t('Add stocks to track their performance')}</Text>
+              <TouchableOpacity
                 style={styles.addFirstButton}
                 onPress={() => setWatchlistModal(true)}
               >
                 <Ionicons name="add" size={20} color="#fff" />
-                <Text style={styles.addFirstButtonText}>Add Stock</Text>
+                <Text style={styles.addFirstButtonText}>{t('Add Stock')}</Text>
               </TouchableOpacity>
             </View>
           ) : filteredWatchlist.length === 0 ? (
             <View style={styles.emptyWatchlist}>
               <Text style={[styles.emptyWatchlistText, { color: colors.text }]}>No {watchlistFilter.toLowerCase()} found</Text>
-              <Text style={[styles.emptyWatchlistSubtext, { color: colors.textTertiary }]}>Try changing your filter</Text>
+              <Text style={[styles.emptyWatchlistSubtext, { color: colors.textTertiary }]}>{t('Try changing your filter')}</Text>
             </View>
           ) : (
             <View style={styles.watchlistList}>
@@ -2750,7 +2752,7 @@ export default function Dashboard() {
                       onPress={() => handleRemoveFromWatchlist(stock.symbol)}
                     >
                       <Ionicons name="trash" size={18} color="#fff" />
-                      <Text style={styles.watchlistDeleteText}>Remove</Text>
+                      <Text style={styles.watchlistDeleteText}>{t('Remove')}</Text>
                     </TouchableOpacity>
                   )}
                 >
@@ -2838,11 +2840,11 @@ export default function Dashboard() {
                   <Ionicons name="trophy" size={20} color="#FFD700" />
                 </View>
                 <View>
-                  <Text style={[styles.stockPicksTitle, { color: colors.text }]}>Stock Picks</Text>
+                  <Text style={[styles.stockPicksTitle, { color: colors.text }]}>{t('Stock Picks')}</Text>
                   <Text style={[styles.stockPicksSubtitle, { color: colors.textTertiary }]}>
                     {isPremium
                       ? `${currentTier === 'gold' ? '5' : currentTier === 'platinum' ? '8' : '15'} expert picks`
-                      : 'Expert curated selections'}
+                      : t('Expert curated selections')}
                   </Text>
                 </View>
               </View>
@@ -2859,7 +2861,7 @@ export default function Dashboard() {
                 ) : (
                   <View style={styles.premiumBadge}>
                     <Ionicons name="lock-closed" size={12} color="#FFD700" />
-                    <Text style={styles.premiumBadgeText}>Premium</Text>
+                    <Text style={styles.premiumBadgeText}>{t('Premium')}</Text>
                   </View>
                 )}
               </View>
@@ -2879,12 +2881,12 @@ export default function Dashboard() {
                       {isPremium ? (
                         <>
                           <Text style={[styles.pickSymbol, { color: colors.text }]}>{pick.symbol}</Text>
-                          <Text style={[styles.pickCategory, { color: colors.textSecondary }]}>{pick.category}</Text>
+                          <Text style={[styles.pickCategory, { color: colors.textSecondary }]}>{t(pick.category)}</Text>
                         </>
                       ) : (
                         <>
                           <Text style={[styles.pickSymbol, { color: colors.textTertiary, letterSpacing: 2 }]}>•••••</Text>
-                          <Text style={[styles.pickCategory, { color: colors.textTertiary }]}>Unlock to reveal</Text>
+                          <Text style={[styles.pickCategory, { color: colors.textTertiary }]}>{t('Unlock to reveal')}</Text>
                         </>
                       )}
                     </View>
@@ -2921,7 +2923,7 @@ export default function Dashboard() {
             {/* CTA */}
             <View style={[styles.stockPicksCTA, { borderTopColor: isDark ? colors.border : "#F2F2F7" }]}>
               <Text style={[styles.stockPicksCTAText, { color: colors.primary }]}>
-                {isPremium ? 'View All Picks' : 'Unlock Stock Picks'}
+                {isPremium ? t('View All Picks') : t('Unlock Stock Picks')}
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.primary} />
             </View>
@@ -2976,19 +2978,19 @@ export default function Dashboard() {
                     <Ionicons name={card.icon} size={20} color={card.iconColor} />
                   </View>
                   <View>
-                    <Text style={[styles.stockPicksTitle, { color: colors.text }]}>{card.title}</Text>
-                    <Text style={[styles.stockPicksSubtitle, { color: colors.textTertiary }]}>{card.subtitle}</Text>
+                    <Text style={[styles.stockPicksTitle, { color: colors.text }]}>{t(card.title)}</Text>
+                    <Text style={[styles.stockPicksSubtitle, { color: colors.textTertiary }]}>{t(card.subtitle)}</Text>
                   </View>
                 </View>
                 {isPremium ? (
                   <View style={[styles.picksLiveBadge, { backgroundColor: `${card.badgeColor}1A` }]}>
                     {card.key === 'momentum' && <View style={[styles.picksLiveDot, { backgroundColor: card.badgeColor }]} />}
-                    <Text style={[styles.picksLiveBadgeText, { color: card.badgeColor }]}>{card.badgeLabel}</Text>
+                    <Text style={[styles.picksLiveBadgeText, { color: card.badgeColor }]}>{t(card.badgeLabel)}</Text>
                   </View>
                 ) : (
                   <View style={styles.premiumBadge}>
                     <Ionicons name="lock-closed" size={12} color="#FFD700" />
-                    <Text style={styles.premiumBadgeText}>Premium</Text>
+                    <Text style={styles.premiumBadgeText}>{t('Premium')}</Text>
                   </View>
                 )}
               </View>
@@ -3008,13 +3010,13 @@ export default function Dashboard() {
                           <>
                             <Text style={[styles.pickSymbol, { color: colors.text }]}>{pick.symbol}</Text>
                             <Text style={[styles.pickCategory, { color: colors.textSecondary }]} numberOfLines={1}>
-                              {pick.category}
+                              {t(pick.category)}
                             </Text>
                           </>
                         ) : (
                           <>
                             <Text style={[styles.pickSymbol, { color: colors.textTertiary, letterSpacing: 2 }]}>•••••</Text>
-                            <Text style={[styles.pickCategory, { color: colors.textTertiary }]}>Unlock to reveal</Text>
+                            <Text style={[styles.pickCategory, { color: colors.textTertiary }]}>{t('Unlock to reveal')}</Text>
                           </>
                         )}
                       </View>
@@ -3053,7 +3055,7 @@ export default function Dashboard() {
               {/* CTA */}
               <View style={[styles.stockPicksCTA, { borderTopColor: isDark ? colors.border : "#F2F2F7" }]}>
                 <Text style={[styles.stockPicksCTAText, { color: colors.primary }]}>
-                  {isPremium ? card.cta : `Unlock ${card.title}`}
+                  {isPremium ? t(card.cta) : `Unlock ${card.title}`}
                 </Text>
                 <Ionicons name="chevron-forward" size={18} color={colors.primary} />
               </View>
@@ -3079,9 +3081,9 @@ export default function Dashboard() {
         {/* Strategy Discovery Cards */}
         <View style={styles.strategiesSection}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Strategies</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Strategies')}</Text>
             <TouchableOpacity onPress={() => router.push('/screener' as any)}>
-              <Text style={[styles.strategiesSeeAll, { color: colors.primary }]}>Open Screener</Text>
+              <Text style={[styles.strategiesSeeAll, { color: colors.primary }]}>{t('Open Screener')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -3104,16 +3106,16 @@ export default function Dashboard() {
                     {strategy.isPremium && (
                       <View style={styles.strategyProBadge}>
                         <Ionicons name="lock-closed" size={8} color="#fff" />
-                        <Text style={styles.strategyProText}>PRO</Text>
+                        <Text style={styles.strategyProText}>{t('PRO')}</Text>
                       </View>
                     )}
                     <View style={styles.strategyIconCircle}>
                       <Ionicons name={strategy.icon as any} size={20} color="#fff" />
                     </View>
-                    <Text style={styles.strategyName}>{strategy.name}</Text>
-                    <Text style={styles.strategyDesc} numberOfLines={2}>{strategy.description}</Text>
+                    <Text style={styles.strategyName}>{t(strategy.name)}</Text>
+                    <Text style={styles.strategyDesc} numberOfLines={2}>{t(strategy.description)}</Text>
                     <View style={styles.strategyExploreRow}>
-                      <Text style={styles.strategyExploreText}>Explore</Text>
+                      <Text style={styles.strategyExploreText}>{t('Explore')}</Text>
                       <Ionicons name="arrow-forward" size={12} color="rgba(255,255,255,0.9)" />
                     </View>
                   </LinearGradient>
@@ -3126,7 +3128,7 @@ export default function Dashboard() {
         {/* News Section */}
         <View style={styles.newsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Market News</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Market News')}</Text>
           </View>
 
           {newsLoading ? (
@@ -3175,7 +3177,7 @@ export default function Dashboard() {
             </View>
           ) : (
             <View style={styles.newsEmptyContainer}>
-              <Text style={styles.newsEmptyText}>No news available</Text>
+              <Text style={styles.newsEmptyText}>{t('No news available')}</Text>
             </View>
           )}
         </View>
@@ -3204,8 +3206,8 @@ export default function Dashboard() {
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.borderLight }]}>
               <View>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Add Stock</Text>
-                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>Add to your portfolio</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>{t('Add Stock')}</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>{t('Add to your portfolio')}</Text>
               </View>
               <TouchableOpacity onPress={() => {
                 setAddStockModal(false);
@@ -3218,12 +3220,12 @@ export default function Dashboard() {
 
             <View style={styles.modalForm}>
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Stock Symbol</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('Stock Symbol')}</Text>
                 <View style={[styles.watchlistSearchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <Ionicons name="search" size={20} color={colors.textTertiary} style={{ marginRight: 8 }} />
                   <TextInput
                     style={[styles.watchlistSearchInput, { color: colors.text }]}
-                    placeholder="Search by symbol or company name"
+                    placeholder={t('Search by symbol or company name')}
                     placeholderTextColor={colors.textTertiary}
                     value={newStockSymbol}
                     onChangeText={(text) => {
@@ -3282,7 +3284,7 @@ export default function Dashboard() {
 
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Shares</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('Shares')}</Text>
                   <TextInput
                     style={[styles.modalInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
                     placeholder="10"
@@ -3295,7 +3297,7 @@ export default function Dashboard() {
                 </View>
 
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Avg Cost ($)</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('Avg Cost ($)')}</Text>
                   <TextInput
                     style={[styles.modalInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
                     placeholder="150.00"
@@ -3318,7 +3320,7 @@ export default function Dashboard() {
                 ) : (
                   <>
                     <Ionicons name="add-circle" size={20} color="#fff" />
-                    <Text style={styles.modalButtonText}>Add to Portfolio</Text>
+                    <Text style={styles.modalButtonText}>{t('Add to Portfolio')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -3345,8 +3347,8 @@ export default function Dashboard() {
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             <View style={[styles.modalHeader, { borderBottomColor: colors.borderLight }]}>
               <View>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Add to Watchlist</Text>
-                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>Track stocks you&apos;re interested in</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>{t('Add to Watchlist')}</Text>
+                <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>{t("Track stocks you're interested in")}</Text>
               </View>
               <TouchableOpacity onPress={() => {
                 setWatchlistModal(false);
@@ -3359,12 +3361,12 @@ export default function Dashboard() {
 
             <View style={styles.modalForm}>
               <View style={styles.inputGroup}>
-                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Search Stock</Text>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('Search Stock')}</Text>
                 <View style={[styles.watchlistSearchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <Ionicons name="search" size={20} color={colors.textTertiary} style={{ marginRight: 8 }} />
                   <TextInput
                     style={[styles.watchlistSearchInput, { color: colors.text }]}
-                    placeholder="Search by symbol or company name"
+                    placeholder={t('Search by symbol or company name')}
                     placeholderTextColor={colors.textTertiary}
                     value={watchlistSymbol}
                     onChangeText={(text) => {
@@ -3409,7 +3411,7 @@ export default function Dashboard() {
                             {watchlist.includes(result.symbol) ? (
                               <View style={styles.alreadyAddedBadge}>
                                 <Ionicons name="checkmark" size={14} color="#34C759" />
-                                <Text style={styles.alreadyAddedText}>Added</Text>
+                                <Text style={styles.alreadyAddedText}>{t('Added')}</Text>
                               </View>
                             ) : (
                               <View style={styles.addBadge}>
@@ -3426,7 +3428,7 @@ export default function Dashboard() {
 
               {/* Popular Stocks Quick Add */}
               <View style={styles.quickAddSection}>
-                <Text style={[styles.quickAddTitle, { color: colors.textTertiary }]}>Popular Stocks</Text>
+                <Text style={[styles.quickAddTitle, { color: colors.textTertiary }]}>{t('Popular Stocks')}</Text>
                 <View style={styles.quickAddGrid}>
                   {['AAPL', 'GOOGL', 'TSLA', 'AMZN', 'NVDA', 'META'].map((symbol) => (
                     <TouchableOpacity
@@ -3462,7 +3464,7 @@ export default function Dashboard() {
                 ) : (
                   <>
                     <Ionicons name="eye" size={20} color="#fff" />
-                    <Text style={styles.modalButtonText}>Add to Watchlist</Text>
+                    <Text style={styles.modalButtonText}>{t('Add to Watchlist')}</Text>
                   </>
                 )}
               </TouchableOpacity>

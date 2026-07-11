@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 type BugCategory = {
   id: string;
@@ -42,6 +43,7 @@ const severityLevels = [
 export default function BugReportScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSeverity, setSelectedSeverity] = useState<string>('medium');
   const [title, setTitle] = useState('');
@@ -64,15 +66,15 @@ export default function BugReportScreen() {
 
   const handleSubmit = async () => {
     if (!selectedCategory) {
-      Alert.alert('Missing Category', 'Please select a bug category.');
+      Alert.alert(t('Missing Category'), t('Please select a bug category.'));
       return;
     }
     if (!title.trim()) {
-      Alert.alert('Missing Title', 'Please provide a brief title for the bug.');
+      Alert.alert(t('Missing Title'), t('Please provide a brief title for the bug.'));
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Missing Description', 'Please describe the bug you encountered.');
+      Alert.alert(t('Missing Description'), t('Please describe the bug you encountered.'));
       return;
     }
 
@@ -99,16 +101,16 @@ export default function BugReportScreen() {
 
       // Even if API fails, show success (we can store locally as backup)
       Alert.alert(
-        'Bug Report Submitted',
-        'Thank you for helping us improve WallStreetStocks! Our team will investigate this issue.',
-        [{ text: 'OK', onPress: () => router.back() }]
+        t('Bug Report Submitted'),
+        t('Thank you for helping us improve WallStreetStocks! Our team will investigate this issue.'),
+        [{ text: t('OK'), onPress: () => router.back() }]
       );
     } catch (error) {
       // Still show success - bug report can be logged locally
       Alert.alert(
-        'Bug Report Submitted',
-        'Thank you for your report! We\'ll look into this issue.',
-        [{ text: 'OK', onPress: () => router.back() }]
+        t('Bug Report Submitted'),
+        t('Thank you for your report! We\'ll look into this issue.'),
+        [{ text: t('OK'), onPress: () => router.back() }]
       );
     } finally {
       setSubmitting(false);
@@ -124,7 +126,7 @@ export default function BugReportScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Report a Bug</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Report a Bug')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -138,15 +140,15 @@ export default function BugReportScreen() {
           <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
             <Ionicons name="bug" size={36} color="#FF3B30" />
           </View>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>Found a Bug?</Text>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>{t('Found a Bug?')}</Text>
           <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-            Help us squash it! Your report helps make the app better for everyone.
+            {t('Help us squash it! Your report helps make the app better for everyone.')}
           </Text>
         </View>
 
         {/* Bug Category */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>What type of bug is it?</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('What type of bug is it?')}</Text>
           <View style={styles.categoryGrid}>
             {bugCategories.map((category) => (
               <TouchableOpacity
@@ -167,7 +169,7 @@ export default function BugReportScreen() {
                   { color: colors.text },
                   selectedCategory === category.id && { color: category.color },
                 ]}>
-                  {category.label}
+                  {t(category.label)}
                 </Text>
                 {selectedCategory === category.id && (
                   <View style={[styles.checkmark, { backgroundColor: category.color }]}>
@@ -181,7 +183,7 @@ export default function BugReportScreen() {
 
         {/* Severity */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>How severe is this bug?</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('How severe is this bug?')}</Text>
           <View style={styles.severityContainer}>
             {severityLevels.map((level) => (
               <TouchableOpacity
@@ -201,9 +203,9 @@ export default function BugReportScreen() {
                     { color: colors.text },
                     selectedSeverity === level.id && { color: level.color },
                   ]}>
-                    {level.label}
+                    {t(level.label)}
                   </Text>
-                  <Text style={[styles.severityDescription, { color: colors.textTertiary }]}>{level.description}</Text>
+                  <Text style={[styles.severityDescription, { color: colors.textTertiary }]}>{t(level.description)}</Text>
                 </View>
                 {selectedSeverity === level.id && (
                   <Ionicons name="checkmark-circle" size={20} color={level.color} />
@@ -215,13 +217,13 @@ export default function BugReportScreen() {
 
         {/* Bug Details Form */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Bug Details</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Bug Details')}</Text>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: colors.text }]}>Title *</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>{t('Title *')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
-              placeholder="Brief summary of the bug"
+              placeholder={t('Brief summary of the bug')}
               placeholderTextColor={colors.textTertiary}
               value={title}
               onChangeText={setTitle}
@@ -230,10 +232,10 @@ export default function BugReportScreen() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: colors.text }]}>Description *</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>{t('Description *')}</Text>
             <TextInput
               style={[styles.input, styles.textArea, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
-              placeholder="What happened? What did you expect to happen?"
+              placeholder={t('What happened? What did you expect to happen?')}
               placeholderTextColor={colors.textTertiary}
               multiline
               numberOfLines={4}
@@ -244,10 +246,10 @@ export default function BugReportScreen() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: colors.text }]}>Steps to Reproduce</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>{t('Steps to Reproduce')}</Text>
             <TextInput
               style={[styles.input, styles.textArea, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
-              placeholder="1. Go to...&#10;2. Tap on...&#10;3. See error..."
+              placeholder={t('1. Go to...&#10;2. Tap on...&#10;3. See error...')}
               placeholderTextColor={colors.textTertiary}
               multiline
               numberOfLines={4}
@@ -258,10 +260,10 @@ export default function BugReportScreen() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: colors.text }]}>Email (optional)</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>{t('Email (optional)')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
-              placeholder="For follow-up questions"
+              placeholder={t('For follow-up questions')}
               placeholderTextColor={colors.textTertiary}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -280,8 +282,8 @@ export default function BugReportScreen() {
             <View style={styles.deviceInfoLeft}>
               <Ionicons name="phone-portrait-outline" size={22} color="#B8860B" />
               <View>
-                <Text style={[styles.deviceInfoLabel, { color: colors.text }]}>Include Device Info</Text>
-                <Text style={[styles.deviceInfoHint, { color: colors.textTertiary }]}>Helps us debug the issue</Text>
+                <Text style={[styles.deviceInfoLabel, { color: colors.text }]}>{t('Include Device Info')}</Text>
+                <Text style={[styles.deviceInfoHint, { color: colors.textTertiary }]}>{t('Helps us debug the issue')}</Text>
               </View>
             </View>
             <View style={[styles.toggle, includeDeviceInfo && styles.toggleActive]}>
@@ -292,15 +294,15 @@ export default function BugReportScreen() {
           {includeDeviceInfo && (
             <View style={[styles.deviceInfoPreview, { backgroundColor: colors.surface }]}>
               <View style={styles.deviceInfoRow}>
-                <Text style={[styles.deviceInfoKey, { color: colors.textSecondary }]}>Device</Text>
+                <Text style={[styles.deviceInfoKey, { color: colors.textSecondary }]}>{t('Device')}</Text>
                 <Text style={[styles.deviceInfoValue, { color: colors.text }]}>{deviceInfo.modelName}</Text>
               </View>
               <View style={styles.deviceInfoRow}>
-                <Text style={[styles.deviceInfoKey, { color: colors.textSecondary }]}>OS</Text>
+                <Text style={[styles.deviceInfoKey, { color: colors.textSecondary }]}>{t('OS')}</Text>
                 <Text style={[styles.deviceInfoValue, { color: colors.text }]}>{deviceInfo.osName} {deviceInfo.osVersion}</Text>
               </View>
               <View style={styles.deviceInfoRow}>
-                <Text style={[styles.deviceInfoKey, { color: colors.textSecondary }]}>App Version</Text>
+                <Text style={[styles.deviceInfoKey, { color: colors.textSecondary }]}>{t('App Version')}</Text>
                 <Text style={[styles.deviceInfoValue, { color: colors.text }]}>{deviceInfo.appVersion}</Text>
               </View>
             </View>
@@ -316,13 +318,12 @@ export default function BugReportScreen() {
           >
             <Ionicons name="send" size={20} color="#fff" />
             <Text style={styles.submitButtonText}>
-              {submitting ? 'Submitting...' : 'Submit Bug Report'}
+              {submitting ? t('Submitting...') : t('Submit Bug Report')}
             </Text>
           </TouchableOpacity>
 
           <Text style={[styles.privacyNote, { color: colors.textTertiary }]}>
-            Your bug report may include diagnostic data to help us investigate.
-            We respect your privacy and won&apos;t share your information.
+            {t('Your bug report may include diagnostic data to help us investigate. We respect your privacy and won\'t share your information.')}
           </Text>
         </View>
 

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v4';
@@ -50,6 +51,7 @@ const TRANSACTION_TYPES: { [key: string]: { label: string; color: string; icon: 
 export default function InsiderTradingScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [trades, setTrades] = useState<InsiderTrade[]>([]);
   const [filteredTrades, setFilteredTrades] = useState<InsiderTrade[]>([]);
   const [loading, setLoading] = useState(true);
@@ -207,8 +209,8 @@ export default function InsiderTradingScreen() {
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days === 0) return 'Today';
-    if (days === 1) return 'Yesterday';
+    if (days === 0) return t('Today');
+    if (days === 1) return t('Yesterday');
     if (days < 7) return `${days}d ago`;
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
@@ -239,7 +241,7 @@ export default function InsiderTradingScreen() {
             <View style={[styles.transactionBadge, { backgroundColor: `${transactionInfo.color}15` }]}>
               <Ionicons name={transactionInfo.icon as any} size={12} color={transactionInfo.color} />
               <Text style={[styles.transactionBadgeText, { color: transactionInfo.color }]}>
-                {transactionInfo.label}
+                {t(transactionInfo.label)}
               </Text>
             </View>
           </View>
@@ -250,14 +252,14 @@ export default function InsiderTradingScreen() {
           <View style={styles.tradeInsider}>
             <Ionicons name="person" size={14} color={colors.textTertiary} />
             <Text style={[styles.insiderName, { color: colors.textSecondary }]} numberOfLines={1}>
-              {trade.reportingName || 'Unknown'}
+              {trade.reportingName || t('Unknown')}
             </Text>
             {trade.typeOfOwner && (
               <View style={[styles.ownerBadge, { backgroundColor: colors.surface }]}>
                 <Text style={[styles.ownerBadgeText, { color: colors.textSecondary }]}>
-                  {trade.typeOfOwner === 'director' ? 'DIR' :
-                   trade.typeOfOwner === 'officer' ? 'OFF' :
-                   trade.typeOfOwner === '10 percent owner' ? '10%' : 'INS'}
+                  {trade.typeOfOwner === 'director' ? t('DIR') :
+                   trade.typeOfOwner === 'officer' ? t('OFF') :
+                   trade.typeOfOwner === '10 percent owner' ? t('10%') : t('INS')}
                 </Text>
               </View>
             )}
@@ -266,19 +268,19 @@ export default function InsiderTradingScreen() {
 
         <View style={[styles.tradeNumbers, { borderTopColor: isDark ? colors.border : '#F0F0F0' }]}>
           <View style={styles.tradeNumberItem}>
-            <Text style={[styles.tradeNumberLabel, { color: colors.textTertiary }]}>Shares</Text>
+            <Text style={[styles.tradeNumberLabel, { color: colors.textTertiary }]}>{t('Shares')}</Text>
             <Text style={[styles.tradeNumberValue, { color: colors.text }]}>
               {formatNumber(trade.securitiesTransacted || 0)}
             </Text>
           </View>
           <View style={styles.tradeNumberItem}>
-            <Text style={[styles.tradeNumberLabel, { color: colors.textTertiary }]}>Price</Text>
+            <Text style={[styles.tradeNumberLabel, { color: colors.textTertiary }]}>{t('Price')}</Text>
             <Text style={[styles.tradeNumberValue, { color: colors.text }]}>
               ${(trade.price || 0).toFixed(2)}
             </Text>
           </View>
           <View style={styles.tradeNumberItem}>
-            <Text style={[styles.tradeNumberLabel, { color: colors.textTertiary }]}>Value</Text>
+            <Text style={[styles.tradeNumberLabel, { color: colors.textTertiary }]}>{t('Value')}</Text>
             <Text style={[styles.tradeNumberValue, { color: transactionInfo.color }]}>
               {formatCurrency(totalValue)}
             </Text>
@@ -295,7 +297,7 @@ export default function InsiderTradingScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Insider Trading</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Insider Trading')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -311,9 +313,9 @@ export default function InsiderTradingScreen() {
           <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
             <Ionicons name="briefcase" size={32} color="#5856D6" />
           </View>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>Track Insider Activity</Text>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>{t('Track Insider Activity')}</Text>
           <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-            See what executives and major shareholders are buying and selling
+            {t('See what executives and major shareholders are buying and selling')}
           </Text>
         </View>
 
@@ -323,7 +325,7 @@ export default function InsiderTradingScreen() {
             <View style={[styles.statIcon, { backgroundColor: '#34C75915' }]}>
               <Ionicons name="trending-up" size={20} color="#34C759" />
             </View>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Insider Buys</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('Insider Buys')}</Text>
             <Text style={[styles.statValue, { color: '#34C759' }]}>
               {formatCurrency(stats.totalBuys)}
             </Text>
@@ -332,7 +334,7 @@ export default function InsiderTradingScreen() {
             <View style={[styles.statIcon, { backgroundColor: '#FF3B3015' }]}>
               <Ionicons name="trending-down" size={20} color="#FF3B30" />
             </View>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Insider Sells</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('Insider Sells')}</Text>
             <Text style={[styles.statValue, { color: '#FF3B30' }]}>
               {formatCurrency(stats.totalSells)}
             </Text>
@@ -345,7 +347,7 @@ export default function InsiderTradingScreen() {
                 color={stats.netActivity >= 0 ? '#34C759' : '#FF3B30'}
               />
             </View>
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Net Activity</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('Net Activity')}</Text>
             <Text style={[styles.statValue, { color: stats.netActivity >= 0 ? '#34C759' : '#FF3B30' }]}>
               {stats.netActivity >= 0 ? '+' : ''}{formatCurrency(stats.netActivity)}
             </Text>
@@ -358,7 +360,7 @@ export default function InsiderTradingScreen() {
             <Ionicons name="search" size={20} color={colors.textTertiary} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
-              placeholder="Search by symbol (e.g., AAPL, TSLA)..."
+              placeholder={t('Search by symbol (e.g., AAPL, TSLA)...')}
               placeholderTextColor={colors.textTertiary}
               value={searchQuery}
               onChangeText={handleSearch}
@@ -388,7 +390,7 @@ export default function InsiderTradingScreen() {
               style={[styles.searchButton, { backgroundColor: colors.primary }]}
               onPress={handleSearchSubmit}
             >
-              <Text style={styles.searchButtonText}>Search</Text>
+              <Text style={styles.searchButtonText}>{t('Search')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -396,7 +398,7 @@ export default function InsiderTradingScreen() {
         {/* Popular Symbols */}
         {!searchedSymbol && (
           <View style={styles.popularSection}>
-            <Text style={[styles.popularTitle, { color: colors.textSecondary }]}>Popular Stocks</Text>
+            <Text style={[styles.popularTitle, { color: colors.textSecondary }]}>{t('Popular Stocks')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.popularScroll}>
               {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'AMD', 'NFLX', 'JPM'].map((symbol) => (
                 <TouchableOpacity
@@ -419,7 +421,7 @@ export default function InsiderTradingScreen() {
         {searchedSymbol && (
           <View style={[styles.searchedIndicator, { backgroundColor: isDark ? colors.surface : '#E8F4FD' }]}>
             <Text style={[styles.searchedText, { color: colors.textSecondary }]}>
-              Showing insider trades for: <Text style={[styles.searchedSymbol, { color: colors.primary }]}>{searchedSymbol.toUpperCase()}</Text>
+              {t('Showing insider trades for:')} <Text style={[styles.searchedSymbol, { color: colors.primary }]}>{searchedSymbol.toUpperCase()}</Text>
             </Text>
             <TouchableOpacity
               onPress={() => {
@@ -430,7 +432,7 @@ export default function InsiderTradingScreen() {
               }}
               style={[styles.clearSearchButton, { backgroundColor: colors.primary }]}
             >
-              <Text style={styles.clearSearchText}>Clear</Text>
+              <Text style={styles.clearSearchText}>{t('Clear')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -458,7 +460,7 @@ export default function InsiderTradingScreen() {
                   activeFilter === filter.key && styles.filterTabTextActive,
                 ]}
               >
-                {filter.label}
+                {t(filter.label)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -467,20 +469,20 @@ export default function InsiderTradingScreen() {
         {/* Trades List */}
         <View style={styles.tradesSection}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Recent Filings ({filteredTrades.length})
+            {t('Recent Filings')} ({filteredTrades.length})
           </Text>
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading insider trades...</Text>
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('Loading insider trades...')}</Text>
             </View>
           ) : filteredTrades.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="document-text-outline" size={48} color={colors.textTertiary} />
-              <Text style={[styles.emptyText, { color: colors.text }]}>No trades found</Text>
+              <Text style={[styles.emptyText, { color: colors.text }]}>{t('No trades found')}</Text>
               <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
-                Try adjusting your search or filter
+                {t('Try adjusting your search or filter')}
               </Text>
             </View>
           ) : (
@@ -492,7 +494,7 @@ export default function InsiderTradingScreen() {
         <View style={styles.disclaimerContainer}>
           <Ionicons name="information-circle" size={16} color={colors.textTertiary} />
           <Text style={[styles.disclaimerText, { color: colors.textTertiary }]}>
-            Insider trading data is sourced from SEC Form 4 filings. This information is for educational purposes only and should not be considered investment advice.
+            {t('Insider trading data is sourced from SEC Form 4 filings. This information is for educational purposes only and should not be considered investment advice.')}
           </Text>
         </View>
 

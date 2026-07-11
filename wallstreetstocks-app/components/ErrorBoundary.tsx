@@ -5,6 +5,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { captureError } from '../utils/sentry';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Props {
   children: ReactNode;
@@ -14,6 +15,25 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+}
+
+// Small functional wrapper so the default fallback UI can use the
+// useLanguage hook (hooks can't be called inside a class component).
+function DefaultErrorFallback({ onRetry }: { onRetry: () => void }) {
+  const { t } = useLanguage();
+  return (
+    <View style={styles.container}>
+      <Ionicons name="warning-outline" size={64} color="#FF9500" />
+      <Text style={styles.title}>{t('Oops! Something went wrong')}</Text>
+      <Text style={styles.message}>
+        {t('We hit a snag. Please try again.')}
+      </Text>
+      <TouchableOpacity style={styles.button} onPress={onRetry}>
+        <Ionicons name="refresh" size={20} color="#fff" style={{ marginRight: 8 }} />
+        <Text style={styles.buttonText}>{t('Try Again')}</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -45,19 +65,7 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      return (
-        <View style={styles.container}>
-          <Ionicons name="warning-outline" size={64} color="#FF9500" />
-          <Text style={styles.title}>Oops! Something went wrong</Text>
-          <Text style={styles.message}>
-            We hit a snag. Please try again.
-          </Text>
-          <TouchableOpacity style={styles.button} onPress={this.handleRetry}>
-            <Ionicons name="refresh" size={20} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.buttonText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      );
+      return <DefaultErrorFallback onRetry={this.handleRetry} />;
     }
 
     return this.props.children;

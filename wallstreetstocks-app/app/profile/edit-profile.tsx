@@ -21,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/lib/auth';
 import { useUserProfile } from '@/context/UserProfileContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
@@ -63,6 +64,7 @@ export default function EditProfile() {
   const { user: authUser, setUserData } = useAuth();
   const { updateProfile: updateUserProfile } = useUserProfile();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   // Form State
   const [name, setName] = useState('');
@@ -169,9 +171,9 @@ export default function EditProfile() {
     setUsername(cleaned);
     
     if (cleaned.length > 0 && cleaned.length < 3) {
-      setUsernameError('Username must be at least 3 characters');
+      setUsernameError(t('Username must be at least 3 characters'));
     } else if (cleaned.length > 20) {
-      setUsernameError('Username must be 20 characters or less');
+      setUsernameError(t('Username must be 20 characters or less'));
     } else {
       setUsernameError('');
     }
@@ -181,7 +183,7 @@ export default function EditProfile() {
   const pickAvatar = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Allow access to photos to change avatar');
+      Alert.alert(t('Permission required'), t('Allow access to photos to change avatar'));
       return;
     }
 
@@ -200,7 +202,7 @@ export default function EditProfile() {
   const pickBanner = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Allow access to photos to change banner');
+      Alert.alert(t('Permission required'), t('Allow access to photos to change banner'));
       return;
     }
 
@@ -224,13 +226,13 @@ export default function EditProfile() {
 
     // Validate name
     if (!name || name.trim().length === 0) {
-      Alert.alert('Name Required', 'Please enter your display name');
+      Alert.alert(t('Name Required'), t('Please enter your display name'));
       return;
     }
 
     // Validate username
     if (username && (username.length < 3 || username.length > 20)) {
-      Alert.alert('Invalid Username', 'Username must be 3-20 characters');
+      Alert.alert(t('Invalid Username'), t('Username must be 3-20 characters'));
       return;
     }
 
@@ -248,7 +250,7 @@ export default function EditProfile() {
           uploadedAvatar = url;
           setAvatar(url); // Update local state with URL
         } else {
-          Alert.alert('Upload Failed', 'Failed to upload profile image. Please try again.');
+          Alert.alert(t('Upload Failed'), t('Failed to upload profile image. Please try again.'));
           setSaving(false);
           return;
         }
@@ -261,7 +263,7 @@ export default function EditProfile() {
           uploadedBanner = url;
           setBannerImage(url); // Update local state with URL
         } else {
-          Alert.alert('Upload Failed', 'Failed to upload banner image. Please try again.');
+          Alert.alert(t('Upload Failed'), t('Failed to upload banner image. Please try again.'));
           setSaving(false);
           return;
         }
@@ -295,7 +297,7 @@ export default function EditProfile() {
         if (!response.ok) {
           if (responseData.error?.includes('Username')) {
             setUsernameError(responseData.error);
-            Alert.alert('Error', responseData.error);
+            Alert.alert(t('Error'), responseData.error);
             setSaving(false);
             return;
           }
@@ -336,12 +338,12 @@ export default function EditProfile() {
       const data = { name: name.trim(), username, email, bio, location, website, avatar, bannerImage };
       await AsyncStorage.setItem('personalInfo', JSON.stringify(data));
 
-      Alert.alert('Saved!', 'Your profile has been updated.', [
-        { text: 'OK', onPress: () => router.back() }
+      Alert.alert(t('Saved!'), t('Your profile has been updated.'), [
+        { text: t('OK'), onPress: () => router.back() }
       ]);
     } catch (error: any) {
-      
-      Alert.alert('Error', error.message || 'Failed to save profile. Please try again.');
+
+      Alert.alert(t('Error'), error.message || t('Failed to save profile. Please try again.'));
     } finally {
       setSaving(false);
     }
@@ -354,7 +356,7 @@ export default function EditProfile() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="close" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Edit Profile</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Edit Profile')}</Text>
         <TouchableOpacity
           onPress={handleSave}
           style={[styles.saveHeaderButton, saving && styles.saveHeaderButtonDisabled]}
@@ -363,7 +365,7 @@ export default function EditProfile() {
           {saving ? (
             <ActivityIndicator size="small" color="#B8860B" />
           ) : (
-            <Text style={styles.saveHeaderText}>Save</Text>
+            <Text style={styles.saveHeaderText}>{t('Save')}</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -386,7 +388,7 @@ export default function EditProfile() {
             ) : (
               <View style={[styles.bannerPlaceholder, { backgroundColor: isDark ? colors.surface : '#E5E5E5' }]}>
                 <Ionicons name="camera" size={32} color={colors.textTertiary} />
-                <Text style={[styles.bannerPlaceholderText, { color: colors.textTertiary }]}>Change Banner</Text>
+                <Text style={[styles.bannerPlaceholderText, { color: colors.textTertiary }]}>{t('Change Banner')}</Text>
               </View>
             )}
             <View style={styles.bannerOverlay}>
@@ -411,25 +413,25 @@ export default function EditProfile() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Name</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('Name')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={name}
               onChangeText={setName}
-              placeholder="Enter your full name"
+              placeholder={t('Enter your full name')}
               placeholderTextColor={colors.textTertiary}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Username</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('Username')}</Text>
             <View style={[styles.usernameInputContainer, { borderColor: isDark ? colors.border : '#e5e5e5', backgroundColor: colors.surface }]}>
               <Text style={[styles.usernamePrefix, { color: colors.textSecondary }]}>@</Text>
               <TextInput
                 style={[styles.input, styles.usernameInput, { color: colors.text }, usernameError ? styles.inputError : null]}
                 value={username}
                 onChangeText={handleUsernameChange}
-                placeholder="Choose a username"
+                placeholder={t('Choose a username')}
                 placeholderTextColor={colors.textTertiary}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -439,17 +441,17 @@ export default function EditProfile() {
             {usernameError ? (
               <Text style={styles.errorText}>{usernameError}</Text>
             ) : (
-              <Text style={[styles.helperText, { color: colors.textTertiary }]}>Letters, numbers, and underscores only</Text>
+              <Text style={[styles.helperText, { color: colors.textTertiary }]}>{t('Letters, numbers, and underscores only')}</Text>
             )}
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Bio</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('Bio')}</Text>
             <TextInput
               style={[styles.input, styles.bioInput, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={bio}
               onChangeText={setBio}
-              placeholder="Tell us about yourself..."
+              placeholder={t('Tell us about yourself...')}
               placeholderTextColor={colors.textTertiary}
               multiline
               numberOfLines={4}
@@ -458,23 +460,23 @@ export default function EditProfile() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Location</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('Location')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={location}
               onChangeText={setLocation}
-              placeholder="e.g. New York, USA"
+              placeholder={t('e.g. New York, USA')}
               placeholderTextColor={colors.textTertiary}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Website</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('Website')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               value={website}
               onChangeText={setWebsite}
-              placeholder="e.g. yoursite.com"
+              placeholder={t('e.g. yoursite.com')}
               placeholderTextColor={colors.textTertiary}
               autoCapitalize="none"
               keyboardType="url"
@@ -482,15 +484,15 @@ export default function EditProfile() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>Email Address</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>{t('Email Address')}</Text>
             <TextInput
               style={[styles.input, styles.emailInput, { backgroundColor: isDark ? colors.surface : '#f0f0f0', color: colors.textSecondary, borderColor: isDark ? colors.border : '#e5e5e5' }]}
               value={email}
               editable={false}
-              placeholder="Email"
+              placeholder={t('Email')}
               placeholderTextColor={colors.textTertiary}
             />
-            <Text style={[styles.helperText, { color: colors.textTertiary }]}>Email cannot be changed (used for sign-in)</Text>
+            <Text style={[styles.helperText, { color: colors.textTertiary }]}>{t('Email cannot be changed (used for sign-in)')}</Text>
           </View>
 
           <TouchableOpacity
@@ -501,7 +503,7 @@ export default function EditProfile() {
             {saving ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.saveButtonText}>Save Changes</Text>
+              <Text style={styles.saveButtonText}>{t('Save Changes')}</Text>
             )}
           </TouchableOpacity>
 

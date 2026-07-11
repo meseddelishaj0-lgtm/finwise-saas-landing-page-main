@@ -3,6 +3,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '@/context/LanguageContext';
 
 export type SubscriptionTier = 'free' | 'gold' | 'platinum' | 'diamond' | null | undefined;
 
@@ -73,6 +74,7 @@ export default function SubscriptionBadge({
   showLabel = true,
   style
 }: SubscriptionBadgeProps) {
+  const { t } = useLanguage();
   // Don't render for free tier or no tier
   if (!tier || tier === 'free') {
     return null;
@@ -115,7 +117,7 @@ export default function SubscriptionBadge({
             },
           ]}
         >
-          {config.label}
+          {t(config.label)}
         </Text>
       )}
     </View>
@@ -146,6 +148,7 @@ export function SubscriptionBadgeInline({ tier }: { tier: SubscriptionTier }) {
 
 // Badge with full tier name for profile display
 export function SubscriptionBadgeProfile({ tier }: { tier: SubscriptionTier }) {
+  const { t } = useLanguage();
   if (!tier || tier === 'free') {
     return null;
   }
@@ -171,7 +174,7 @@ export function SubscriptionBadgeProfile({ tier }: { tier: SubscriptionTier }) {
         color={config.iconColor}
       />
       <Text style={[styles.profileLabel, { color: config.textColor }]}>
-        {config.label} Member
+        {t(config.label)} {t('Member')}
       </Text>
     </View>
   );

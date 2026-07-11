@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SymbolHeader from "./header";
 import { setToMemory, CACHE_KEYS } from "../../../utils/memoryCache";
+import { useLanguage } from "@/context/LanguageContext";
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
@@ -50,6 +51,7 @@ async function prefetchSymbolData(symbol: string) {
 }
 
 export default function SymbolLayout() {
+  const { t } = useLanguage();
   const { symbol } = useLocalSearchParams();
   const cleanSymbol = symbol ? (Array.isArray(symbol) ? symbol[0] : symbol) : null;
 
@@ -71,27 +73,27 @@ export default function SymbolLayout() {
     >
       <Tabs.Screen
         name="chart"
-        options={{ title: "Chart", tabBarIcon: ({ color }) => <Ionicons name="trending-up" size={22} color={color} /> }}
+        options={{ title: t("Chart"), tabBarIcon: ({ color }) => <Ionicons name="trending-up" size={22} color={color} /> }}
       />
       <Tabs.Screen
         name="news"
-        options={{ title: "News", tabBarIcon: ({ color }) => <Ionicons name="newspaper" size={22} color={color} /> }}
+        options={{ title: t("News"), tabBarIcon: ({ color }) => <Ionicons name="newspaper" size={22} color={color} /> }}
       />
       <Tabs.Screen
         name="sentiment"
-        options={{ title: "Sentiment", tabBarIcon: ({ color }) => <Ionicons name="heart" size={22} color={color} /> }}
+        options={{ title: t("Sentiment"), tabBarIcon: ({ color }) => <Ionicons name="heart" size={22} color={color} /> }}
       />
       <Tabs.Screen
         name="earnings"
-        options={{ title: "Earnings", tabBarIcon: ({ color }) => <Ionicons name="cash" size={22} color={color} /> }}
+        options={{ title: t("Earnings"), tabBarIcon: ({ color }) => <Ionicons name="cash" size={22} color={color} /> }}
       />
       <Tabs.Screen
         name="fundamentals"
-        options={{ title: "Fundamentals", tabBarIcon: ({ color }) => <Ionicons name="stats-chart" size={22} color={color} /> }}
+        options={{ title: t("Fundamentals"), tabBarIcon: ({ color }) => <Ionicons name="stats-chart" size={22} color={color} /> }}
       />
       <Tabs.Screen
         name="info"
-        options={{ title: "Info", tabBarIcon: ({ color }) => <Ionicons name="information-circle" size={22} color={color} /> }}
+        options={{ title: t("Info"), tabBarIcon: ({ color }) => <Ionicons name="information-circle" size={22} color={color} /> }}
       />
       {/* Hide the header file from tabs */}
       <Tabs.Screen

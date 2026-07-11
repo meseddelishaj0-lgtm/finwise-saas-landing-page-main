@@ -1,6 +1,7 @@
 // components/explore/CryptoSection.tsx - FIXED with Live Updates
 import React, { useEffect, useState, useRef } from "react";
 import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
+import { useLanguage } from "@/context/LanguageContext";
 
 const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 
@@ -13,6 +14,7 @@ interface Crypto {
 }
 
 export default function CryptoSection() {
+  const t = useLanguage().t as (key: string) => string;
   const [cryptos, setCryptos] = useState<Crypto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,10 +56,10 @@ export default function CryptoSection() {
       }
     } catch (err: any) {
       const errorMessage = err.name === 'AbortError'
-        ? 'Request timeout'
+        ? t('Request timeout')
         : err.message?.includes('Network')
-        ? 'Network error'
-        : 'Unable to load crypto data';
+        ? t('Network error')
+        : t('Unable to load crypto data');
       
       setError(errorMessage);
     } finally {
@@ -92,7 +94,7 @@ export default function CryptoSection() {
     return (
       <View className="mt-4 mx-4 bg-[#111827] rounded-2xl p-8 items-center">
         <ActivityIndicator color="#0dd977" size="large" />
-        <Text className="text-gray-500 mt-2">Loading crypto...</Text>
+        <Text className="text-gray-500 mt-2">{t('Loading crypto...')}</Text>
       </View>
     );
   }
@@ -105,7 +107,7 @@ export default function CryptoSection() {
           onPress={handleRetry}
           className="bg-green-500 py-3 px-6 rounded-full self-center"
         >
-          <Text className="text-black font-bold">Retry</Text>
+          <Text className="text-black font-bold">{t('Retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -115,9 +117,9 @@ export default function CryptoSection() {
     <View className="mt-4">
       <View className="bg-[#111827] mx-4 rounded-2xl px-4 pt-4 pb-2">
         <View className="flex-row justify-between items-center mb-2">
-          <Text className="text-gray-400 text-xs">TOP CRYPTO • LIVE</Text>
+          <Text className="text-gray-400 text-xs">{t('TOP CRYPTO • LIVE')}</Text>
           <Text className="text-gray-600 text-[10px]">
-            Updated {lastUpdated.toLocaleTimeString('en-US', { 
+            {t('Updated')} {lastUpdated.toLocaleTimeString('en-US', {
               hour: 'numeric', 
               minute: '2-digit' 
             })}

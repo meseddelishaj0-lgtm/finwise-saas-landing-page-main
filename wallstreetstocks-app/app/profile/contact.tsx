@@ -14,10 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function ContactUs() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -63,14 +65,14 @@ export default function ContactUs() {
 
   const handleSubmit = () => {
     if (!name.trim() || !email.trim() || !message.trim()) {
-      Alert.alert('Missing Information', 'Please fill in all required fields.');
+      Alert.alert(t('Missing Information'), t('Please fill in all required fields.'));
       return;
     }
 
     Alert.alert(
-      'Message Sent',
-      'Thank you for reaching out! We\'ll get back to you within 24-48 hours.',
-      [{ text: 'OK', onPress: () => router.back() }]
+      t('Message Sent'),
+      t('Thank you for reaching out! We\'ll get back to you within 24-48 hours.'),
+      [{ text: t('OK'), onPress: () => router.back() }]
     );
   };
 
@@ -85,7 +87,7 @@ export default function ContactUs() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Contact Us</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Contact Us')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -95,15 +97,15 @@ export default function ContactUs() {
           <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
             <Ionicons name="headset" size={40} color="#B8860B" />
           </View>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>We&apos;re Here to Help</Text>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>{t("We're Here to Help")}</Text>
           <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-            Our support team is available to assist you with any questions or concerns
+            {t('Our support team is available to assist you with any questions or concerns')}
           </Text>
         </View>
 
         {/* Contact Methods */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Get in Touch</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Get in Touch')}</Text>
           <View style={styles.contactGrid}>
             {contactMethods.map((method, index) => (
               <TouchableOpacity
@@ -114,7 +116,7 @@ export default function ContactUs() {
                 <View style={[styles.contactIcon, { backgroundColor: `${method.color}15` }]}>
                   <Ionicons name={method.icon as any} size={24} color={method.color} />
                 </View>
-                <Text style={[styles.contactTitle, { color: colors.text }]}>{method.title}</Text>
+                <Text style={[styles.contactTitle, { color: colors.text }]}>{t(method.title)}</Text>
                 <Text style={[styles.contactSubtitle, { color: colors.textSecondary }]}>{method.subtitle}</Text>
               </TouchableOpacity>
             ))}
@@ -123,7 +125,7 @@ export default function ContactUs() {
 
         {/* Quick FAQs */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Answers</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Quick Answers')}</Text>
           {faqs.map((faq, index) => (
             <TouchableOpacity
               key={index}
@@ -131,7 +133,7 @@ export default function ContactUs() {
               onPress={() => router.push(faq.route as any)}
             >
               <Ionicons name="help-circle-outline" size={22} color="#B8860B" />
-              <Text style={[styles.faqText, { color: colors.text }]}>{faq.question}</Text>
+              <Text style={[styles.faqText, { color: colors.text }]}>{t(faq.question)}</Text>
               <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
             </TouchableOpacity>
           ))}
@@ -139,19 +141,19 @@ export default function ContactUs() {
             style={styles.viewAllButton}
             onPress={() => router.push('/profile/help-center' as any)}
           >
-            <Text style={styles.viewAllText}>View All FAQs</Text>
+            <Text style={styles.viewAllText}>{t('View All FAQs')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Contact Form */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Send us a Message</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Send us a Message')}</Text>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: colors.text }]}>Name *</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>{t('Name *')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
-              placeholder="Your name"
+              placeholder={t('Your name')}
               placeholderTextColor={colors.textTertiary}
               value={name}
               onChangeText={setName}
@@ -159,7 +161,7 @@ export default function ContactUs() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: colors.text }]}>Email *</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>{t('Email *')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
               placeholder="your@email.com"
@@ -172,10 +174,10 @@ export default function ContactUs() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: colors.text }]}>Subject</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>{t('Subject')}</Text>
             <TextInput
               style={[styles.input, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
-              placeholder="What's this about?"
+              placeholder={t("What's this about?")}
               placeholderTextColor={colors.textTertiary}
               value={subject}
               onChangeText={setSubject}
@@ -183,10 +185,10 @@ export default function ContactUs() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: colors.text }]}>Message *</Text>
+            <Text style={[styles.formLabel, { color: colors.text }]}>{t('Message *')}</Text>
             <TextInput
               style={[styles.input, styles.textArea, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#e5e5e5', color: colors.text }]}
-              placeholder="How can we help you?"
+              placeholder={t('How can we help you?')}
               placeholderTextColor={colors.textTertiary}
               multiline
               numberOfLines={5}
@@ -198,7 +200,7 @@ export default function ContactUs() {
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
             <Ionicons name="send" size={18} color="#fff" />
-            <Text style={styles.submitButtonText}>Send Message</Text>
+            <Text style={styles.submitButtonText}>{t('Send Message')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -206,7 +208,7 @@ export default function ContactUs() {
         <View style={styles.responseSection}>
           <Ionicons name="time-outline" size={24} color={colors.textSecondary} />
           <Text style={[styles.responseText, { color: colors.textSecondary }]}>
-            Average response time: <Text style={styles.responseHighlight}>Under 24 hours</Text>
+            {t('Average response time:')} <Text style={styles.responseHighlight}>{t('Under 24 hours')}</Text>
           </Text>
         </View>
 

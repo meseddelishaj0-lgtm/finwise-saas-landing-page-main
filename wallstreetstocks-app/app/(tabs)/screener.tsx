@@ -28,6 +28,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import StockLogo from '@/components/StockLogo';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { FLATLIST_PERFORMANCE_PROPS } from '@/components/OptimizedListItems';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
@@ -593,18 +594,21 @@ const buildScreenerParams = (filters: Record<string, string>): ScreenerParams =>
 };
 
 // Heat Map Components
-const ColorLegend = () => (
-  <View style={styles.legendContainer}>
-    <Text style={styles.legendLabel}>-5%</Text>
-    <LinearGradient
-      colors={['#B71C1C', '#F44336', '#FFCDD2', '#A5D6A7', '#43A047', '#00C853']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={styles.legendGradient}
-    />
-    <Text style={styles.legendLabel}>+5%</Text>
-  </View>
-);
+const ColorLegend = () => {
+  const { t } = useLanguage();
+  return (
+    <View style={styles.legendContainer}>
+      <Text style={styles.legendLabel}>{t('-5%')}</Text>
+      <LinearGradient
+        colors={['#B71C1C', '#F44336', '#FFCDD2', '#A5D6A7', '#43A047', '#00C853']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.legendGradient}
+      />
+      <Text style={styles.legendLabel}>{t('+5%')}</Text>
+    </View>
+  );
+};
 
 const HeatMapTile = ({ 
   stock, 
@@ -664,6 +668,7 @@ const HeatMapTile = ({
 
 export default function Screener() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const router = useRouter();
   const { canAccess } = usePremiumFeature();
   const hasPlatinumAccess = canAccess(FEATURE_TIERS.SCREENER_FILTERS);
@@ -727,12 +732,12 @@ export default function Screener() {
   // Save new preset to API
   const savePreset = async () => {
     if (!newPresetName.trim()) {
-      Alert.alert('Error', 'Please enter a name for your preset');
+      Alert.alert(t('Error'), t('Please enter a name for your preset'));
       return;
     }
 
     if (activeFilterCount === 0) {
-      Alert.alert('Error', 'Please select at least one filter to save');
+      Alert.alert(t('Error'), t('Please select at least one filter to save'));
       return;
     }
 
@@ -740,7 +745,7 @@ export default function Screener() {
     try {
       const userId = await AsyncStorage.getItem('userId');
       if (!userId) {
-        Alert.alert('Login Required', 'Please log in to save presets');
+        Alert.alert(t('Login Required'), t('Please log in to save presets'));
         setSavingPreset(false);
         return;
       }
@@ -760,13 +765,13 @@ export default function Screener() {
         setSavedPresets(prev => [data.preset, ...prev]);
         setShowSavePresetModal(false);
         setNewPresetName('');
-        Alert.alert('Success', 'Preset saved successfully!');
+        Alert.alert(t('Success'), t('Preset saved successfully!'));
       } else {
         const errorData = await response.json();
-        Alert.alert('Error', errorData.error || 'Failed to save preset');
+        Alert.alert(t('Error'), errorData.error || t('Failed to save preset'));
       }
     } catch (err) {
-      Alert.alert('Error', 'Failed to save preset. Please try again.');
+      Alert.alert(t('Error'), t('Failed to save preset. Please try again.'));
     } finally {
       setSavingPreset(false);
     }
@@ -786,10 +791,10 @@ export default function Screener() {
       if (response.ok) {
         setSavedPresets(prev => prev.filter(p => p.id !== presetId));
       } else {
-        Alert.alert('Error', 'Failed to delete preset');
+        Alert.alert(t('Error'), t('Failed to delete preset'));
       }
     } catch (err) {
-      Alert.alert('Error', 'Failed to delete preset');
+      Alert.alert(t('Error'), t('Failed to delete preset'));
     } finally {
       setDeletingPresetId(null);
     }
@@ -871,7 +876,7 @@ export default function Screener() {
   const fetchGainers = async (): Promise<Stock[]> => {
     const response = await fetch(FMP_BASE_URL + '/stock_market/gainers?apikey=' + FMP_API_KEY);
     const data = await response.json();
-    if (!Array.isArray(data)) throw new Error(data.message || 'Failed to fetch gainers');
+    if (!Array.isArray(data)) throw new Error(data.message || t('Failed to fetch gainers'));
     return data.slice(0, 50).map((item: any) => ({
       symbol: item.symbol,
       name: item.name || item.symbol,
@@ -888,7 +893,7 @@ export default function Screener() {
   const fetchLosers = async (): Promise<Stock[]> => {
     const response = await fetch(FMP_BASE_URL + '/stock_market/losers?apikey=' + FMP_API_KEY);
     const data = await response.json();
-    if (!Array.isArray(data)) throw new Error(data.message || 'Failed to fetch losers');
+    if (!Array.isArray(data)) throw new Error(data.message || t('Failed to fetch losers'));
     return data.slice(0, 50).map((item: any) => ({
       symbol: item.symbol,
       name: item.name || item.symbol,
@@ -905,7 +910,7 @@ export default function Screener() {
   const fetchMostActive = async (): Promise<Stock[]> => {
     const response = await fetch(FMP_BASE_URL + '/stock_market/actives?apikey=' + FMP_API_KEY);
     const data = await response.json();
-    if (!Array.isArray(data)) throw new Error(data.message || 'Failed to fetch active stocks');
+    if (!Array.isArray(data)) throw new Error(data.message || t('Failed to fetch active stocks'));
     return data.slice(0, 50).map((item: any) => ({
       symbol: item.symbol,
       name: item.name || item.symbol,
@@ -934,7 +939,7 @@ export default function Screener() {
 
     const response = await fetch(FMP_BASE_URL + '/stock-screener?' + queryParams.toString());
     const data = await response.json();
-    if (!Array.isArray(data)) throw new Error(data.message || 'Invalid screener response');
+    if (!Array.isArray(data)) throw new Error(data.message || t('Invalid screener response'));
 
     return data.map((item: any) => ({
       symbol: item.symbol,
@@ -1123,7 +1128,7 @@ export default function Screener() {
       smoothLayout();
       setResults(sortStocks(stocks));
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch stocks');
+      setError(err.message || t('Failed to fetch stocks'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -1227,8 +1232,8 @@ export default function Screener() {
             <View style={styles.presetIconContainer}>
               <Ionicons name={item.icon as any} size={22} color="#fff" />
             </View>
-            <Text style={styles.presetName}>{item.name}</Text>
-            <Text style={styles.presetDescription}>{item.description}</Text>
+            <Text style={styles.presetName}>{t(item.name)}</Text>
+            <Text style={styles.presetDescription}>{t(item.description)}</Text>
           </LinearGradient>
           {item.isPremium && (
             <View style={[styles.premiumBadge, !isLocked && styles.premiumBadgeUnlocked]}>
@@ -1254,7 +1259,7 @@ export default function Screener() {
       >
         <Ionicons name={filter.icon as any} size={16} color={isActive ? '#fff' : isLocked ? '#E5E4E2' : colors.textSecondary} />
         <Text style={[styles.filterChipText, { color: colors.text }, isActive && styles.filterChipTextActive, isLocked && styles.filterChipTextPremium]} numberOfLines={1}>
-          {isActive ? filters[filter.id] : filter.label}
+          {isActive ? t(filters[filter.id]) : t(filter.label)}
         </Text>
         {isLocked ? (
           <Ionicons name="lock-closed" size={12} color="#E5E4E2" />
@@ -1293,12 +1298,12 @@ export default function Screener() {
           </View>
         </View>
         <View style={styles.stockMiddle}>
-          <Text style={[styles.stockMetricLabel, { color: colors.textTertiary }]}>Mkt Cap</Text>
+          <Text style={[styles.stockMetricLabel, { color: colors.textTertiary }]}>{t('Mkt Cap')}</Text>
           <Text style={[styles.stockMetricValue, { color: colors.text }]}>{formatMarketCap(item.marketCap)}</Text>
         </View>
         <View style={styles.stockMiddle}>
-          <Text style={[styles.stockMetricLabel, { color: colors.textTertiary }]}>P/E</Text>
-          <Text style={[styles.stockMetricValue, { color: colors.text }]}>{item.pe ? item.pe.toFixed(1) : 'N/A'}</Text>
+          <Text style={[styles.stockMetricLabel, { color: colors.textTertiary }]}>{t('P/E')}</Text>
+          <Text style={[styles.stockMetricValue, { color: colors.text }]}>{item.pe ? item.pe.toFixed(1) : t('N/A')}</Text>
         </View>
         <View style={styles.stockRight}>
           <Text style={[styles.stockPrice, { color: colors.text }]}>${item.price ? item.price.toFixed(2) : '0.00'}</Text>
@@ -1310,7 +1315,7 @@ export default function Screener() {
       </TouchableOpacity>
       </FadeSlideIn>
     );
-  }, [handleStockPress, colors]);
+  }, [handleStockPress, colors, t]);
 
   const sortOptions = [
     { key: 'marketCap', label: 'Mkt Cap' },
@@ -1335,8 +1340,8 @@ export default function Screener() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
         <FadeSlideIn distance={8}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Screener</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Scan the entire market in seconds</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Screener')}</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{t('Scan the entire market in seconds')}</Text>
         </FadeSlideIn>
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton} onPress={() => setShowAllFilters(true)}>
@@ -1354,7 +1359,7 @@ export default function Screener() {
           <Ionicons name="search" size={20} color={colors.textTertiary} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search any ticker or company…"
+            placeholder={t('Search any ticker or company…')}
             placeholderTextColor={colors.textTertiary}
             value={searchQuery}
             onChangeText={handleSearchChange}
@@ -1392,7 +1397,7 @@ export default function Screener() {
           <View style={styles.searchResultsDropdown}>
             <View style={styles.noResultsContainer}>
               <Ionicons name="search-outline" size={24} color="#999" />
-              <Text style={styles.noResultsText}>No stocks found for &quot;{searchQuery}&quot;</Text>
+              <Text style={styles.noResultsText}>{t('No stocks found for')} &quot;{searchQuery}&quot;</Text>
             </View>
           </View>
         )}
@@ -1411,8 +1416,8 @@ export default function Screener() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Screens</Text>
-              <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>One tap, instant results</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Quick Screens')}</Text>
+              <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>{t('One tap, instant results')}</Text>
             </View>
           </View>
           <FlatList data={presets} renderItem={renderPreset} keyExtractor={item => item.id} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.presetList} />
@@ -1422,18 +1427,18 @@ export default function Screener() {
           <View style={styles.sectionHeader}>
             <View style={styles.filterTitleRow}>
               <View>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Filters</Text>
-                <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>Stack filters to narrow the field</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Filters')}</Text>
+                <Text style={[styles.sectionSubtitle, { color: colors.textTertiary }]}>{t('Stack filters to narrow the field')}</Text>
               </View>
               {activeFilterCount > 0 && <View style={styles.filterCountBadge}><Text style={styles.filterCountText}>{activeFilterCount}</Text></View>}
             </View>
-            {activeFilterCount > 0 && <TouchableOpacity onPress={() => { smoothLayout(); setFilters({}); setActivePreset(null); fetchData(null, {}); }}><Text style={styles.clearText}>Clear All</Text></TouchableOpacity>}
+            {activeFilterCount > 0 && <TouchableOpacity onPress={() => { smoothLayout(); setFilters({}); setActivePreset(null); fetchData(null, {}); }}><Text style={styles.clearText}>{t('Clear All')}</Text></TouchableOpacity>}
           </View>
           
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryTabs} contentContainerStyle={styles.categoryTabsContent}>
             {categoryTabs.map(tab => (
               <TouchableOpacity key={tab.key} style={[styles.categoryTab, { backgroundColor: colors.card, borderColor: colors.border }, selectedCategory === tab.key && styles.categoryTabActive]} onPress={() => { smoothLayout(); setSelectedCategory(tab.key); }}>
-                <Text style={[styles.categoryTabText, { color: colors.textSecondary }, selectedCategory === tab.key && styles.categoryTabTextActive]}>{tab.label}</Text>
+                <Text style={[styles.categoryTabText, { color: colors.textSecondary }, selectedCategory === tab.key && styles.categoryTabTextActive]}>{t(tab.label)}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -1445,14 +1450,14 @@ export default function Screener() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Results</Text>
-            <Text style={[styles.resultCount, { color: colors.textSecondary }]}>{filteredResults.length} {filteredResults.length === 1 ? 'match' : 'matches'}</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Results')}</Text>
+            <Text style={[styles.resultCount, { color: colors.textSecondary }]}>{filteredResults.length} {t(filteredResults.length === 1 ? 'match' : 'matches')}</Text>
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.sortContainer} contentContainerStyle={styles.sortContent}>
             {sortOptions.map(sort => (
               <TouchableOpacity key={sort.key} style={[styles.sortButton, { backgroundColor: colors.card }, sortBy === sort.key && { backgroundColor: isDark ? 'rgba(255, 214, 10,0.15)' : '#F6EEDA' }]} onPress={() => handleSort(sort.key)}>
-                <Text style={[styles.sortButtonText, { color: colors.textSecondary }, sortBy === sort.key && { color: colors.primary }]}>{sort.label}</Text>
+                <Text style={[styles.sortButtonText, { color: colors.textSecondary }, sortBy === sort.key && { color: colors.primary }]}>{t(sort.label)}</Text>
                 {sortBy === sort.key && <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color={colors.primary} />}
               </TouchableOpacity>
             ))}
@@ -1469,8 +1474,8 @@ export default function Screener() {
           {error && !loading && (
             <View style={styles.errorContainer}>
               <Ionicons name="alert-circle" size={48} color="#FF5252" />
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={() => fetchData(activePreset, filters)}><Text style={styles.retryButtonText}>Try Again</Text></TouchableOpacity>
+              <Text style={styles.errorText}>{t(error)}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={() => fetchData(activePreset, filters)}><Text style={styles.retryButtonText}>{t('Try Again')}</Text></TouchableOpacity>
             </View>
           )}
 
@@ -1490,8 +1495,8 @@ export default function Screener() {
               <FadeSlideIn distance={6}>
                 <View style={styles.emptyContainer}>
                   <Ionicons name="search" size={48} color={colors.borderLight} />
-                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No matches found</Text>
-                  <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Try loosening a filter or two</Text>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('No matches found')}</Text>
+                  <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>{t('Try loosening a filter or two')}</Text>
                 </View>
               </FadeSlideIn>
             )
@@ -1505,13 +1510,13 @@ export default function Screener() {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setActiveFilterModal(null)}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
-            <Text style={[styles.modalTitle, { color: colors.text }]}>{activeFilterModal?.label}</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{activeFilterModal ? t(activeFilterModal.label) : ''}</Text>
             <ScrollView style={styles.modalOptions}>
               {activeFilterModal?.options.map(option => {
                 const isSelected = filters[activeFilterModal.id] === option || (option === 'Any' && !filters[activeFilterModal.id]);
                 return (
                   <TouchableOpacity key={option} style={[styles.modalOption, { borderBottomColor: colors.borderLight }, isSelected && { backgroundColor: isDark ? 'rgba(255, 214, 10,0.1)' : '#FBF7EC' }]} onPress={() => handleFilterSelect(activeFilterModal.id, option)}>
-                    <Text style={[styles.modalOptionText, { color: colors.text }, isSelected && { color: colors.primary, fontWeight: '600' }]}>{option}</Text>
+                    <Text style={[styles.modalOptionText, { color: colors.text }, isSelected && { color: colors.primary, fontWeight: '600' }]}>{t(option)}</Text>
                     {isSelected && <Ionicons name="checkmark" size={20} color={colors.primary} />}
                   </TouchableOpacity>
                 );
@@ -1528,9 +1533,9 @@ export default function Screener() {
             <TouchableOpacity onPress={() => setShowAllFilters(false)} style={styles.fullModalCloseBtn}>
               <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.fullModalTitle, { color: colors.text }]}>All Filters</Text>
+            <Text style={[styles.fullModalTitle, { color: colors.text }]}>{t('All Filters')}</Text>
             <TouchableOpacity onPress={() => { setFilters({}); }} style={styles.fullModalResetBtn}>
-              <Text style={styles.resetText}>Reset</Text>
+              <Text style={styles.resetText}>{t('Reset')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -1540,7 +1545,7 @@ export default function Screener() {
           >
             {Object.entries(categoryLabels).map(([category, label]) => (
               <View key={category} style={styles.filterSection}>
-                <Text style={[styles.filterSectionTitle, { color: colors.text }]}>{label}</Text>
+                <Text style={[styles.filterSectionTitle, { color: colors.text }]}>{t(label)}</Text>
                 <View style={styles.filterGrid}>
                   {filterCategories.filter(f => f.category === category).map(filter => {
                     const isActive = filters[filter.id] && filters[filter.id] !== 'Any';
@@ -1585,17 +1590,17 @@ export default function Screener() {
                           ]}
                           numberOfLines={1}
                         >
-                          {filter.label}
+                          {t(filter.label)}
                         </Text>
                         {isActive ? (
                           <View style={styles.filterActiveValue}>
                             <Text style={styles.filterGridValue} numberOfLines={1}>
-                              {filters[filter.id]}
+                              {t(filters[filter.id])}
                             </Text>
                             <Ionicons name="checkmark-circle" size={14} color="#B8860B" />
                           </View>
                         ) : (
-                          <Text style={[styles.filterGridHint, { color: colors.textTertiary }]}>Tap to select</Text>
+                          <Text style={[styles.filterGridHint, { color: colors.textTertiary }]}>{t('Tap to select')}</Text>
                         )}
                       </TouchableOpacity>
                     );
@@ -1611,7 +1616,7 @@ export default function Screener() {
               onPress={() => { setShowAllFilters(false); fetchData(null, filters); }}
             >
               <Ionicons name="search" size={20} color="#fff" />
-              <Text style={styles.applyButtonText}>See Results ({activeFilterCount})</Text>
+              <Text style={styles.applyButtonText}>{t('See Results')} ({activeFilterCount})</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -1624,7 +1629,7 @@ export default function Screener() {
             <TouchableOpacity onPress={() => setShowHeatMap(false)} style={styles.heatMapCloseBtn}>
               <Ionicons name="close" size={28} color="#fff" />
             </TouchableOpacity>
-            <Text style={styles.heatMapTitle}>Market Heat Map</Text>
+            <Text style={styles.heatMapTitle}>{t('Market Heat Map')}</Text>
             <TouchableOpacity onPress={fetchHeatMapData} style={styles.heatMapRefreshBtn}>
               <Ionicons name="refresh" size={24} color="#fff" />
             </TouchableOpacity>
@@ -1635,7 +1640,7 @@ export default function Screener() {
           {heatMapLoading ? (
             <View style={styles.heatMapLoading}>
               <ActivityIndicator size="large" color="#8B5CF6" />
-              <Text style={styles.heatMapLoadingText}>Mapping the market…</Text>
+              <Text style={styles.heatMapLoadingText}>{t('Mapping the market…')}</Text>
             </View>
           ) : (
             <ScrollView 
@@ -1646,7 +1651,7 @@ export default function Screener() {
                 <View key={sector}>
                   <View style={styles.heatMapSectorHeader}>
                     <Text style={styles.heatMapSectorTitle}>{sector}</Text>
-                    <Text style={styles.heatMapSectorCount}>{stocks.length} stocks</Text>
+                    <Text style={styles.heatMapSectorCount}>{stocks.length} {t('stocks')}</Text>
                   </View>
                   <View style={styles.heatMapTilesContainer}>
                     {stocks
@@ -1676,7 +1681,7 @@ export default function Screener() {
         <View style={styles.savedPresetsOverlay}>
           <View style={[styles.savedPresetsContainer, { backgroundColor: colors.background }]}>
             <View style={styles.savedPresetsHeader}>
-              <Text style={[styles.savedPresetsTitle, { color: colors.text }]}>Saved Presets</Text>
+              <Text style={[styles.savedPresetsTitle, { color: colors.text }]}>{t('Saved Presets')}</Text>
               <TouchableOpacity onPress={() => setShowSavedPresetsModal(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
@@ -1698,7 +1703,7 @@ export default function Screener() {
                   style={styles.saveCurrentGradient}
                 >
                   <Ionicons name="add-circle" size={20} color="#fff" />
-                  <Text style={styles.saveCurrentText}>Save Current Filters ({activeFilterCount})</Text>
+                  <Text style={styles.saveCurrentText}>{t('Save Current Filters')} ({activeFilterCount})</Text>
                 </LinearGradient>
               </TouchableOpacity>
             )}
@@ -1706,16 +1711,16 @@ export default function Screener() {
             {loadingPresets ? (
               <View style={styles.presetsLoading}>
                 <ActivityIndicator size="large" color="#B8860B" />
-                <Text style={styles.presetsLoadingText}>Loading presets...</Text>
+                <Text style={styles.presetsLoadingText}>{t('Loading presets...')}</Text>
               </View>
             ) : savedPresets.length === 0 ? (
               <View style={styles.noPresetsContainer}>
                 <Ionicons name="bookmark-outline" size={64} color="#CCC" />
-                <Text style={styles.noPresetsTitle}>No Saved Presets</Text>
+                <Text style={styles.noPresetsTitle}>{t('No Saved Presets')}</Text>
                 <Text style={styles.noPresetsText}>
                   {activeFilterCount > 0
-                    ? 'Tap "Save Current Filters" to save your first preset'
-                    : 'Select some filters and save them for quick access later'}
+                    ? t('Tap "Save Current Filters" to save your first preset')
+                    : t('Select some filters and save them for quick access later')}
                 </Text>
               </View>
             ) : (
@@ -1735,7 +1740,7 @@ export default function Screener() {
                         </View>
                         <View style={styles.presetItemInfo}>
                           <Text style={styles.presetItemName}>{preset.name}</Text>
-                          <Text style={styles.presetItemFilters}>{filterCount} filter{filterCount !== 1 ? 's' : ''}</Text>
+                          <Text style={styles.presetItemFilters}>{filterCount} {t(filterCount !== 1 ? 'filters' : 'filter')}</Text>
                         </View>
                       </View>
                       <View style={styles.presetItemRight}>
@@ -1743,11 +1748,11 @@ export default function Screener() {
                           style={styles.presetDeleteBtn}
                           onPress={() => {
                             Alert.alert(
-                              'Delete Preset',
+                              t('Delete Preset'),
                               `Are you sure you want to delete "${preset.name}"?`,
                               [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Delete', style: 'destructive', onPress: () => deletePreset(preset.id) },
+                                { text: t('Cancel'), style: 'cancel' },
+                                { text: t('Delete'), style: 'destructive', onPress: () => deletePreset(preset.id) },
                               ]
                             );
                           }}
@@ -1773,12 +1778,12 @@ export default function Screener() {
       <Modal visible={showSavePresetModal} animationType="fade" transparent onRequestClose={() => setShowSavePresetModal(false)}>
         <View style={styles.savePresetOverlay}>
           <View style={[styles.savePresetContainer, { backgroundColor: colors.background }]}>
-            <Text style={[styles.savePresetTitle, { color: colors.text }]}>Save Filter Preset</Text>
-            <Text style={[styles.savePresetSubtitle, { color: colors.textSecondary }]}>Give your {activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} a name</Text>
+            <Text style={[styles.savePresetTitle, { color: colors.text }]}>{t('Save Filter Preset')}</Text>
+            <Text style={[styles.savePresetSubtitle, { color: colors.textSecondary }]}>{t('Give your')} {activeFilterCount} {t(activeFilterCount !== 1 ? 'filters' : 'filter')} {t('a name')}</Text>
 
             <TextInput
               style={[styles.presetNameInput, { borderColor: colors.border, color: colors.text, backgroundColor: colors.surface }]}
-              placeholder="e.g., High Growth Tech Stocks"
+              placeholder={t('e.g., High Growth Tech Stocks')}
               placeholderTextColor={colors.textTertiary}
               value={newPresetName}
               onChangeText={setNewPresetName}
@@ -1794,7 +1799,7 @@ export default function Screener() {
                   setNewPresetName('');
                 }}
               >
-                <Text style={styles.savePresetCancelText}>Cancel</Text>
+                <Text style={styles.savePresetCancelText}>{t('Cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.savePresetSaveBtn, savingPreset && styles.savePresetSaveBtnDisabled]}
@@ -1804,7 +1809,7 @@ export default function Screener() {
                 {savingPreset ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.savePresetSaveText}>Save Preset</Text>
+                  <Text style={styles.savePresetSaveText}>{t('Save Preset')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -1818,7 +1823,7 @@ export default function Screener() {
             <LinearGradient colors={['#DAA520', '#B8860B']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fabGradient}>
               <Ionicons name="search" size={20} color="#fff" />
               <Text style={styles.fabText}>
-                Run Screen · {activeFilterCount} {activeFilterCount === 1 ? 'filter' : 'filters'}
+                {t('Run Screen')} · {activeFilterCount} {t(activeFilterCount === 1 ? 'filter' : 'filters')}
               </Text>
             </LinearGradient>
           </ScalePress>

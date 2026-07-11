@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { useLanguage } from '@/context/LanguageContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -48,6 +49,7 @@ interface StockPick {
 
 export default function StockPicksScreen() {
   const { isPremium, currentTier } = useSubscription();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stockPicks, setStockPicks] = useState<StockPick[]>([]);
@@ -58,10 +60,10 @@ export default function StockPicksScreen() {
   // Get tier badge info
   const getTierInfo = () => {
     switch (currentTier) {
-      case 'gold': return { name: 'Gold', color: '#FFD700', icon: 'star' };
-      case 'platinum': return { name: 'Platinum', color: '#E5E4E2', icon: 'diamond' };
-      case 'diamond': return { name: 'Diamond', color: '#B9F2FF', icon: 'diamond' };
-      default: return { name: 'Free', color: '#8E8E93', icon: 'lock-closed' };
+      case 'gold': return { name: t('Gold'), color: '#FFD700', icon: 'star' };
+      case 'platinum': return { name: t('Platinum'), color: '#E5E4E2', icon: 'diamond' };
+      case 'diamond': return { name: t('Diamond'), color: '#B9F2FF', icon: 'diamond' };
+      default: return { name: t('Free'), color: '#8E8E93', icon: 'lock-closed' };
     }
   };
 
@@ -74,7 +76,7 @@ export default function StockPicksScreen() {
   const { list } = useLocalSearchParams<{ list?: string }>();
   const listKey = list === 'momentum' || list === 'growth' ? list : 'picks';
   const listTitle =
-    listKey === 'momentum' ? 'Momentum Stocks' : listKey === 'growth' ? 'Growth Stocks' : 'Stock Picks';
+    listKey === 'momentum' ? t('Momentum Stocks') : listKey === 'growth' ? t('Growth Stocks') : t('Stock Picks');
 
   const fetchStockData = useCallback(async () => {
     try {
@@ -162,26 +164,26 @@ export default function StockPicksScreen() {
           <View style={styles.lockedIconContainer}>
             <Ionicons name="lock-closed" size={48} color="#FFD700" />
           </View>
-          <Text style={styles.lockedTitle}>Premium Feature</Text>
+          <Text style={styles.lockedTitle}>{t('Premium Feature')}</Text>
           <Text style={styles.lockedDescription}>
-            Get access to our expert-curated stock picks with a premium subscription.
+            {t('Get access to our expert-curated stock picks with a premium subscription.')}
           </Text>
 
           <View style={styles.tierCards}>
             <View style={[styles.tierPreviewCard, { borderColor: '#FFD700' }]}>
               <Ionicons name="star" size={20} color="#FFD700" />
-              <Text style={styles.tierPreviewName}>Gold</Text>
-              <Text style={styles.tierPreviewPicks}>5 Stock Picks</Text>
+              <Text style={styles.tierPreviewName}>{t('Gold')}</Text>
+              <Text style={styles.tierPreviewPicks}>{t('5 Stock Picks')}</Text>
             </View>
             <View style={[styles.tierPreviewCard, { borderColor: '#E5E4E2' }]}>
               <Ionicons name="diamond" size={20} color="#E5E4E2" />
-              <Text style={styles.tierPreviewName}>Platinum</Text>
-              <Text style={styles.tierPreviewPicks}>8 Stock Picks</Text>
+              <Text style={styles.tierPreviewName}>{t('Platinum')}</Text>
+              <Text style={styles.tierPreviewPicks}>{t('8 Stock Picks')}</Text>
             </View>
             <View style={[styles.tierPreviewCard, { borderColor: '#B9F2FF' }]}>
               <Ionicons name="diamond" size={20} color="#B9F2FF" />
-              <Text style={styles.tierPreviewName}>Diamond</Text>
-              <Text style={styles.tierPreviewPicks}>15 Stock Picks</Text>
+              <Text style={styles.tierPreviewName}>{t('Diamond')}</Text>
+              <Text style={styles.tierPreviewPicks}>{t('15 Stock Picks')}</Text>
             </View>
           </View>
 
@@ -190,7 +192,7 @@ export default function StockPicksScreen() {
             onPress={() => router.push('/(modals)/paywall' as any)}
           >
             <Ionicons name="rocket" size={20} color="#000" />
-            <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+            <Text style={styles.upgradeButtonText}>{t('Upgrade Now')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -219,7 +221,7 @@ export default function StockPicksScreen() {
       {/* Picks Counter */}
       <View style={styles.counterContainer}>
         <View style={styles.counterCard}>
-          <Text style={styles.counterLabel}>Your {listTitle}</Text>
+          <Text style={styles.counterLabel}>{t('Your')} {listTitle}</Text>
           <View style={styles.counterRow}>
             <Text style={[styles.counterValue, { color: tierInfo.color }]}>{picksLimit}</Text>
             <Text style={styles.counterTotal}>/ {totalPicks}</Text>
@@ -229,7 +231,7 @@ export default function StockPicksScreen() {
               style={styles.upgradeLink}
               onPress={() => router.push('/(modals)/paywall' as any)}
             >
-              <Text style={styles.upgradeLinkText}>Upgrade for more picks</Text>
+              <Text style={styles.upgradeLinkText}>{t('Upgrade for more picks')}</Text>
               <Ionicons name="arrow-forward" size={14} color="#B8860B" />
             </TouchableOpacity>
           )}
@@ -239,7 +241,7 @@ export default function StockPicksScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#FFD700" />
-          <Text style={styles.loadingText}>Loading stock picks...</Text>
+          <Text style={styles.loadingText}>{t('Loading stock picks...')}</Text>
         </View>
       ) : (
         <ScrollView
@@ -258,11 +260,11 @@ export default function StockPicksScreen() {
           {stockPicks.length === 0 && (
             <View style={styles.emptyPicksContainer}>
               <Ionicons name="cloud-offline-outline" size={44} color="#8E8E93" />
-              <Text style={styles.emptyPicksText}>Couldn&apos;t load your picks</Text>
-              <Text style={styles.emptyPicksSubtext}>Check your connection and try again</Text>
+              <Text style={styles.emptyPicksText}>{t("Couldn't load your picks")}</Text>
+              <Text style={styles.emptyPicksSubtext}>{t('Check your connection and try again')}</Text>
               <TouchableOpacity style={styles.emptyPicksRetry} onPress={() => fetchStockData()}>
                 <Ionicons name="refresh" size={16} color="#000" />
-                <Text style={styles.emptyPicksRetryText}>Retry</Text>
+                <Text style={styles.emptyPicksRetryText}>{t('Retry')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -300,10 +302,10 @@ export default function StockPicksScreen() {
                       <Ionicons name="lock-closed" size={24} color="#8E8E93" />
                     </View>
                     <View style={styles.lockedInfo}>
-                      <Text style={styles.lockedStockText}>Stock #{index + 1}</Text>
+                      <Text style={styles.lockedStockText}>{t('Stock #')}{index + 1}</Text>
                       <Text style={styles.lockedCategoryText}>{stock.category}</Text>
                       <Text style={styles.lockedUpgradeText}>
-                        {index < 8 ? 'Upgrade to Platinum' : 'Upgrade to Diamond'} to unlock
+                        {t(index < 8 ? 'Upgrade to Platinum' : 'Upgrade to Diamond')} {t('to unlock')}
                       </Text>
                     </View>
                   </View>

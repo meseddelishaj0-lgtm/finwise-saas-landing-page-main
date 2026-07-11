@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
@@ -49,6 +50,7 @@ interface Portfolio {
 
 export default function PortfolioScreen() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -101,7 +103,7 @@ export default function PortfolioScreen() {
 
   const addHolding = async () => {
     if (!newHolding.symbol || !newHolding.shares || !newHolding.avgCost) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('Error'), t('Please fill in all fields'));
       return;
     }
 
@@ -129,10 +131,10 @@ export default function PortfolioScreen() {
         fetchPortfolios(userId);
       } else {
         const error = await response.json();
-        Alert.alert('Error', error.error || 'Failed to add holding');
+        Alert.alert(t('Error'), error.error || t('Failed to add holding'));
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to add holding');
+      Alert.alert(t('Error'), t('Failed to add holding'));
     } finally {
       setAddingHolding(false);
     }
@@ -140,12 +142,12 @@ export default function PortfolioScreen() {
 
   const deleteHolding = (holdingId: number) => {
     Alert.alert(
-      'Delete Holding',
-      'Are you sure you want to remove this stock from your portfolio?',
+      t('Delete Holding'),
+      t('Are you sure you want to remove this stock from your portfolio?'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('Delete'),
           style: 'destructive',
           onPress: async () => {
             if (!userId) return;
@@ -156,7 +158,7 @@ export default function PortfolioScreen() {
               });
               fetchPortfolios(userId);
             } catch (error) {
-              Alert.alert('Error', 'Failed to delete holding');
+              Alert.alert(t('Error'), t('Failed to delete holding'));
             }
           },
         },
@@ -184,13 +186,13 @@ export default function PortfolioScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#B8860B" />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Portfolio')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyState}>
           <Ionicons name="log-in-outline" size={64} color={colors.textTertiary} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Sign in Required</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>Please sign in to track your portfolio</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('Sign in Required')}</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>{t('Please sign in to track your portfolio')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -203,7 +205,7 @@ export default function PortfolioScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#B8860B" />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Portfolio')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
@@ -222,7 +224,7 @@ export default function PortfolioScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#B8860B" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Portfolio')}</Text>
         <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.addButton}>
           <Ionicons name="add" size={24} color="#B8860B" />
         </TouchableOpacity>
@@ -235,11 +237,11 @@ export default function PortfolioScreen() {
         {/* Portfolio Summary */}
         {hasHoldings && (
           <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
-            <Text style={styles.summaryLabel}>Total Value</Text>
+            <Text style={styles.summaryLabel}>{t('Total Value')}</Text>
             <Text style={styles.summaryValue}>{formatCurrency(portfolio.totalValue)}</Text>
             <View style={styles.summaryRow}>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryItemLabel}>Total P&L</Text>
+                <Text style={styles.summaryItemLabel}>{t('Total P&L')}</Text>
                 <Text
                   style={[
                     styles.summaryItemValue,
@@ -250,7 +252,7 @@ export default function PortfolioScreen() {
                 </Text>
               </View>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryItemLabel}>Today</Text>
+                <Text style={styles.summaryItemLabel}>{t('Today')}</Text>
                 <Text
                   style={[
                     styles.summaryItemValue,
@@ -267,7 +269,7 @@ export default function PortfolioScreen() {
         {/* Holdings List */}
         {hasHoldings ? (
           <View style={styles.holdingsSection}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Holdings ({portfolio.holdings.length})</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Holdings')} ({portfolio.holdings.length})</Text>
             {portfolio.holdings.map((holding) => (
               <TouchableOpacity
                 key={holding.id}
@@ -298,21 +300,21 @@ export default function PortfolioScreen() {
                 </View>
                 <View style={[styles.holdingDetails, { borderTopColor: colors.border }]}>
                   <View style={styles.holdingDetail}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Shares</Text>
+                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('Shares')}</Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>{holding.shares.toFixed(2)}</Text>
                   </View>
                   <View style={styles.holdingDetail}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Avg Cost</Text>
+                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('Avg Cost')}</Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>{formatCurrency(holding.avgCost)}</Text>
                   </View>
                   <View style={styles.holdingDetail}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Current</Text>
+                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('Current')}</Text>
                     <Text style={[styles.detailValue, { color: colors.text }]}>
                       {formatCurrency(holding.currentPrice || 0)}
                     </Text>
                   </View>
                   <View style={styles.holdingDetail}>
-                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Today</Text>
+                    <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t('Today')}</Text>
                     <Text
                       style={[
                         styles.detailValue,
@@ -325,21 +327,21 @@ export default function PortfolioScreen() {
                 </View>
               </TouchableOpacity>
             ))}
-            <Text style={[styles.hintText, { color: colors.textTertiary }]}>Long press a holding to delete</Text>
+            <Text style={[styles.hintText, { color: colors.textTertiary }]}>{t('Long press a holding to delete')}</Text>
           </View>
         ) : (
           <View style={styles.emptyHoldings}>
             <Ionicons name="pie-chart-outline" size={64} color={colors.textTertiary} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Holdings Yet</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('No Holdings Yet')}</Text>
             <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              Add stocks to track your portfolio performance
+              {t('Add stocks to track your portfolio performance')}
             </Text>
             <TouchableOpacity
               style={[styles.addFirstButton, { backgroundColor: colors.primary }]}
               onPress={() => setShowAddModal(true)}
             >
               <Ionicons name="add-circle" size={20} color="#fff" />
-              <Text style={styles.addFirstText}>Add Your First Stock</Text>
+              <Text style={styles.addFirstText}>{t('Add Your First Stock')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -350,14 +352,14 @@ export default function PortfolioScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Add Stock</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t('Add Stock')}</Text>
               <TouchableOpacity onPress={() => setShowAddModal(false)}>
                 <Ionicons name="close" size={24} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Symbol</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>{t('Symbol')}</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
                 placeholder="AAPL"
@@ -369,7 +371,7 @@ export default function PortfolioScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Number of Shares</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>{t('Number of Shares')}</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
                 placeholder="10"
@@ -381,7 +383,7 @@ export default function PortfolioScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>Average Cost per Share</Text>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>{t('Average Cost per Share')}</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
                 placeholder="150.00"
@@ -400,7 +402,7 @@ export default function PortfolioScreen() {
               {addingHolding ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.submitButtonText}>Add to Portfolio</Text>
+                <Text style={styles.submitButtonText}>{t('Add to Portfolio')}</Text>
               )}
             </TouchableOpacity>
           </View>

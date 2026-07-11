@@ -32,6 +32,7 @@ import { InlineAdBanner } from "@/components/AdBanner";
 import { marketDataService } from "@/services/marketDataService";
 import StockLogo from "@/components/StockLogo";
 import { useTheme } from "@/context/ThemeContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
@@ -455,6 +456,11 @@ HeaderCard.displayName = 'HeaderCard';
 
 export default function Explore() {
   const { colors, isDark } = useTheme();
+  const { t: translate } = useLanguage();
+  // Cast to accept any English string key: TranslationKey is a closed union
+  // maintained centrally in i18n/translations.ts, but this screen's keys are
+  // added incrementally here without touching that shared file.
+  const t = (key: string): string => translate(key as any);
   const [activeTab, setActiveTab] = useState<Tab>("stocks");
   const [stockRegion, setStockRegion] = useState<StockRegion>("us");
   const [searchQuery, setSearchQuery] = useState("");
@@ -1265,7 +1271,7 @@ export default function Explore() {
                 paymentDate: latest.paymentDate || "N/A",
                 recordDate: latest.recordDate || "N/A",
                 declarationDate: latest.declarationDate || "N/A",
-                frequency: latest.frequency || "Quarterly",
+                frequency: latest.frequency || t("Quarterly"),
               };
             }
             return null;
@@ -1300,10 +1306,10 @@ export default function Explore() {
               symbol: item.symbol || "N/A",
               name: item.company || item.name || item.symbol || "Unknown",
               price: parseFloat(item.price) || 0,
-              priceRange: item.priceRange || (item.price ? `$${item.price}` : "N/A"),
+              priceRange: item.priceRange || (item.price ? `$${item.price}` : t("N/A")),
               exchange: item.exchange || "N/A",
               ipoDate: item.date || "N/A",
-              status: item.status || "Upcoming",
+              status: item.status || t("Upcoming"),
               change: 0,
               changePercent: 0,
               type: "stock" as any,
@@ -1358,7 +1364,7 @@ export default function Explore() {
 
       setData(mergedData);
     } catch (err: any) {
-      setError(err.message || "Network error. Check connection.");
+      setError(err.message || t("Network error. Check connection."));
     } finally {
       setLoading(false);
     }
@@ -1659,7 +1665,7 @@ export default function Explore() {
                 <Ionicons name="business" size={18} color="#3b82f6" />
               </View>
               <View style={styles.maCompanyInfo}>
-                <Text style={[styles.maCompanyLabel, { color: colors.textSecondary }]}>Acquirer</Text>
+                <Text style={[styles.maCompanyLabel, { color: colors.textSecondary }]}>{t('Acquirer')}</Text>
                 <Text style={[styles.maCompanyName, { color: colors.text }]} numberOfLines={2}>
                   {item.acquirerCompany || "Unknown Acquirer"}
                 </Text>
@@ -1677,7 +1683,7 @@ export default function Explore() {
                 <Ionicons name="business-outline" size={18} color="#ec4899" />
               </View>
               <View style={styles.maCompanyInfo}>
-                <Text style={[styles.maCompanyLabel, { color: colors.textSecondary }]}>Target</Text>
+                <Text style={[styles.maCompanyLabel, { color: colors.textSecondary }]}>{t('Target')}</Text>
                 <Text style={[styles.maCompanyName, { color: colors.text }]} numberOfLines={2}>
                   {item.targetCompany || "Unknown Target"}
                 </Text>
@@ -1687,25 +1693,25 @@ export default function Explore() {
           
           <View style={[styles.maBottomSection, { borderTopColor: colors.borderLight }]}>
             <View style={styles.maBottomItem}>
-              <Text style={[styles.maBottomLabel, { color: colors.textSecondary }]}>Deal Date</Text>
+              <Text style={[styles.maBottomLabel, { color: colors.textSecondary }]}>{t('Deal Date')}</Text>
               <Text style={[styles.maBottomValue, { color: colors.text }]}>
-                {item.dealDate && item.dealDate !== "N/A" 
-                  ? new Date(item.dealDate).toLocaleDateString('en-US', { 
-                      month: 'short', 
+                {item.dealDate && item.dealDate !== "N/A"
+                  ? new Date(item.dealDate).toLocaleDateString('en-US', {
+                      month: 'short',
                       day: 'numeric',
                       year: 'numeric'
                     })
-                  : 'N/A'}
+                  : t('N/A')}
               </Text>
             </View>
             <View style={styles.maBottomItem}>
-              <Text style={[styles.maBottomLabel, { color: colors.textSecondary }]}>Deal Value</Text>
+              <Text style={[styles.maBottomLabel, { color: colors.textSecondary }]}>{t('Deal Value')}</Text>
               <Text style={[styles.maBottomValue, { color: colors.text }]}>
                 {item.dealValue && item.dealValue !== "N/A" && item.dealValue !== "Undisclosed"
-                  ? (typeof item.dealValue === 'number' 
-                    ? `$${(item.dealValue / 1e9).toFixed(2)}B` 
+                  ? (typeof item.dealValue === 'number'
+                    ? `$${(item.dealValue / 1e9).toFixed(2)}B`
                     : item.dealValue)
-                  : 'Undisclosed'}
+                  : t('Undisclosed')}
               </Text>
             </View>
           </View>
@@ -1746,17 +1752,17 @@ export default function Explore() {
           
           <View style={[styles.ipoDetails, { borderTopColor: colors.borderLight }]}>
             <View style={styles.ipoDetailItem}>
-              <Text style={[styles.ipoDetailLabel, { color: colors.textSecondary }]}>IPO Date</Text>
+              <Text style={[styles.ipoDetailLabel, { color: colors.textSecondary }]}>{t('IPO Date')}</Text>
               <Text style={[styles.ipoDetailValue, { color: colors.text }]}>
-                {item.ipoDate ? new Date(item.ipoDate).toLocaleDateString('en-US', { 
-                  month: 'short', 
+                {item.ipoDate ? new Date(item.ipoDate).toLocaleDateString('en-US', {
+                  month: 'short',
                   day: 'numeric',
                   year: 'numeric'
-                }) : 'N/A'}
+                }) : t('N/A')}
               </Text>
             </View>
             <View style={styles.ipoDetailItem}>
-              <Text style={[styles.ipoDetailLabel, { color: colors.textSecondary }]}>Price</Text>
+              <Text style={[styles.ipoDetailLabel, { color: colors.textSecondary }]}>{t('Price')}</Text>
               <Text style={[styles.ipoDetailValue, { color: colors.text }]}>{item.priceRange}</Text>
             </View>
           </View>
@@ -1798,37 +1804,37 @@ export default function Explore() {
                   {(item.dividendYield || 0).toFixed(2)}%
                 </Text>
               </View>
-              <Text style={styles.dividendYieldLabel}>Yield</Text>
+              <Text style={styles.dividendYieldLabel}>{t('Yield')}</Text>
             </View>
           </View>
-          
+
           <View style={[styles.dividendDetails, { borderTopColor: colors.borderLight }]}>
             <View style={styles.dividendDetailItem}>
-              <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>Dividend</Text>
+              <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>{t('Dividend')}</Text>
               <Text style={[styles.dividendDetailValue, { color: colors.text }]}>
                 ${(item.dividend || 0).toFixed(2)}
               </Text>
             </View>
             <View style={styles.dividendDetailItem}>
-              <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>Payment</Text>
+              <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>{t('Payment')}</Text>
               <Text style={[styles.dividendDetailValue, { color: colors.text }]}>
-                {item.paymentDate && item.paymentDate !== "N/A" 
-                  ? new Date(item.paymentDate).toLocaleDateString('en-US', { 
-                      month: 'short', 
+                {item.paymentDate && item.paymentDate !== "N/A"
+                  ? new Date(item.paymentDate).toLocaleDateString('en-US', {
+                      month: 'short',
                       day: 'numeric'
                     })
-                  : 'N/A'}
+                  : t('N/A')}
               </Text>
             </View>
             <View style={styles.dividendDetailItem}>
-              <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>Ex-Date</Text>
+              <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>{t('Ex-Date')}</Text>
               <Text style={[styles.dividendDetailValue, { color: colors.text }]}>
-                {item.recordDate && item.recordDate !== "N/A" 
-                  ? new Date(item.recordDate).toLocaleDateString('en-US', { 
-                      month: 'short', 
+                {item.recordDate && item.recordDate !== "N/A"
+                  ? new Date(item.recordDate).toLocaleDateString('en-US', {
+                      month: 'short',
                       day: 'numeric'
                     })
-                  : 'N/A'}
+                  : t('N/A')}
               </Text>
             </View>
           </View>
@@ -1932,7 +1938,7 @@ export default function Explore() {
       {/* Header with Search */}
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Explore</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Explore')}</Text>
         </View>
         <View style={styles.headerRight}>
           {showSearch ? (
@@ -1940,7 +1946,7 @@ export default function Explore() {
               <Ionicons name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search markets..."
+                placeholder={t("Search markets...")}
                 placeholderTextColor="#666"
                 value={searchQuery}
                 onChangeText={handleSearchChange}
@@ -1997,12 +2003,12 @@ export default function Explore() {
                     style={[styles.tab, styles.tabActive]}
                   >
                     <Ionicons name={tab.icon} size={14} color={activeInk} />
-                    <Text style={[styles.tabText, styles.tabTextActive, { color: activeInk }]}>{tab.label}</Text>
+                    <Text style={[styles.tabText, styles.tabTextActive, { color: activeInk }]}>{t(tab.label)}</Text>
                   </ExpoLinearGradient>
                 ) : (
                   <View style={[styles.tab, { backgroundColor: colors.surface }]}>
                     <Ionicons name={tab.icon} size={14} color={colors.textTertiary} />
-                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>{tab.label}</Text>
+                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>{t(tab.label)}</Text>
                   </View>
                 )}
               </ScalePress>
@@ -2038,10 +2044,10 @@ export default function Explore() {
                       <Ionicons name={region.icon as any} size={14} color={activeInk} />
                       <View>
                         <Text style={[styles.regionText, styles.regionTextActive, { color: activeInk }]}>
-                          {region.label}
+                          {t(region.label)}
                         </Text>
                         <Text style={[styles.regionSubText, { color: isDark ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.75)' }]}>
-                          {region.subLabel}
+                          {t(region.subLabel)}
                         </Text>
                       </View>
                     </ExpoLinearGradient>
@@ -2049,7 +2055,7 @@ export default function Explore() {
                     <View style={[styles.regionChip, { backgroundColor: colors.surface }]}>
                       <Ionicons name={region.icon as any} size={14} color={colors.textSecondary} />
                       <Text style={[styles.regionText, { color: colors.textSecondary }]}>
-                        {region.label}
+                        {t(region.label)}
                       </Text>
                     </View>
                   )}
@@ -2059,7 +2065,7 @@ export default function Explore() {
           </ScrollView>
           <View style={styles.regionInfo}>
             <Text style={styles.regionInfoText}>
-              {data.length} stocks
+              {data.length} {t('stocks')}
             </Text>
           </View>
         </View>
@@ -2072,7 +2078,7 @@ export default function Explore() {
             <Ionicons name="cloud-offline-outline" size={18} color="#FF1744" />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity onPress={fetchLiveData} style={styles.retryBtn}>
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={styles.retryText}>{t('Retry')}</Text>
             </TouchableOpacity>
           </View>
         </FadeSlideIn>
@@ -2095,14 +2101,14 @@ export default function Explore() {
           {treasuryLoading ? (
             <View style={styles.treasuryLoadingState}>
               <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Loading treasury rates...</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('Loading treasury rates...')}</Text>
             </View>
           ) : treasuryRates ? (
             <>
               {/* Header Section */}
               <View style={styles.treasuryHeader}>
                 <View>
-                  <Text style={[styles.treasuryMainTitle, { color: colors.text }]}>US Treasury Yields</Text>
+                  <Text style={[styles.treasuryMainTitle, { color: colors.text }]}>{t('US Treasury Yields')}</Text>
                   <Text style={[styles.treasuryDateText, { color: colors.textSecondary }]}>
                     {new Date(treasuryRates.date).toLocaleDateString('en-US', {
                       weekday: 'short',
@@ -2121,9 +2127,9 @@ export default function Explore() {
               <View style={styles.treasuryHeroSection}>
                 <View style={[styles.treasuryHeroCard, styles.treasuryHeroCardPrimary]}>
                   <View style={styles.treasuryHeroTop}>
-                    <Text style={styles.treasuryHeroLabel}>10-Year Treasury</Text>
+                    <Text style={styles.treasuryHeroLabel}>{t('10-Year Treasury')}</Text>
                     <View style={styles.treasuryHeroBadge}>
-                      <Text style={styles.treasuryHeroBadgeText}>Benchmark</Text>
+                      <Text style={styles.treasuryHeroBadgeText}>{t('Benchmark')}</Text>
                     </View>
                   </View>
                   <Text style={styles.treasuryHeroRate}>{treasuryRates.year10?.toFixed(2)}%</Text>
@@ -2146,7 +2152,7 @@ export default function Explore() {
 
                 <View style={styles.treasuryHeroSmallCards}>
                   <View style={[styles.treasuryHeroCardSmall, { backgroundColor: colors.card }]}>
-                    <Text style={[styles.treasuryHeroSmallLabel, { color: colors.textSecondary }]}>2-Year</Text>
+                    <Text style={[styles.treasuryHeroSmallLabel, { color: colors.textSecondary }]}>{t('2-Year')}</Text>
                     <Text style={[styles.treasuryHeroSmallRate, { color: colors.text }]}>{treasuryRates.year2?.toFixed(2)}%</Text>
                     {getRateChange("year2") && (
                       <View style={[
@@ -2165,7 +2171,7 @@ export default function Explore() {
                     )}
                   </View>
                   <View style={[styles.treasuryHeroCardSmall, { backgroundColor: colors.card }]}>
-                    <Text style={[styles.treasuryHeroSmallLabel, { color: colors.textSecondary }]}>30-Year</Text>
+                    <Text style={[styles.treasuryHeroSmallLabel, { color: colors.textSecondary }]}>{t('30-Year')}</Text>
                     <Text style={[styles.treasuryHeroSmallRate, { color: colors.text }]}>{treasuryRates.year30?.toFixed(2)}%</Text>
                     {getRateChange("year30") && (
                       <View style={[
@@ -2199,9 +2205,9 @@ export default function Explore() {
                       color={getYieldSpread()!.isInverted ? "#FF6B6B" : "#00C853"}
                     />
                     <View>
-                      <Text style={[styles.yieldSpreadLabel, { color: colors.text }]}>2Y-10Y Spread</Text>
+                      <Text style={[styles.yieldSpreadLabel, { color: colors.text }]}>{t('2Y-10Y Spread')}</Text>
                       <Text style={styles.yieldSpreadSubLabel}>
-                        {getYieldSpread()!.isInverted ? "Inverted Curve" : "Normal Curve"}
+                        {getYieldSpread()!.isInverted ? t("Inverted Curve") : t("Normal Curve")}
                       </Text>
                     </View>
                   </View>
@@ -2217,12 +2223,12 @@ export default function Explore() {
               {/* Yield Curve Chart */}
               <View style={[styles.yieldCurveSection, { backgroundColor: colors.card }]}>
                 <View style={styles.yieldCurveTitleRow}>
-                  <Text style={[styles.yieldCurveTitle, { color: colors.text }]}>Yield Curve</Text>
+                  <Text style={[styles.yieldCurveTitle, { color: colors.text }]}>{t('Yield Curve')}</Text>
                   <View style={styles.yieldCurveLegend}>
                     <View style={[styles.yieldCurveLegendDot, { backgroundColor: "#00C853" }]} />
-                    <Text style={styles.yieldCurveLegendText}>Normal</Text>
+                    <Text style={styles.yieldCurveLegendText}>{t('Normal')}</Text>
                     <View style={[styles.yieldCurveLegendDot, { backgroundColor: "#FF6B6B", marginLeft: 12 }]} />
-                    <Text style={styles.yieldCurveLegendText}>Inverted</Text>
+                    <Text style={styles.yieldCurveLegendText}>{t('Inverted')}</Text>
                   </View>
                 </View>
                 <View style={styles.yieldCurveChartContainer}>
@@ -2237,7 +2243,7 @@ export default function Explore() {
               </View>
 
               {/* All Rates Grid */}
-              <Text style={[styles.treasurySectionTitle, { color: colors.text }]}>All Maturities</Text>
+              <Text style={[styles.treasurySectionTitle, { color: colors.text }]}>{t('All Maturities')}</Text>
 
               {/* Short-Term */}
               <View style={styles.treasuryRateSection}>
@@ -2245,7 +2251,7 @@ export default function Explore() {
                   <View style={[styles.treasuryRateSectionIcon, { backgroundColor: "#dbeafe" }]}>
                     <Ionicons name="time-outline" size={16} color="#3b82f6" />
                   </View>
-                  <Text style={[styles.treasuryRateSectionTitle, { color: colors.textSecondary }]}>Short-Term</Text>
+                  <Text style={[styles.treasuryRateSectionTitle, { color: colors.textSecondary }]}>{t('Short-Term')}</Text>
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.treasuryRateCardsRow}>
@@ -2263,7 +2269,7 @@ export default function Explore() {
                   <View style={[styles.treasuryRateSectionIcon, { backgroundColor: "#dcfce7" }]}>
                     <Ionicons name="calendar-outline" size={16} color="#00C853" />
                   </View>
-                  <Text style={[styles.treasuryRateSectionTitle, { color: colors.textSecondary }]}>Medium-Term</Text>
+                  <Text style={[styles.treasuryRateSectionTitle, { color: colors.textSecondary }]}>{t('Medium-Term')}</Text>
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.treasuryRateCardsRow}>
@@ -2281,7 +2287,7 @@ export default function Explore() {
                   <View style={[styles.treasuryRateSectionIcon, { backgroundColor: "#fef3c7" }]}>
                     <Ionicons name="trending-up" size={16} color="#f59e0b" />
                   </View>
-                  <Text style={[styles.treasuryRateSectionTitle, { color: colors.textSecondary }]}>Long-Term</Text>
+                  <Text style={[styles.treasuryRateSectionTitle, { color: colors.textSecondary }]}>{t('Long-Term')}</Text>
                 </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.treasuryRateCardsRow}>
@@ -2299,9 +2305,9 @@ export default function Explore() {
                     <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
                   </View>
                   <View style={styles.treasuryInfoContent}>
-                    <Text style={[styles.treasuryInfoTitle, { color: colors.text }]}>What is the Yield Curve?</Text>
+                    <Text style={[styles.treasuryInfoTitle, { color: colors.text }]}>{t('What is the Yield Curve?')}</Text>
                     <Text style={[styles.treasuryInfoText, { color: colors.textSecondary }]}>
-                      The yield curve shows interest rates across different maturities. A normal curve slopes upward (longer terms = higher rates). An inverted curve can signal recession concerns.
+                      {t('The yield curve shows interest rates across different maturities. A normal curve slopes upward (longer terms = higher rates). An inverted curve can signal recession concerns.')}
                     </Text>
                   </View>
                 </View>
@@ -2311,9 +2317,9 @@ export default function Explore() {
                     <Ionicons name="stats-chart-outline" size={20} color="#3b82f6" />
                   </View>
                   <View style={styles.treasuryInfoContent}>
-                    <Text style={[styles.treasuryInfoTitle, { color: colors.text }]}>Key Benchmarks</Text>
+                    <Text style={[styles.treasuryInfoTitle, { color: colors.text }]}>{t('Key Benchmarks')}</Text>
                     <Text style={[styles.treasuryInfoText, { color: colors.textSecondary }]}>
-                      The 10-year yield influences mortgage rates and is a key economic indicator. The 2Y-10Y spread is watched closely for recession signals.
+                      {t('The 10-year yield influences mortgage rates and is a key economic indicator. The 2Y-10Y spread is watched closely for recession signals.')}
                     </Text>
                   </View>
                 </View>
@@ -2322,9 +2328,9 @@ export default function Explore() {
           ) : (
             <View style={styles.emptyState}>
               <Ionicons name="alert-circle" size={64} color={colors.border} />
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Unable to load treasury rates</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('Unable to load treasury rates')}</Text>
               <TouchableOpacity onPress={fetchTreasuryRates} style={styles.treasuryRetryBtn}>
-                <Text style={styles.treasuryRetryText}>Retry</Text>
+                <Text style={styles.treasuryRetryText}>{t('Retry')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -2348,7 +2354,7 @@ export default function Explore() {
               searchLoading ? (
                 <View style={styles.emptyState}>
                   <ActivityIndicator size="large" color={colors.primary} />
-                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Searching...</Text>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('Searching...')}</Text>
                 </View>
               ) : (
                 <FadeSlideIn distance={10}>
@@ -2357,7 +2363,7 @@ export default function Explore() {
                       <Ionicons name="search" size={30} color={colors.textTertiary} />
                     </View>
                     <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No results for &quot;{searchQuery}&quot;</Text>
-                    <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>Try another symbol or company name</Text>
+                    <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>{t('Try another symbol or company name')}</Text>
                   </View>
                 </FadeSlideIn>
               )
@@ -2369,7 +2375,7 @@ export default function Explore() {
                   <View style={[styles.emptyIconCircle, { backgroundColor: colors.surface }]}>
                     <Ionicons name="bar-chart-outline" size={30} color={colors.textTertiary} />
                   </View>
-                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No data available</Text>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('No data available')}</Text>
                 </View>
               </FadeSlideIn>
             )
@@ -2384,12 +2390,12 @@ export default function Explore() {
                 <FadeSlideIn delay={60} distance={8}>
                   <View style={styles.sectionHeaderRow}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      {activeTab === "stocks" ? "Most Active" :
-                       activeTab === "crypto" ? "Top Cryptos" :
-                       activeTab === "etf" ? "Popular ETFs" :
-                       activeTab === "bonds" ? "Bond ETFs" :
-                       activeTab === "ipo" ? "IPO Calendar" :
-                       activeTab === "ma" ? "Latest M&A Deals" : "Top Dividend Stocks"}
+                      {activeTab === "stocks" ? t("Most Active") :
+                       activeTab === "crypto" ? t("Top Cryptos") :
+                       activeTab === "etf" ? t("Popular ETFs") :
+                       activeTab === "bonds" ? t("Bond ETFs") :
+                       activeTab === "ipo" ? t("IPO Calendar") :
+                       activeTab === "ma" ? t("Latest M&A Deals") : t("Top Dividend Stocks")}
                     </Text>
                     <View style={[styles.sectionCountPill, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.sectionCountText, { color: colors.textSecondary }]}>
@@ -2400,7 +2406,7 @@ export default function Explore() {
                 </FadeSlideIn>
               ) : searchQuery ? (
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  Search Results
+                  {t('Search Results')}
                 </Text>
               ) : null}
             </>

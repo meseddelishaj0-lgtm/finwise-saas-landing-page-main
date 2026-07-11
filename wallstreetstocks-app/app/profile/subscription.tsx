@@ -44,6 +44,7 @@ import {
 } from "@/services/revenueCat";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 // Screen dimensions for responsive layout
 const _screenWidth = Dimensions.get("window").width;
@@ -173,6 +174,11 @@ interface SubscriptionDetails {
 export default function SubscriptionPage() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t: translate } = useLanguage();
+  // Cast to accept any English string key: TranslationKey is a closed union
+  // maintained centrally in i18n/translations.ts, but this screen's keys are
+  // added incrementally here without touching that shared file.
+  const t = (key: string): string => translate(key as any);
   const { refreshStatus: refreshGlobalSubscription } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
@@ -334,8 +340,8 @@ export default function SubscriptionPage() {
 
     if (!pkg) {
       Alert.alert(
-        "Error",
-        "Unable to find subscription package. Your subscriptions may still be under review."
+        t("Error"),
+        t("Unable to find subscription package. Your subscriptions may still be under review.")
       );
       return;
     }
@@ -360,23 +366,23 @@ export default function SubscriptionPage() {
         await refreshGlobalSubscription();
 
         Alert.alert(
-          "Success!",
+          t("Success!"),
           `Welcome to ${tier.name}! Your subscription is now active.`,
-          [{ text: "OK" }]
+          [{ text: t("OK") }]
         );
       } else {
         // Entitlement not immediately available - reload all data
         await loadData();
         await refreshGlobalSubscription();
         Alert.alert(
-          "Success!",
+          t("Success!"),
           `Welcome to ${tier.name}! Your subscription is now active.`,
-          [{ text: "OK" }]
+          [{ text: t("OK") }]
         );
       }
     } catch (error: any) {
       if (!error.userCancelled) {
-        Alert.alert("Purchase Failed", error.message || "Unable to complete purchase.");
+        Alert.alert(t("Purchase Failed"), error.message || t("Unable to complete purchase."));
       }
     } finally {
       setPurchasing(false);
@@ -388,7 +394,7 @@ export default function SubscriptionPage() {
     const pkg = getPackageForTier(selectedTier);
 
     if (!pkg) {
-      Alert.alert("Error", "Unable to find subscription package.");
+      Alert.alert(t("Error"), t("Unable to find subscription package."));
       return;
     }
 
@@ -398,12 +404,12 @@ export default function SubscriptionPage() {
     if (targetLevel <= currentLevel) {
       // Downgrade - need to go to subscription management
       Alert.alert(
-        "Downgrade Plan",
+        t("Downgrade Plan"),
         `To downgrade to ${tier.name}, you need to manage your subscription through the ${Platform.OS === 'ios' ? 'App Store' : 'Play Store'}. Your current plan will continue until the end of the billing period.`,
         [
-          { text: "Cancel", style: "cancel" },
+          { text: t("Cancel"), style: "cancel" },
           {
-            text: "Manage Subscription",
+            text: t("Manage Subscription"),
             onPress: handleManageSubscription,
           },
         ]
@@ -414,12 +420,12 @@ export default function SubscriptionPage() {
     // Upgrade
     const periodText = isLifetimeTier(selectedTier) ? '' : billingPeriod === 'yearly' ? '/year' : '/month';
     Alert.alert(
-      "Upgrade Plan",
+      t("Upgrade Plan"),
       `Upgrade to ${tier.name} for ${getPrice(selectedTier)}${periodText}? You'll be charged the prorated difference for the remaining billing period.`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("Cancel"), style: "cancel" },
         {
-          text: "Upgrade",
+          text: t("Upgrade"),
           onPress: async () => {
             setPurchasing(true);
             try {
@@ -441,7 +447,7 @@ export default function SubscriptionPage() {
                 await refreshGlobalSubscription();
 
                 Alert.alert(
-                  "Upgraded!",
+                  t("Upgraded!"),
                   `You're now on the ${tier.name} plan. Enjoy your new features!`
                 );
               } else {
@@ -449,13 +455,13 @@ export default function SubscriptionPage() {
                 await loadData();
                 await refreshGlobalSubscription();
                 Alert.alert(
-                  "Upgraded!",
+                  t("Upgraded!"),
                   `You're now on the ${tier.name} plan. Enjoy your new features!`
                 );
               }
             } catch (error: any) {
               if (!error.userCancelled) {
-                Alert.alert("Upgrade Failed", error.message || "Unable to upgrade.");
+                Alert.alert(t("Upgrade Failed"), error.message || t("Unable to upgrade."));
               }
             } finally {
               setPurchasing(false);
@@ -474,10 +480,10 @@ export default function SubscriptionPage() {
         await Linking.openURL(subscriptionDetails.managementUrl);
       } else {
         Alert.alert(
-          "Manage Subscription",
+          t("Manage Subscription"),
           Platform.OS === 'ios'
-            ? "Go to Settings > Apple ID > Subscriptions to manage your subscription."
-            : "Go to Google Play Store > Menu > Subscriptions to manage your subscription."
+            ? t("Go to Settings > Apple ID > Subscriptions to manage your subscription.")
+            : t("Go to Google Play Store > Menu > Subscriptions to manage your subscription.")
         );
       }
     }
@@ -485,12 +491,12 @@ export default function SubscriptionPage() {
 
   const handleCancelSubscription = () => {
     Alert.alert(
-      "Cancel Subscription",
-      "To cancel your subscription, you'll be redirected to your device's subscription settings. Your subscription will remain active until the end of your current billing period.",
+      t("Cancel Subscription"),
+      t("To cancel your subscription, you'll be redirected to your device's subscription settings. Your subscription will remain active until the end of your current billing period."),
       [
-        { text: "Keep Subscription", style: "cancel" },
+        { text: t("Keep Subscription"), style: "cancel" },
         {
-          text: "Manage Subscription",
+          text: t("Manage Subscription"),
           style: "destructive",
           onPress: handleManageSubscription,
         },
@@ -521,12 +527,12 @@ export default function SubscriptionPage() {
         await loadSubscriptionDetails();
         // Refresh global subscription context so all features unlock immediately
         await refreshGlobalSubscription();
-        Alert.alert("Success", "Your subscription has been restored!");
+        Alert.alert(t("Success"), t("Your subscription has been restored!"));
       } else {
-        Alert.alert("No Subscriptions Found", "We couldn't find any active subscriptions to restore. If you recently subscribed, please try again in a few minutes.");
+        Alert.alert(t("No Subscriptions Found"), t("We couldn't find any active subscriptions to restore. If you recently subscribed, please try again in a few minutes."));
       }
     } catch (error: any) {
-      Alert.alert("Restore Failed", error.message || "Unable to restore purchases. Please try again.");
+      Alert.alert(t("Restore Failed"), error.message || t("Unable to restore purchases. Please try again."));
     } finally {
       setRestoring(false);
     }
@@ -616,9 +622,9 @@ export default function SubscriptionPage() {
           <XCircle size={24} color="#FF3B30" />
         </View>
         <View style={styles.expiredContent}>
-          <Text style={styles.expiredTitle}>Subscription Expired</Text>
+          <Text style={styles.expiredTitle}>{t("Subscription Expired")}</Text>
           <Text style={[styles.expiredSubtitle, { color: colors.textSecondary }]}>
-            Your subscription has expired. Resubscribe to continue enjoying premium features.
+            {t("Your subscription has expired. Resubscribe to continue enjoying premium features.")}
           </Text>
         </View>
       </View>
@@ -665,17 +671,17 @@ export default function SubscriptionPage() {
             <Icon size={24} color={tier.color} />
           </View>
           <View style={styles.currentSubInfo}>
-            <Text style={[styles.currentSubLabel, { color: colors.textSecondary }]}>Current Plan</Text>
-            <Text style={[styles.currentSubName, { color: tier.color }]}>{tier.name}</Text>
+            <Text style={[styles.currentSubLabel, { color: colors.textSecondary }]}>{t("Current Plan")}</Text>
+            <Text style={[styles.currentSubName, { color: tier.color }]}>{t(tier.name)}</Text>
           </View>
           {isLifetime && (
             <View style={[styles.canceledBadge, { backgroundColor: '#9B59B6' }]}>
-              <Text style={styles.canceledBadgeText}>FOREVER</Text>
+              <Text style={styles.canceledBadgeText}>{t("FOREVER")}</Text>
             </View>
           )}
           {subscriptionDetails.isCanceled && !isLifetime && (
             <View style={styles.canceledBadge}>
-              <Text style={styles.canceledBadgeText}>CANCELED</Text>
+              <Text style={styles.canceledBadgeText}>{t("CANCELED")}</Text>
             </View>
           )}
         </View>
@@ -684,7 +690,7 @@ export default function SubscriptionPage() {
         {isLifetime && (
           <View style={[styles.expiringWarning, { backgroundColor: '#F0FFF4', borderColor: '#9AE6B4' }]}>
             <Text style={[styles.expiringWarningText, { color: '#22543D' }]}>
-              🎉 You have lifetime access! Enjoy all premium features forever with no recurring charges.
+              {t("🎉 You have lifetime access! Enjoy all premium features forever with no recurring charges.")}
             </Text>
           </View>
         )}
@@ -713,7 +719,7 @@ export default function SubscriptionPage() {
             <View style={styles.detailRow}>
               <Calendar size={16} color={colors.textSecondary} />
               <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
-                {subscriptionDetails.isCanceled ? "Expires" : "Renews"} on:
+                {subscriptionDetails.isCanceled ? t("Expires") : t("Renews")} {t("on:")}
               </Text>
               <Text style={[styles.detailValue, { color: colors.text }]}>
                 {formatExpirationDate(subscriptionDetails.expirationDate)}
@@ -722,9 +728,9 @@ export default function SubscriptionPage() {
 
             <View style={styles.detailRow}>
               <RefreshCw size={16} color={colors.textSecondary} />
-              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Auto-renew:</Text>
+              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>{t("Auto-renew:")}</Text>
               <Text style={[styles.detailValue, { color: subscriptionDetails.willRenew ? '#34C759' : '#FF3B30' }]}>
-                {subscriptionDetails.willRenew ? "On" : "Off"}
+                {subscriptionDetails.willRenew ? t("On") : t("Off")}
               </Text>
             </View>
           </View>
@@ -739,7 +745,7 @@ export default function SubscriptionPage() {
             >
               <Settings size={18} color={tier.color} />
               <Text style={[styles.manageButtonText, { color: tier.color }]}>
-                Manage Subscription
+                {t("Manage Subscription")}
               </Text>
               <ExternalLink size={16} color={tier.color} />
             </TouchableOpacity>
@@ -750,7 +756,7 @@ export default function SubscriptionPage() {
                 onPress={handleCancelSubscription}
               >
                 <XCircle size={18} color="#FF3B30" />
-                <Text style={styles.cancelButtonText}>Cancel Subscription</Text>
+                <Text style={styles.cancelButtonText}>{t("Cancel Subscription")}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -787,26 +793,26 @@ export default function SubscriptionPage() {
       >
         {"popular" in tier && tier.popular && !isCurrentPlan && (
           <View style={[styles.popularBadge, { backgroundColor: tier.color }]}>
-            <Text style={styles.popularText}>MOST POPULAR</Text>
+            <Text style={styles.popularText}>{t("MOST POPULAR")}</Text>
           </View>
         )}
 
         {isLifetime && !isCurrentPlan && (
           <View style={[styles.popularBadge, { backgroundColor: tier.color }]}>
-            <Text style={styles.popularText}>BEST VALUE</Text>
+            <Text style={styles.popularText}>{t("BEST VALUE")}</Text>
           </View>
         )}
 
         {isCurrentPlan && (
           <View style={styles.currentBadge}>
-            <Text style={styles.currentBadgeText}>CURRENT PLAN</Text>
+            <Text style={styles.currentBadgeText}>{t("CURRENT PLAN")}</Text>
           </View>
         )}
 
         {isUpgrade && isSelected && !isLifetime && (
           <View style={[styles.upgradeBadge, { backgroundColor: '#34C759' }]}>
             <ArrowUpCircle size={12} color="#FFF" />
-            <Text style={styles.upgradeBadgeText}>UPGRADE</Text>
+            <Text style={styles.upgradeBadgeText}>{t("UPGRADE")}</Text>
           </View>
         )}
 
@@ -815,11 +821,11 @@ export default function SubscriptionPage() {
             <Icon size={28} color={tier.color} />
           </View>
           <View style={styles.tierInfo}>
-            <Text style={[styles.tierName, { color: colors.text }]}>{tier.name}</Text>
+            <Text style={[styles.tierName, { color: colors.text }]}>{t(tier.name)}</Text>
             <View style={styles.priceContainer}>
               <Text style={[styles.price, { color: colors.text }]}>{getPrice(tierKey)}</Text>
               <Text style={[styles.period, { color: colors.textSecondary }]}>
-                {isLifetime ? " one-time" : billingPeriod === 'yearly' ? "/year" : "/month"}
+                {isLifetime ? t(" one-time") : billingPeriod === 'yearly' ? t("/year") : t("/month")}
               </Text>
             </View>
           </View>
@@ -836,7 +842,7 @@ export default function SubscriptionPage() {
             return (
               <View key={index} style={styles.featureRow}>
                 <FeatureIcon size={16} color={tier.color} />
-                <Text style={[styles.featureText, { color: colors.textSecondary }]}>{feature.text}</Text>
+                <Text style={[styles.featureText, { color: colors.textSecondary }]}>{t(feature.text)}</Text>
               </View>
             );
           })}
@@ -845,7 +851,7 @@ export default function SubscriptionPage() {
         {isDowngrade && isSelected && (
           <View style={[styles.downgradeWarning, { backgroundColor: isDark ? '#2A1A00' : '#FFF3CD' }]}>
             <Text style={[styles.downgradeText, { color: isDark ? '#FFB84D' : '#856404' }]}>
-              This is a downgrade from your current plan
+              {t("This is a downgrade from your current plan")}
             </Text>
           </View>
         )}
@@ -860,12 +866,12 @@ export default function SubscriptionPage() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ChevronLeft size={28} color="#B8860B" />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Subscription</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t("Subscription")}</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B8860B" />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t("Loading...")}</Text>
         </View>
       </View>
     );
@@ -877,7 +883,7 @@ export default function SubscriptionPage() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ChevronLeft size={28} color="#B8860B" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Subscription</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t("Subscription")}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -898,9 +904,9 @@ export default function SubscriptionPage() {
             <View style={[styles.heroIconContainer, { backgroundColor: isDark ? colors.surface : '#F0F8FF' }]}>
               <Zap size={40} color="#B8860B" />
             </View>
-            <Text style={[styles.heroTitle, { color: colors.text }]}>Unlock Premium Features</Text>
+            <Text style={[styles.heroTitle, { color: colors.text }]}>{t("Unlock Premium Features")}</Text>
             <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-              Start your 7-day free trial. Cancel anytime.
+              {t("Start your 7-day free trial. Cancel anytime.")}
             </Text>
           </View>
         )}
@@ -909,10 +915,10 @@ export default function SubscriptionPage() {
         {activeSubscription && (
           <View style={styles.changePlanSection}>
             <Text style={[styles.changePlanTitle, { color: colors.text }]}>
-              {getCurrentTierLevel() < 3 ? "Upgrade Your Plan" : "Change Plan"}
+              {getCurrentTierLevel() < 3 ? t("Upgrade Your Plan") : t("Change Plan")}
             </Text>
             <Text style={[styles.changePlanSubtitle, { color: colors.textSecondary }]}>
-              Select a different plan to upgrade or change your subscription
+              {t("Select a different plan to upgrade or change your subscription")}
             </Text>
           </View>
         )}
@@ -921,8 +927,8 @@ export default function SubscriptionPage() {
         {packages.length === 0 && (
           <View style={[styles.debugContainer, { backgroundColor: isDark ? '#2A1A00' : '#FFF3CD', borderColor: isDark ? '#5A3A00' : '#FFE69C' }]}>
             <Text style={[styles.debugText, { color: isDark ? '#FFB84D' : '#856404' }]}>
-              ⚠️ No subscription packages loaded.{"\n"}
-              Your products may still be under review.
+              {t("⚠️ No subscription packages loaded.")}{"\n"}
+              {t("Your products may still be under review.")}
             </Text>
           </View>
         )}
@@ -940,7 +946,7 @@ export default function SubscriptionPage() {
               styles.billingToggleText,
               { color: colors.textSecondary },
               billingPeriod === 'monthly' && { color: colors.text },
-            ]}>Monthly</Text>
+            ]}>{t("Monthly")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -953,9 +959,9 @@ export default function SubscriptionPage() {
               styles.billingToggleText,
               { color: colors.textSecondary },
               billingPeriod === 'yearly' && { color: colors.text },
-            ]}>Yearly</Text>
+            ]}>{t("Yearly")}</Text>
             <View style={styles.saveBadge}>
-              <Text style={styles.saveBadgeText}>Save 17%</Text>
+              <Text style={styles.saveBadgeText}>{t("Save 17%")}</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -987,12 +993,12 @@ export default function SubscriptionPage() {
               <>
                 <Text style={styles.subscribeButtonText}>
                   {isLifetimeTier(selectedTier)
-                    ? "Get Lifetime Access"
+                    ? t("Get Lifetime Access")
                     : activeSubscription
                       ? getTierLevelByKey(selectedTier) > getCurrentTierLevel()
                         ? `Upgrade to ${TIERS[selectedTier].name}`
                         : `Change to ${TIERS[selectedTier].name}`
-                      : `Start 7-Day Free Trial`}
+                      : t("Start 7-Day Free Trial")}
                 </Text>
                 <Text style={styles.subscribePrice}>
                   {isLifetimeTier(selectedTier)
@@ -1015,10 +1021,10 @@ export default function SubscriptionPage() {
           {restoring ? (
             <View style={styles.restoreLoading}>
               <ActivityIndicator size="small" color="#B8860B" />
-              <Text style={styles.restoreText}>Restoring...</Text>
+              <Text style={styles.restoreText}>{t("Restoring...")}</Text>
             </View>
           ) : (
-            <Text style={styles.restoreText}>Restore Purchases</Text>
+            <Text style={styles.restoreText}>{t("Restore Purchases")}</Text>
           )}
         </TouchableOpacity>
 
@@ -1030,11 +1036,11 @@ export default function SubscriptionPage() {
         {/* Links */}
         <View style={styles.linksContainer}>
           <TouchableOpacity onPress={() => router.push("/profile/terms")}>
-            <Text style={styles.linkText}>Terms of Service</Text>
+            <Text style={styles.linkText}>{t("Terms of Service")}</Text>
           </TouchableOpacity>
           <Text style={[styles.linkDivider, { color: colors.textTertiary }]}>•</Text>
           <TouchableOpacity onPress={() => router.push("/profile/privacy")}>
-            <Text style={styles.linkText}>Privacy Policy</Text>
+            <Text style={styles.linkText}>{t("Privacy Policy")}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

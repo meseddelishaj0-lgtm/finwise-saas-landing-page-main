@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
+import { useLanguage } from '@/context/LanguageContext';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 
@@ -53,6 +54,7 @@ interface OptimizationResult {
 
 export default function PortfolioOptimizerScreen() {
   const { canAccess } = usePremiumFeature();
+  const { t } = useLanguage();
   const [holdings, setHoldings] = useState<PortfolioHolding[]>([]);
   const [newSymbol, setNewSymbol] = useState('');
   const [newShares, setNewShares] = useState('');
@@ -129,7 +131,7 @@ export default function PortfolioOptimizerScreen() {
 
   const addHolding = async () => {
     if (!newSymbol.trim() || !newShares.trim() || !newAvgPrice.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('Error'), t('Please fill in all fields'));
       return;
     }
 
@@ -137,7 +139,7 @@ export default function PortfolioOptimizerScreen() {
     const avgPrice = parseFloat(newAvgPrice);
 
     if (isNaN(shares) || isNaN(avgPrice) || shares <= 0 || avgPrice <= 0) {
-      Alert.alert('Error', 'Please enter valid numbers');
+      Alert.alert(t('Error'), t('Please enter valid numbers'));
       return;
     }
 
@@ -149,7 +151,7 @@ export default function PortfolioOptimizerScreen() {
       const data = await response.json();
 
       if (!data || !Array.isArray(data) || data.length === 0) {
-        Alert.alert('Error', `Symbol ${newSymbol.toUpperCase()} not found`);
+        Alert.alert(t('Error'), `Symbol ${newSymbol.toUpperCase()} not found`);
         return;
       }
 
@@ -165,7 +167,7 @@ export default function PortfolioOptimizerScreen() {
       setNewShares('');
       setNewAvgPrice('');
     } catch (err) {
-      Alert.alert('Error', 'Failed to add holding');
+      Alert.alert(t('Error'), t('Failed to add holding'));
     }
   };
 
@@ -176,7 +178,7 @@ export default function PortfolioOptimizerScreen() {
 
   const optimizePortfolio = async () => {
     if (holdings.length < 2) {
-      Alert.alert('Error', 'Add at least 2 holdings to optimize');
+      Alert.alert(t('Error'), t('Add at least 2 holdings to optimize'));
       return;
     }
 
@@ -283,8 +285,8 @@ Provide actionable advice for a balanced, risk-adjusted portfolio. Return ONLY v
       });
 
     } catch (err) {
-      
-      Alert.alert('Error', 'Failed to optimize portfolio');
+
+      Alert.alert(t('Error'), t('Failed to optimize portfolio'));
     } finally {
       setOptimizing(false);
     }
@@ -308,9 +310,9 @@ Provide actionable advice for a balanced, risk-adjusted portfolio. Return ONLY v
         <View style={styles.headerCenter}>
           <View style={styles.diamondBadge}>
             <Ionicons name="diamond" size={14} color="#000" />
-            <Text style={styles.diamondBadgeText}>Diamond</Text>
+            <Text style={styles.diamondBadgeText}>{t('Diamond')}</Text>
           </View>
-          <Text style={styles.headerTitle}>Portfolio Optimizer</Text>
+          <Text style={styles.headerTitle}>{t('Portfolio Optimizer')}</Text>
         </View>
         <TouchableOpacity onPress={updatePrices} style={styles.refreshButton}>
           <Ionicons name="refresh" size={24} color="#B8860B" />

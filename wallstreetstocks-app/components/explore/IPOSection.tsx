@@ -1,6 +1,7 @@
 // components/explore/IPOSection.tsx
 import React from "react";
 import { View, Text } from "react-native";
+import { useLanguage } from "@/context/LanguageContext";
 
 const ipos = [
   { name: "FinTechX", symbol: "FTX", date: "2025-11-22", priceRange: "$18 - $20" },
@@ -8,10 +9,11 @@ const ipos = [
 ];
 
 export default function IPOSection() {
+  const t = useLanguage().t as (key: string) => string;
   return (
     <View className="mt-4">
       <View className="bg-[#111827] mx-4 rounded-2xl px-4 pt-4 pb-2">
-        <Text className="text-gray-400 text-xs mb-2">UPCOMING IPOs</Text>
+        <Text className="text-gray-400 text-xs mb-2">{t('UPCOMING IPOs')}</Text>
 
         {ipos.map((ipo, i) => (
           <View

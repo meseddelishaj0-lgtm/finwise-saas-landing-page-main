@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface Props {
   postId: number;
@@ -23,6 +24,7 @@ export default function SentimentButtons({
   onVote,
   compact = false,
 }: Props) {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [localBullish, setLocalBullish] = useState(bullish);
   const [localBearish, setLocalBearish] = useState(bearish);
@@ -125,7 +127,7 @@ export default function SentimentButtons({
                 color={localVote === 'bullish' ? '#FFF' : '#34C759'} 
               />
               <Text style={[styles.buttonText, localVote === 'bullish' && styles.activeText]}>
-                Bullish
+                {t('Bullish')}
               </Text>
             </>
           )}
@@ -146,7 +148,7 @@ export default function SentimentButtons({
                 color={localVote === 'bearish' ? '#FFF' : '#FF3B30'} 
               />
               <Text style={[styles.buttonText, localVote === 'bearish' && styles.activeText]}>
-                Bearish
+                {t('Bearish')}
               </Text>
             </>
           )}
@@ -163,10 +165,10 @@ export default function SentimentButtons({
       {total > 0 && (
         <View style={styles.statsRow}>
           <Text style={styles.statText}>
-            {bullishPercent}% Bullish ({localBullish})
+            {bullishPercent}% {t('Bullish')} ({localBullish})
           </Text>
           <Text style={styles.statText}>
-            {100 - bullishPercent}% Bearish ({localBearish})
+            {100 - bullishPercent}% {t('Bearish')} ({localBearish})
           </Text>
         </View>
       )}

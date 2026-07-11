@@ -32,6 +32,7 @@ import { FEATURE_TIERS } from '@/components/PremiumFeatureGate';
 import { SubscriptionBadgeInline } from '@/components/SubscriptionBadge';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import FadeSlideIn from '@/components/FadeSlideIn';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
@@ -532,6 +533,7 @@ export default function CommunityPage() {
   const { user: authUser } = useAuth();
   const { profile: userProfile, getDisplayName: getContextDisplayName } = useUserProfile();
   const { canAccess, withPremiumAccess } = usePremiumFeature();
+  const { t } = useLanguage();
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -704,7 +706,7 @@ export default function CommunityPage() {
   const handleQuickFollow = async (targetUserId: number) => {
     const userId = getUserId();
     if (!userId) {
-      Alert.alert('Error', 'Please log in to follow users');
+      Alert.alert(t('Error'), t('Please log in to follow users'));
       return;
     }
 
@@ -915,7 +917,7 @@ export default function CommunityPage() {
 
     const userId = getUserId();
     if (!userId) {
-      Alert.alert('Error', 'Please log in to follow users');
+      Alert.alert(t('Error'), t('Please log in to follow users'));
       return;
     }
 
@@ -1049,7 +1051,7 @@ export default function CommunityPage() {
       const filteredPosts = (fetchedPosts || []).filter((p: Post) => !hiddenPosts.includes(p.id));
       setPosts(filteredPosts);
     } catch {
-      Alert.alert('Error', 'Failed to load posts');
+      Alert.alert(t('Error'), t('Failed to load posts'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -1114,7 +1116,7 @@ export default function CommunityPage() {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'We need camera roll permissions to upload images');
+        Alert.alert(t('Permission Denied'), t('We need camera roll permissions to upload images'));
         return;
       }
 
@@ -1129,7 +1131,7 @@ export default function CommunityPage() {
         setNewPostImage(result.assets[0].uri);
       }
     } catch {
-      Alert.alert('Error', 'Failed to pick image');
+      Alert.alert(t('Error'), t('Failed to pick image'));
     }
   };
 
@@ -1195,14 +1197,14 @@ export default function CommunityPage() {
     
     const content = newPostContent.trim();
     if (!content) {
-      Alert.alert('Error', 'Please enter some content');
+      Alert.alert(t('Error'), t('Please enter some content'));
       return;
     }
 
     const userId = getUserId();
     
     if (!userId) {
-      Alert.alert('Error', 'You must be logged in to post');
+      Alert.alert(t('Error'), t('You must be logged in to post'));
       return;
     }
 
@@ -1218,7 +1220,7 @@ export default function CommunityPage() {
           const uploadResult = await uploadImage(newPostImage);
           mediaUrl = uploadResult.url;
         } catch (uploadError: any) {
-          Alert.alert('Upload Failed', uploadError?.message || 'Failed to upload image');
+          Alert.alert(t('Upload Failed'), uploadError?.message || t('Failed to upload image'));
           setPosting(false);
           setUploadingImage(false);
           return;
@@ -1257,7 +1259,7 @@ export default function CommunityPage() {
       setTimeout(() => loadPosts(), 1000);
 
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to create post');
+      Alert.alert(t('Error'), error?.message || t('Failed to create post'));
     } finally {
       setPosting(false);
     }
@@ -1267,7 +1269,7 @@ export default function CommunityPage() {
   const handleLikePost = async (postId: number) => {
     const userId = getUserId();
     if (!userId) {
-      Alert.alert('Error', 'Please log in to like posts');
+      Alert.alert(t('Error'), t('Please log in to like posts'));
       return;
     }
 
@@ -1368,17 +1370,17 @@ export default function CommunityPage() {
   const handleDeletePost = async (postId: number) => {
     const userId = getUserId();
     if (!userId) {
-      Alert.alert('Error', 'Please log in to delete posts');
+      Alert.alert(t('Error'), t('Please log in to delete posts'));
       return;
     }
 
     Alert.alert(
-      'Delete Post',
-      'Are you sure you want to delete this post? This action cannot be undone.',
+      t('Delete Post'),
+      t('Are you sure you want to delete this post? This action cannot be undone.'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('Delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -1398,13 +1400,13 @@ export default function CommunityPage() {
                 setPosts(prev => prev.filter(p => p.id !== postId));
                 // Remove from profile posts if viewing profile
                 setProfilePosts(prev => prev.filter(p => p.id !== postId));
-                Alert.alert('Success', 'Post deleted successfully');
+                Alert.alert(t('Success'), t('Post deleted successfully'));
               } else {
                 const data = await response.json();
-                Alert.alert('Error', data.error || 'Failed to delete post');
+                Alert.alert(t('Error'), data.error || t('Failed to delete post'));
               }
             } catch {
-              Alert.alert('Error', 'Failed to delete post');
+              Alert.alert(t('Error'), t('Failed to delete post'));
             }
           },
         },
@@ -1416,7 +1418,7 @@ export default function CommunityPage() {
   const handleVoteSentiment = async (postId: number, type: 'bullish' | 'bearish') => {
     const userId = getUserId();
     if (!userId) {
-      Alert.alert('Error', 'Please log in to vote');
+      Alert.alert(t('Error'), t('Please log in to vote'));
       return;
     }
 
@@ -1465,18 +1467,18 @@ export default function CommunityPage() {
   const handleAddToWatchlist = async (ticker: string) => {
     const userId = getUserId();
     if (!userId) {
-      Alert.alert('Error', 'Please log in to add to watchlist');
+      Alert.alert(t('Error'), t('Please log in to add to watchlist'));
       return;
     }
 
     try {
       await addToWatchlist(userId, ticker);
-      Alert.alert('Success', `$${ticker} added to your watchlist!`);
+      Alert.alert(t('Success'), `$${ticker} added to your watchlist!`);
     } catch (error: any) {
       if (error?.message?.includes('already')) {
-        Alert.alert('Info', `$${ticker} is already in your watchlist`);
+        Alert.alert(t('Info'), `$${ticker} is already in your watchlist`);
       } else {
-        Alert.alert('Error', 'Failed to add to watchlist');
+        Alert.alert(t('Error'), t('Failed to add to watchlist'));
       }
     }
   };
@@ -1485,16 +1487,16 @@ export default function CommunityPage() {
   const handleTickerPress = (ticker: string) => {
     Alert.alert(
       `$${ticker}`,
-      'What would you like to do?',
+      t('What would you like to do?'),
       [
-        { text: 'View Stock', onPress: () => navRouter.push(`/symbol/${ticker.toUpperCase()}` as any) },
-        { text: 'Add to Watchlist', onPress: () => handleAddToWatchlist(ticker) },
-        { text: 'Search Posts', onPress: () => {
+        { text: t('View Stock'), onPress: () => navRouter.push(`/symbol/${ticker.toUpperCase()}` as any) },
+        { text: t('Add to Watchlist'), onPress: () => handleAddToWatchlist(ticker) },
+        { text: t('Search Posts'), onPress: () => {
           setSearchQuery(`$${ticker}`);
           setSearchModal(true);
           handleSearch(`$${ticker}`);
         }},
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
       ]
     );
   };
@@ -1509,7 +1511,7 @@ export default function CommunityPage() {
         const user = await response.json();
         handleOpenProfile(user);
       } else {
-        Alert.alert('User not found', `@${username} doesn't exist`);
+        Alert.alert(t('User not found'), `@${username} doesn't exist`);
       }
     } catch {
     }
@@ -1521,7 +1523,7 @@ export default function CommunityPage() {
 
     const userId = getUserId();
     if (!userId) {
-      Alert.alert('Error', 'Please log in to comment');
+      Alert.alert(t('Error'), t('Please log in to comment'));
       return;
     }
 
@@ -1543,7 +1545,7 @@ export default function CommunityPage() {
 
       setNewComment('');
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to add comment');
+      Alert.alert(t('Error'), error?.message || t('Failed to add comment'));
     } finally {
       setCommenting(false);
     }
@@ -1676,13 +1678,13 @@ export default function CommunityPage() {
     const targetUserId = selectedPostForOptions.user.id;
     
     if (!userId) {
-      Alert.alert('Error', 'Please log in to follow users');
+      Alert.alert(t('Error'), t('Please log in to follow users'));
       setPostOptionsModal(false);
       return;
     }
 
     if (userId === targetUserId) {
-      Alert.alert('Error', "You can't follow yourself");
+      Alert.alert(t('Error'), t("You can't follow yourself"));
       setPostOptionsModal(false);
       return;
     }
@@ -1698,12 +1700,12 @@ export default function CommunityPage() {
       );
 
       if (response.ok) {
-        Alert.alert('Success', `You are now following ${getDisplayName(selectedPostForOptions.user)}`);
+        Alert.alert(t('Success'), `You are now following ${getDisplayName(selectedPostForOptions.user)}`);
       } else {
         throw new Error('Failed to follow user');
       }
     } catch {
-      Alert.alert('Error', 'Failed to follow user. Please try again.');
+      Alert.alert(t('Error'), t('Failed to follow user. Please try again.'));
     } finally {
       setPostOptionsModal(false);
     }
@@ -1717,18 +1719,18 @@ export default function CommunityPage() {
     const targetUserName = getDisplayName(selectedPostForOptions.user);
 
     if (!userId) {
-      Alert.alert('Error', 'Please log in to block users');
+      Alert.alert(t('Error'), t('Please log in to block users'));
       setPostOptionsModal(false);
       return;
     }
 
     Alert.alert(
-      'Block User',
+      t('Block User'),
       `Are you sure you want to block ${targetUserName}? You won't see their posts or comments anymore.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Block',
+          text: t('Block'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -1736,10 +1738,10 @@ export default function CommunityPage() {
               if (result.success) {
                 // Remove blocked user's posts from the feed
                 setPosts(prev => prev.filter(p => p.user?.id !== targetUserId));
-                Alert.alert('Blocked', `${targetUserName} has been blocked`);
+                Alert.alert(t('Blocked'), `${targetUserName} has been blocked`);
               }
             } catch {
-              Alert.alert('Error', 'Failed to block user. Please try again.');
+              Alert.alert(t('Error'), t('Failed to block user. Please try again.'));
             }
           },
         },
@@ -1756,7 +1758,7 @@ export default function CommunityPage() {
     const targetUserName = getDisplayName(selectedPostForOptions.user);
 
     if (!userId) {
-      Alert.alert('Error', 'Please log in to mute users');
+      Alert.alert(t('Error'), t('Please log in to mute users'));
       setPostOptionsModal(false);
       return;
     }
@@ -1764,10 +1766,10 @@ export default function CommunityPage() {
     try {
       const result = await muteUser(userId, targetUserId);
       if (result.success) {
-        Alert.alert('Muted', `${targetUserName} has been muted. You won't receive notifications from them.`);
+        Alert.alert(t('Muted'), `${targetUserName} has been muted. You won't receive notifications from them.`);
       }
     } catch {
-      Alert.alert('Error', 'Failed to mute user. Please try again.');
+      Alert.alert(t('Error'), t('Failed to mute user. Please try again.'));
     } finally {
       setPostOptionsModal(false);
     }
@@ -1781,24 +1783,24 @@ export default function CommunityPage() {
     setPostOptionsModal(false);
     
     Alert.alert(
-      'Report User',
+      t('Report User'),
       `Why are you reporting ${targetUserName}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Spam',
+          text: t('Spam'),
           onPress: () => submitReport('spam'),
         },
         {
-          text: 'Harassment',
+          text: t('Harassment'),
           onPress: () => submitReport('harassment'),
         },
         {
-          text: 'Misinformation',
+          text: t('Misinformation'),
           onPress: () => submitReport('misinformation'),
         },
         {
-          text: 'Other',
+          text: t('Other'),
           onPress: () => submitReport('other'),
         },
       ]
@@ -1813,15 +1815,15 @@ export default function CommunityPage() {
     const postId = selectedPostForOptions.id;
 
     if (!userId) {
-      Alert.alert('Error', 'Please log in to report users');
+      Alert.alert(t('Error'), t('Please log in to report users'));
       return;
     }
 
     try {
       await reportUser(userId, targetUserId, reason, postId);
-      Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
+      Alert.alert(t('Report Submitted'), t('Thank you for your report. We will review it shortly.'));
     } catch {
-      Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
+      Alert.alert(t('Report Submitted'), t('Thank you for your report. We will review it shortly.'));
     }
   };
 
@@ -1850,9 +1852,9 @@ export default function CommunityPage() {
 
     try {
       await Clipboard.setStringAsync(postUrl);
-      Alert.alert('Copied!', 'Post link copied to clipboard');
+      Alert.alert(t('Copied!'), t('Post link copied to clipboard'));
     } catch {
-      Alert.alert('Error', 'Failed to copy link');
+      Alert.alert(t('Error'), t('Failed to copy link'));
     }
     setPostOptionsModal(false);
   };
@@ -1867,12 +1869,12 @@ export default function CommunityPage() {
 
     // Show undo option
     Alert.alert(
-      'Post Hidden',
-      "You won't see this post anymore",
+      t('Post Hidden'),
+      t("You won't see this post anymore"),
       [
-        { text: 'OK', style: 'default' },
+        { text: t('OK'), style: 'default' },
         {
-          text: 'Undo',
+          text: t('Undo'),
           onPress: () => {
             setHiddenPosts(prev => prev.filter(id => id !== selectedPostForOptions.id));
             loadPosts(); // Reload posts to bring it back
@@ -1896,18 +1898,18 @@ export default function CommunityPage() {
     const targetUserName = getDisplayName(selectedCommentForOptions.user);
 
     if (!userId) {
-      Alert.alert('Error', 'Please log in to block users');
+      Alert.alert(t('Error'), t('Please log in to block users'));
       setCommentOptionsModal(false);
       return;
     }
 
     Alert.alert(
-      'Block User',
+      t('Block User'),
       `Are you sure you want to block ${targetUserName}? You won't see their posts or comments anymore.`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Block',
+          text: t('Block'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -1917,10 +1919,10 @@ export default function CommunityPage() {
                 setComments(prev => prev.filter(c => c.user?.id !== targetUserId));
                 // Remove blocked user's posts from the feed
                 setPosts(prev => prev.filter(p => p.user?.id !== targetUserId));
-                Alert.alert('Blocked', `${targetUserName} has been blocked`);
+                Alert.alert(t('Blocked'), `${targetUserName} has been blocked`);
               }
             } catch {
-              Alert.alert('Error', 'Failed to block user. Please try again.');
+              Alert.alert(t('Error'), t('Failed to block user. Please try again.'));
             }
           },
         },
@@ -1937,7 +1939,7 @@ export default function CommunityPage() {
     const targetUserName = getDisplayName(selectedCommentForOptions.user);
 
     if (!userId) {
-      Alert.alert('Error', 'Please log in to mute users');
+      Alert.alert(t('Error'), t('Please log in to mute users'));
       setCommentOptionsModal(false);
       return;
     }
@@ -1945,10 +1947,10 @@ export default function CommunityPage() {
     try {
       const result = await muteUser(userId, targetUserId);
       if (result.success) {
-        Alert.alert('Muted', `${targetUserName} has been muted. You won't receive notifications from them.`);
+        Alert.alert(t('Muted'), `${targetUserName} has been muted. You won't receive notifications from them.`);
       }
     } catch {
-      Alert.alert('Error', 'Failed to mute user. Please try again.');
+      Alert.alert(t('Error'), t('Failed to mute user. Please try again.'));
     } finally {
       setCommentOptionsModal(false);
     }
@@ -1962,14 +1964,14 @@ export default function CommunityPage() {
     setCommentOptionsModal(false);
 
     Alert.alert(
-      'Report Comment',
+      t('Report Comment'),
       `Why are you reporting this comment by ${targetUserName}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Spam', onPress: () => submitCommentReport('spam') },
-        { text: 'Harassment', onPress: () => submitCommentReport('harassment') },
-        { text: 'Misinformation', onPress: () => submitCommentReport('misinformation') },
-        { text: 'Other', onPress: () => submitCommentReport('other') },
+        { text: t('Cancel'), style: 'cancel' },
+        { text: t('Spam'), onPress: () => submitCommentReport('spam') },
+        { text: t('Harassment'), onPress: () => submitCommentReport('harassment') },
+        { text: t('Misinformation'), onPress: () => submitCommentReport('misinformation') },
+        { text: t('Other'), onPress: () => submitCommentReport('other') },
       ]
     );
   };
@@ -1982,15 +1984,15 @@ export default function CommunityPage() {
     const commentId = selectedCommentForOptions.id;
 
     if (!userId) {
-      Alert.alert('Error', 'Please log in to report');
+      Alert.alert(t('Error'), t('Please log in to report'));
       return;
     }
 
     try {
       await reportUser(userId, targetUserId, reason, undefined, commentId);
-      Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
+      Alert.alert(t('Report Submitted'), t('Thank you for your report. We will review it shortly.'));
     } catch {
-      Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
+      Alert.alert(t('Report Submitted'), t('Thank you for your report. We will review it shortly.'));
     }
   };
 
@@ -2003,7 +2005,7 @@ export default function CommunityPage() {
     const targetUserName = getDisplayName(selectedProfile);
 
     if (!userId) {
-      Alert.alert('Error', 'Please log in to block users');
+      Alert.alert(t('Error'), t('Please log in to block users'));
       return;
     }
 
@@ -2024,7 +2026,7 @@ export default function CommunityPage() {
                 Alert.alert('Blocked', `${targetUserName} has been blocked`);
               }
             } catch {
-              Alert.alert('Error', 'Failed to block user. Please try again.');
+              Alert.alert(t('Error'), t('Failed to block user. Please try again.'));
             }
           },
         },
@@ -2040,7 +2042,7 @@ export default function CommunityPage() {
     const targetUserName = getDisplayName(selectedProfile);
 
     if (!userId) {
-      Alert.alert('Error', 'Please log in to mute users');
+      Alert.alert(t('Error'), t('Please log in to mute users'));
       return;
     }
 
@@ -2050,7 +2052,7 @@ export default function CommunityPage() {
         Alert.alert('Muted', `${targetUserName} has been muted.`);
       }
     } catch {
-      Alert.alert('Error', 'Failed to mute user. Please try again.');
+      Alert.alert(t('Error'), t('Failed to mute user. Please try again.'));
     }
   };
 
@@ -2078,15 +2080,15 @@ export default function CommunityPage() {
     const userId = getUserId();
 
     if (!userId) {
-      Alert.alert('Error', 'Please log in to report');
+      Alert.alert(t('Error'), t('Please log in to report'));
       return;
     }
 
     try {
       await reportUser(userId, selectedProfile.id, reason);
-      Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
+      Alert.alert(t('Report Submitted'), t('Thank you for your report. We will review it shortly.'));
     } catch {
-      Alert.alert('Report Submitted', 'Thank you for your report. We will review it shortly.');
+      Alert.alert(t('Report Submitted'), t('Thank you for your report. We will review it shortly.'));
     }
   };
 
@@ -2732,13 +2734,13 @@ export default function CommunityPage() {
           !loading ? (
             <View style={styles.emptyState}>
               <Ionicons name="chatbubbles-outline" size={64} color={colors.textTertiary} />
-              <Text style={styles.emptyTitle}>No posts yet</Text>
-              <Text style={styles.emptySubtitle}>Be the first to share something!</Text>
+              <Text style={styles.emptyTitle}>{t('No posts yet')}</Text>
+              <Text style={styles.emptySubtitle}>{t('Be the first to share something!')}</Text>
               <TouchableOpacity
                 style={styles.emptyButton}
                 onPress={openCreatePostModal}
               >
-                <Text style={styles.emptyButtonText}>Create Post</Text>
+                <Text style={styles.emptyButtonText}>{t('Create Post')}</Text>
               </TouchableOpacity>
             </View>
           ) : null
@@ -2769,7 +2771,7 @@ export default function CommunityPage() {
             >
               <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.profileHeaderTitle, { color: colors.text }]}>Profile</Text>
+            <Text style={[styles.profileHeaderTitle, { color: colors.text }]}>{t('Profile')}</Text>
             <View style={{ width: 44 }} />
           </View>
 
@@ -2781,7 +2783,7 @@ export default function CommunityPage() {
             {!selectedProfile && profileLoading ? (
               <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
                 <ActivityIndicator size="large" color="#B8860B" />
-                <Text style={{ marginTop: 12, color: '#666', fontSize: 14 }}>Loading profile...</Text>
+                <Text style={{ marginTop: 12, color: '#666', fontSize: 14 }}>{t('Loading profile...')}</Text>
               </View>
             ) : (
             <>
@@ -2811,7 +2813,7 @@ export default function CommunityPage() {
                 <View style={styles.profileJoinDate}>
                   <Ionicons name="calendar-outline" size={14} color={colors.textTertiary} />
                   <Text style={[styles.profileJoinDateText, { color: colors.textSecondary }]}>
-                    Joined {formatJoinDate(selectedProfile.createdAt)}
+                    {t('Joined')} {formatJoinDate(selectedProfile.createdAt)}
                   </Text>
                 </View>
               )}
@@ -2822,21 +2824,21 @@ export default function CommunityPage() {
                   <Text style={[styles.profileStatNumber, { color: colors.text }]}>
                     {selectedProfile?._count?.posts || profilePosts.length || 0}
                   </Text>
-                  <Text style={[styles.profileStatLabel, { color: colors.textSecondary }]}>Posts</Text>
+                  <Text style={[styles.profileStatLabel, { color: colors.textSecondary }]}>{t('Posts')}</Text>
                 </View>
                 <View style={[styles.profileStatDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.profileStat}>
                   <Text style={[styles.profileStatNumber, { color: colors.text }]}>
                     {selectedProfile?._count?.followers || 0}
                   </Text>
-                  <Text style={[styles.profileStatLabel, { color: colors.textSecondary }]}>Followers</Text>
+                  <Text style={[styles.profileStatLabel, { color: colors.textSecondary }]}>{t('Followers')}</Text>
                 </View>
                 <View style={[styles.profileStatDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.profileStat}>
                   <Text style={[styles.profileStatNumber, { color: colors.text }]}>
                     {selectedProfile?._count?.following || 0}
                   </Text>
-                  <Text style={[styles.profileStatLabel, { color: colors.textSecondary }]}>Following</Text>
+                  <Text style={[styles.profileStatLabel, { color: colors.textSecondary }]}>{t('Following')}</Text>
                 </View>
               </View>
 
@@ -2864,7 +2866,7 @@ export default function CommunityPage() {
                           styles.followButtonText,
                           selectedProfile?.isFollowing && styles.followingButtonText
                         ]}>
-                          {selectedProfile?.isFollowing ? 'Following' : 'Follow'}
+                          {selectedProfile?.isFollowing ? t('Following') : t('Follow')}
                         </Text>
                       </>
                     )}

@@ -18,6 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '@/lib/auth';
 import { getBlockedUserDetails, unblockUser } from '@/services/communityApi';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const AVATAR_COLORS = [
   '#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a',
@@ -36,6 +37,7 @@ export default function Blocked() {
   const router = useRouter();
   const { user: authUser } = useAuth();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -91,12 +93,12 @@ export default function Blocked() {
     if (!userId) return;
 
     Alert.alert(
-      'Unblock User',
+      t('Unblock User'),
       `Are you sure you want to unblock ${targetUser.name || targetUser.email?.split('@')[0]}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Unblock',
+          text: t('Unblock'),
           onPress: async () => {
             setUnblocking(targetUser.id);
             try {
@@ -104,13 +106,13 @@ export default function Blocked() {
               if (result.success) {
                 // Remove from local state
                 setBlockedUsers(prev => prev.filter(u => u.id !== targetUser.id));
-                Alert.alert('Unblocked', `${targetUser.name || targetUser.email?.split('@')[0]} has been unblocked`);
+                Alert.alert(t('Unblocked'), `${targetUser.name || targetUser.email?.split('@')[0]} has been unblocked`);
               } else {
                 throw new Error('Failed to unblock user');
               }
             } catch (error) {
-              
-              Alert.alert('Error', 'Failed to unblock user. Please try again.');
+
+              Alert.alert(t('Error'), t('Failed to unblock user. Please try again.'));
             } finally {
               setUnblocking(null);
             }
@@ -144,7 +146,7 @@ export default function Blocked() {
         )}
         <View style={styles.userDetails}>
           <Text style={[styles.userName, { color: colors.text }]}>{item.name || item.email?.split('@')[0]}</Text>
-          <Text style={[styles.blockedDate, { color: colors.textTertiary }]}>Blocked {formatDate(item.blockedAt)}</Text>
+          <Text style={[styles.blockedDate, { color: colors.textTertiary }]}>{t('Blocked')} {formatDate(item.blockedAt)}</Text>
         </View>
       </View>
       <TouchableOpacity
@@ -155,7 +157,7 @@ export default function Blocked() {
         {unblocking === item.id ? (
           <ActivityIndicator size="small" color="#B8860B" />
         ) : (
-          <Text style={styles.unblockText}>Unblock</Text>
+          <Text style={styles.unblockText}>{t('Unblock')}</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -171,7 +173,7 @@ export default function Blocked() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Blocked Accounts</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Blocked Accounts')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -182,9 +184,9 @@ export default function Blocked() {
       ) : blockedUsers.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="shield-checkmark-outline" size={64} color={colors.textTertiary} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>No Blocked Users</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('No Blocked Users')}</Text>
           <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            When you block someone, they&apos;ll appear here
+            {t('When you block someone, they\'ll appear here')}
           </Text>
         </View>
       ) : (

@@ -17,6 +17,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { PieChart, LineChart } from 'react-native-gifted-charts';
 import { usePortfolio } from '@/context/PortfolioContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
@@ -34,6 +35,7 @@ type TimeRange = '1D' | '5D' | '1M' | '1Y' | '5Y' | 'ALL';
 export default function AnalyticsScreen() {
   const { currentPortfolio, loading, refreshing, refreshPrices } = usePortfolio();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [chartLoading, setChartLoading] = useState(false);
@@ -265,12 +267,12 @@ export default function AnalyticsScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#B8860B" />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio Analytics</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Portfolio Analytics')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B8860B" />
-          <Text style={{ marginTop: 10, color: colors.textSecondary }}>Loading portfolio data...</Text>
+          <Text style={{ marginTop: 10, color: colors.textSecondary }}>{t('Loading portfolio data...')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -283,13 +285,13 @@ export default function AnalyticsScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#B8860B" />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Portfolio Analytics</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Portfolio Analytics')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyState}>
           <Ionicons name="analytics-outline" size={64} color={colors.textSecondary} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>No Holdings Yet</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>Add stocks to your portfolio to see analytics</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('No Holdings Yet')}</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>{t('Add stocks to your portfolio to see analytics')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -361,7 +363,7 @@ export default function AnalyticsScreen() {
         {/* Portfolio Value & Chart Section */}
         <View style={[styles.chartCard, { backgroundColor: colors.card }]}>
           <View style={styles.valueSection}>
-            <Text style={[styles.valueLabel, { color: colors.textSecondary }]}>Portfolio Value</Text>
+            <Text style={[styles.valueLabel, { color: colors.textSecondary }]}>{t('Portfolio Value')}</Text>
             <Text style={[styles.valueAmount, { color: colors.text }]}>
               ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
@@ -415,7 +417,7 @@ export default function AnalyticsScreen() {
               />
             ) : (
               <View style={styles.chartLoadingContainer}>
-                <Text style={[styles.noChartText, { color: colors.textSecondary }]}>No chart data available</Text>
+                <Text style={[styles.noChartText, { color: colors.textSecondary }]}>{t('No chart data available')}</Text>
               </View>
             )}
           </View>
@@ -445,7 +447,7 @@ export default function AnalyticsScreen() {
 
         {/* Allocation Pie Chart */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>Allocation</Text>
+          <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>{t('Allocation')}</Text>
           <View style={styles.pieChartContainer}>
             <PieChart
               data={pieData}
@@ -455,7 +457,7 @@ export default function AnalyticsScreen() {
               centerLabelComponent={() => (
                 <View style={styles.pieChartCenter}>
                   <Text style={[styles.pieChartCenterValue, { color: colors.text }]}>{currentPortfolio.holdings.length}</Text>
-                  <Text style={[styles.pieChartCenterLabel, { color: colors.textSecondary }]}>Holdings</Text>
+                  <Text style={[styles.pieChartCenterLabel, { color: colors.textSecondary }]}>{t('Holdings')}</Text>
                 </View>
               )}
             />
@@ -474,7 +476,7 @@ export default function AnalyticsScreen() {
         {/* Sector Breakdown */}
         {sectorPieData.length > 0 && sectorPieData[0].label !== 'Unknown' && (
           <View style={[styles.card, { backgroundColor: colors.card }]}>
-            <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>Sector Breakdown</Text>
+            <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>{t('Sector Breakdown')}</Text>
             <View style={styles.pieChartContainer}>
               <PieChart
                 data={sectorPieData}
@@ -484,7 +486,7 @@ export default function AnalyticsScreen() {
                 centerLabelComponent={() => (
                   <View style={styles.pieChartCenter}>
                     <Text style={[styles.pieChartCenterValue, { color: colors.text }]}>{sectorEntries.length}</Text>
-                    <Text style={[styles.pieChartCenterLabel, { color: colors.textSecondary }]}>Sectors</Text>
+                    <Text style={[styles.pieChartCenterLabel, { color: colors.textSecondary }]}>{t('Sectors')}</Text>
                   </View>
                 )}
               />
@@ -492,7 +494,7 @@ export default function AnalyticsScreen() {
                 {sectorPieData.slice(0, 6).map((item, idx) => (
                   <View key={idx} style={styles.pieLegendItem}>
                     <View style={[styles.pieLegendDot, { backgroundColor: item.color }]} />
-                    <Text style={[styles.pieLegendText, { color: colors.text }]} numberOfLines={1}>{item.label}</Text>
+                    <Text style={[styles.pieLegendText, { color: colors.text }]} numberOfLines={1}>{item.label === 'Unknown' ? t('Unknown') : item.label}</Text>
                     <Text style={[styles.pieLegendPercent, { color: colors.textSecondary }]}>{item.text}</Text>
                   </View>
                 ))}
@@ -504,32 +506,32 @@ export default function AnalyticsScreen() {
         {/* Diversification & Risk Row */}
         <View style={styles.row}>
           <View style={[styles.card, styles.cardHalf, { backgroundColor: colors.card }]}>
-            <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>Diversification</Text>
+            <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>{t('Diversification')}</Text>
             <Text style={[styles.scoreValue, {
               color: diversificationScore >= 70 ? '#34C759' : diversificationScore >= 40 ? '#FF9500' : '#FF3B30'
             }]}>
               {diversificationScore}
             </Text>
             <Text style={[styles.scoreLabel, { color: colors.textSecondary }]}>
-              {diversificationScore >= 70 ? 'Well Diversified' : diversificationScore >= 40 ? 'Moderate' : 'Concentrated'}
+              {diversificationScore >= 70 ? t('Well Diversified') : diversificationScore >= 40 ? t('Moderate') : t('Concentrated')}
             </Text>
           </View>
           <View style={[styles.card, styles.cardHalf, { backgroundColor: colors.card }]}>
-            <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>Risk Level</Text>
+            <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>{t('Risk Level')}</Text>
             <Text style={[styles.scoreValue, {
               color: avgVolatility < 10 ? '#34C759' : avgVolatility < 25 ? '#FF9500' : '#FF3B30'
             }]}>
-              {avgVolatility < 10 ? 'Low' : avgVolatility < 25 ? 'Med' : 'High'}
+              {avgVolatility < 10 ? t('Low') : avgVolatility < 25 ? t('Med') : t('High')}
             </Text>
             <Text style={[styles.scoreLabel, { color: colors.textSecondary }]}>
-              {avgVolatility.toFixed(1)}% avg volatility
+              {avgVolatility.toFixed(1)}{t('% avg volatility')}
             </Text>
           </View>
         </View>
 
         {/* Best/Worst Performers */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>Top Performers</Text>
+          <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>{t('Top Performers')}</Text>
           {bestPerformer && (
             <View style={[styles.performerRow, { borderBottomColor: colors.border }]}>
               <View style={styles.performerLeft}>
@@ -537,7 +539,7 @@ export default function AnalyticsScreen() {
                   <Ionicons name="trophy" size={20} color="#FFD700" />
                 </View>
                 <View>
-                  <Text style={[styles.performerLabel, { color: colors.textSecondary }]}>Best</Text>
+                  <Text style={[styles.performerLabel, { color: colors.textSecondary }]}>{t('Best')}</Text>
                   <Text style={[styles.performerSymbol, { color: colors.text }]}>{bestPerformer.symbol}</Text>
                 </View>
               </View>
@@ -553,7 +555,7 @@ export default function AnalyticsScreen() {
                   <Ionicons name="trending-down" size={20} color="#FF3B30" />
                 </View>
                 <View>
-                  <Text style={[styles.performerLabel, { color: colors.textSecondary }]}>Worst</Text>
+                  <Text style={[styles.performerLabel, { color: colors.textSecondary }]}>{t('Worst')}</Text>
                   <Text style={[styles.performerSymbol, { color: colors.text }]}>{worstPerformer.symbol}</Text>
                 </View>
               </View>
@@ -566,23 +568,23 @@ export default function AnalyticsScreen() {
 
         {/* All-Time P&L */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>All-Time P&L</Text>
+          <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>{t('All-Time P&L')}</Text>
           <View style={styles.pnlContainer}>
             <View style={styles.pnlItem}>
-              <Text style={[styles.pnlLabel, { color: colors.textSecondary }]}>Total Cost</Text>
+              <Text style={[styles.pnlLabel, { color: colors.textSecondary }]}>{t('Total Cost')}</Text>
               <Text style={[styles.pnlValue, { color: colors.text }]}>
                 ${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
             </View>
             <View style={styles.pnlItem}>
-              <Text style={[styles.pnlLabel, { color: colors.textSecondary }]}>Current Value</Text>
+              <Text style={[styles.pnlLabel, { color: colors.textSecondary }]}>{t('Current Value')}</Text>
               <Text style={[styles.pnlValue, { color: colors.text }]}>
                 ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
             </View>
             <View style={[styles.pnlDivider, { backgroundColor: colors.border }]} />
             <View style={styles.pnlItem}>
-              <Text style={[styles.pnlLabel, { color: colors.textSecondary }]}>Unrealized P&L</Text>
+              <Text style={[styles.pnlLabel, { color: colors.textSecondary }]}>{t('Unrealized P&L')}</Text>
               <View style={styles.pnlValueContainer}>
                 <Text style={[styles.pnlValueLarge, { color: totalGain >= 0 ? '#34C759' : '#FF3B30' }]}>
                   {totalGain >= 0 ? '+' : ''}${Math.abs(totalGain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -597,19 +599,19 @@ export default function AnalyticsScreen() {
 
         {/* Performance vs S&P 500 */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>vs S&P 500 (All-Time)</Text>
+          <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>{t('vs S&P 500 (All-Time)')}</Text>
           <View style={styles.comparisonContainer}>
             <View style={styles.comparisonItem}>
-              <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>Your Portfolio</Text>
+              <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>{t('Your Portfolio')}</Text>
               <Text style={[styles.comparisonValue, { color: totalGainPercent >= 0 ? '#34C759' : '#FF3B30' }]}>
                 {totalGainPercent >= 0 ? '+' : ''}{totalGainPercent.toFixed(2)}%
               </Text>
             </View>
             <View style={styles.comparisonVs}>
-              <Text style={[styles.comparisonVsText, { color: colors.textSecondary }]}>vs</Text>
+              <Text style={[styles.comparisonVsText, { color: colors.textSecondary }]}>{t('vs')}</Text>
             </View>
             <View style={styles.comparisonItem}>
-              <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>S&P 500</Text>
+              <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>{t('S&P 500')}</Text>
               <Text style={[styles.comparisonValue, { color: sp500Change.percent >= 0 ? '#34C759' : '#FF3B30' }]}>
                 {sp500Change.percent >= 0 ? '+' : ''}{sp500Change.percent.toFixed(2)}%
               </Text>
@@ -626,7 +628,7 @@ export default function AnalyticsScreen() {
             <Text style={[styles.comparisonResult, {
               color: totalGainPercent > sp500Change.percent ? '#34C759' : '#FF3B30'
             }]}>
-              {totalGainPercent > sp500Change.percent ? 'Outperforming' : 'Underperforming'} by {Math.abs(totalGainPercent - sp500Change.percent).toFixed(2)}%
+              {totalGainPercent > sp500Change.percent ? t('Outperforming') : t('Underperforming')} {t('by')} {Math.abs(totalGainPercent - sp500Change.percent).toFixed(2)}%
             </Text>
           </View>
         </View>

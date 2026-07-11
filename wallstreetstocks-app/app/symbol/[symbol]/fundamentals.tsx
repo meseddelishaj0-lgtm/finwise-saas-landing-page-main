@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useLanguage } from "@/context/LanguageContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
@@ -18,6 +19,7 @@ const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
 type TabType = "overview" | "income" | "balance" | "cashflow" | "ratios";
 
 export default function FundamentalsTab() {
+  const { t } = useLanguage();
   const localParams = useLocalSearchParams();
   const globalParams = useGlobalSearchParams();
   const segments = useSegments();
@@ -59,7 +61,7 @@ export default function FundamentalsTab() {
   const fetchAllData = async () => {
     if (!cleanSymbol) {
       setLoading(false);
-      setError("No symbol provided");
+      setError(t("No symbol provided"));
       return;
     }
 
@@ -94,8 +96,8 @@ export default function FundamentalsTab() {
       if (metricsData?.[0]) setKeyMetrics(metricsData[0]);
 
     } catch (err: any) {
-      
-      setError("Unable to load fundamentals");
+
+      setError(t("Unable to load fundamentals"));
     } finally {
       setLoading(false);
     }
@@ -134,7 +136,7 @@ export default function FundamentalsTab() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#B8860B" />
-        <Text style={styles.loadingText}>Loading fundamentals...</Text>
+        <Text style={styles.loadingText}>{t('Loading fundamentals...')}</Text>
       </View>
     );
   }
@@ -168,7 +170,7 @@ export default function FundamentalsTab() {
               color={activeTab === tab.key ? "#B8860B" : "#636366"}
             />
             <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-              {tab.label}
+              {t(tab.label)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -178,7 +180,7 @@ export default function FundamentalsTab() {
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity onPress={fetchAllData} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('Retry')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -250,6 +252,7 @@ const OverviewTab = ({ profile, keyMetrics, ratios, fmtNum, fmtPct, fmtRatio }: 
 
 // Income Statement Tab
 const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
+  const { t } = useLanguage();
   if (!data || data.length === 0) {
     return <EmptyState message="No income statement data available" />;
   }
@@ -267,7 +270,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
   const MarginBar = ({ label, value, color }: { label: string; value: number; color: string }) => (
     <View style={incomeStyles.marginItem}>
       <View style={incomeStyles.marginHeader}>
-        <Text style={incomeStyles.marginLabel}>{label}</Text>
+        <Text style={incomeStyles.marginLabel}>{t(label)}</Text>
         <Text style={[incomeStyles.marginValue, { color }]}>{value.toFixed(1)}%</Text>
       </View>
       <View style={incomeStyles.marginBarBg}>
@@ -280,21 +283,21 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
     <>
       {/* Hero Section */}
       <View style={incomeStyles.heroSection}>
-        <Text style={incomeStyles.heroSubtitle}>FY {new Date(latest?.date).getFullYear()}</Text>
+        <Text style={incomeStyles.heroSubtitle}>{t('FY')} {new Date(latest?.date).getFullYear()}</Text>
 
         {/* Key Metrics Cards */}
         <View style={incomeStyles.metricsGrid}>
           <View style={[incomeStyles.metricCard, { backgroundColor: '#0A2F1F' }]}>
             <View style={incomeStyles.metricHeader}>
               <Ionicons name="trending-up" size={18} color="#00C853" />
-              <Text style={incomeStyles.metricLabel}>Revenue</Text>
+              <Text style={incomeStyles.metricLabel}>{t('Revenue')}</Text>
             </View>
             <Text style={incomeStyles.metricValue}>{fmtNum(latest?.revenue)}</Text>
             {revenueChange !== null && (
               <View style={[incomeStyles.changeBadge, { backgroundColor: revenueChange >= 0 ? '#00C85320' : '#FF3B3020' }]}>
                 <Ionicons name={revenueChange >= 0 ? "arrow-up" : "arrow-down"} size={12} color={revenueChange >= 0 ? "#00C853" : "#FF3B30"} />
                 <Text style={[incomeStyles.changeText, { color: revenueChange >= 0 ? "#00C853" : "#FF3B30" }]}>
-                  {Math.abs(revenueChange).toFixed(1)}% YoY
+                  {Math.abs(revenueChange).toFixed(1)}% {t('YoY')}
                 </Text>
               </View>
             )}
@@ -303,7 +306,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
           <View style={[incomeStyles.metricCard, { backgroundColor: '#1A1A2E' }]}>
             <View style={incomeStyles.metricHeader}>
               <Ionicons name="cash" size={18} color="#B8860B" />
-              <Text style={incomeStyles.metricLabel}>Net Income</Text>
+              <Text style={incomeStyles.metricLabel}>{t('Net Income')}</Text>
             </View>
             <Text style={[incomeStyles.metricValue, { color: (latest?.netIncome || 0) >= 0 ? '#00C853' : '#FF3B30' }]}>
               {fmtNum(latest?.netIncome)}
@@ -312,7 +315,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
               <View style={[incomeStyles.changeBadge, { backgroundColor: netIncomeChange >= 0 ? '#00C85320' : '#FF3B3020' }]}>
                 <Ionicons name={netIncomeChange >= 0 ? "arrow-up" : "arrow-down"} size={12} color={netIncomeChange >= 0 ? "#00C853" : "#FF3B30"} />
                 <Text style={[incomeStyles.changeText, { color: netIncomeChange >= 0 ? "#00C853" : "#FF3B30" }]}>
-                  {Math.abs(netIncomeChange).toFixed(1)}% YoY
+                  {Math.abs(netIncomeChange).toFixed(1)}% {t('YoY')}
                 </Text>
               </View>
             )}
@@ -321,7 +324,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
 
         {/* Margin Bars */}
         <View style={incomeStyles.marginSection}>
-          <Text style={incomeStyles.marginSectionTitle}>Profit Margins</Text>
+          <Text style={incomeStyles.marginSectionTitle}>{t('Profit Margins')}</Text>
           <MarginBar label="Gross Margin" value={grossMargin} color="#00C853" />
           <MarginBar label="Operating Margin" value={operatingMargin} color="#B8860B" />
           <MarginBar label="Net Margin" value={netMargin} color="#AF52DE" />
@@ -331,7 +334,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
       {/* Waterfall Breakdown */}
       <View style={incomeStyles.waterfallSection}>
         <Text style={incomeStyles.sectionHeader}>
-          <Ionicons name="analytics" size={16} color="#B8860B" /> Revenue Breakdown
+          <Ionicons name="analytics" size={16} color="#B8860B" /> {t('Revenue Breakdown')}
         </Text>
 
         <View style={incomeStyles.waterfallCard}>
@@ -343,7 +346,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
 
       <View style={incomeStyles.waterfallSection}>
         <Text style={incomeStyles.sectionHeader}>
-          <Ionicons name="construct" size={16} color="#FF9500" /> Operating Expenses
+          <Ionicons name="construct" size={16} color="#FF9500" /> {t('Operating Expenses')}
         </Text>
 
         <View style={incomeStyles.waterfallCard}>
@@ -356,7 +359,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
 
       <View style={incomeStyles.waterfallSection}>
         <Text style={incomeStyles.sectionHeader}>
-          <Ionicons name="trophy" size={16} color="#00C853" /> Bottom Line
+          <Ionicons name="trophy" size={16} color="#00C853" /> {t('Bottom Line')}
         </Text>
 
         <View style={incomeStyles.waterfallCard}>
@@ -371,12 +374,12 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
       <View style={incomeStyles.epsSection}>
         <View style={incomeStyles.epsCard}>
           <View style={incomeStyles.epsItem}>
-            <Text style={incomeStyles.epsLabel}>EPS Basic</Text>
+            <Text style={incomeStyles.epsLabel}>{t('EPS Basic')}</Text>
             <Text style={incomeStyles.epsValue}>${latest?.eps?.toFixed(2) || '—'}</Text>
           </View>
           <View style={incomeStyles.epsDivider} />
           <View style={incomeStyles.epsItem}>
-            <Text style={incomeStyles.epsLabel}>EPS Diluted</Text>
+            <Text style={incomeStyles.epsLabel}>{t('EPS Diluted')}</Text>
             <Text style={incomeStyles.epsValue}>${latest?.epsdiluted?.toFixed(2) || '—'}</Text>
           </View>
         </View>
@@ -385,7 +388,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
       {/* Historical Trend */}
       <View style={incomeStyles.historicalSection}>
         <Text style={incomeStyles.sectionHeader}>
-          <Ionicons name="time" size={16} color="#8E8E93" /> 4-Year Trend
+          <Ionicons name="time" size={16} color="#8E8E93" /> {t('4-Year Trend')}
         </Text>
 
         <View style={incomeStyles.trendCard}>
@@ -409,11 +412,11 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
         <View style={incomeStyles.trendLegend}>
           <View style={incomeStyles.legendItem}>
             <View style={[incomeStyles.legendDot, { backgroundColor: '#B8860B' }]} />
-            <Text style={incomeStyles.legendText}>Revenue</Text>
+            <Text style={incomeStyles.legendText}>{t('Revenue')}</Text>
           </View>
           <View style={incomeStyles.legendItem}>
             <View style={[incomeStyles.legendDot, { backgroundColor: '#00C853' }]} />
-            <Text style={incomeStyles.legendText}>Net Income</Text>
+            <Text style={incomeStyles.legendText}>{t('Net Income')}</Text>
           </View>
         </View>
       </View>
@@ -429,6 +432,7 @@ const WaterfallRow = ({ icon, label, value, type, isFirst }: {
   type: 'positive' | 'negative' | 'subtotal' | 'final' | 'expense' | 'neutral';
   isFirst?: boolean;
 }) => {
+  const { t } = useLanguage();
   const getColors = () => {
     switch (type) {
       case 'positive': return { bg: '#0A2F1F', text: '#00C853', icon: '#00C853' };
@@ -446,7 +450,7 @@ const WaterfallRow = ({ icon, label, value, type, isFirst }: {
       <View style={[incomeStyles.waterfallIconBg, { backgroundColor: colors.bg }]}>
         <Ionicons name={icon as any} size={16} color={colors.icon} />
       </View>
-      <Text style={incomeStyles.waterfallLabel}>{label}</Text>
+      <Text style={incomeStyles.waterfallLabel}>{t(label)}</Text>
       <Text style={[incomeStyles.waterfallValue, { color: colors.text }, type === 'final' && incomeStyles.waterfallValueFinal]}>
         {value}
       </Text>
@@ -689,6 +693,7 @@ const incomeStyles = StyleSheet.create({
 
 // Balance Sheet Tab
 const BalanceTab = ({ data, fmtNum }: any) => {
+  const { t } = useLanguage();
   if (!data || data.length === 0) {
     return <EmptyState message="No balance sheet data available" />;
   }
@@ -714,7 +719,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
     <>
       {/* Hero Section */}
       <View style={balanceStyles.heroSection}>
-        <Text style={balanceStyles.heroSubtitle}>As of {latest?.date}</Text>
+        <Text style={balanceStyles.heroSubtitle}>{t('As of')} {latest?.date}</Text>
 
         {/* Balance Equation Visual */}
         <View style={balanceStyles.equationCard}>
@@ -722,7 +727,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
             <View style={[balanceStyles.equationIcon, { backgroundColor: '#0A2F1F' }]}>
               <Ionicons name="cube" size={20} color="#00C853" />
             </View>
-            <Text style={balanceStyles.equationLabel}>Assets</Text>
+            <Text style={balanceStyles.equationLabel}>{t('Assets')}</Text>
             <Text style={balanceStyles.equationValue}>{fmtNum(totalAssets)}</Text>
           </View>
 
@@ -732,7 +737,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
             <View style={[balanceStyles.equationIcon, { backgroundColor: '#2F0A0A' }]}>
               <Ionicons name="card" size={20} color="#FF3B30" />
             </View>
-            <Text style={balanceStyles.equationLabel}>Liabilities</Text>
+            <Text style={balanceStyles.equationLabel}>{t('Liabilities')}</Text>
             <Text style={[balanceStyles.equationValue, { color: '#FF3B30' }]}>{fmtNum(totalLiabilities)}</Text>
           </View>
 
@@ -742,7 +747,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
             <View style={[balanceStyles.equationIcon, { backgroundColor: '#0A1F2F' }]}>
               <Ionicons name="shield-checkmark" size={20} color="#B8860B" />
             </View>
-            <Text style={balanceStyles.equationLabel}>Equity</Text>
+            <Text style={balanceStyles.equationLabel}>{t('Equity')}</Text>
             <Text style={[balanceStyles.equationValue, { color: '#B8860B' }]}>{fmtNum(totalEquity)}</Text>
           </View>
         </View>
@@ -750,25 +755,25 @@ const BalanceTab = ({ data, fmtNum }: any) => {
         {/* Key Ratios */}
         <View style={balanceStyles.ratiosGrid}>
           <View style={balanceStyles.ratioCard}>
-            <Text style={balanceStyles.ratioLabel}>Current Ratio</Text>
+            <Text style={balanceStyles.ratioLabel}>{t('Current Ratio')}</Text>
             <Text style={[balanceStyles.ratioValue, { color: currentRatio >= 1.5 ? '#00C853' : currentRatio >= 1 ? '#FF9500' : '#FF3B30' }]}>
               {currentRatio.toFixed(2)}x
             </Text>
-            <Text style={balanceStyles.ratioHint}>{currentRatio >= 1.5 ? 'Healthy' : currentRatio >= 1 ? 'Adequate' : 'Low'}</Text>
+            <Text style={balanceStyles.ratioHint}>{currentRatio >= 1.5 ? t('Healthy') : currentRatio >= 1 ? t('Adequate') : t('Low')}</Text>
           </View>
           <View style={balanceStyles.ratioCard}>
-            <Text style={balanceStyles.ratioLabel}>Debt/Equity</Text>
+            <Text style={balanceStyles.ratioLabel}>{t('Debt/Equity')}</Text>
             <Text style={[balanceStyles.ratioValue, { color: debtToEquity <= 0.5 ? '#00C853' : debtToEquity <= 1 ? '#FF9500' : '#FF3B30' }]}>
               {debtToEquity.toFixed(2)}x
             </Text>
-            <Text style={balanceStyles.ratioHint}>{debtToEquity <= 0.5 ? 'Low Leverage' : debtToEquity <= 1 ? 'Moderate' : 'High'}</Text>
+            <Text style={balanceStyles.ratioHint}>{debtToEquity <= 0.5 ? t('Low Leverage') : debtToEquity <= 1 ? t('Moderate') : t('High')}</Text>
           </View>
           <View style={balanceStyles.ratioCard}>
-            <Text style={balanceStyles.ratioLabel}>Working Capital</Text>
+            <Text style={balanceStyles.ratioLabel}>{t('Working Capital')}</Text>
             <Text style={[balanceStyles.ratioValue, { color: workingCapital >= 0 ? '#00C853' : '#FF3B30' }]}>
               {fmtNum(workingCapital)}
             </Text>
-            <Text style={balanceStyles.ratioHint}>{workingCapital >= 0 ? 'Positive' : 'Negative'}</Text>
+            <Text style={balanceStyles.ratioHint}>{workingCapital >= 0 ? t('Positive') : t('Negative')}</Text>
           </View>
         </View>
       </View>
@@ -776,7 +781,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
       {/* Asset Composition */}
       <View style={balanceStyles.compositionSection}>
         <Text style={balanceStyles.sectionHeader}>
-          <Ionicons name="pie-chart" size={16} color="#00C853" /> Asset Composition
+          <Ionicons name="pie-chart" size={16} color="#00C853" /> {t('Asset Composition')}
         </Text>
         <View style={balanceStyles.compositionCard}>
           <View style={balanceStyles.barChart}>
@@ -792,7 +797,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
               <View key={idx} style={balanceStyles.legendItem}>
                 <View style={[balanceStyles.legendDot, { backgroundColor: item.color }]} />
                 <View style={balanceStyles.legendContent}>
-                  <Text style={balanceStyles.legendLabel}>{item.label}</Text>
+                  <Text style={balanceStyles.legendLabel}>{t(item.label)}</Text>
                   <Text style={balanceStyles.legendValue}>{fmtNum(item.value)}</Text>
                 </View>
               </View>
@@ -804,13 +809,13 @@ const BalanceTab = ({ data, fmtNum }: any) => {
       {/* Assets Detail */}
       <View style={balanceStyles.detailSection}>
         <Text style={balanceStyles.sectionHeader}>
-          <Ionicons name="layers" size={16} color="#00C853" /> Assets
+          <Ionicons name="layers" size={16} color="#00C853" /> {t('Assets')}
         </Text>
 
         <View style={balanceStyles.detailCard}>
           <View style={balanceStyles.subHeader}>
             <Ionicons name="flash" size={14} color="#FF9500" />
-            <Text style={balanceStyles.subHeaderText}>Current Assets</Text>
+            <Text style={balanceStyles.subHeaderText}>{t('Current Assets')}</Text>
           </View>
           <BalanceRow label="Cash & Cash Equivalents" value={fmtNum(latest?.cashAndCashEquivalents)} icon="cash" />
           <BalanceRow label="Short-term Investments" value={fmtNum(latest?.shortTermInvestments)} icon="trending-up" />
@@ -822,7 +827,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
         <View style={balanceStyles.detailCard}>
           <View style={balanceStyles.subHeader}>
             <Ionicons name="business" size={14} color="#B8860B" />
-            <Text style={balanceStyles.subHeaderText}>Non-Current Assets</Text>
+            <Text style={balanceStyles.subHeaderText}>{t('Non-Current Assets')}</Text>
           </View>
           <BalanceRow label="Property & Equipment" value={fmtNum(latest?.propertyPlantEquipmentNet)} icon="home" />
           <BalanceRow label="Goodwill" value={fmtNum(latest?.goodwill)} icon="star" />
@@ -835,13 +840,13 @@ const BalanceTab = ({ data, fmtNum }: any) => {
       {/* Liabilities Detail */}
       <View style={balanceStyles.detailSection}>
         <Text style={balanceStyles.sectionHeader}>
-          <Ionicons name="card" size={16} color="#FF3B30" /> Liabilities
+          <Ionicons name="card" size={16} color="#FF3B30" /> {t('Liabilities')}
         </Text>
 
         <View style={balanceStyles.detailCard}>
           <View style={balanceStyles.subHeader}>
             <Ionicons name="time" size={14} color="#FF9500" />
-            <Text style={balanceStyles.subHeaderText}>Current Liabilities</Text>
+            <Text style={balanceStyles.subHeaderText}>{t('Current Liabilities')}</Text>
           </View>
           <BalanceRow label="Accounts Payable" value={fmtNum(latest?.accountPayables)} icon="receipt" />
           <BalanceRow label="Short-term Debt" value={fmtNum(latest?.shortTermDebt)} icon="card" />
@@ -852,7 +857,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
         <View style={balanceStyles.detailCard}>
           <View style={balanceStyles.subHeader}>
             <Ionicons name="calendar" size={14} color="#FF3B30" />
-            <Text style={balanceStyles.subHeaderText}>Long-term Liabilities</Text>
+            <Text style={balanceStyles.subHeaderText}>{t('Long-term Liabilities')}</Text>
           </View>
           <BalanceRow label="Long-term Debt" value={fmtNum(latest?.longTermDebt)} icon="trending-down" />
           <BalanceRow label="Total Debt" value={fmtNum(latest?.totalDebt)} icon="alert-circle" />
@@ -863,7 +868,7 @@ const BalanceTab = ({ data, fmtNum }: any) => {
       {/* Equity Detail */}
       <View style={balanceStyles.detailSection}>
         <Text style={balanceStyles.sectionHeader}>
-          <Ionicons name="shield-checkmark" size={16} color="#B8860B" /> Shareholders&apos; Equity
+          <Ionicons name="shield-checkmark" size={16} color="#B8860B" /> {t("Shareholders' Equity")}
         </Text>
 
         <View style={balanceStyles.detailCard}>
@@ -885,19 +890,22 @@ const BalanceRow = ({ label, value, icon, isTotal, isFinal, isNegative }: {
   isTotal?: boolean;
   isFinal?: boolean;
   isNegative?: boolean;
-}) => (
-  <View style={[balanceStyles.row, isTotal && balanceStyles.rowTotal, isFinal && balanceStyles.rowFinal]}>
-    <View style={balanceStyles.rowLeft}>
-      <View style={[balanceStyles.rowIcon, isTotal && balanceStyles.rowIconTotal]}>
-        <Ionicons name={icon as any} size={14} color={isTotal ? '#B8860B' : '#8E8E93'} />
+}) => {
+  const { t } = useLanguage();
+  return (
+    <View style={[balanceStyles.row, isTotal && balanceStyles.rowTotal, isFinal && balanceStyles.rowFinal]}>
+      <View style={balanceStyles.rowLeft}>
+        <View style={[balanceStyles.rowIcon, isTotal && balanceStyles.rowIconTotal]}>
+          <Ionicons name={icon as any} size={14} color={isTotal ? '#B8860B' : '#8E8E93'} />
+        </View>
+        <Text style={[balanceStyles.rowLabel, isTotal && balanceStyles.rowLabelTotal]}>{t(label)}</Text>
       </View>
-      <Text style={[balanceStyles.rowLabel, isTotal && balanceStyles.rowLabelTotal]}>{label}</Text>
+      <Text style={[balanceStyles.rowValue, isTotal && balanceStyles.rowValueTotal, isNegative && balanceStyles.rowValueNegative]}>
+        {value}
+      </Text>
     </View>
-    <Text style={[balanceStyles.rowValue, isTotal && balanceStyles.rowValueTotal, isNegative && balanceStyles.rowValueNegative]}>
-      {value}
-    </Text>
-  </View>
-);
+  );
+};
 
 const balanceStyles = StyleSheet.create({
   heroSection: {
@@ -1104,6 +1112,7 @@ const balanceStyles = StyleSheet.create({
 
 // Cash Flow Tab
 const CashFlowTab = ({ data, fmtNum }: any) => {
+  const { t } = useLanguage();
   if (!data || data.length === 0) {
     return <EmptyState message="No cash flow data available" />;
   }
@@ -1127,7 +1136,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
           <View style={[cashFlowStyles.cfBarIcon, { backgroundColor: `${color}20` }]}>
             <Ionicons name={icon as any} size={16} color={color} />
           </View>
-          <Text style={cashFlowStyles.cfBarLabel}>{label}</Text>
+          <Text style={cashFlowStyles.cfBarLabel}>{t(label)}</Text>
           <Text style={[cashFlowStyles.cfBarValue, { color }]}>{fmtNum(value)}</Text>
         </View>
         <View style={cashFlowStyles.cfBarTrack}>
@@ -1148,7 +1157,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
     <>
       {/* Hero Section */}
       <View style={cashFlowStyles.heroSection}>
-        <Text style={cashFlowStyles.heroSubtitle}>FY {new Date(latest?.date).getFullYear()}</Text>
+        <Text style={cashFlowStyles.heroSubtitle}>{t('FY')} {new Date(latest?.date).getFullYear()}</Text>
 
         {/* Key Metrics Cards */}
         <View style={cashFlowStyles.metricsRow}>

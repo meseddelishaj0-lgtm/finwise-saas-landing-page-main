@@ -15,12 +15,14 @@ import {
 import { useRouter } from "expo-router";
 import { ChevronLeft, Mail, Send, AtSign } from "lucide-react-native";
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function EmailFriendPage() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState("Check out WallStreetStocks!");
+  const [subject, setSubject] = useState(t("Check out WallStreetStocks!"));
   const [body, setBody] = useState(
     `Hey!\n\nI've been using this awesome app called WallStreetStocks for stock research and market analysis. It's got great features for tracking stocks, reading market news, and staying on top of your investments.\n\nI thought you might find it useful too!\n\nDownload it here: https://wallstreetstocks.app\n\nLet me know what you think!`
   );
@@ -33,7 +35,7 @@ export default function EmailFriendPage() {
   const handleSendEmail = async () => {
     // Validate email if provided
     if (email.length > 0 && !validateEmail(email)) {
-      Alert.alert("Invalid Email", "Please enter a valid email address.");
+      Alert.alert(t("Invalid Email"), t("Please enter a valid email address."));
       return;
     }
 
@@ -53,13 +55,13 @@ export default function EmailFriendPage() {
         await Linking.openURL(mailtoUrl);
       } else {
         Alert.alert(
-          "Unable to Send",
-          "Email is not configured on this device. Please set up an email account in your device settings."
+          t("Unable to Send"),
+          t("Email is not configured on this device. Please set up an email account in your device settings.")
         );
       }
     } catch (error) {
-      
-      Alert.alert("Error", "Failed to open email app.");
+
+      Alert.alert(t("Error"), t("Failed to open email app."));
     }
   };
 
@@ -74,7 +76,7 @@ export default function EmailFriendPage() {
         >
           <ChevronLeft size={28} color="#B8860B" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Email to a Friend</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t("Email to a Friend")}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -95,14 +97,14 @@ export default function EmailFriendPage() {
           </View>
 
           {/* Title & Description */}
-          <Text style={[styles.title, { color: colors.text }]}>Share WallStreetStocks</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t("Share WallStreetStocks")}</Text>
           <Text style={[styles.description, { color: colors.textSecondary }]}>
-            Know someone who&apos;d benefit from better market insights? Send them an email and introduce them to WallStreetStocks!
+            {t("Know someone who'd benefit from better market insights? Send them an email and introduce them to WallStreetStocks!")}
           </Text>
 
           {/* Email Input */}
           <View style={styles.inputSection}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Friend&apos;s Email (Optional)</Text>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>{t("Friend's Email (Optional)")}</Text>
             <View style={[styles.emailInputContainer, { backgroundColor: colors.surface }]}>
               <AtSign size={20} color={colors.textTertiary} style={styles.inputIcon} />
               <TextInput
@@ -117,17 +119,17 @@ export default function EmailFriendPage() {
               />
             </View>
             <Text style={[styles.inputHint, { color: colors.textTertiary }]}>
-              Leave blank to choose a recipient in your email app
+              {t("Leave blank to choose a recipient in your email app")}
             </Text>
           </View>
 
           {/* Subject Input */}
           <View style={styles.inputSection}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Subject</Text>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>{t("Subject")}</Text>
             <View style={[styles.subjectInputContainer, { backgroundColor: colors.surface }]}>
               <TextInput
                 style={[styles.subjectInput, { color: colors.text }]}
-                placeholder="Enter subject..."
+                placeholder={t("Enter subject...")}
                 placeholderTextColor={colors.textTertiary}
                 value={subject}
                 onChangeText={setSubject}
@@ -138,7 +140,7 @@ export default function EmailFriendPage() {
 
           {/* Message Body */}
           <View style={styles.inputSection}>
-            <Text style={[styles.inputLabel, { color: colors.text }]}>Message</Text>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>{t("Message")}</Text>
             <View style={[styles.messageContainer, { backgroundColor: colors.surface }]}>
               <TextInput
                 style={[styles.messageInput, { color: colors.text }]}
@@ -146,7 +148,7 @@ export default function EmailFriendPage() {
                 numberOfLines={8}
                 value={body}
                 onChangeText={setBody}
-                placeholder="Enter your message..."
+                placeholder={t("Enter your message...")}
                 placeholderTextColor={colors.textTertiary}
                 textAlignVertical="top"
               />
@@ -163,12 +165,12 @@ export default function EmailFriendPage() {
             activeOpacity={0.8}
           >
             <Send size={20} color="#FFFFFF" />
-            <Text style={styles.sendButtonText}>Open Email</Text>
+            <Text style={styles.sendButtonText}>{t("Open Email")}</Text>
           </TouchableOpacity>
 
           {/* Info Text */}
           <Text style={[styles.infoText, { color: colors.textTertiary }]}>
-            This will open your default email app with the message pre-filled.
+            {t("This will open your default email app with the message pre-filled.")}
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

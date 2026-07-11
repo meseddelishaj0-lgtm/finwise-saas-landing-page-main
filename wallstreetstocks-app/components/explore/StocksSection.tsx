@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import Constants from "expo-constants";
+import { useLanguage } from "@/context/LanguageContext";
 
 const FMP_API_KEY =
   process.env.EXPO_PUBLIC_FMP_API_KEY || "";
@@ -22,6 +23,7 @@ const FALLBACK_INDICES: MarketIndex[] = [
 ];
 
 export default function StocksSection() {
+  const t = useLanguage().t as (key: string) => string;
   const [indices, setIndices] = useState<MarketIndex[]>(FALLBACK_INDICES);
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -90,7 +92,7 @@ export default function StocksSection() {
     <View className="mt-4">
       {/* Card with indices list */}
       <View className="bg-[#111827] mx-4 rounded-2xl px-4 pt-4 pb-2">
-        <Text className="text-gray-400 text-xs mb-2">U.S. MARKETS</Text>
+        <Text className="text-gray-400 text-xs mb-2">{t('U.S. MARKETS')}</Text>
 
         {loading && (
           <View className="py-6 items-center">
@@ -139,9 +141,9 @@ export default function StocksSection() {
 
       {/* Live headline bar */}
       <View className="bg-[#111827] mx-4 mt-4 rounded-2xl px-4 py-3">
-        <Text className="text-red-400 text-xs font-semibold mb-1">LIVE</Text>
+        <Text className="text-red-400 text-xs font-semibold mb-1">{t('LIVE')}</Text>
         <Text className="text-gray-200 text-xs">
-          Stock market today: Dow, S&amp;P 500, Nasdaq futures move after earnings &amp; macro data.
+          {t('Stock market today: Dow, S&P 500, Nasdaq futures move after earnings & macro data.')}
         </Text>
       </View>
     </View>

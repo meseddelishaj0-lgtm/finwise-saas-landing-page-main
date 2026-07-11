@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const CHAT_HISTORY_KEY = 'live_chat_history';
 
@@ -115,6 +116,7 @@ const getSmartResponse = (userMessage: string): string => {
 export default function LiveChat() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -241,10 +243,10 @@ export default function LiveChat() {
             <Ionicons name="headset" size={20} color="#fff" />
           </View>
           <View>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Support Chat</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Support Chat')}</Text>
             <View style={styles.statusContainer}>
               <View style={[styles.statusDot, { backgroundColor: isOnline ? '#34C759' : '#FF3B30' }]} />
-              <Text style={[styles.statusText, { color: colors.textSecondary }]}>{isOnline ? 'Online' : 'Offline'}</Text>
+              <Text style={[styles.statusText, { color: colors.textSecondary }]}>{isOnline ? t('Online') : t('Offline')}</Text>
             </View>
           </View>
         </View>
@@ -321,7 +323,7 @@ export default function LiveChat() {
         {/* Quick Replies */}
         {messages.length <= 1 && (
           <View style={[styles.quickRepliesContainer, { backgroundColor: colors.card, borderTopColor: isDark ? colors.border : '#e5e5e5' }]}>
-            <Text style={[styles.quickRepliesTitle, { color: colors.textSecondary }]}>Quick Questions</Text>
+            <Text style={[styles.quickRepliesTitle, { color: colors.textSecondary }]}>{t('Quick Questions')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {quickReplies.map((reply) => (
                 <TouchableOpacity
@@ -329,7 +331,7 @@ export default function LiveChat() {
                   style={[styles.quickReplyButton, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}
                   onPress={() => handleQuickReply(reply)}
                 >
-                  <Text style={styles.quickReplyText}>{reply.text}</Text>
+                  <Text style={styles.quickReplyText}>{t(reply.text)}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -340,7 +342,7 @@ export default function LiveChat() {
         <View style={[styles.inputContainer, { backgroundColor: colors.card, borderTopColor: isDark ? colors.border : '#e5e5e5' }]}>
           <TextInput
             style={[styles.textInput, { backgroundColor: isDark ? colors.surface : '#f5f5f5', color: colors.text }]}
-            placeholder="Type your message..."
+            placeholder={t('Type your message...')}
             placeholderTextColor={colors.textTertiary}
             value={inputText}
             onChangeText={setInputText}

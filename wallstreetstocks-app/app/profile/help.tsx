@@ -12,10 +12,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function Help() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   const helpItems = [
     { 
@@ -87,14 +89,14 @@ export default function Help() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Help</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Help')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Quick Actions */}
         <View style={[styles.quickActionsContainer, { backgroundColor: colors.surface, borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}>
-          <Text style={[styles.quickActionsTitle, { color: colors.text }]}>Need immediate help?</Text>
+          <Text style={[styles.quickActionsTitle, { color: colors.text }]}>{t('Need immediate help?')}</Text>
           <View style={styles.quickActionsRow}>
             {quickActions.map((action, index) => (
               <TouchableOpacity
@@ -117,14 +119,14 @@ export default function Help() {
                     <Ionicons name={action.icon as any} size={22} color={action.color} />
                   )}
                 </View>
-                <Text style={[styles.quickActionLabel, { color: colors.textSecondary }]}>{action.label}</Text>
+                <Text style={[styles.quickActionLabel, { color: colors.textSecondary }]}>{t(action.label)}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* Main Help Items */}
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Support & Resources</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('Support & Resources')}</Text>
 
         {helpItems.map((item, index) => (
           <TouchableOpacity
@@ -137,8 +139,8 @@ export default function Help() {
                 <Ionicons name={item.icon as any} size={22} color="#B8860B" />
               </View>
               <View style={styles.rowTextContainer}>
-                <Text style={[styles.rowText, { color: colors.text }]}>{item.title}</Text>
-                <Text style={[styles.rowSubtitle, { color: colors.textTertiary }]}>{item.subtitle}</Text>
+                <Text style={[styles.rowText, { color: colors.text }]}>{t(item.title)}</Text>
+                <Text style={[styles.rowSubtitle, { color: colors.textTertiary }]}>{t(item.subtitle)}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
@@ -148,10 +150,10 @@ export default function Help() {
         {/* App Info Footer */}
         <View style={[styles.footer, { borderTopColor: isDark ? colors.border : '#f0f0f0' }]}>
           <View style={styles.appInfo}>
-            <Text style={[styles.appName, { color: colors.text }]}>WallStreetStocks</Text>
-            <Text style={[styles.version, { color: colors.textTertiary }]}>Version 1.1.5</Text>
+            <Text style={[styles.appName, { color: colors.text }]}>{t('WallStreetStocks')}</Text>
+            <Text style={[styles.version, { color: colors.textTertiary }]}>{t('Version 1.1.5')}</Text>
           </View>
-          <Text style={[styles.copyright, { color: colors.textTertiary }]}>© 2025 WallStreetStocks. All rights reserved.</Text>
+          <Text style={[styles.copyright, { color: colors.textTertiary }]}>{t('© 2025 WallStreetStocks. All rights reserved.')}</Text>
 
           <View style={styles.socialLinks}>
             <TouchableOpacity

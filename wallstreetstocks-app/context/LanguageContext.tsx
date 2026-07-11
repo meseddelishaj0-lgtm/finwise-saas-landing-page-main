@@ -1,22 +1,23 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { TRANSLATIONS, TranslationKey } from "@/i18n/translations";
+import { TRANSLATIONS } from "@/i18n/translations";
 
-// App-wide language state. t() falls back to English, then the key itself,
-// so a missing translation can never crash a screen.
+// App-wide language state. Keys are the English strings themselves;
+// t() falls back to the key, so a missing translation can never crash
+// or blank a screen — it just stays English.
 
 const STORAGE_KEY = "appLanguage";
 
 interface LanguageContextValue {
   lang: string;
   setLang: (code: string) => void;
-  t: (key: TranslationKey) => string;
+  t: (key: string) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue>({
   lang: "en",
   setLang: () => {},
-  t: (key) => TRANSLATIONS.en[key] ?? key,
+  t: (key) => key,
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
@@ -37,7 +38,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: TranslationKey) => TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS.en[key] ?? key,
+    (key: string) => TRANSLATIONS[lang]?.[key] ?? key,
     [lang]
   );
 

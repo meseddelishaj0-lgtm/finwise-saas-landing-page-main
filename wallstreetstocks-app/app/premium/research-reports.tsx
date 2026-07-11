@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
+import { useLanguage } from '@/context/LanguageContext';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 
@@ -53,6 +54,7 @@ interface ResearchReport {
 
 export default function ResearchReportsScreen() {
   const { canAccess } = usePremiumFeature();
+  const { t } = useLanguage();
   const [ticker, setTicker] = useState('');
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<ResearchReport | null>(null);
@@ -180,7 +182,7 @@ Return ONLY the JSON, no other text.`
         parsedReport = JSON.parse(aiText);
       } catch {
         parsedReport = {
-          executive_summary: 'Report generation failed. Please try again.',
+          executive_summary: t('Report generation failed. Please try again.'),
           investment_thesis: '',
           financial_analysis: {
             revenue_growth: 'N/A',
@@ -219,7 +221,7 @@ Return ONLY the JSON, no other text.`
 
     } catch (err) {
       
-      setError('Failed to generate report. Please try again.');
+      setError(t('Failed to generate report. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -253,9 +255,9 @@ Return ONLY the JSON, no other text.`
         <View style={styles.headerCenter}>
           <View style={styles.diamondBadge}>
             <Ionicons name="diamond" size={14} color="#000" />
-            <Text style={styles.diamondBadgeText}>Diamond</Text>
+            <Text style={styles.diamondBadgeText}>{t('Diamond')}</Text>
           </View>
-          <Text style={styles.headerTitle}>Research Reports</Text>
+          <Text style={styles.headerTitle}>{t('Research Reports')}</Text>
         </View>
         {report && (
           <TouchableOpacity onPress={shareReport} style={styles.shareButton}>

@@ -21,11 +21,14 @@ import * as Clipboard from 'expo-clipboard';
 import { useReferral, REWARD_TIERS } from '@/context/ReferralContext';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function Referrals() {
   const router = useRouter();
   const { user } = useAuth();
   const { colors, isDark } = useTheme();
+  const { t: translate } = useLanguage();
+  const t = (key: string) => translate(key as any);
   const {
     referralCode,
     referrals,
@@ -74,17 +77,17 @@ export default function Referrals() {
   const handleCopyLink = async () => {
     const storeUrl = Platform.OS === 'ios' ? APP_STORE_URL : PLAY_STORE_URL;
     await Clipboard.setStringAsync(`${storeUrl}?referral=${referralCode}`);
-    Alert.alert('Copied!', 'Referral link copied to clipboard');
+    Alert.alert(t('Copied!'), t('Referral link copied to clipboard'));
   };
 
   const handleShare = async () => {
     try {
       await Share.share({
         message: generateShareMessage(),
-        title: 'Join WallStreetStocks',
+        title: t('Join WallStreetStocks'),
       });
     } catch (error) {
-      Alert.alert('Error', 'Unable to share at this time.');
+      Alert.alert(t('Error'), t('Unable to share at this time.'));
     }
   };
 
@@ -96,7 +99,7 @@ export default function Referrals() {
 
   const handleApplyCode = async () => {
     if (!codeToApply.trim()) {
-      Alert.alert('Error', 'Please enter a referral code');
+      Alert.alert(t('Error'), t('Please enter a referral code'));
       return;
     }
 
@@ -110,7 +113,7 @@ export default function Referrals() {
         await refreshReferrals();
       }
     } catch (error) {
-      
+
     } finally {
       setApplyingCode(false);
     }
@@ -139,7 +142,7 @@ export default function Referrals() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#B8860B" />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading referral program...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('Loading referral program...')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -152,7 +155,7 @@ export default function Referrals() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Referral Program</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Referral Program')}</Text>
         <TouchableOpacity onPress={handleRefresh}>
           <Ionicons name="refresh" size={24} color="#B8860B" />
         </TouchableOpacity>
@@ -170,9 +173,9 @@ export default function Referrals() {
           <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
             <Ionicons name="gift" size={40} color="#B8860B" />
           </View>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>Give Premium, Get Premium</Text>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>{t('Give Premium, Get Premium')}</Text>
           <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-            Share WallStreetStocks with friends and earn free Premium access!
+            {t('Share WallStreetStocks with friends and earn free Premium access!')}
           </Text>
 
           {/* Premium Status Badge */}
@@ -180,7 +183,7 @@ export default function Referrals() {
             <View style={styles.premiumBadge}>
               <Ionicons name="diamond" size={16} color="#FFD700" />
               <Text style={styles.premiumBadgeText}>
-                Premium active until {formatDate(premiumEndDate)}
+                {t('Premium active until')} {formatDate(premiumEndDate)}
               </Text>
             </View>
           )}
@@ -188,17 +191,17 @@ export default function Referrals() {
 
         {/* Referral Code Card */}
         <View style={[styles.codeCard, { backgroundColor: colors.card }]}>
-          <Text style={[styles.codeLabel, { color: colors.textSecondary }]}>Your Referral Code</Text>
+          <Text style={[styles.codeLabel, { color: colors.textSecondary }]}>{t('Your Referral Code')}</Text>
           <View style={[styles.codeContainer, { backgroundColor: isDark ? colors.surface : '#f5f5f5' }]}>
-            <Text style={styles.codeText}>{referralCode || 'Loading...'}</Text>
+            <Text style={styles.codeText}>{referralCode || t('Loading...')}</Text>
             <TouchableOpacity style={[styles.copyButton, { backgroundColor: isDark ? colors.card : '#fff' }]} onPress={handleCopyCode}>
               <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color="#B8860B" />
-              <Text style={styles.copyButtonText}>{copied ? 'Copied!' : 'Copy'}</Text>
+              <Text style={styles.copyButtonText}>{copied ? t('Copied!') : t('Copy')}</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.shareLinkContainer}>
-            <Text style={[styles.shareLinkLabel, { color: colors.textTertiary }]}>Or share your link:</Text>
+            <Text style={[styles.shareLinkLabel, { color: colors.textTertiary }]}>{t('Or share your link:')}</Text>
             <TouchableOpacity onPress={handleCopyLink}>
               <Text style={styles.shareLink} numberOfLines={1}>
                 {Platform.OS === 'ios' ? 'apps.apple.com' : 'play.google.com'}/...?referral={referralCode}
@@ -208,7 +211,7 @@ export default function Referrals() {
 
           <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
             <Ionicons name="share-outline" size={20} color="#fff" />
-            <Text style={styles.shareButtonText}>Share with Friends</Text>
+            <Text style={styles.shareButtonText}>{t('Share with Friends')}</Text>
           </TouchableOpacity>
 
           {/* Quick Share Options */}
@@ -218,7 +221,7 @@ export default function Referrals() {
                 <View style={[styles.quickShareIcon, { backgroundColor: `${option.color}15` }]}>
                   <Ionicons name={option.icon as any} size={22} color={option.color} />
                 </View>
-                <Text style={[styles.quickShareLabel, { color: colors.textSecondary }]}>{option.label}</Text>
+                <Text style={[styles.quickShareLabel, { color: colors.textSecondary }]}>{t(option.label)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -226,23 +229,23 @@ export default function Referrals() {
 
         {/* Stats Section */}
         <View style={styles.statsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Progress</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Your Progress')}</Text>
           <View style={styles.statsGrid}>
             <View style={[styles.statCard, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}>
               <Text style={[styles.statNumber, { color: colors.text }]}>{stats.totalReferrals}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Referrals</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('Total Referrals')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}>
               <Text style={[styles.statNumber, { color: '#34C759' }]}>{stats.completedReferrals}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Completed</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('Completed')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}>
               <Text style={[styles.statNumber, { color: '#FF9500' }]}>{stats.pendingReferrals}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Pending</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('Pending')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}>
               <Text style={[styles.statNumber, { color: '#B8860B' }]}>{stats.nextTierReferrals}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Until Next Tier</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{t('Until Next Tier')}</Text>
             </View>
           </View>
 
@@ -250,9 +253,9 @@ export default function Referrals() {
           {stats.nextTierReferrals > 0 && (
             <View style={[styles.progressContainer, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}>
               <View style={styles.progressHeader}>
-                <Text style={[styles.progressLabel, { color: colors.text }]}>Progress to Next Reward</Text>
+                <Text style={[styles.progressLabel, { color: colors.text }]}>{t('Progress to Next Reward')}</Text>
                 <Text style={[styles.progressText, { color: colors.textSecondary }]}>
-                  {stats.completedReferrals} / {stats.completedReferrals + stats.nextTierReferrals} referrals
+                  {stats.completedReferrals} / {stats.completedReferrals + stats.nextTierReferrals} {t('referrals')}
                 </Text>
               </View>
               <View style={[styles.progressBar, { backgroundColor: isDark ? colors.border : '#E0E0E0' }]}>
@@ -271,9 +274,9 @@ export default function Referrals() {
 
         {/* Rewards Tiers */}
         <View style={styles.rewardsSection}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Reward Tiers</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Reward Tiers')}</Text>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
-            Earn premium access as you refer more friends
+            {t('Earn premium access as you refer more friends')}
           </Text>
           <View style={styles.rewardsList}>
             {REWARD_TIERS.map((tier, index) => {
@@ -307,10 +310,10 @@ export default function Referrals() {
                       { color: colors.text },
                       !isUnlocked && !isNext && { color: colors.textTertiary }
                     ]}>
-                      {tier.reward}
+                      {t(tier.reward)}
                     </Text>
                     <Text style={[styles.rewardRequirement, { color: colors.textSecondary }]}>
-                      {tier.referrals} referral{tier.referrals > 1 ? 's' : ''} • {tier.days} days
+                      {tier.referrals} {t('referral')}{tier.referrals > 1 ? 's' : ''} • {tier.days} {t('days')}
                     </Text>
                   </View>
                   {isUnlocked ? (
@@ -319,7 +322,7 @@ export default function Referrals() {
                     </View>
                   ) : isNext ? (
                     <View style={styles.nextBadge}>
-                      <Text style={styles.nextBadgeText}>NEXT</Text>
+                      <Text style={styles.nextBadgeText}>{t('NEXT')}</Text>
                     </View>
                   ) : (
                     <View style={styles.lockedBadge}>
@@ -334,16 +337,16 @@ export default function Referrals() {
 
         {/* How It Works */}
         <View style={[styles.howItWorksSection, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>How It Works</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('How It Works')}</Text>
           <View style={styles.stepsContainer}>
             <View style={styles.stepItem}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>1</Text>
               </View>
               <View style={styles.stepContent}>
-                <Text style={[styles.stepTitle, { color: colors.text }]}>Share Your Code</Text>
+                <Text style={[styles.stepTitle, { color: colors.text }]}>{t('Share Your Code')}</Text>
                 <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                  Send your unique referral code or link to friends
+                  {t('Send your unique referral code or link to friends')}
                 </Text>
               </View>
             </View>
@@ -354,9 +357,9 @@ export default function Referrals() {
                 <Text style={styles.stepNumberText}>2</Text>
               </View>
               <View style={styles.stepContent}>
-                <Text style={[styles.stepTitle, { color: colors.text }]}>Friend Signs Up</Text>
+                <Text style={[styles.stepTitle, { color: colors.text }]}>{t('Friend Signs Up')}</Text>
                 <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                  They create an account using your referral code
+                  {t('They create an account using your referral code')}
                 </Text>
               </View>
             </View>
@@ -367,9 +370,9 @@ export default function Referrals() {
                 <Text style={styles.stepNumberText}>3</Text>
               </View>
               <View style={styles.stepContent}>
-                <Text style={[styles.stepTitle, { color: colors.text }]}>Both Get Rewarded</Text>
+                <Text style={[styles.stepTitle, { color: colors.text }]}>{t('Both Get Rewarded')}</Text>
                 <Text style={[styles.stepDescription, { color: colors.textSecondary }]}>
-                  You earn premium days, they get 1 week free!
+                  {t('You earn premium days, they get 1 week free!')}
                 </Text>
               </View>
             </View>
@@ -379,22 +382,22 @@ export default function Referrals() {
         {/* Referral History */}
         <View style={styles.historySection}>
           <View style={styles.historyHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Referrals</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Recent Referrals')}</Text>
             {referrals.length > 0 && (
-              <Text style={[styles.historyCount, { color: colors.textSecondary }]}>{referrals.length} total</Text>
+              <Text style={[styles.historyCount, { color: colors.textSecondary }]}>{referrals.length} {t('total')}</Text>
             )}
           </View>
 
           {referrals.length === 0 ? (
             <View style={[styles.emptyHistory, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}>
               <Ionicons name="people-outline" size={48} color={isDark ? colors.textTertiary : '#E0E0E0'} />
-              <Text style={[styles.emptyHistoryTitle, { color: colors.text }]}>No referrals yet</Text>
+              <Text style={[styles.emptyHistoryTitle, { color: colors.text }]}>{t('No referrals yet')}</Text>
               <Text style={[styles.emptyHistoryText, { color: colors.textSecondary }]}>
-                Share your code with friends to start earning rewards!
+                {t('Share your code with friends to start earning rewards!')}
               </Text>
               <TouchableOpacity style={styles.emptyHistoryButton} onPress={handleShare}>
                 <Ionicons name="share-outline" size={18} color="#B8860B" />
-                <Text style={styles.emptyHistoryButtonText}>Share Now</Text>
+                <Text style={styles.emptyHistoryButtonText}>{t('Share Now')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -428,7 +431,7 @@ export default function Referrals() {
 
               {referrals.length > 5 && (
                 <TouchableOpacity style={styles.viewAllButton}>
-                  <Text style={styles.viewAllText}>View All {referrals.length} Referrals</Text>
+                  <Text style={styles.viewAllText}>{t('View All')} {referrals.length} {t('Referrals')}</Text>
                   <Ionicons name="chevron-forward" size={16} color="#B8860B" />
                 </TouchableOpacity>
               )}
@@ -438,31 +441,31 @@ export default function Referrals() {
 
         {/* Have a Code Section */}
         <View style={[styles.haveCodeSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
-          <Text style={[styles.haveCodeTitle, { color: colors.text }]}>Have a referral code?</Text>
+          <Text style={[styles.haveCodeTitle, { color: colors.text }]}>{t('Have a referral code?')}</Text>
           <Text style={[styles.haveCodeSubtitle, { color: colors.textSecondary }]}>
-            Enter a friend&apos;s code to get 1 week of Premium free
+            {t("Enter a friend's code to get 1 week of Premium free")}
           </Text>
           <TouchableOpacity
             style={[styles.enterCodeButton, { backgroundColor: isDark ? colors.card : '#fff' }]}
             onPress={() => setApplyCodeModal(true)}
           >
             <Ionicons name="ticket-outline" size={20} color="#B8860B" />
-            <Text style={styles.enterCodeButtonText}>Enter Referral Code</Text>
+            <Text style={styles.enterCodeButtonText}>{t('Enter Referral Code')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Terms */}
         <View style={[styles.termsSection, { backgroundColor: isDark ? colors.surface : '#f5f5f5' }]}>
-          <Text style={[styles.termsTitle, { color: colors.textSecondary }]}>Referral Program Terms</Text>
+          <Text style={[styles.termsTitle, { color: colors.textSecondary }]}>{t('Referral Program Terms')}</Text>
           <Text style={[styles.termsText, { color: colors.textTertiary }]}>
-            • Rewards are credited after referred user completes sign-up{'\n'}
-            • Premium rewards stack with each tier you unlock{'\n'}
-            • Referred users must be new to WallStreetStocks{'\n'}
-            • Self-referrals and fake accounts are prohibited{'\n'}
-            • We reserve the right to modify or end this program at any time
+            {t('• Rewards are credited after referred user completes sign-up')}{'\n'}
+            {t('• Premium rewards stack with each tier you unlock')}{'\n'}
+            {t('• Referred users must be new to WallStreetStocks')}{'\n'}
+            {t('• Self-referrals and fake accounts are prohibited')}{'\n'}
+            {t('• We reserve the right to modify or end this program at any time')}
           </Text>
           <TouchableOpacity onPress={() => router.push('/profile/terms' as any)}>
-            <Text style={styles.termsLink}>View Full Terms →</Text>
+            <Text style={styles.termsLink}>{t('View Full Terms →')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -479,19 +482,19 @@ export default function Referrals() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Enter Referral Code</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t('Enter Referral Code')}</Text>
               <TouchableOpacity onPress={() => setApplyCodeModal(false)}>
                 <Ionicons name="close-circle" size={28} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
 
             <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-              Enter a friend&apos;s referral code to get 1 week of Premium free!
+              {t("Enter a friend's referral code to get 1 week of Premium free!")}
             </Text>
 
             <TextInput
               style={[styles.codeInput, { backgroundColor: isDark ? colors.surface : '#f5f5f5', color: colors.text }]}
-              placeholder="e.g., JOHN1234"
+              placeholder={t('e.g., JOHN1234')}
               placeholderTextColor={colors.textTertiary}
               value={codeToApply}
               onChangeText={(text) => setCodeToApply(text.toUpperCase())}
@@ -510,7 +513,7 @@ export default function Referrals() {
               ) : (
                 <>
                   <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                  <Text style={styles.applyButtonText}>Apply Code</Text>
+                  <Text style={styles.applyButtonText}>{t('Apply Code')}</Text>
                 </>
               )}
             </TouchableOpacity>

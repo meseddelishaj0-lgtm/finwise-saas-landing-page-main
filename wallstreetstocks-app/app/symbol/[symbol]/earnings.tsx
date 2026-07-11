@@ -9,6 +9,7 @@ import {
   TouchableOpacity 
 } from "react-native";
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-router";
+import { useLanguage } from "@/context/LanguageContext";
 
 const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
 
@@ -25,6 +26,7 @@ interface EarningsData {
 }
 
 export default function EarningsTab() {
+  const { t } = useLanguage();
   const localParams = useLocalSearchParams();
   const globalParams = useGlobalSearchParams();
   const segments = useSegments();
@@ -63,7 +65,7 @@ export default function EarningsTab() {
   const fetchEarnings = async () => {
     if (!cleanSymbol) {
       setLoading(false);
-      setError('No symbol provided');
+      setError(t('No symbol provided'));
       return;
     }
 
@@ -105,9 +107,9 @@ export default function EarningsTab() {
       
       
       const errorMessage = err.name === 'AbortError'
-        ? 'Request timeout. Please try again.'
+        ? t('Request timeout. Please try again.')
         : err.message?.includes('Network')
-        ? 'Network error. Check your connection.'
+        ? t('Network error. Check your connection.')
         : `Unable to load earnings data for ${cleanSymbol}`;
       
       setError(errorMessage);
@@ -152,7 +154,7 @@ export default function EarningsTab() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#00C853" />
-        <Text style={styles.loading}>Loading earnings data...</Text>
+        <Text style={styles.loading}>{t('Loading earnings data...')}</Text>
       </View>
     );
   }
@@ -162,7 +164,7 @@ export default function EarningsTab() {
       <View style={styles.center}>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
-          <Text style={styles.retryText}>Retry</Text>
+          <Text style={styles.retryText}>{t('Retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -170,7 +172,7 @@ export default function EarningsTab() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>Earnings History • {cleanSymbol}</Text>
+      <Text style={styles.title}>{t('Earnings History •')} {cleanSymbol}</Text>
 
       {earnings.map((earning, index) => {
         const eps = earning.eps ?? 0;
@@ -196,7 +198,7 @@ export default function EarningsTab() {
               <View>
                 <Text style={styles.cardDate}>{formatDate(earning.date)}</Text>
                 <Text style={styles.cardTime}>
-                  {earning.time || 'N/A'} • Q{earning.fiscalDateEnding?.slice(5, 7) || '?'}
+                  {earning.time || t('N/A')} • Q{earning.fiscalDateEnding?.slice(5, 7) || '?'}
                 </Text>
               </View>
               <View style={[
@@ -207,7 +209,7 @@ export default function EarningsTab() {
                   styles.badgeText,
                   { color: isUpcoming ? '#FFD60A' : (epsBeat && revenueBeat) ? '#00C853' : '#FF1744' }
                 ]}>
-                  {isUpcoming ? 'Upcoming' : (epsBeat && revenueBeat) ? 'Beat' : 'Miss'}
+                  {isUpcoming ? t('Upcoming') : (epsBeat && revenueBeat) ? t('Beat') : t('Miss')}
                 </Text>
               </View>
             </View>
@@ -215,18 +217,18 @@ export default function EarningsTab() {
             {/* EPS */}
             <View style={styles.metricRow}>
               <View style={styles.metricLeft}>
-                <Text style={styles.metricLabel}>EPS (Actual)</Text>
+                <Text style={styles.metricLabel}>{t('EPS (Actual)')}</Text>
                 <Text style={styles.metricValue}>{isUpcoming ? '—' : `$${eps.toFixed(2)}`}</Text>
               </View>
               <View style={styles.metricRight}>
-                <Text style={styles.metricLabel}>EPS (Expected)</Text>
+                <Text style={styles.metricLabel}>{t('EPS (Expected)')}</Text>
                 <Text style={styles.metricValue}>${epsEstimated.toFixed(2)}</Text>
               </View>
             </View>
             <View style={styles.differenceRow}>
               {isUpcoming ? (
                 <Text style={[styles.differenceText, { color: '#8E8E93' }]}>
-                  Report expected {formatDate(earning.date)}
+                  {t('Report expected')} {formatDate(earning.date)}
                 </Text>
               ) : (
                 <Text style={[
@@ -234,7 +236,7 @@ export default function EarningsTab() {
                   { color: epsBeat ? '#00C853' : '#FF1744' }
                 ]}>
                   {epsBeat ? '↑' : '↓'} ${Math.abs(epsDiff).toFixed(2)}
-                  {epsBeat ? ' above' : ' below'} estimate
+                  {epsBeat ? ` ${t('above')}` : ` ${t('below')}`} {t('estimate')}
                 </Text>
               )}
             </View>
@@ -245,11 +247,11 @@ export default function EarningsTab() {
                 <View style={styles.divider} />
                 <View style={styles.metricRow}>
                   <View style={styles.metricLeft}>
-                    <Text style={styles.metricLabel}>Revenue (Actual)</Text>
+                    <Text style={styles.metricLabel}>{t('Revenue (Actual)')}</Text>
                     <Text style={styles.metricValue}>{formatCurrency(revenue)}</Text>
                   </View>
                   <View style={styles.metricRight}>
-                    <Text style={styles.metricLabel}>Revenue (Expected)</Text>
+                    <Text style={styles.metricLabel}>{t('Revenue (Expected)')}</Text>
                     <Text style={styles.metricValue}>{formatCurrency(revenueEstimated)}</Text>
                   </View>
                 </View>
@@ -258,8 +260,8 @@ export default function EarningsTab() {
                     styles.differenceText,
                     { color: revenueBeat ? '#00C853' : '#FF1744' }
                   ]}>
-                    {revenueBeat ? '↑' : '↓'} {formatCurrency(Math.abs(revenueDiff))} 
-                    {revenueBeat ? ' above' : ' below'} estimate
+                    {revenueBeat ? '↑' : '↓'} {formatCurrency(Math.abs(revenueDiff))}
+                    {revenueBeat ? ` ${t('above')}` : ` ${t('below')}`} {t('estimate')}
                   </Text>
                 </View>
               </>

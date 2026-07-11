@@ -1,6 +1,7 @@
 // components/explore/ETFSection.tsx
 import React from "react";
 import { View, Text } from "react-native";
+import { useLanguage } from "@/context/LanguageContext";
 
 const etfs = [
   { symbol: "SPY", name: "SPDR S&P 500 ETF", price: 580.21, changePercent: 0.42 },
@@ -9,10 +10,11 @@ const etfs = [
 ];
 
 export default function ETFSection() {
+  const t = useLanguage().t as (key: string) => string;
   return (
     <View className="mt-4">
       <View className="bg-[#111827] mx-4 rounded-2xl px-4 pt-4 pb-2">
-        <Text className="text-gray-400 text-xs mb-2">POPULAR ETFs</Text>
+        <Text className="text-gray-400 text-xs mb-2">{t('POPULAR ETFs')}</Text>
 
         {etfs.map((etf, i) => {
           const isPositive = etf.changePercent >= 0;

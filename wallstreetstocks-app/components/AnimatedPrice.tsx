@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, memo } from 'react';
 import { Text, StyleSheet, Animated, View, TextStyle, ViewStyle, StyleProp } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface AnimatedPriceProps {
   value: number;
@@ -239,6 +240,7 @@ const getMarketStatus = (): MarketStatus => {
 
 // Market Status Indicator - shows Live, Pre Market, After Hours, or Closed
 export const MarketStatusIndicator = memo(() => {
+  const { t } = useLanguage();
   const [status, setStatus] = React.useState<MarketStatus>(getMarketStatus);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
@@ -331,13 +333,13 @@ export const MarketStatusIndicator = memo(() => {
   const getStatusConfig = () => {
     switch (status) {
       case 'live':
-        return { color: '#34C759', label: 'LIVE', subtitle: '' };
+        return { color: '#34C759', label: t('LIVE'), subtitle: '' };
       case 'premarket':
-        return { color: '#FF9500', label: 'PRE MARKET', subtitle: 'Price update limited' };
+        return { color: '#FF9500', label: t('PRE MARKET'), subtitle: t('Price update limited') };
       case 'afterhours':
-        return { color: '#FF9500', label: 'AFTER HOURS', subtitle: 'Price update limited' };
+        return { color: '#FF9500', label: t('AFTER HOURS'), subtitle: t('Price update limited') };
       case 'closed':
-        return { color: '#8E8E93', label: 'CLOSED', subtitle: '' };
+        return { color: '#8E8E93', label: t('CLOSED'), subtitle: '' };
     }
   };
 
@@ -387,6 +389,7 @@ MarketStatusIndicator.displayName = 'MarketStatusIndicator';
 
 // Live indicator dot with pulse animation
 export const LiveIndicator = memo(() => {
+  const { t } = useLanguage();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
@@ -486,7 +489,7 @@ export const LiveIndicator = memo(() => {
           ]}
         />
       </View>
-      <Text style={styles.liveText}>LIVE</Text>
+      <Text style={styles.liveText}>{t('LIVE')}</Text>
     </View>
   );
 });
@@ -627,6 +630,7 @@ LastUpdated.displayName = 'LastUpdated';
 
 // Crypto Live Indicator - always shows LIVE since crypto trades 24/7
 export const CryptoLiveIndicator = memo(() => {
+  const { t } = useLanguage();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
 
@@ -703,7 +707,7 @@ export const CryptoLiveIndicator = memo(() => {
           ]}
         />
       </View>
-      <Text style={styles.cryptoLiveText}>24/7 LIVE</Text>
+      <Text style={styles.cryptoLiveText}>{t('24/7 LIVE')}</Text>
     </View>
   );
 });
@@ -718,6 +722,7 @@ interface MarketTimeLabelProps {
 }
 
 export const MarketTimeLabel = memo(({ isCrypto = false, style }: MarketTimeLabelProps) => {
+  const { t } = useLanguage();
   const [time, setTime] = React.useState(new Date());
   const [status, setStatus] = React.useState<MarketStatus>(getMarketStatus);
 
@@ -742,12 +747,12 @@ export const MarketTimeLabel = memo(({ isCrypto = false, style }: MarketTimeLabe
 
   // Get status label
   const getStatusLabel = () => {
-    if (isCrypto) return 'LIVE';
+    if (isCrypto) return t('LIVE');
     switch (status) {
-      case 'live': return 'LIVE';
-      case 'premarket': return 'PRE';
-      case 'afterhours': return 'AH';
-      case 'closed': return 'CLOSED';
+      case 'live': return t('LIVE');
+      case 'premarket': return t('PRE');
+      case 'afterhours': return t('AH');
+      case 'closed': return t('CLOSED');
     }
   };
 

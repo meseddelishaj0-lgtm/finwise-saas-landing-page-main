@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
+import { useLanguage } from '@/context/LanguageContext';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
@@ -35,6 +36,7 @@ interface AnalysisResult {
 
 export default function AIAnalysisScreen() {
   const { canAccess } = usePremiumFeature();
+  const { t } = useLanguage();
   const [ticker, setTicker] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -168,7 +170,7 @@ Return ONLY the JSON, no other text.`
 
     } catch (err) {
       
-      setError('Analysis failed. Please try again.');
+      setError(t('Analysis failed. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -198,9 +200,9 @@ Return ONLY the JSON, no other text.`
         <View style={styles.headerCenter}>
           <View style={styles.goldBadge}>
             <Ionicons name="star" size={14} color="#000" />
-            <Text style={styles.goldBadgeText}>Gold</Text>
+            <Text style={styles.goldBadgeText}>{t('Gold')}</Text>
           </View>
-          <Text style={styles.headerTitle}>AI Stock Analysis</Text>
+          <Text style={styles.headerTitle}>{t('AI Stock Analysis')}</Text>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -212,7 +214,7 @@ Return ONLY the JSON, no other text.`
             <Ionicons name="search" size={20} color="#8E8E93" />
             <TextInput
               style={styles.input}
-              placeholder="Enter stock symbol (e.g., AAPL)"
+              placeholder={t('Enter stock symbol (e.g., AAPL)')}
               placeholderTextColor="#8E8E93"
               value={ticker}
               onChangeText={setTicker}
@@ -236,14 +238,14 @@ Return ONLY the JSON, no other text.`
             ) : (
               <>
                 <Ionicons name="analytics" size={20} color="#000" />
-                <Text style={styles.analyzeButtonText}>Analyze</Text>
+                <Text style={styles.analyzeButtonText}>{t('Analyze')}</Text>
               </>
             )}
           </TouchableOpacity>
 
           {/* Recent Searches */}
           <View style={styles.recentContainer}>
-            <Text style={styles.recentLabel}>Quick Analysis:</Text>
+            <Text style={styles.recentLabel}>{t('Quick Analysis:')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {recentSearches.map((sym) => (
                 <TouchableOpacity
@@ -273,8 +275,8 @@ Return ONLY the JSON, no other text.`
         {loading && (
           <View style={styles.loadingCard}>
             <ActivityIndicator size="large" color="#FFD700" />
-            <Text style={styles.loadingText}>Analyzing {ticker.toUpperCase()}...</Text>
-            <Text style={styles.loadingSubtext}>Gathering data and running AI analysis</Text>
+            <Text style={styles.loadingText}>{t('Analyzing')} {ticker.toUpperCase()}...</Text>
+            <Text style={styles.loadingSubtext}>{t('Gathering data and running AI analysis')}</Text>
           </View>
         )}
 
@@ -311,7 +313,7 @@ Return ONLY the JSON, no other text.`
             {/* Recommendation Card */}
             <View style={[styles.recommendationCard, { borderColor: getRecommendationColor(result.recommendation) }]}>
               <View style={styles.recommendationHeader}>
-                <Text style={styles.recommendationLabel}>AI Recommendation</Text>
+                <Text style={styles.recommendationLabel}>{t('AI Recommendation')}</Text>
                 <View style={[styles.sentimentBadge, { backgroundColor: getSentimentColor(result.sentiment) }]}>
                   <Text style={styles.sentimentText}>{result.sentiment.toUpperCase()}</Text>
                 </View>
@@ -322,14 +324,14 @@ Return ONLY the JSON, no other text.`
               <View style={styles.confidenceBar}>
                 <View style={[styles.confidenceFill, { width: `${result.confidence}%` }]} />
               </View>
-              <Text style={styles.confidenceText}>{result.confidence}% Confidence</Text>
+              <Text style={styles.confidenceText}>{result.confidence}% {t('Confidence')}</Text>
             </View>
 
             {/* AI Summary */}
             <View style={styles.summaryCard}>
               <View style={styles.cardHeader}>
                 <Ionicons name="bulb" size={20} color="#FFD700" />
-                <Text style={styles.cardTitle}>Investment Thesis</Text>
+                <Text style={styles.cardTitle}>{t('Investment Thesis')}</Text>
               </View>
               <Text style={styles.summaryText}>{result.aiAnalysis}</Text>
             </View>
@@ -339,19 +341,19 @@ Return ONLY the JSON, no other text.`
               <View style={styles.valuationCard}>
                 <View style={styles.cardHeader}>
                   <Ionicons name="calculator" size={20} color="#B8860B" />
-                  <Text style={styles.cardTitle}>Valuation</Text>
+                  <Text style={styles.cardTitle}>{t('Valuation')}</Text>
                 </View>
                 <View style={styles.valuationRow}>
                   <View style={styles.valuationItem}>
-                    <Text style={styles.valuationLabel}>Current Price</Text>
+                    <Text style={styles.valuationLabel}>{t('Current Price')}</Text>
                     <Text style={styles.valuationValue}>${result.price.toFixed(2)}</Text>
                   </View>
                   <View style={styles.valuationItem}>
-                    <Text style={styles.valuationLabel}>Fair Value (DCF)</Text>
+                    <Text style={styles.valuationLabel}>{t('Fair Value (DCF)')}</Text>
                     <Text style={styles.valuationValue}>${result.intrinsicValue.toFixed(2)}</Text>
                   </View>
                   <View style={styles.valuationItem}>
-                    <Text style={styles.valuationLabel}>Upside/Downside</Text>
+                    <Text style={styles.valuationLabel}>{t('Upside/Downside')}</Text>
                     <Text style={[
                       styles.valuationValue,
                       { color: result.intrinsicValue > result.price ? '#34C759' : '#FF3B30' }
@@ -368,7 +370,7 @@ Return ONLY the JSON, no other text.`
               <View style={styles.listCard}>
                 <View style={styles.cardHeader}>
                   <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-                  <Text style={styles.cardTitle}>Key Strengths</Text>
+                  <Text style={styles.cardTitle}>{t('Key Strengths')}</Text>
                 </View>
                 {(result as any).strengths.map((item: string, index: number) => (
                   <View key={index} style={styles.listItem}>
@@ -384,7 +386,7 @@ Return ONLY the JSON, no other text.`
               <View style={styles.listCard}>
                 <View style={styles.cardHeader}>
                   <Ionicons name="warning" size={20} color="#FF3B30" />
-                  <Text style={styles.cardTitle}>Key Risks</Text>
+                  <Text style={styles.cardTitle}>{t('Key Risks')}</Text>
                 </View>
                 {(result as any).risks.map((item: string, index: number) => (
                   <View key={index} style={styles.listItem}>
@@ -400,23 +402,23 @@ Return ONLY the JSON, no other text.`
               <View style={styles.priceTargetCard}>
                 <View style={styles.cardHeader}>
                   <Ionicons name="trending-up" size={20} color="#B8860B" />
-                  <Text style={styles.cardTitle}>Price Targets ({(result as any).timeframe})</Text>
+                  <Text style={styles.cardTitle}>{t('Price Targets')} ({(result as any).timeframe})</Text>
                 </View>
                 <View style={styles.priceTargetRow}>
                   <View style={styles.priceTargetItem}>
-                    <Text style={styles.priceTargetLabel}>Bear Case</Text>
+                    <Text style={styles.priceTargetLabel}>{t('Bear Case')}</Text>
                     <Text style={[styles.priceTargetValue, { color: '#FF3B30' }]}>
                       ${(result as any).priceTarget.low}
                     </Text>
                   </View>
                   <View style={styles.priceTargetItem}>
-                    <Text style={styles.priceTargetLabel}>Base Case</Text>
+                    <Text style={styles.priceTargetLabel}>{t('Base Case')}</Text>
                     <Text style={[styles.priceTargetValue, { color: '#B8860B' }]}>
                       ${(result as any).priceTarget.mid}
                     </Text>
                   </View>
                   <View style={styles.priceTargetItem}>
-                    <Text style={styles.priceTargetLabel}>Bull Case</Text>
+                    <Text style={styles.priceTargetLabel}>{t('Bull Case')}</Text>
                     <Text style={[styles.priceTargetValue, { color: '#34C759' }]}>
                       ${(result as any).priceTarget.high}
                     </Text>
@@ -429,7 +431,7 @@ Return ONLY the JSON, no other text.`
             <View style={styles.disclaimer}>
               <Ionicons name="information-circle" size={16} color="#8E8E93" />
               <Text style={styles.disclaimerText}>
-                AI analysis is for informational purposes only. Not financial advice.
+                {t('AI analysis is for informational purposes only. Not financial advice.')}
               </Text>
             </View>
           </View>

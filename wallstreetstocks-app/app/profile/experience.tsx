@@ -5,10 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function Experience() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -16,12 +18,12 @@ export default function Experience() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Experience</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Experience')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.content}>
-        <Text style={[styles.message, { color: colors.textSecondary }]}>Customize your content preferences and timeline settings here.</Text>
+        <Text style={[styles.message, { color: colors.textSecondary }]}>{t('Customize your content preferences and timeline settings here.')}</Text>
       </View>
     </SafeAreaView>
   );

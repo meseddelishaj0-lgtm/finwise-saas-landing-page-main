@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const RECENTLY_VIEWED_KEY = 'help_recently_viewed';
 const ARTICLE_FEEDBACK_KEY = 'help_article_feedback';
@@ -247,6 +248,7 @@ const allArticles = helpCategories.flatMap(cat => cat.articles);
 export default function HelpCenter() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -340,7 +342,7 @@ export default function HelpCenter() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Help Center</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Help Center')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -350,7 +352,7 @@ export default function HelpCenter() {
           <Ionicons name="search" size={20} color={colors.textTertiary} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search for help..."
+            placeholder={t('Search for help...')}
             placeholderTextColor={colors.textTertiary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -371,8 +373,8 @@ export default function HelpCenter() {
             {searchResults.length === 0 ? (
               <View style={styles.noResults}>
                 <Ionicons name="search-outline" size={48} color={isDark ? colors.textTertiary : '#E0E0E0'} />
-                <Text style={[styles.noResultsText, { color: colors.text }]}>No articles found</Text>
-                <Text style={[styles.noResultsSubtext, { color: colors.textSecondary }]}>Try different keywords or browse categories below</Text>
+                <Text style={[styles.noResultsText, { color: colors.text }]}>{t('No articles found')}</Text>
+                <Text style={[styles.noResultsSubtext, { color: colors.textSecondary }]}>{t('Try different keywords or browse categories below')}</Text>
               </View>
             ) : (
               searchResults.map((article) => (
@@ -383,9 +385,9 @@ export default function HelpCenter() {
                 >
                   <Ionicons name="document-text-outline" size={20} color="#B8860B" />
                   <View style={styles.articleRowContent}>
-                    <Text style={[styles.articleText, { color: colors.text }]}>{article.question}</Text>
+                    <Text style={[styles.articleText, { color: colors.text }]}>{t(article.question)}</Text>
                     <Text style={[styles.articleCategory, { color: colors.textTertiary }]}>
-                      {helpCategories.find(c => c.id === article.category)?.title}
+                      {t(helpCategories.find(c => c.id === article.category)?.title ?? '')}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
@@ -398,7 +400,7 @@ export default function HelpCenter() {
         {/* Recently Viewed */}
         {!searchQuery.trim() && recentArticles.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recently Viewed</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Recently Viewed')}</Text>
             {recentArticles.map((article) => (
               <TouchableOpacity
                 key={article.id}
@@ -406,7 +408,7 @@ export default function HelpCenter() {
                 onPress={() => openArticle(article)}
               >
                 <Ionicons name="time-outline" size={20} color="#FF9500" />
-                <Text style={[styles.articleText, { flex: 1, color: colors.text }]}>{article.question}</Text>
+                <Text style={[styles.articleText, { flex: 1, color: colors.text }]}>{t(article.question)}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             ))}
@@ -423,7 +425,7 @@ export default function HelpCenter() {
               <View style={[styles.quickActionIcon, { backgroundColor: '#34C75915' }]}>
                 <Ionicons name="chatbubble-ellipses-outline" size={24} color="#34C759" />
               </View>
-              <Text style={[styles.quickActionTitle, { color: colors.text }]}>Live Chat</Text>
+              <Text style={[styles.quickActionTitle, { color: colors.text }]}>{t('Live Chat')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -433,7 +435,7 @@ export default function HelpCenter() {
               <View style={[styles.quickActionIcon, { backgroundColor: '#B8860B15' }]}>
                 <Ionicons name="call-outline" size={24} color="#B8860B" />
               </View>
-              <Text style={[styles.quickActionTitle, { color: colors.text }]}>Call Us</Text>
+              <Text style={[styles.quickActionTitle, { color: colors.text }]}>{t('Call Us')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -443,7 +445,7 @@ export default function HelpCenter() {
               <View style={[styles.quickActionIcon, { backgroundColor: isDark ? colors.border : '#00000010' }]}>
                 <Text style={[styles.xLogo, { color: colors.text }]}>𝕏</Text>
               </View>
-              <Text style={[styles.quickActionTitle, { color: colors.text }]}>X</Text>
+              <Text style={[styles.quickActionTitle, { color: colors.text }]}>{t('X')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -458,7 +460,7 @@ export default function HelpCenter() {
               <View style={[styles.quickActionIcon, { backgroundColor: '#FF3B3015' }]}>
                 <Ionicons name="bug-outline" size={24} color="#FF3B30" />
               </View>
-              <Text style={[styles.quickActionTitle, { color: colors.text }]}>Report a Bug</Text>
+              <Text style={[styles.quickActionTitle, { color: colors.text }]}>{t('Report a Bug')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -468,7 +470,7 @@ export default function HelpCenter() {
               <View style={[styles.quickActionIcon, { backgroundColor: '#AF52DE15' }]}>
                 <Ionicons name="mail-outline" size={24} color="#AF52DE" />
               </View>
-              <Text style={[styles.quickActionTitle, { color: colors.text }]}>Email Us</Text>
+              <Text style={[styles.quickActionTitle, { color: colors.text }]}>{t('Email Us')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -478,7 +480,7 @@ export default function HelpCenter() {
               <View style={[styles.quickActionIcon, { backgroundColor: '#FF950015' }]}>
                 <Ionicons name="book-outline" size={24} color="#FF9500" />
               </View>
-              <Text style={[styles.quickActionTitle, { color: colors.text }]}>Guidelines</Text>
+              <Text style={[styles.quickActionTitle, { color: colors.text }]}>{t('Guidelines')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -486,7 +488,7 @@ export default function HelpCenter() {
         {/* Categories */}
         {!searchQuery.trim() && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Browse by Topic</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Browse by Topic')}</Text>
             {helpCategories.map((category) => (
               <View key={category.id} style={[styles.categoryCard, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}>
                 <TouchableOpacity
@@ -498,7 +500,7 @@ export default function HelpCenter() {
                       <Ionicons name={category.icon as any} size={24} color="#B8860B" />
                     </View>
                     <View>
-                      <Text style={[styles.categoryTitle, { color: colors.text }]}>{category.title}</Text>
+                      <Text style={[styles.categoryTitle, { color: colors.text }]}>{t(category.title)}</Text>
                       <Text style={[styles.categoryDescription, { color: colors.textSecondary }]}>{category.articles.length} articles</Text>
                     </View>
                   </View>
@@ -517,7 +519,7 @@ export default function HelpCenter() {
                         style={[styles.categoryItem, { borderBottomColor: isDark ? colors.border : '#E5E5E5' }]}
                         onPress={() => openArticle(article)}
                       >
-                        <Text style={[styles.categoryItemText, { color: colors.text }]}>{article.question}</Text>
+                        <Text style={[styles.categoryItemText, { color: colors.text }]}>{t(article.question)}</Text>
                         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                       </TouchableOpacity>
                     ))}
@@ -530,8 +532,8 @@ export default function HelpCenter() {
 
         {/* Immediate Help */}
         <View style={[styles.contactSection, { backgroundColor: isDark ? colors.surface : '#f0f8ff' }]}>
-          <Text style={[styles.contactTitle, { color: colors.text }]}>Need immediate help?</Text>
-          <Text style={[styles.contactSubtitle, { color: colors.textSecondary }]}>Get in touch with our support team</Text>
+          <Text style={[styles.contactTitle, { color: colors.text }]}>{t('Need immediate help?')}</Text>
+          <Text style={[styles.contactSubtitle, { color: colors.textSecondary }]}>{t('Get in touch with our support team')}</Text>
 
           <View style={styles.immediateHelpButtons}>
             <TouchableOpacity
@@ -541,7 +543,7 @@ export default function HelpCenter() {
               <View style={[styles.immediateHelpIcon, { backgroundColor: '#34C75915' }]}>
                 <Ionicons name="chatbubble-ellipses-outline" size={20} color="#34C759" />
               </View>
-              <Text style={[styles.immediateHelpText, { color: colors.text }]}>Live Chat</Text>
+              <Text style={[styles.immediateHelpText, { color: colors.text }]}>{t('Live Chat')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -551,7 +553,7 @@ export default function HelpCenter() {
               <View style={[styles.immediateHelpIcon, { backgroundColor: '#B8860B15' }]}>
                 <Ionicons name="call-outline" size={20} color="#B8860B" />
               </View>
-              <Text style={[styles.immediateHelpText, { color: colors.text }]}>Call Us</Text>
+              <Text style={[styles.immediateHelpText, { color: colors.text }]}>{t('Call Us')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -561,7 +563,7 @@ export default function HelpCenter() {
               <View style={[styles.immediateHelpIcon, { backgroundColor: isDark ? colors.border : '#00000010' }]}>
                 <Text style={[styles.xLogoSmall, { color: colors.text }]}>𝕏</Text>
               </View>
-              <Text style={[styles.immediateHelpText, { color: colors.text }]}>X</Text>
+              <Text style={[styles.immediateHelpText, { color: colors.text }]}>{t('X')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -585,19 +587,19 @@ export default function HelpCenter() {
             >
               <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Help Article</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('Help Article')}</Text>
             <View style={{ width: 44 }} />
           </View>
 
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {selectedArticle && (
               <>
-                <Text style={[styles.articleQuestion, { color: colors.text }]}>{selectedArticle.question}</Text>
+                <Text style={[styles.articleQuestion, { color: colors.text }]}>{t(selectedArticle.question)}</Text>
 
                 <View style={styles.articleMeta}>
                   <View style={styles.articleTag}>
                     <Text style={styles.articleTagText}>
-                      {helpCategories.find(c => c.id === selectedArticle.category)?.title}
+                      {t(helpCategories.find(c => c.id === selectedArticle.category)?.title ?? '')}
                     </Text>
                   </View>
                 </View>
@@ -606,12 +608,12 @@ export default function HelpCenter() {
 
                 {/* Feedback Section */}
                 <View style={[styles.feedbackSection, { backgroundColor: isDark ? colors.surface : '#f9f9f9' }]}>
-                  <Text style={[styles.feedbackTitle, { color: colors.text }]}>Was this article helpful?</Text>
+                  <Text style={[styles.feedbackTitle, { color: colors.text }]}>{t('Was this article helpful?')}</Text>
 
                   {feedbackSubmitted === selectedArticle.id ? (
                     <View style={styles.feedbackThanks}>
                       <Ionicons name="checkmark-circle" size={24} color="#34C759" />
-                      <Text style={styles.feedbackThanksText}>Thanks for your feedback!</Text>
+                      <Text style={styles.feedbackThanksText}>{t('Thanks for your feedback!')}</Text>
                     </View>
                   ) : (
                     <View style={styles.feedbackButtons}>
@@ -632,7 +634,7 @@ export default function HelpCenter() {
                           styles.feedbackButtonText,
                           { color: colors.textSecondary },
                           articleFeedback[selectedArticle.id] === true && { color: '#34C759' }
-                        ]}>Yes</Text>
+                        ]}>{t('Yes')}</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -652,7 +654,7 @@ export default function HelpCenter() {
                           styles.feedbackButtonText,
                           { color: colors.textSecondary },
                           articleFeedback[selectedArticle.id] === false && { color: '#FF3B30' }
-                        ]}>No</Text>
+                        ]}>{t('No')}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -660,7 +662,7 @@ export default function HelpCenter() {
 
                 {/* Related Articles */}
                 <View style={styles.relatedSection}>
-                  <Text style={[styles.relatedTitle, { color: colors.text }]}>Related Articles</Text>
+                  <Text style={[styles.relatedTitle, { color: colors.text }]}>{t('Related Articles')}</Text>
                   {helpCategories
                     .find(c => c.id === selectedArticle.category)
                     ?.articles.filter(a => a.id !== selectedArticle.id)
@@ -674,7 +676,7 @@ export default function HelpCenter() {
                           saveRecentlyViewed(article.id);
                         }}
                       >
-                        <Text style={styles.relatedItemText}>{article.question}</Text>
+                        <Text style={styles.relatedItemText}>{t(article.question)}</Text>
                         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                       </TouchableOpacity>
                     ))}

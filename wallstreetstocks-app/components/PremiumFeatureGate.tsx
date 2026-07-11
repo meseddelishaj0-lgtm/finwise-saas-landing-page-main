@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
+import { useLanguage } from '@/context/LanguageContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -39,6 +40,7 @@ export function PremiumFeatureGate({
   compact = false,
 }: PremiumFeatureGateProps) {
   const { canAccess } = usePremiumFeature();
+  const { t } = useLanguage();
 
   if (canAccess(requiredTier)) {
     return <>{children}</>;
@@ -58,7 +60,7 @@ export function PremiumFeatureGate({
             <Ionicons name="lock-closed" size={12} color="#000" />
           </View>
           <Text style={styles.compactText}>{featureName}</Text>
-          <Text style={styles.compactTier}>{tierInfo.name}+</Text>
+          <Text style={styles.compactTier}>{t(tierInfo.name)}+</Text>
         </View>
       </TouchableOpacity>
     );
@@ -79,7 +81,7 @@ export function PremiumFeatureGate({
       >
         <View style={[styles.tierBadge, { backgroundColor: tierInfo.color }]}>
           <Ionicons name={tierInfo.icon} size={20} color="#000" />
-          <Text style={styles.tierBadgeText}>{tierInfo.name}</Text>
+          <Text style={styles.tierBadgeText}>{t(tierInfo.name)}</Text>
         </View>
 
         <Ionicons name="lock-closed" size={48} color="#fff" style={styles.lockIcon} />
@@ -93,7 +95,7 @@ export function PremiumFeatureGate({
           style={[styles.upgradeButton, { backgroundColor: tierInfo.color }]}
           onPress={() => router.push('/(modals)/paywall' as any)}
         >
-          <Text style={styles.upgradeButtonText}>Unlock with {tierInfo.name}</Text>
+          <Text style={styles.upgradeButtonText}>{t('Unlock with')} {t(tierInfo.name)}</Text>
           <Ionicons name="arrow-forward" size={18} color="#000" />
         </TouchableOpacity>
       </LinearGradient>
@@ -118,6 +120,7 @@ export function PremiumFeatureCard({
   onPress,
 }: PremiumFeatureCardProps) {
   const { canAccess, withPremiumAccess } = usePremiumFeature();
+  const { t } = useLanguage();
   const hasAccess = canAccess(tier);
   const tierInfo = TIER_INFO[tier as keyof typeof TIER_INFO] || TIER_INFO[1];
 
@@ -145,7 +148,7 @@ export function PremiumFeatureCard({
         {!hasAccess && (
           <View style={[styles.tierPill, { backgroundColor: tierInfo.color }]}>
             <Ionicons name="lock-closed" size={10} color="#000" />
-            <Text style={styles.tierPillText}>{tierInfo.name}</Text>
+            <Text style={styles.tierPillText}>{t(tierInfo.name)}</Text>
           </View>
         )}
       </View>
@@ -159,7 +162,7 @@ export function PremiumFeatureCard({
 
       {!hasAccess && (
         <View style={styles.unlockPrompt}>
-          <Text style={styles.unlockPromptText}>Tap to unlock</Text>
+          <Text style={styles.unlockPromptText}>{t('Tap to unlock')}</Text>
           <Ionicons name="chevron-forward" size={14} color="#B8860B" />
         </View>
       )}
@@ -180,12 +183,13 @@ interface PremiumFeaturesSectionProps {
 }
 
 export function PremiumFeaturesSection({ title, features }: PremiumFeaturesSectionProps) {
+  const { t } = useLanguage();
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{title}</Text>
         <TouchableOpacity onPress={() => router.push('/(modals)/paywall' as any)}>
-          <Text style={styles.seeAllText}>See Plans</Text>
+          <Text style={styles.seeAllText}>{t('See Plans')}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.featuresGrid}>

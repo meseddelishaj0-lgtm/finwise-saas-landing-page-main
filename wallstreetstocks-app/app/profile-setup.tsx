@@ -16,12 +16,14 @@ import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { useUserProfile } from '@/context/UserProfileContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '@/context/LanguageContext';
 
 const API_URL = 'https://www.wallstreetstocks.ai';
 
 export default function ProfileSetupScreen() {
   const { user, updateProfile } = useAuth();
   const { refreshProfile } = useUserProfile();
+  const { t } = useLanguage();
   
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -44,19 +46,19 @@ export default function ProfileSetupScreen() {
   const checkUsername = useCallback((value: string) => {
     if (!value || value.length < 3) {
       setUsernameAvailable(null);
-      setUsernameError(value.length > 0 ? 'Username must be at least 3 characters' : '');
+      setUsernameError(value.length > 0 ? t('Username must be at least 3 characters') : '');
       return;
     }
 
     if (value.length > 20) {
       setUsernameAvailable(false);
-      setUsernameError('Username must be 20 characters or less');
+      setUsernameError(t('Username must be 20 characters or less'));
       return;
     }
 
     if (!/^[a-zA-Z0-9_]+$/.test(value)) {
       setUsernameAvailable(false);
-      setUsernameError('Only letters, numbers, and underscores allowed');
+      setUsernameError(t('Only letters, numbers, and underscores allowed'));
       return;
     }
 
@@ -80,7 +82,7 @@ export default function ProfileSetupScreen() {
         const data = JSON.parse(text);
         setUsernameAvailable(data.available);
         if (!data.available) {
-          setUsernameError('Username is already taken');
+          setUsernameError(t('Username is already taken'));
         }
       } catch (error) {
         
@@ -101,17 +103,17 @@ export default function ProfileSetupScreen() {
 
   const handleSave = async () => {
     if (!displayName.trim()) {
-      Alert.alert('Error', 'Please enter a display name');
+      Alert.alert(t('Error'), t('Please enter a display name'));
       return;
     }
-    
+
     if (!username.trim() || username.length < 3) {
-      Alert.alert('Error', 'Please choose a username (at least 3 characters)');
+      Alert.alert(t('Error'), t('Please choose a username (at least 3 characters)'));
       return;
     }
 
     if (usernameAvailable === false) {
-      Alert.alert('Error', 'Please choose an available username');
+      Alert.alert(t('Error'), t('Please choose an available username'));
       return;
     }
 
@@ -129,7 +131,7 @@ export default function ProfileSetupScreen() {
       // Navigate to onboarding for first-time users
       router.replace('/onboarding');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to save profile');
+      Alert.alert(t('Error'), error.message || t('Failed to save profile'));
     } finally {
       setLoading(false);
     }
@@ -137,12 +139,12 @@ export default function ProfileSetupScreen() {
 
   const handleSkip = () => {
     Alert.alert(
-      'Skip Profile Setup?',
-      'You can set up your profile later in Settings.',
+      t('Skip Profile Setup?'),
+      t('You can set up your profile later in Settings.'),
       [
-        { text: 'Go Back', style: 'cancel' },
+        { text: t('Go Back'), style: 'cancel' },
         {
-          text: 'Skip',
+          text: t('Skip'),
           onPress: () => router.replace('/onboarding'),
         },
       ]
@@ -161,9 +163,9 @@ export default function ProfileSetupScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Set Up Your Profile</Text>
+            <Text style={styles.title}>{t('Set Up Your Profile')}</Text>
             <Text style={styles.subtitle}>
-              Choose how you appear in the community
+              {t('Choose how you appear in the community')}
             </Text>
           </View>
 
@@ -171,31 +173,31 @@ export default function ProfileSetupScreen() {
           <View style={styles.form}>
             {/* Display Name */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Display Name</Text>
+              <Text style={styles.label}>{t('Display Name')}</Text>
               <TextInput
                 style={styles.input}
                 value={displayName}
                 onChangeText={setDisplayName}
-                placeholder="Your name"
+                placeholder={t('Your name')}
                 placeholderTextColor="#666"
                 autoCapitalize="words"
                 maxLength={50}
               />
               <Text style={styles.hint}>
-                This is how your name appears on posts and comments
+                {t('This is how your name appears on posts and comments')}
               </Text>
             </View>
 
             {/* Username */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Username</Text>
+              <Text style={styles.label}>{t('Username')}</Text>
               <View style={styles.usernameContainer}>
                 <Text style={styles.usernamePrefix}>@</Text>
                 <TextInput
                   style={styles.usernameInput}
                   value={username}
                   onChangeText={handleUsernameChange}
-                  placeholder="username"
+                  placeholder={t('username')}
                   placeholderTextColor="#666"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -215,19 +217,19 @@ export default function ProfileSetupScreen() {
                 <Text style={styles.errorText}>{usernameError}</Text>
               ) : (
                 <Text style={styles.hint}>
-                  Unique identifier for your profile (3-20 characters)
+                  {t('Unique identifier for your profile (3-20 characters)')}
                 </Text>
               )}
             </View>
 
             {/* Bio */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Bio (Optional)</Text>
+              <Text style={styles.label}>{t('Bio (Optional)')}</Text>
               <TextInput
                 style={[styles.input, styles.bioInput]}
                 value={bio}
                 onChangeText={setBio}
-                placeholder="Tell others about yourself..."
+                placeholder={t('Tell others about yourself...')}
                 placeholderTextColor="#666"
                 multiline
                 numberOfLines={3}
@@ -239,7 +241,7 @@ export default function ProfileSetupScreen() {
 
           {/* Preview */}
           <View style={styles.preview}>
-            <Text style={styles.previewTitle}>Preview</Text>
+            <Text style={styles.previewTitle}>{t('Preview')}</Text>
             <View style={styles.previewCard}>
               <View style={styles.previewAvatar}>
                 <Text style={styles.previewAvatarText}>
@@ -248,10 +250,10 @@ export default function ProfileSetupScreen() {
               </View>
               <View style={styles.previewInfo}>
                 <Text style={styles.previewName}>
-                  {displayName || 'Your Name'}
+                  {displayName || t('Your Name')}
                 </Text>
                 <Text style={styles.previewUsername}>
-                  @{username || 'username'}
+                  @{username || t('username')}
                 </Text>
               </View>
             </View>
@@ -262,7 +264,7 @@ export default function ProfileSetupScreen() {
             <TouchableOpacity
               style={[
                 styles.saveButton,
-                (!displayName.trim() || !username.trim() || username.length < 3 || usernameAvailable === false) && 
+                (!displayName.trim() || !username.trim() || username.length < 3 || usernameAvailable === false) &&
                 styles.saveButtonDisabled
               ]}
               onPress={handleSave}
@@ -271,12 +273,12 @@ export default function ProfileSetupScreen() {
               {loading ? (
                 <ActivityIndicator color="#000" />
               ) : (
-                <Text style={styles.saveButtonText}>Continue</Text>
+                <Text style={styles.saveButtonText}>{t('Continue')}</Text>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-              <Text style={styles.skipButtonText}>Skip for now</Text>
+              <Text style={styles.skipButtonText}>{t('Skip for now')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

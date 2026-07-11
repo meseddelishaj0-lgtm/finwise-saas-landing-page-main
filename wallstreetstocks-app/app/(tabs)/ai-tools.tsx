@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 import FadeSlideIn from '@/components/FadeSlideIn';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -164,6 +165,7 @@ const DIAMOND_TABS = ['analyzer', 'compare', 'forecast', 'assistant', 'insider']
 
 export default function AITools() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const router = useRouter();
   const { canAccess } = usePremiumFeature();
   const [activeTab, setActiveTab] = useState<'analyzer' | 'compare' | 'forecast' | 'assistant' | 'resources' | 'calculator' | 'insider'>('analyzer');
@@ -1655,7 +1657,7 @@ Always remind users that this is educational information, not financial advice.`
                     <View style={styles.targetCardsRow}>
                       <View style={[styles.targetCard, { borderColor: '#FF3B3040', backgroundColor: isDark ? 'rgba(255,59,48,0.10)' : '#FFF5F5' }]}>
                         <Ionicons name="trending-down" size={18} color="#FF3B30" />
-                        <Text style={[styles.targetCardLabel, { color: colors.textSecondary }]}>Conservative</Text>
+                        <Text style={[styles.targetCardLabel, { color: colors.textSecondary }]}>{t('Conservative')}</Text>
                         <Text style={[styles.targetCardValue, { color: '#FF3B30' }]}>${forecastResult.priceTargets.conservative.toFixed(2)}</Text>
                         <Text style={[styles.targetCardPercent, { color: colors.textSecondary }]}>
                           {(((forecastResult.priceTargets.conservative - forecastResult.currentPrice) / forecastResult.currentPrice) * 100).toFixed(1)}%
@@ -1663,7 +1665,7 @@ Always remind users that this is educational information, not financial advice.`
                       </View>
                       <View style={[styles.targetCard, { borderColor: '#5856D650', backgroundColor: isDark ? 'rgba(124,122,255,0.14)' : '#F0F0FF' }]}>
                         <Ionicons name="remove" size={18} color="#5856D6" />
-                        <Text style={[styles.targetCardLabel, { color: colors.textSecondary }]}>Base Case</Text>
+                        <Text style={[styles.targetCardLabel, { color: colors.textSecondary }]}>{t('Base Case')}</Text>
                         <Text style={[styles.targetCardValue, { color: isDark ? '#9D9BFF' : '#5856D6' }]}>${forecastResult.priceTargets.base.toFixed(2)}</Text>
                         <Text style={[styles.targetCardPercent, { color: isDark ? '#9D9BFF' : '#5856D6' }]}>
                           +{(((forecastResult.priceTargets.base - forecastResult.currentPrice) / forecastResult.currentPrice) * 100).toFixed(1)}%
@@ -1671,7 +1673,7 @@ Always remind users that this is educational information, not financial advice.`
                       </View>
                       <View style={[styles.targetCard, { borderColor: '#00C85340', backgroundColor: isDark ? 'rgba(0,200,83,0.10)' : '#F0FDF4' }]}>
                         <Ionicons name="trending-up" size={18} color="#00C853" />
-                        <Text style={[styles.targetCardLabel, { color: colors.textSecondary }]}>Bullish</Text>
+                        <Text style={[styles.targetCardLabel, { color: colors.textSecondary }]}>{t('Bullish')}</Text>
                         <Text style={[styles.targetCardValue, { color: '#00C853' }]}>${forecastResult.priceTargets.bullish.toFixed(2)}</Text>
                         <Text style={[styles.targetCardPercent, { color: '#00C853' }]}>
                           +{(((forecastResult.priceTargets.bullish - forecastResult.currentPrice) / forecastResult.currentPrice) * 100).toFixed(1)}%
@@ -1683,13 +1685,13 @@ Always remind users that this is educational information, not financial advice.`
 
                 {/* Probability Card */}
                 <View style={[styles.probabilityCard, { backgroundColor: colors.background }]}>
-                  <Text style={[styles.probabilityTitle, { color: colors.text }]}>Probability Assessment</Text>
+                  <Text style={[styles.probabilityTitle, { color: colors.text }]}>{t('Probability Assessment')}</Text>
                   <View style={styles.probabilityRow}>
                     <View style={styles.probabilityItem}>
                       <View style={[styles.probabilityCircle, { backgroundColor: isDark ? 'rgba(0,200,83,0.10)' : '#F9F9FB', borderColor: isDark ? 'rgba(0,200,83,0.45)' : '#E5E5EA' }]}>
                         <Text style={[styles.probabilityValue, { color: '#00C853' }]}>{forecastResult.probabilities.upside}%</Text>
                       </View>
-                      <Text style={[styles.probabilityLabel, { color: colors.textSecondary }]}>Upside</Text>
+                      <Text style={[styles.probabilityLabel, { color: colors.textSecondary }]}>{t('Upside')}</Text>
                     </View>
                     <View style={styles.probabilityBarContainer}>
                       <View style={[styles.probabilityBar, { backgroundColor: '#00C853', flex: forecastResult.probabilities.upside }]} />
@@ -1699,7 +1701,7 @@ Always remind users that this is educational information, not financial advice.`
                       <View style={[styles.probabilityCircle, { backgroundColor: isDark ? 'rgba(255,59,48,0.10)' : '#F9F9FB', borderColor: isDark ? 'rgba(255,59,48,0.45)' : '#E5E5EA' }]}>
                         <Text style={[styles.probabilityValue, { color: '#FF3B30' }]}>{forecastResult.probabilities.downside}%</Text>
                       </View>
-                      <Text style={[styles.probabilityLabel, { color: colors.textSecondary }]}>Downside</Text>
+                      <Text style={[styles.probabilityLabel, { color: colors.textSecondary }]}>{t('Downside')}</Text>
                     </View>
                   </View>
                 </View>
@@ -1708,11 +1710,11 @@ Always remind users that this is educational information, not financial advice.`
                 <View style={[styles.technicalCard, { backgroundColor: colors.background }]}>
                   <View style={styles.technicalHeader}>
                     <Ionicons name="pulse" size={20} color="#B8860B" />
-                    <Text style={[styles.technicalTitle, { color: colors.text }]}>Technical Signals</Text>
+                    <Text style={[styles.technicalTitle, { color: colors.text }]}>{t('Technical Signals')}</Text>
                   </View>
                   <View style={styles.technicalGrid}>
                     <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>Trend</Text>
+                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('Trend')}</Text>
                       <View style={[styles.trendBadge, {
                         backgroundColor: forecastResult.technicalSignals.trend === 'uptrend' ? '#00C85320' : forecastResult.technicalSignals.trend === 'downtrend' ? '#FF3B3020' : '#FF950020'
                       }]}>
@@ -1729,25 +1731,25 @@ Always remind users that this is educational information, not financial advice.`
                       </View>
                     </View>
                     <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>Momentum</Text>
+                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('Momentum')}</Text>
                       <Text style={[styles.technicalValue, { color: forecastResult.momentum >= 0 ? '#00C853' : '#FF3B30' }]}>
                         {forecastResult.momentum >= 0 ? '+' : ''}{forecastResult.momentum.toFixed(2)}%
                       </Text>
                     </View>
                     <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>Support</Text>
+                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('Support')}</Text>
                       <Text style={[styles.technicalValue, { color: colors.text }]}>${forecastResult.technicalSignals.support.toFixed(2)}</Text>
                     </View>
                     <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>Resistance</Text>
+                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('Resistance')}</Text>
                       <Text style={[styles.technicalValue, { color: colors.text }]}>${forecastResult.technicalSignals.resistance.toFixed(2)}</Text>
                     </View>
                     <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>52W High</Text>
+                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('52W High')}</Text>
                       <Text style={[styles.technicalValue, { color: colors.text }]}>${forecastResult.yearHigh.toFixed(2)}</Text>
                     </View>
                     <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>Volatility</Text>
+                      <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('Volatility')}</Text>
                       <Text style={[styles.technicalValue, { color: forecastResult.volatility > 3 ? '#FF9500' : '#00C853' }]}>
                         {forecastResult.volatility.toFixed(2)}%
                       </Text>
@@ -1778,7 +1780,7 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={[styles.strengthsCard, { backgroundColor: colors.background }]}>
                     <View style={styles.listHeader}>
                       <Ionicons name="rocket" size={20} color="#00C853" />
-                      <Text style={[styles.listTitle, { color: colors.text }]}>Key Catalysts</Text>
+                      <Text style={[styles.listTitle, { color: colors.text }]}>{t('Key Catalysts')}</Text>
                     </View>
                     {forecastResult.catalysts.map((item, idx) => (
                       <View key={idx} style={styles.listItem}>
@@ -1791,7 +1793,7 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={[styles.risksCard, { backgroundColor: colors.background }]}>
                     <View style={styles.listHeader}>
                       <Ionicons name="warning" size={20} color="#FF3B30" />
-                      <Text style={[styles.listTitle, { color: colors.text }]}>Key Risks</Text>
+                      <Text style={[styles.listTitle, { color: colors.text }]}>{t('Key Risks')}</Text>
                     </View>
                     {forecastResult.risks.map((item, idx) => (
                       <View key={idx} style={styles.listItem}>
@@ -1808,14 +1810,14 @@ Always remind users that this is educational information, not financial advice.`
                   onPress={() => router.push(`/symbol/${forecastResult.symbol}/chart`)}
                 >
                   <Ionicons name="stats-chart" size={20} color="#5856D6" />
-                  <Text style={[styles.viewChartText, { color: '#5856D6' }]}>View Full Chart & Analysis</Text>
+                  <Text style={[styles.viewChartText, { color: '#5856D6' }]}>{t('View Full Chart & Analysis')}</Text>
                   <Ionicons name="chevron-forward" size={20} color="#5856D6" />
                 </TouchableOpacity>
 
                 {/* Disclaimer */}
                 <View style={styles.disclaimer}>
                   <Ionicons name="information-circle" size={16} color={colors.textTertiary} />
-                  <Text style={[styles.disclaimerText, { color: colors.textTertiary }]}>Forecasts are AI-generated predictions. Not financial advice.</Text>
+                  <Text style={[styles.disclaimerText, { color: colors.textTertiary }]}>{t('Forecasts are AI-generated predictions. Not financial advice.')}</Text>
                 </View>
               </>
             )}
@@ -1832,25 +1834,24 @@ Always remind users that this is educational information, not financial advice.`
                 <View style={styles.premiumLockedIcon}>
                   <Ionicons name="chatbubbles" size={48} color="#B9F2FF" />
                 </View>
-                <Text style={styles.premiumLockedTitle}>AI Financial Assistant</Text>
-                <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
+                <Text style={styles.premiumLockedTitle}>{t('AI Financial Assistant')}</Text>
+                <Text style={styles.premiumLockedSubtitle}>{t('Diamond Feature')}</Text>
                 <Text style={styles.premiumLockedDescription}>
-                  Chat with our AI assistant for personalized investment insights,
-                  portfolio advice, and market analysis.
+                  {t('Chat with our AI assistant for personalized investment insights, portfolio advice, and market analysis.')}
                 </Text>
                 <View style={styles.premiumFeaturesList}>
                   {['24/7 AI Chat Support', 'Investment Q&A', 'Market Insights', 'Portfolio Advice'].map((feature, idx) => (
                     <View key={idx} style={styles.premiumFeatureItem}>
                       <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
-                      <Text style={styles.premiumFeatureText}>{feature}</Text>
+                      <Text style={styles.premiumFeatureText}>{t(feature)}</Text>
                     </View>
                   ))}
                 </View>
                 <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
                   <Ionicons name="diamond" size={20} color="#000" />
-                  <Text style={styles.premiumUpgradeText}>Upgrade to Diamond</Text>
+                  <Text style={styles.premiumUpgradeText}>{t('Upgrade to Diamond')}</Text>
                 </TouchableOpacity>
-                <Text style={styles.premiumPriceHint}>Unlock all AI tools</Text>
+                <Text style={styles.premiumPriceHint}>{t('Unlock all AI tools')}</Text>
               </LinearGradient>
             </View>
           ) : (
@@ -1872,22 +1873,22 @@ Always remind users that this is educational information, not financial advice.`
                     <Ionicons name="sparkles" size={28} color="#34C759" />
                   </View>
                   <View style={styles.chatHeaderTextContainer}>
-                    <Text style={[styles.chatHeaderTitle, { color: colors.text }]}>AI Trading Assistant</Text>
-                    <Text style={[styles.chatHeaderSubtitle, { color: colors.textSecondary }]}>Ask anything about stocks, trading & investing</Text>
+                    <Text style={[styles.chatHeaderTitle, { color: colors.text }]}>{t('AI Trading Assistant')}</Text>
+                    <Text style={[styles.chatHeaderSubtitle, { color: colors.textSecondary }]}>{t('Ask anything about stocks, trading & investing')}</Text>
                   </View>
                 </View>
                 <View style={styles.chatCapabilities}>
                   <View style={[styles.capabilityChip, { backgroundColor: colors.surface }]}>
                     <Ionicons name="analytics" size={14} color="#B8860B" />
-                    <Text style={[styles.capabilityText, { color: colors.text }]}>Market Analysis</Text>
+                    <Text style={[styles.capabilityText, { color: colors.text }]}>{t('Market Analysis')}</Text>
                   </View>
                   <View style={[styles.capabilityChip, { backgroundColor: colors.surface }]}>
                     <Ionicons name="school" size={14} color="#5856D6" />
-                    <Text style={[styles.capabilityText, { color: colors.text }]}>Education</Text>
+                    <Text style={[styles.capabilityText, { color: colors.text }]}>{t('Education')}</Text>
                   </View>
                   <View style={[styles.capabilityChip, { backgroundColor: colors.surface }]}>
                     <Ionicons name="pie-chart" size={14} color="#FF9500" />
-                    <Text style={[styles.capabilityText, { color: colors.text }]}>Portfolio Tips</Text>
+                    <Text style={[styles.capabilityText, { color: colors.text }]}>{t('Portfolio Tips')}</Text>
                   </View>
                 </View>
               </View>
@@ -1895,7 +1896,7 @@ Always remind users that this is educational information, not financial advice.`
               {/* Suggested Questions - Only show when few messages */}
               {messages.length <= 2 && (
                 <View style={styles.suggestedContainer}>
-                  <Text style={[styles.suggestedTitle, { color: colors.text }]}>Suggested Questions</Text>
+                  <Text style={[styles.suggestedTitle, { color: colors.text }]}>{t('Suggested Questions')}</Text>
                   <View style={styles.suggestedGrid}>
                     {SUGGESTED_QUESTIONS.map((q, idx) => (
                       <TouchableOpacity
@@ -1908,7 +1909,7 @@ Always remind users that this is educational information, not financial advice.`
                         <View style={[styles.suggestedIconBg, { backgroundColor: `${q.color}15` }]}>
                           <Ionicons name={q.icon as any} size={20} color={q.color} />
                         </View>
-                        <Text style={[styles.suggestedText, { color: colors.text }]} numberOfLines={2}>{q.text}</Text>
+                        <Text style={[styles.suggestedText, { color: colors.text }]} numberOfLines={2}>{t(q.text)}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -1962,7 +1963,7 @@ Always remind users that this is educational information, not financial advice.`
               <View style={[styles.chatInputWrapper, { backgroundColor: colors.surface, borderColor: isDark ? 'transparent' : colors.border }]}>
                 <TextInput
                   style={[styles.chatTextInput, { color: colors.text }]}
-                  placeholder="Ask about stocks, trading strategies..."
+                  placeholder={t('Ask about stocks, trading strategies...')}
                   placeholderTextColor={colors.textTertiary}
                   value={userInput}
                   onChangeText={setUserInput}
@@ -1981,7 +1982,7 @@ Always remind users that this is educational information, not financial advice.`
                   )}
                 </TouchableOpacity>
               </View>
-              <Text style={[styles.chatDisclaimer, { color: colors.textTertiary }]}>AI responses are for educational purposes only. Not financial advice.</Text>
+              <Text style={[styles.chatDisclaimer, { color: colors.textTertiary }]}>{t('AI responses are for educational purposes only. Not financial advice.')}</Text>
             </View>
           </KeyboardAvoidingView>
           )
@@ -1993,8 +1994,8 @@ Always remind users that this is educational information, not financial advice.`
             <View style={[styles.resourcesHeader, { backgroundColor: colors.background }]}>
               <Ionicons name="library" size={28} color="#B8860B" />
               <View>
-                <Text style={[styles.resourcesTitle, { color: colors.text }]}>Learning Resources</Text>
-                <Text style={[styles.resourcesSubtitle, { color: colors.textSecondary }]}>Expand your financial knowledge</Text>
+                <Text style={[styles.resourcesTitle, { color: colors.text }]}>{t('Learning Resources')}</Text>
+                <Text style={[styles.resourcesSubtitle, { color: colors.textSecondary }]}>{t('Expand your financial knowledge')}</Text>
               </View>
             </View>
 
@@ -2004,8 +2005,8 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={[styles.categoryIconBg, { backgroundColor: `${cat.color}15` }]}>
                     <Ionicons name={cat.icon} size={24} color={cat.color} />
                   </View>
-                  <Text style={[styles.categoryTitle, { color: colors.text }]}>{cat.title}</Text>
-                  <Text style={[styles.categoryDesc, { color: colors.textSecondary }]} numberOfLines={2}>{cat.description}</Text>
+                  <Text style={[styles.categoryTitle, { color: colors.text }]}>{t(cat.title)}</Text>
+                  <Text style={[styles.categoryDesc, { color: colors.textSecondary }]} numberOfLines={2}>{t(cat.description)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -2021,25 +2022,24 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={styles.premiumLockedIcon}>
                     <Ionicons name="briefcase" size={48} color="#B9F2FF" />
                   </View>
-                  <Text style={styles.premiumLockedTitle}>Insider Trading Data</Text>
-                  <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
+                  <Text style={styles.premiumLockedTitle}>{t('Insider Trading Data')}</Text>
+                  <Text style={styles.premiumLockedSubtitle}>{t('Diamond Feature')}</Text>
                   <Text style={styles.premiumLockedDescription}>
-                    Track SEC Form 4 filings and see what executives,
-                    directors, and insiders are buying and selling.
+                    {t('Track SEC Form 4 filings and see what executives, directors, and insiders are buying and selling.')}
                   </Text>
                   <View style={styles.premiumFeaturesList}>
                     {['Real-Time SEC Filings', 'Buy/Sell Activity Tracking', 'Executive Trade Details', 'Symbol Search'].map((feature, idx) => (
                       <View key={idx} style={styles.premiumFeatureItem}>
                         <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
-                        <Text style={styles.premiumFeatureText}>{feature}</Text>
+                        <Text style={styles.premiumFeatureText}>{t(feature)}</Text>
                       </View>
                     ))}
                   </View>
                   <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
                     <Ionicons name="diamond" size={20} color="#000" />
-                    <Text style={styles.premiumUpgradeText}>Upgrade to Diamond</Text>
+                    <Text style={styles.premiumUpgradeText}>{t('Upgrade to Diamond')}</Text>
                   </TouchableOpacity>
-                  <Text style={styles.premiumPriceHint}>Unlock all AI tools</Text>
+                  <Text style={styles.premiumPriceHint}>{t('Unlock all AI tools')}</Text>
                 </LinearGradient>
               </View>
             ) : (
@@ -2052,8 +2052,8 @@ Always remind users that this is educational information, not financial advice.`
                   <Ionicons name="briefcase" size={28} color="#5856D6" />
                 </View>
                 <View style={styles.insiderHeaderText}>
-                  <Text style={[styles.insiderHeaderTitle, { color: colors.text }]}>Insider Trading</Text>
-                  <Text style={[styles.insiderHeaderSubtitle, { color: colors.textSecondary }]}>Track what executives are buying & selling</Text>
+                  <Text style={[styles.insiderHeaderTitle, { color: colors.text }]}>{t('Insider Trading')}</Text>
+                  <Text style={[styles.insiderHeaderSubtitle, { color: colors.textSecondary }]}>{t('Track what executives are buying & selling')}</Text>
                 </View>
               </View>
 
@@ -2062,22 +2062,22 @@ Always remind users that this is educational information, not financial advice.`
                 <View style={styles.insiderInfoRow}>
                   <View style={styles.insiderInfoItem}>
                     <Ionicons name="eye" size={20} color="#B8860B" />
-                    <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>Real-Time Data</Text>
+                    <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>{t('Real-Time Data')}</Text>
                   </View>
                   <View style={styles.insiderInfoItem}>
                     <Ionicons name="document-text" size={20} color="#34C759" />
-                    <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>SEC Filings</Text>
+                    <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>{t('SEC Filings')}</Text>
                   </View>
                   <View style={styles.insiderInfoItem}>
                     <Ionicons name="search" size={20} color="#FF9500" />
-                    <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>Symbol Search</Text>
+                    <Text style={[styles.insiderInfoLabel, { color: colors.textSecondary }]}>{t('Symbol Search')}</Text>
                   </View>
                 </View>
               </View>
 
               {/* Feature List */}
               <View style={[styles.insiderFeatures, { backgroundColor: colors.surface, borderWidth: 1, borderColor: isDark ? '#444' : '#E5E5EA', borderRadius: 12 }]}>
-                <Text style={[styles.insiderFeaturesTitle, { color: colors.text }]}>What you can do:</Text>
+                <Text style={[styles.insiderFeaturesTitle, { color: colors.text }]}>{t('What you can do:')}</Text>
                 {[
                   { icon: 'search', text: 'Search insider trades by stock symbol', color: '#B8860B' },
                   { icon: 'trending-up', text: 'Filter by buys or sells', color: '#34C759' },
@@ -2089,7 +2089,7 @@ Always remind users that this is educational information, not financial advice.`
                     <View style={[styles.insiderFeatureIcon, { backgroundColor: `${feature.color}15` }]}>
                       <Ionicons name={feature.icon as any} size={16} color={feature.color} />
                     </View>
-                    <Text style={[styles.insiderFeatureText, { color: colors.textSecondary }]}>{feature.text}</Text>
+                    <Text style={[styles.insiderFeatureText, { color: colors.textSecondary }]}>{t(feature.text)}</Text>
                   </View>
                 ))}
               </View>
@@ -2099,14 +2099,14 @@ Always remind users that this is educational information, not financial advice.`
                 style={styles.insiderCTAButton}
                 onPress={() => router.push('/insider-trading')}
               >
-                <Text style={styles.insiderCTAText}>Open Insider Trading</Text>
+                <Text style={styles.insiderCTAText}>{t('Open Insider Trading')}</Text>
                 <Ionicons name="arrow-forward" size={20} color="#FFF" />
               </TouchableOpacity>
 
               {/* Quick Access Popular Stocks */}
               <View style={[styles.insiderQuickAccess, { backgroundColor: colors.surface, borderWidth: 1, borderColor: isDark ? '#444' : '#E5E5EA', borderRadius: 12 }]}>
-                <Text style={[styles.insiderQuickTitle, { color: colors.text }]}>Quick Access</Text>
-                <Text style={[styles.insiderQuickSubtitle, { color: colors.textSecondary }]}>Check insider activity for popular stocks</Text>
+                <Text style={[styles.insiderQuickTitle, { color: colors.text }]}>{t('Quick Access')}</Text>
+                <Text style={[styles.insiderQuickSubtitle, { color: colors.textSecondary }]}>{t('Check insider activity for popular stocks')}</Text>
                 <View style={styles.insiderQuickGrid}>
                   {['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN'].map((symbol) => (
                     <TouchableOpacity
@@ -2126,7 +2126,7 @@ Always remind users that this is educational information, not financial advice.`
             <View style={styles.insiderDisclaimer}>
               <Ionicons name="information-circle" size={16} color={colors.textTertiary} />
               <Text style={[styles.insiderDisclaimerText, { color: colors.textTertiary }]}>
-                Insider trading data is sourced from SEC Form 4 filings. This is for informational purposes only.
+                {t('Insider trading data is sourced from SEC Form 4 filings. This is for informational purposes only.')}
               </Text>
             </View>
             </>
@@ -2143,8 +2143,8 @@ Always remind users that this is educational information, not financial advice.`
                 <Ionicons name="calculator" size={28} color="#34C759" />
               </View>
               <View>
-                <Text style={[styles.calcHeaderTitle, { color: colors.text }]}>Financial Calculators</Text>
-                <Text style={[styles.calcHeaderSubtitle, { color: colors.textSecondary }]}>Plan your financial future</Text>
+                <Text style={[styles.calcHeaderTitle, { color: colors.text }]}>{t('Financial Calculators')}</Text>
+                <Text style={[styles.calcHeaderSubtitle, { color: colors.textSecondary }]}>{t('Plan your financial future')}</Text>
               </View>
             </View>
 
@@ -2167,7 +2167,7 @@ Always remind users that this is educational information, not financial advice.`
                 >
                   <Ionicons name={type.icon as any} size={18} color={calcType === type.key ? type.color : '#8E8E93'} />
                   <Text style={[styles.calcTypeText, calcType === type.key && { color: type.color }]}>
-                    {type.label}
+                    {t(type.label)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -2176,16 +2176,16 @@ Always remind users that this is educational information, not financial advice.`
             {/* Investment Calculator */}
             {calcType === 'investment' && (
               <View style={[styles.calcCard, { backgroundColor: colors.background }]}>
-                <Text style={[styles.calcCardTitle, { color: colors.text }]}>Investment Growth Calculator</Text>
+                <Text style={[styles.calcCardTitle, { color: colors.text }]}>{t('Investment Growth Calculator')}</Text>
                 <View style={styles.calcInputGroup}>
-                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Initial Investment</Text>
+                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Initial Investment')}</Text>
                   <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                     <TextInput style={[styles.calcInput, { color: colors.text }]} value={calcInitialAmount} onChangeText={setCalcInitialAmount} keyboardType="numeric" placeholder="10,000" placeholderTextColor={colors.textTertiary} />
                   </View>
                 </View>
                 <View style={styles.calcInputGroup}>
-                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Monthly Contribution</Text>
+                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Monthly Contribution')}</Text>
                   <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                     <TextInput style={[styles.calcInput, { color: colors.text }]} value={calcMonthlyContribution} onChangeText={setCalcMonthlyContribution} keyboardType="numeric" placeholder="500" placeholderTextColor={colors.textTertiary} />
@@ -2193,14 +2193,14 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
                 <View style={styles.calcRow}>
                   <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Years</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Years')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={calcYears} onChangeText={setCalcYears} keyboardType="numeric" placeholder="10" placeholderTextColor={colors.textTertiary} />
-                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>yrs</Text>
+                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>{t('yrs')}</Text>
                     </View>
                   </View>
                   <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Annual Return</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Annual Return')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={calcAnnualReturn} onChangeText={setCalcAnnualReturn} keyboardType="numeric" placeholder="8" placeholderTextColor={colors.textTertiary} />
                       <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>%</Text>
@@ -2223,7 +2223,7 @@ Always remind users that this is educational information, not financial advice.`
                   setCalcResult({ type: 'investment', futureValue: Math.round(balance), totalContributions: Math.round(totalContributions), totalInterest: Math.round(balance - totalContributions), years });
                 }}>
                   <Ionicons name="calculator" size={20} color="#FFF" />
-                  <Text style={styles.calcButtonText}>Calculate Growth</Text>
+                  <Text style={styles.calcButtonText}>{t('Calculate Growth')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2231,16 +2231,16 @@ Always remind users that this is educational information, not financial advice.`
             {/* Mortgage Calculator */}
             {calcType === 'mortgage' && (
               <View style={[styles.calcCard, { backgroundColor: colors.background }]}>
-                <Text style={[styles.calcCardTitle, { color: colors.text }]}>Mortgage Payment Calculator</Text>
+                <Text style={[styles.calcCardTitle, { color: colors.text }]}>{t('Mortgage Payment Calculator')}</Text>
                 <View style={styles.calcInputGroup}>
-                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Home Price</Text>
+                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Home Price')}</Text>
                   <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                     <TextInput style={[styles.calcInput, { color: colors.text }]} value={mortgageHomePrice} onChangeText={setMortgageHomePrice} keyboardType="numeric" placeholder="400,000" placeholderTextColor={colors.textTertiary} />
                   </View>
                 </View>
                 <View style={styles.calcInputGroup}>
-                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Down Payment</Text>
+                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Down Payment')}</Text>
                   <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                     <TextInput style={[styles.calcInput, { color: colors.text }]} value={mortgageDownPayment} onChangeText={setMortgageDownPayment} keyboardType="numeric" placeholder="80,000" placeholderTextColor={colors.textTertiary} />
@@ -2248,30 +2248,30 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
                 <View style={styles.calcRow}>
                   <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Interest Rate</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Interest Rate')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={mortgageInterestRate} onChangeText={setMortgageInterestRate} keyboardType="numeric" placeholder="6.5" placeholderTextColor={colors.textTertiary} />
                       <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>%</Text>
                     </View>
                   </View>
                   <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Loan Term</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Loan Term')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={mortgageTerm} onChangeText={setMortgageTerm} keyboardType="numeric" placeholder="30" placeholderTextColor={colors.textTertiary} />
-                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>yrs</Text>
+                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>{t('yrs')}</Text>
                     </View>
                   </View>
                 </View>
                 <View style={styles.calcRow}>
                   <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Property Tax/yr</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Property Tax/yr')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={mortgagePropertyTax} onChangeText={setMortgagePropertyTax} keyboardType="numeric" placeholder="3,600" placeholderTextColor={colors.textTertiary} />
                     </View>
                   </View>
                   <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Insurance/yr</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Insurance/yr')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={mortgageInsurance} onChangeText={setMortgageInsurance} keyboardType="numeric" placeholder="1,200" placeholderTextColor={colors.textTertiary} />
@@ -2291,7 +2291,7 @@ Always remind users that this is educational information, not financial advice.`
                   setCalcResult({ type: 'mortgage', monthlyPayment: Math.round(totalMonthly), principalInterest: Math.round(monthlyPI), propertyTax: Math.round(monthlyTax), insurance: Math.round(monthlyIns), loanAmount: Math.round(principal), totalPayments: Math.round(totalPayments), totalInterest: Math.round(totalInterest), downPaymentPercent: Math.round(((parseFloat(mortgageDownPayment) || 0) / (parseFloat(mortgageHomePrice) || 1)) * 100) });
                 }}>
                   <Ionicons name="home" size={20} color="#FFF" />
-                  <Text style={styles.calcButtonText}>Calculate Mortgage</Text>
+                  <Text style={styles.calcButtonText}>{t('Calculate Mortgage')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2299,9 +2299,9 @@ Always remind users that this is educational information, not financial advice.`
             {/* Loan Calculator */}
             {calcType === 'loan' && (
               <View style={[styles.calcCard, { backgroundColor: colors.background }]}>
-                <Text style={[styles.calcCardTitle, { color: colors.text }]}>Loan Payment Calculator</Text>
+                <Text style={[styles.calcCardTitle, { color: colors.text }]}>{t('Loan Payment Calculator')}</Text>
                 <View style={styles.calcInputGroup}>
-                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Loan Amount</Text>
+                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Loan Amount')}</Text>
                   <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                     <TextInput style={[styles.calcInput, { color: colors.text }]} value={loanAmount} onChangeText={setLoanAmount} keyboardType="numeric" placeholder="25,000" placeholderTextColor={colors.textTertiary} />
@@ -2309,17 +2309,17 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
                 <View style={styles.calcRow}>
                   <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Interest Rate</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Interest Rate')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={loanInterestRate} onChangeText={setLoanInterestRate} keyboardType="numeric" placeholder="7.5" placeholderTextColor={colors.textTertiary} />
                       <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>%</Text>
                     </View>
                   </View>
                   <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Loan Term</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Loan Term')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={loanTerm} onChangeText={setLoanTerm} keyboardType="numeric" placeholder="5" placeholderTextColor={colors.textTertiary} />
-                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>yrs</Text>
+                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>{t('yrs')}</Text>
                     </View>
                   </View>
                 </View>
@@ -2333,7 +2333,7 @@ Always remind users that this is educational information, not financial advice.`
                   setCalcResult({ type: 'loan', monthlyPayment: Math.round(monthlyPayment), totalPayments: Math.round(totalPayments), totalInterest: Math.round(totalInterest), principal: Math.round(principal) });
                 }}>
                   <Ionicons name="card" size={20} color="#FFF" />
-                  <Text style={styles.calcButtonText}>Calculate Loan</Text>
+                  <Text style={styles.calcButtonText}>{t('Calculate Loan')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2341,17 +2341,17 @@ Always remind users that this is educational information, not financial advice.`
             {/* Bond Calculator */}
             {calcType === 'bond' && (
               <View style={[styles.calcCard, { backgroundColor: colors.background }]}>
-                <Text style={[styles.calcCardTitle, { color: colors.text }]}>Bond Valuation Calculator</Text>
+                <Text style={[styles.calcCardTitle, { color: colors.text }]}>{t('Bond Valuation Calculator')}</Text>
                 <View style={styles.calcRow}>
                   <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Face Value</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Face Value')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={bondFaceValue} onChangeText={setBondFaceValue} keyboardType="numeric" placeholder="1,000" placeholderTextColor={colors.textTertiary} />
                     </View>
                   </View>
                   <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Coupon Rate</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Coupon Rate')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={bondCouponRate} onChangeText={setBondCouponRate} keyboardType="numeric" placeholder="5" placeholderTextColor={colors.textTertiary} />
                       <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>%</Text>
@@ -2360,14 +2360,14 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
                 <View style={styles.calcRow}>
                   <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Years to Maturity</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Years to Maturity')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={bondYearsToMaturity} onChangeText={setBondYearsToMaturity} keyboardType="numeric" placeholder="10" placeholderTextColor={colors.textTertiary} />
-                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>yrs</Text>
+                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>{t('yrs')}</Text>
                     </View>
                   </View>
                   <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Market Rate</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Market Rate')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={bondMarketRate} onChangeText={setBondMarketRate} keyboardType="numeric" placeholder="4" placeholderTextColor={colors.textTertiary} />
                       <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>%</Text>
@@ -2375,7 +2375,7 @@ Always remind users that this is educational information, not financial advice.`
                   </View>
                 </View>
                 <View style={styles.calcInputGroup}>
-                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Payments per Year</Text>
+                  <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Payments per Year')}</Text>
                   <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <TextInput style={[styles.calcInput, { color: colors.text }]} value={bondPaymentFrequency} onChangeText={setBondPaymentFrequency} keyboardType="numeric" placeholder="2" placeholderTextColor={colors.textTertiary} />
                     <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>/yr</Text>
@@ -2400,7 +2400,7 @@ Always remind users that this is educational information, not financial advice.`
                   setCalcResult({ type: 'bond', bondPrice: Math.round(bondPrice * 100) / 100, couponPayment: Math.round(couponPayment * 100) / 100, annualIncome: Math.round(couponPayment * frequency * 100) / 100, totalIncome: Math.round(couponPayment * totalPeriods * 100) / 100, currentYield: Math.round(currentYield * 100) / 100, isPremium: bondPrice > faceValue, faceValue });
                 }}>
                   <Ionicons name="ribbon" size={20} color="#FFF" />
-                  <Text style={styles.calcButtonText}>Calculate Bond Value</Text>
+                  <Text style={styles.calcButtonText}>{t('Calculate Bond Value')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2408,33 +2408,33 @@ Always remind users that this is educational information, not financial advice.`
             {/* Retirement Calculator */}
             {calcType === 'retirement' && (
               <View style={[styles.calcCard, { backgroundColor: colors.background }]}>
-                <Text style={[styles.calcCardTitle, { color: colors.text }]}>Retirement Planning Calculator</Text>
+                <Text style={[styles.calcCardTitle, { color: colors.text }]}>{t('Retirement Planning Calculator')}</Text>
                 <View style={styles.calcRow}>
                   <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Current Age</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Current Age')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={retireCurrentAge} onChangeText={setRetireCurrentAge} keyboardType="numeric" placeholder="30" placeholderTextColor={colors.textTertiary} />
-                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>yrs</Text>
+                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>{t('yrs')}</Text>
                     </View>
                   </View>
                   <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Retirement Age</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Retirement Age')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={retireTargetAge} onChangeText={setRetireTargetAge} keyboardType="numeric" placeholder="65" placeholderTextColor={colors.textTertiary} />
-                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>yrs</Text>
+                      <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>{t('yrs')}</Text>
                     </View>
                   </View>
                 </View>
                 <View style={styles.calcRow}>
                   <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Current Savings</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Current Savings')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={retireCurrentSavings} onChangeText={setRetireCurrentSavings} keyboardType="numeric" placeholder="50,000" placeholderTextColor={colors.textTertiary} />
                     </View>
                   </View>
                   <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Monthly Savings</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Monthly Savings')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={retireMonthlyContrib} onChangeText={setRetireMonthlyContrib} keyboardType="numeric" placeholder="1,000" placeholderTextColor={colors.textTertiary} />
@@ -2443,14 +2443,14 @@ Always remind users that this is educational information, not financial advice.`
                 </View>
                 <View style={styles.calcRow}>
                   <View style={[styles.calcInputGroup, { flex: 1, marginRight: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Expected Return</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Expected Return')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={retireExpectedReturn} onChangeText={setRetireExpectedReturn} keyboardType="numeric" placeholder="7" placeholderTextColor={colors.textTertiary} />
                       <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>%</Text>
                     </View>
                   </View>
                   <View style={[styles.calcInputGroup, { flex: 1, marginLeft: 8 }]}>
-                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>Monthly Expense</Text>
+                    <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Monthly Expense')}</Text>
                     <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <Text style={[styles.calcInputPrefix, { color: colors.textTertiary }]}>$</Text>
                       <TextInput style={[styles.calcInput, { color: colors.text }]} value={retireMonthlyExpense} onChangeText={setRetireMonthlyExpense} keyboardType="numeric" placeholder="5,000" placeholderTextColor={colors.textTertiary} />

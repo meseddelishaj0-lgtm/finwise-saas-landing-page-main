@@ -11,10 +11,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function AboutPremium() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   const premiumFeatures = [
     {
@@ -145,7 +147,7 @@ export default function AboutPremium() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Premium</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Premium')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -155,23 +157,23 @@ export default function AboutPremium() {
           <View style={[styles.heroIcon, { backgroundColor: colors.card }]}>
             <Ionicons name="diamond" size={48} color="#B8860B" />
           </View>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>Unlock Your Trading Potential</Text>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>{t('Unlock Your Trading Potential')}</Text>
           <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-            Join thousands of traders using Premium tools to make smarter investment decisions
+            {t('Join thousands of traders using Premium tools to make smarter investment decisions')}
           </Text>
         </View>
 
         {/* Features */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Premium Features</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Premium Features')}</Text>
           <View style={styles.featuresGrid}>
             {premiumFeatures.map((feature, index) => (
               <View key={index} style={[styles.featureCard, { backgroundColor: colors.card }]}>
                 <View style={[styles.featureIcon, { backgroundColor: `${feature.color}15` }]}>
                   <Ionicons name={feature.icon as any} size={24} color={feature.color} />
                 </View>
-                <Text style={[styles.featureTitle, { color: colors.text }]}>{feature.title}</Text>
-                <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>{feature.description}</Text>
+                <Text style={[styles.featureTitle, { color: colors.text }]}>{t(feature.title)}</Text>
+                <Text style={[styles.featureDescription, { color: colors.textSecondary }]}>{t(feature.description)}</Text>
               </View>
             ))}
           </View>
@@ -179,7 +181,7 @@ export default function AboutPremium() {
 
         {/* Pricing */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Choose Your Plan</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Choose Your Plan')}</Text>
           <View style={styles.plansVerticalContainer}>
             {plans.map((plan, index) => (
               <TouchableOpacity
@@ -194,29 +196,29 @@ export default function AboutPremium() {
               >
                 {plan.popular && (
                   <View style={[styles.popularBadgeVertical, { backgroundColor: plan.color }]}>
-                    <Text style={styles.popularText}>MOST POPULAR</Text>
+                    <Text style={styles.popularText}>{t('MOST POPULAR')}</Text>
                   </View>
                 )}
                 <View style={styles.planCardHeader}>
                   <View style={[styles.tierBadge, { backgroundColor: plan.color }]}>
-                    <Text style={styles.tierBadgeText}>{plan.name}</Text>
+                    <Text style={styles.tierBadgeText}>{t(plan.name)}</Text>
                   </View>
                   <View style={styles.priceRow}>
                     <Text style={[styles.planPrice, { color: colors.text }]}>{plan.price}</Text>
-                    <Text style={[styles.planPeriod, { color: colors.textSecondary }]}>{plan.period}</Text>
+                    <Text style={[styles.planPeriod, { color: colors.textSecondary }]}>{t(plan.period)}</Text>
                   </View>
                 </View>
                 <View style={styles.planFeatures}>
                   {plan.features.map((feature, idx) => (
                     <View key={idx} style={styles.planFeatureRow}>
                       <Ionicons name="checkmark-circle" size={16} color={plan.color} />
-                      <Text style={[styles.planFeatureText, { color: colors.text }]}>{feature}</Text>
+                      <Text style={[styles.planFeatureText, { color: colors.text }]}>{t(feature)}</Text>
                     </View>
                   ))}
                 </View>
                 {plan.savings && (
                   <View style={[styles.savingsBadge, { backgroundColor: `${plan.color}30` }]}>
-                    <Text style={[styles.savingsText, { color: colors.text }]}>{plan.savings}</Text>
+                    <Text style={[styles.savingsText, { color: colors.text }]}>{t(plan.savings)}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -226,11 +228,11 @@ export default function AboutPremium() {
 
         {/* FAQs */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Frequently Asked Questions</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Frequently Asked Questions')}</Text>
           {faqs.map((faq, index) => (
             <View key={index} style={styles.faqItem}>
-              <Text style={[styles.faqQuestion, { color: colors.text }]}>{faq.question}</Text>
-              <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>{faq.answer}</Text>
+              <Text style={[styles.faqQuestion, { color: colors.text }]}>{t(faq.question)}</Text>
+              <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>{t(faq.answer)}</Text>
             </View>
           ))}
         </View>

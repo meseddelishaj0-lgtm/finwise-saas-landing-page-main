@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface PremiumGateProps {
   children: ReactNode;
@@ -26,7 +27,8 @@ export function PremiumGate({
   featureName = 'This feature',
 }: PremiumGateProps) {
   const { isPremium, activeSubscription } = useSubscription();
-  
+  const { t } = useLanguage();
+
   // Check if user has access based on tier
   const hasAccess = (() => {
     if (!isPremium || !activeSubscription) return false;
@@ -65,17 +67,17 @@ export function PremiumGate({
           <Ionicons name="lock-closed" size={32} color="#FFD700" />
         </View>
         
-        <Text style={styles.title}>{tierName} Feature</Text>
+        <Text style={styles.title}>{t(tierName)} {t('Feature')}</Text>
         <Text style={styles.description}>
-          {featureName} requires a {tierName} subscription or higher.
+          {featureName} {t('requires a')} {t(tierName)} {t('subscription or higher.')}
         </Text>
-        
+
         {showUpgradeButton && (
           <TouchableOpacity
             style={styles.upgradeButton}
             onPress={() => router.push('/(modals)/paywall' as any)}
           >
-            <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+            <Text style={styles.upgradeButtonText}>{t('Upgrade Now')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -116,14 +118,15 @@ export function PremiumBadge({
   showUpgradeIfFree?: boolean;
 }) {
   const { isPremium, activeSubscription } = useSubscription();
+  const { t } = useLanguage();
 
   if (isPremium && showIfPremium) {
     const tierName = getTierNameFromProduct(activeSubscription);
     const tierColor = getTierColor(activeSubscription);
-    
+
     return (
       <View style={[styles.badge, { backgroundColor: tierColor }]}>
-        <Text style={styles.badgeText}>{tierName}</Text>
+        <Text style={styles.badgeText}>{t(tierName)}</Text>
       </View>
     );
   }
@@ -134,7 +137,7 @@ export function PremiumBadge({
         style={[styles.badge, styles.upgradeBadge]}
         onPress={() => router.push('/(modals)/paywall' as any)}
       >
-        <Text style={styles.upgradeBadgeText}>Upgrade</Text>
+        <Text style={styles.upgradeBadgeText}>{t('Upgrade')}</Text>
       </TouchableOpacity>
     );
   }

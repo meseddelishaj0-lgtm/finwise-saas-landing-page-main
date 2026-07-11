@@ -10,10 +10,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function Display() {
   const router = useRouter();
   const { mode, isDark, colors, setMode } = useTheme();
+  const { t } = useLanguage();
 
   const themeOptions = [
     { value: 'light', label: 'Light', icon: 'sunny' },
@@ -27,13 +29,13 @@ export default function Display() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Display</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Display')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-          APPEARANCE
+          {t('APPEARANCE')}
         </Text>
 
         {themeOptions.map((option) => (
@@ -56,11 +58,11 @@ export default function Display() {
               </View>
               <View>
                 <Text style={[styles.rowTitle, { color: colors.text }]}>
-                  {option.label}
+                  {t(option.label)}
                 </Text>
                 {option.value === 'system' && (
                   <Text style={[styles.rowSubtitle, { color: colors.textTertiary }]}>
-                    Matches your device settings
+                    {t('Matches your device settings')}
                   </Text>
                 )}
               </View>
@@ -75,27 +77,27 @@ export default function Display() {
       {/* Preview */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-          PREVIEW
+          {t('PREVIEW')}
         </Text>
         <View style={[styles.previewCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.previewHeader}>
             <View style={[styles.previewDot, { backgroundColor: colors.primary }]} />
             <Text style={[styles.previewTitle, { color: colors.text }]}>
-              {isDark ? 'Dark Mode' : 'Light Mode'}
+              {isDark ? t('Dark Mode') : t('Light Mode')}
             </Text>
           </View>
           <Text style={[styles.previewText, { color: colors.textSecondary }]}>
-            This is how your app will look with the current theme setting.
+            {t('This is how your app will look with the current theme setting.')}
           </Text>
           <View style={styles.previewButtons}>
             <View style={[styles.previewButton, { backgroundColor: colors.primary }]}>
-              <Text style={styles.previewButtonText}>Primary</Text>
+              <Text style={styles.previewButtonText}>{t('Primary')}</Text>
             </View>
             <View style={[styles.previewButton, { backgroundColor: colors.success }]}>
-              <Text style={styles.previewButtonText}>Success</Text>
+              <Text style={styles.previewButtonText}>{t('Success')}</Text>
             </View>
             <View style={[styles.previewButton, { backgroundColor: colors.danger }]}>
-              <Text style={styles.previewButtonText}>Danger</Text>
+              <Text style={styles.previewButtonText}>{t('Danger')}</Text>
             </View>
           </View>
         </View>

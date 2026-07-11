@@ -1,6 +1,7 @@
 // components/explore/BondsSection.tsx
 import React from "react";
 import { View, Text } from "react-native";
+import { useLanguage } from "@/context/LanguageContext";
 
 const bonds = [
   { name: "U.S. 2 Year Treasury", yield: 4.85, move: 0.03 },
@@ -9,10 +10,11 @@ const bonds = [
 ];
 
 export default function BondsSection() {
+  const t = useLanguage().t as (key: string) => string;
   return (
     <View className="mt-4">
       <View className="bg-[#111827] mx-4 rounded-2xl px-4 pt-4 pb-2">
-        <Text className="text-gray-400 text-xs mb-2">U.S. TREASURIES</Text>
+        <Text className="text-gray-400 text-xs mb-2">{t('U.S. TREASURIES')}</Text>
 
         {bonds.map((b, i) => {
           const isPositive = b.move >= 0;

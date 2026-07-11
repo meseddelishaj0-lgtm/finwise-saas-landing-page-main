@@ -27,6 +27,7 @@ import {
   interpretRSI,
   interpretMACD,
 } from '../services/technicalIndicators';
+import { useLanguage } from '@/context/LanguageContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const INDICATOR_HEIGHT = 100;
@@ -44,6 +45,7 @@ export default function TechnicalIndicators({
   timeframe,
   priceColor,
 }: TechnicalIndicatorsProps) {
+  const { t } = useLanguage();
   const [activeIndicator, setActiveIndicator] = useState<IndicatorType>('RSI');
   const [loading, setLoading] = useState(true);
   const [rsiData, setRsiData] = useState<RSIDataPoint[]>([]);
@@ -295,7 +297,7 @@ export default function TechnicalIndicators({
               activeIndicator === indicator && [styles.activeTabText, { color: priceColor }],
             ]}
           >
-            {indicator === 'BB' ? 'Bollinger' : indicator}
+            {indicator === 'BB' ? t('Bollinger') : indicator}
           </Text>
         </TouchableOpacity>
       ))}
@@ -316,7 +318,7 @@ export default function TechnicalIndicators({
           )}
         </View>
         <Text style={styles.indicatorDescription}>
-          {'>'} 70 = Overbought | {'<'} 30 = Oversold
+          {'>'} 70 = {t('Overbought')} | {'<'} 30 = {t('Oversold')}
         </Text>
       </View>
 
@@ -357,7 +359,7 @@ export default function TechnicalIndicators({
         </View>
       ) : (
         <View style={styles.noDataContainer}>
-          <Text style={styles.noDataText}>No RSI data available</Text>
+          <Text style={styles.noDataText}>{t('No RSI data available')}</Text>
         </View>
       )}
     </View>
@@ -388,11 +390,11 @@ export default function TechnicalIndicators({
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: '#FF9500' }]} />
-            <Text style={styles.legendText}>Signal</Text>
+            <Text style={styles.legendText}>{t('Signal')}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendBar, { backgroundColor: '#34C759' }]} />
-            <Text style={styles.legendText}>Histogram</Text>
+            <Text style={styles.legendText}>{t('Histogram')}</Text>
           </View>
         </View>
       </View>
@@ -445,7 +447,7 @@ export default function TechnicalIndicators({
         </View>
       ) : (
         <View style={styles.noDataContainer}>
-          <Text style={styles.noDataText}>No MACD data available</Text>
+          <Text style={styles.noDataText}>{t('No MACD data available')}</Text>
         </View>
       )}
     </View>
@@ -455,7 +457,7 @@ export default function TechnicalIndicators({
     <View style={styles.indicatorChart}>
       <View style={styles.indicatorHeader}>
         <View style={styles.indicatorTitleRow}>
-          <Text style={styles.indicatorTitle}>Simple Moving Average</Text>
+          <Text style={styles.indicatorTitle}>{t('Simple Moving Average')}</Text>
           {currentSMA20 !== null && currentSMA50 !== null && (
             <View style={[styles.signalBadge, { backgroundColor: currentSMA20 > currentSMA50 ? '#34C75920' : '#FF3B3020' }]}>
               <Ionicons
@@ -464,7 +466,7 @@ export default function TechnicalIndicators({
                 color={currentSMA20 > currentSMA50 ? '#34C759' : '#FF3B30'}
               />
               <Text style={[styles.signalText, { color: currentSMA20 > currentSMA50 ? '#34C759' : '#FF3B30' }]}>
-                {currentSMA20 > currentSMA50 ? 'BULLISH' : 'BEARISH'}
+                {currentSMA20 > currentSMA50 ? t('BULLISH') : t('BEARISH')}
               </Text>
             </View>
           )}
@@ -480,7 +482,7 @@ export default function TechnicalIndicators({
           </View>
         </View>
         <Text style={styles.indicatorDescription}>
-          SMA 20 above SMA 50 = Bullish trend
+          {t('SMA 20 above SMA 50 = Bullish trend')}
         </Text>
       </View>
 
@@ -510,7 +512,7 @@ export default function TechnicalIndicators({
         </View>
       ) : (
         <View style={styles.noDataContainer}>
-          <Text style={styles.noDataText}>No SMA data available</Text>
+          <Text style={styles.noDataText}>{t('No SMA data available')}</Text>
         </View>
       )}
     </View>
@@ -520,7 +522,7 @@ export default function TechnicalIndicators({
     <View style={styles.indicatorChart}>
       <View style={styles.indicatorHeader}>
         <View style={styles.indicatorTitleRow}>
-          <Text style={styles.indicatorTitle}>Exponential Moving Average</Text>
+          <Text style={styles.indicatorTitle}>{t('Exponential Moving Average')}</Text>
           {currentEMA12 !== null && currentEMA26 !== null && (
             <View style={[styles.signalBadge, { backgroundColor: currentEMA12 > currentEMA26 ? '#34C75920' : '#FF3B3020' }]}>
               <Ionicons
@@ -529,7 +531,7 @@ export default function TechnicalIndicators({
                 color={currentEMA12 > currentEMA26 ? '#34C759' : '#FF3B30'}
               />
               <Text style={[styles.signalText, { color: currentEMA12 > currentEMA26 ? '#34C759' : '#FF3B30' }]}>
-                {currentEMA12 > currentEMA26 ? 'BULLISH' : 'BEARISH'}
+                {currentEMA12 > currentEMA26 ? t('BULLISH') : t('BEARISH')}
               </Text>
             </View>
           )}
@@ -545,7 +547,7 @@ export default function TechnicalIndicators({
           </View>
         </View>
         <Text style={styles.indicatorDescription}>
-          EMA 12 above EMA 26 = Bullish momentum
+          {t('EMA 12 above EMA 26 = Bullish momentum')}
         </Text>
       </View>
 
@@ -575,7 +577,7 @@ export default function TechnicalIndicators({
         </View>
       ) : (
         <View style={styles.noDataContainer}>
-          <Text style={styles.noDataText}>No EMA data available</Text>
+          <Text style={styles.noDataText}>{t('No EMA data available')}</Text>
         </View>
       )}
     </View>
@@ -583,7 +585,7 @@ export default function TechnicalIndicators({
 
   const renderBollingerChart = () => {
     // Determine if price is near bands
-    let bandSignal = 'NEUTRAL';
+    let bandSignal = t('NEUTRAL');
     let bandColor = '#8E8E93';
     if (currentBollinger && currentSMA20) {
       const price = currentBollinger.middle_band;
@@ -592,10 +594,10 @@ export default function TechnicalIndicators({
       const bandWidth = currentBollinger.upper_band - currentBollinger.lower_band;
 
       if (upperDist < bandWidth * 0.2) {
-        bandSignal = 'OVERBOUGHT';
+        bandSignal = t('OVERBOUGHT');
         bandColor = '#FF3B30';
       } else if (lowerDist < bandWidth * 0.2) {
-        bandSignal = 'OVERSOLD';
+        bandSignal = t('OVERSOLD');
         bandColor = '#34C759';
       }
     }
@@ -604,7 +606,7 @@ export default function TechnicalIndicators({
       <View style={styles.indicatorChart}>
         <View style={styles.indicatorHeader}>
           <View style={styles.indicatorTitleRow}>
-            <Text style={styles.indicatorTitle}>Bollinger Bands (20, 2)</Text>
+            <Text style={styles.indicatorTitle}>{t('Bollinger Bands (20, 2)')}</Text>
             <View style={[styles.signalBadge, { backgroundColor: bandColor + '20' }]}>
               <Text style={[styles.signalText, { color: bandColor }]}>
                 {bandSignal}
@@ -614,19 +616,19 @@ export default function TechnicalIndicators({
           <View style={styles.legend}>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#FF3B30' }]} />
-              <Text style={styles.legendText}>Upper {currentBollinger ? `($${currentBollinger.upper_band.toFixed(2)})` : ''}</Text>
+              <Text style={styles.legendText}>{t('Upper')} {currentBollinger ? `($${currentBollinger.upper_band.toFixed(2)})` : ''}</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#8E8E93' }]} />
-              <Text style={styles.legendText}>Middle</Text>
+              <Text style={styles.legendText}>{t('Middle')}</Text>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: '#34C759' }]} />
-              <Text style={styles.legendText}>Lower {currentBollinger ? `($${currentBollinger.lower_band.toFixed(2)})` : ''}</Text>
+              <Text style={styles.legendText}>{t('Lower')} {currentBollinger ? `($${currentBollinger.lower_band.toFixed(2)})` : ''}</Text>
             </View>
           </View>
           <Text style={styles.indicatorDescription}>
-            Price near upper band = Overbought | Near lower = Oversold
+            {t('Price near upper band = Overbought | Near lower = Oversold')}
           </Text>
         </View>
 
@@ -678,7 +680,7 @@ export default function TechnicalIndicators({
           </View>
         ) : (
           <View style={styles.noDataContainer}>
-            <Text style={styles.noDataText}>No Bollinger Bands data available</Text>
+            <Text style={styles.noDataText}>{t('No Bollinger Bands data available')}</Text>
           </View>
         )}
       </View>
@@ -691,7 +693,7 @@ export default function TechnicalIndicators({
         {renderIndicatorTabs()}
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color={priceColor} />
-          <Text style={styles.loadingText}>Loading indicators...</Text>
+          <Text style={styles.loadingText}>{t('Loading indicators...')}</Text>
         </View>
       </View>
     );

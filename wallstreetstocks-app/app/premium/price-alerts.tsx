@@ -19,6 +19,7 @@ import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { priceStore } from '@/stores/priceStore';
 import { useWebSocket } from '@/context/WebSocketContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface PriceAlert {
   id: string;
@@ -36,6 +37,7 @@ interface PriceAlert {
 export default function PriceAlertsScreen() {
   const { canAccess } = usePremiumFeature();
   const { subscribe: wsSubscribe } = useWebSocket();
+  const { t } = useLanguage();
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newSymbol, setNewSymbol] = useState('');
@@ -111,7 +113,7 @@ export default function PriceAlertsScreen() {
         // Notify if newly triggered
         if (!wasTriggered && isNowTriggered && alert.enabled) {
           Alert.alert(
-            'Price Alert Triggered!',
+            t('Price Alert Triggered!'),
             `${alert.symbol} is now ${alert.condition === 'above' ? 'above' : 'below'} $${alert.targetPrice.toFixed(2)}\nCurrent price: $${currentPrice.toFixed(2)}`
           );
         }
@@ -136,13 +138,13 @@ export default function PriceAlertsScreen() {
 
   const createAlert = () => {
     if (!newSymbol.trim() || !newPrice.trim()) {
-      Alert.alert('Error', 'Please enter a symbol and target price');
+      Alert.alert(t('Error'), t('Please enter a symbol and target price'));
       return;
     }
 
     const targetPrice = parseFloat(newPrice);
     if (isNaN(targetPrice) || targetPrice <= 0) {
-      Alert.alert('Error', 'Please enter a valid price');
+      Alert.alert(t('Error'), t('Please enter a valid price'));
       return;
     }
 
@@ -182,12 +184,12 @@ export default function PriceAlertsScreen() {
 
   const deleteAlert = (id: string) => {
     Alert.alert(
-      'Delete Alert',
-      'Are you sure you want to delete this alert?',
+      t('Delete Alert'),
+      t('Are you sure you want to delete this alert?'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('Delete'),
           style: 'destructive',
           onPress: () => {
             const updated = alerts.filter(a => a.id !== id);
@@ -199,9 +201,9 @@ export default function PriceAlertsScreen() {
   };
 
   const getAlertStatus = (alert: PriceAlert) => {
-    if (!alert.enabled) return { text: 'Paused', color: '#8E8E93' };
-    if (alert.triggered) return { text: 'Triggered', color: '#34C759' };
-    return { text: 'Active', color: '#B8860B' };
+    if (!alert.enabled) return { text: t('Paused'), color: '#8E8E93' };
+    if (alert.triggered) return { text: t('Triggered'), color: '#34C759' };
+    return { text: t('Active'), color: '#B8860B' };
   };
 
   return (
@@ -214,9 +216,9 @@ export default function PriceAlertsScreen() {
         <View style={styles.headerCenter}>
           <View style={styles.platinumBadge}>
             <Ionicons name="diamond" size={14} color="#000" />
-            <Text style={styles.platinumBadgeText}>Platinum</Text>
+            <Text style={styles.platinumBadgeText}>{t('Platinum')}</Text>
           </View>
-          <Text style={styles.headerTitle}>Price Alerts</Text>
+          <Text style={styles.headerTitle}>{t('Price Alerts')}</Text>
         </View>
         <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.addButton}>
           <Ionicons name="add" size={24} color="#B8860B" />
@@ -228,9 +230,9 @@ export default function PriceAlertsScreen() {
         <View style={styles.infoCard}>
           <Ionicons name="notifications" size={24} color="#E5E4E2" />
           <View style={styles.infoContent}>
-            <Text style={styles.infoTitle}>Real-time Price Alerts</Text>
+            <Text style={styles.infoTitle}>{t('Real-time Price Alerts')}</Text>
             <Text style={styles.infoText}>
-              Get notified instantly when stocks hit your target prices. Set unlimited alerts.
+              {t('Get notified instantly when stocks hit your target prices. Set unlimited alerts.')}
             </Text>
           </View>
         </View>
@@ -239,15 +241,15 @@ export default function PriceAlertsScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{alerts.filter(a => a.enabled).length}</Text>
-            <Text style={styles.statLabel}>Active</Text>
+            <Text style={styles.statLabel}>{t('Active')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{alerts.filter(a => a.triggered).length}</Text>
-            <Text style={styles.statLabel}>Triggered</Text>
+            <Text style={styles.statLabel}>{t('Triggered')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{alerts.length}</Text>
-            <Text style={styles.statLabel}>Total</Text>
+            <Text style={styles.statLabel}>{t('Total')}</Text>
           </View>
         </View>
 
@@ -255,16 +257,16 @@ export default function PriceAlertsScreen() {
         {alerts.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="notifications-off-outline" size={48} color="#C7C7CC" />
-            <Text style={styles.emptyTitle}>No Alerts Yet</Text>
+            <Text style={styles.emptyTitle}>{t('No Alerts Yet')}</Text>
             <Text style={styles.emptyText}>
-              Create your first price alert to get notified when stocks hit your targets.
+              {t('Create your first price alert to get notified when stocks hit your targets.')}
             </Text>
             <TouchableOpacity
               style={styles.createButton}
               onPress={() => setShowCreateModal(true)}
             >
               <Ionicons name="add" size={20} color="#FFF" />
-              <Text style={styles.createButtonText}>Create Alert</Text>
+              <Text style={styles.createButtonText}>{t('Create Alert')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -296,7 +298,7 @@ export default function PriceAlertsScreen() {
                   <View style={styles.alertBody}>
                     <View style={styles.alertPrices}>
                       <View style={styles.priceItem}>
-                        <Text style={styles.priceLabel}>Current</Text>
+                        <Text style={styles.priceLabel}>{t('Current')}</Text>
                         <Text style={styles.priceValue}>
                           ${alert.currentPrice?.toFixed(2) || '--'}
                         </Text>
@@ -309,7 +311,7 @@ export default function PriceAlertsScreen() {
                         />
                       </View>
                       <View style={styles.priceItem}>
-                        <Text style={styles.priceLabel}>Target</Text>
+                        <Text style={styles.priceLabel}>{t('Target')}</Text>
                         <Text style={[styles.priceValue, styles.targetPrice]}>
                           ${alert.targetPrice.toFixed(2)}
                         </Text>
@@ -319,7 +321,7 @@ export default function PriceAlertsScreen() {
                     {priceDistance && (
                       <View style={styles.distanceContainer}>
                         <Text style={styles.distanceText}>
-                          {parseFloat(priceDistance) > 0 ? '+' : ''}{priceDistance}% to target
+                          {parseFloat(priceDistance) > 0 ? '+' : ''}{priceDistance}{t('% to target')}
                         </Text>
                       </View>
                     )}
@@ -327,7 +329,7 @@ export default function PriceAlertsScreen() {
 
                   <View style={styles.alertFooter}>
                     <Text style={styles.alertCondition}>
-                      Alert when price goes {alert.condition} ${alert.targetPrice.toFixed(2)}
+                      {t('Alert when price goes')} {alert.condition} ${alert.targetPrice.toFixed(2)}
                     </Text>
                     <TouchableOpacity onPress={() => deleteAlert(alert.id)} style={styles.deleteButton}>
                       <Ionicons name="trash-outline" size={18} color="#FF3B30" />
@@ -347,19 +349,19 @@ export default function PriceAlertsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create Price Alert</Text>
+              <Text style={styles.modalTitle}>{t('Create Price Alert')}</Text>
               <TouchableOpacity onPress={() => setShowCreateModal(false)}>
                 <Ionicons name="close" size={24} color="#000" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.inputLabel}>Stock Symbol</Text>
+              <Text style={styles.inputLabel}>{t('Stock Symbol')}</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="search" size={20} color="#8E8E93" />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g., AAPL"
+                  placeholder={t('e.g., AAPL')}
                   placeholderTextColor="#8E8E93"
                   value={newSymbol}
                   onChangeText={setNewSymbol}
@@ -367,7 +369,7 @@ export default function PriceAlertsScreen() {
                 />
               </View>
 
-              <Text style={styles.inputLabel}>Target Price</Text>
+              <Text style={styles.inputLabel}>{t('Target Price')}</Text>
               <View style={styles.inputContainer}>
                 <Text style={styles.currencySymbol}>$</Text>
                 <TextInput
@@ -380,7 +382,7 @@ export default function PriceAlertsScreen() {
                 />
               </View>
 
-              <Text style={styles.inputLabel}>Alert Condition</Text>
+              <Text style={styles.inputLabel}>{t('Alert Condition')}</Text>
               <View style={styles.conditionRow}>
                 <TouchableOpacity
                   style={[
@@ -398,7 +400,7 @@ export default function PriceAlertsScreen() {
                     styles.conditionText,
                     newCondition === 'above' && styles.conditionTextActive,
                   ]}>
-                    Price goes above
+                    {t('Price goes above')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -417,14 +419,14 @@ export default function PriceAlertsScreen() {
                     styles.conditionText,
                     newCondition === 'below' && styles.conditionTextActive,
                   ]}>
-                    Price goes below
+                    {t('Price goes below')}
                   </Text>
                 </TouchableOpacity>
               </View>
 
               <TouchableOpacity style={styles.createAlertButton} onPress={createAlert}>
                 <Ionicons name="notifications" size={20} color="#000" />
-                <Text style={styles.createAlertButtonText}>Create Alert</Text>
+                <Text style={styles.createAlertButtonText}>{t('Create Alert')}</Text>
               </TouchableOpacity>
             </View>
           </View>

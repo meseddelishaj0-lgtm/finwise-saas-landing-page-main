@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface TrendingTicker {
   ticker: string;
@@ -20,6 +21,7 @@ interface Props {
 
 export default function TrendingTickers({ onTickerPress }: Props) {
   const { colors, isDark } = useTheme();
+  const t = useLanguage().t as (key: string) => string;
   const [tickers, setTickers] = useState<TrendingTicker[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeframe, setTimeframe] = useState<'1h' | '24h' | '7d'>('24h');
@@ -60,7 +62,7 @@ export default function TrendingTickers({ onTickerPress }: Props) {
   return (
     <View style={[styles.container, { backgroundColor: colors.background, borderBottomColor: isDark ? 'transparent' : '#E5E5EA' }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>🔥 Trending</Text>
+        <Text style={[styles.title, { color: colors.text }]}>🔥 {t('Trending')}</Text>
         <View style={styles.timeframeTabs}>
           {(['1h', '24h', '7d'] as const).map((tf) => (
             <TouchableOpacity
@@ -79,7 +81,7 @@ export default function TrendingTickers({ onTickerPress }: Props) {
       {loading ? (
         <ActivityIndicator size="small" color="#B8860B" style={styles.loader} />
       ) : tickers.length === 0 ? (
-        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No trending tickers yet</Text>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('No trending tickers yet')}</Text>
       ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {tickers.map((ticker, index) => (

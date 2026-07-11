@@ -5,8 +5,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useWatchlist } from "../../../context/WatchlistContext";
 import { useStocks } from "../../../context/StockContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function SymbolHeader() {
+  const { t } = useLanguage();
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
   const router = useRouter();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
@@ -78,11 +80,11 @@ export default function SymbolHeader() {
     
     // Show confirmation
     Alert.alert(
-      "Alert Created ✓",
+      t("Alert Created ✓"),
       `You'll be notified when ${currentSymbol} moves ${alertType} $${alertPrice}`,
       [
         {
-          text: "OK",
+          text: t("OK"),
           onPress: () => {
             // Reset and close
             setAlertType(null);
@@ -96,15 +98,15 @@ export default function SymbolHeader() {
 
   const handleRemoveAlert = () => {
     Alert.alert(
-      "Remove Alert?",
+      t("Remove Alert?"),
       `Remove price alert for ${currentSymbol}?`,
       [
         {
-          text: "Cancel",
+          text: t("Cancel"),
           style: "cancel"
         },
         {
-          text: "Remove",
+          text: t("Remove"),
           style: "destructive",
           onPress: () => {
             setHasActiveAlert(false);
@@ -124,11 +126,11 @@ export default function SymbolHeader() {
         `Price moves ${activeAlertType} $${activeAlertPrice}`,
         [
           {
-            text: "Edit",
+            text: t("Edit"),
             onPress: () => setShowAlertModal(true)
           },
           {
-            text: "Remove",
+            text: t("Remove"),
             style: "destructive",
             onPress: () => {
               setHasActiveAlert(false);
@@ -137,7 +139,7 @@ export default function SymbolHeader() {
             }
           },
           {
-            text: "OK",
+            text: t("OK"),
             style: "cancel"
           }
         ]
@@ -188,7 +190,7 @@ export default function SymbolHeader() {
       >
         <Pressable style={styles.modalOverlay} onPress={() => setShowAddMenu(false)}>
           <View style={styles.menuContainer}>
-            <Text style={styles.menuTitle}>Add {currentSymbol}</Text>
+            <Text style={styles.menuTitle}>{t("Add")} {currentSymbol}</Text>
 
             <TouchableOpacity
               style={styles.menuItem}
@@ -200,7 +202,7 @@ export default function SymbolHeader() {
                 color={isInWatchlist(currentSymbol) ? "#FF3B30" : "#0dd977"}
               />
               <Text style={[styles.menuItemText, isInWatchlist(currentSymbol) && { color: "#FF3B30" }]}>
-                {isInWatchlist(currentSymbol) ? "Remove from Watchlist" : "Add to Watchlist"}
+                {isInWatchlist(currentSymbol) ? t("Remove from Watchlist") : t("Add to Watchlist")}
               </Text>
             </TouchableOpacity>
 
@@ -215,12 +217,12 @@ export default function SymbolHeader() {
                 color={isInPortfolio(currentSymbol) ? "#34C759" : "#0dd977"} 
               />
               <Text style={[styles.menuItemText, isInPortfolio(currentSymbol) && styles.menuItemTextDisabled]}>
-                {isInPortfolio(currentSymbol) ? "Already in Portfolio" : "Add to Portfolio"}
+                {isInPortfolio(currentSymbol) ? t("Already in Portfolio") : t("Add to Portfolio")}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.menuItem, styles.cancelItem]} onPress={() => setShowAddMenu(false)}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={styles.cancelText}>{t("Cancel")}</Text>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -236,17 +238,17 @@ export default function SymbolHeader() {
         <Pressable style={styles.portfolioModalOverlay} onPress={() => setShowPortfolioModal(false)}>
           <Pressable style={styles.portfolioModalContent} onPress={e => e.stopPropagation()}>
             <View style={styles.portfolioModalHeader}>
-              <Text style={styles.portfolioModalTitle}>Add {currentSymbol} to Portfolio</Text>
+              <Text style={styles.portfolioModalTitle}>{t("Add")} {currentSymbol} {t("to Portfolio")}</Text>
               <TouchableOpacity onPress={() => setShowPortfolioModal(false)}>
                 <Ionicons name="close-circle" size={28} color="#999" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Number of Shares</Text>
+              <Text style={styles.inputLabel}>{t("Number of Shares")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g., 10"
+                placeholder={t("e.g., 10")}
                 placeholderTextColor="#999"
                 value={shares}
                 onChangeText={setShares}
@@ -255,10 +257,10 @@ export default function SymbolHeader() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Average Cost per Share ($)</Text>
+              <Text style={styles.inputLabel}>{t("Average Cost per Share ($)")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g., 150.00"
+                placeholder={t("e.g., 150.00")}
                 placeholderTextColor="#999"
                 value={avgCost}
                 onChangeText={setAvgCost}
@@ -276,7 +278,7 @@ export default function SymbolHeader() {
               ) : (
                 <>
                   <Ionicons name="add-circle" size={20} color="#fff" />
-                  <Text style={styles.addPortfolioButtonText}>Add to Portfolio</Text>
+                  <Text style={styles.addPortfolioButtonText}>{t("Add to Portfolio")}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -301,12 +303,12 @@ export default function SymbolHeader() {
               <TouchableOpacity onPress={closeAlertModal}>
                 <Ionicons name="close" size={24} color="#fff" />
               </TouchableOpacity>
-              <Text style={styles.alertTitle}>{currentSymbol} Custom alerts</Text>
+              <Text style={styles.alertTitle}>{currentSymbol} {t("Custom alerts")}</Text>
               <View style={{ width: 24 }} />
             </View>
 
             <Text style={styles.alertSubtitle}>
-              You&apos;ll get a notification for each alert at most once a day
+              {t("You'll get a notification for each alert at most once a day")}
             </Text>
 
             {/* Tabs */}
@@ -316,7 +318,7 @@ export default function SymbolHeader() {
                 onPress={() => setAlertTab("price")}
               >
                 <Text style={[styles.alertTabText, alertTab === "price" && styles.alertTabTextActive]}>
-                  Price alerts
+                  {t("Price alerts")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -324,7 +326,7 @@ export default function SymbolHeader() {
                 onPress={() => setAlertTab("indicator")}
               >
                 <Text style={[styles.alertTabText, alertTab === "indicator" && styles.alertTabTextActive]}>
-                  Indicator alerts
+                  {t("Indicator alerts")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -346,14 +348,14 @@ export default function SymbolHeader() {
                     </View>
                   </View>
                   <Text style={styles.alertEmptyText}>
-                    Create custom price thresholds and get notified when this security moves past them.
+                    {t("Create custom price thresholds and get notified when this security moves past them.")}
                   </Text>
                 </View>
               ) : (
                 // Price Input State
                 <View style={styles.priceInputContainer}>
                   <Text style={styles.priceInputLabel}>
-                    Alert me when {currentSymbol} price moves {alertType}:
+                    {t("Alert me when")} {currentSymbol} {t("price moves")} {alertType ? t(alertType) : alertType}:
                   </Text>
                   <View style={styles.priceInputWrapper}>
                     <Text style={styles.dollarSign}>$</Text>
@@ -375,13 +377,13 @@ export default function SymbolHeader() {
             {alertType === null ? (
               // Select Alert Type
               <View style={styles.alertTypeSelector}>
-                <Text style={styles.selectTypeTitle}>Select alert type</Text>
+                <Text style={styles.selectTypeTitle}>{t("Select alert type")}</Text>
                 
                 <TouchableOpacity 
                   style={styles.alertTypeOption}
                   onPress={() => setAlertType("above")}
                 >
-                  <Text style={styles.alertTypeText}>Price moves above</Text>
+                  <Text style={styles.alertTypeText}>{t("Price moves above")}</Text>
                   <Ionicons name="chevron-forward" size={20} color="#666" />
                 </TouchableOpacity>
                 
@@ -389,7 +391,7 @@ export default function SymbolHeader() {
                   style={styles.alertTypeOption}
                   onPress={() => setAlertType("below")}
                 >
-                  <Text style={styles.alertTypeText}>Price moves below</Text>
+                  <Text style={styles.alertTypeText}>{t("Price moves below")}</Text>
                   <Ionicons name="chevron-forward" size={20} color="#666" />
                 </TouchableOpacity>
               </View>
@@ -403,7 +405,7 @@ export default function SymbolHeader() {
                 onPress={handleCreateAlert}
                 disabled={!priceValue}
               >
-                <Text style={styles.addAlertButtonText}>Add Alert</Text>
+                <Text style={styles.addAlertButtonText}>{t("Add Alert")}</Text>
               </TouchableOpacity>
             )}
           </View>

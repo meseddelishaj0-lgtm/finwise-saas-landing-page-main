@@ -1,8 +1,10 @@
 // components/explore/MarketHeader.tsx
 import { View, Text, TouchableOpacity } from "react-native";
 import React, { useState } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function MarketHeader() {
+  const t = useLanguage().t as (key: string) => string;
   const [region, setRegion] = useState("us");
 
   return (
@@ -15,7 +17,7 @@ export default function MarketHeader() {
                 region === r ? "text-white font-bold" : "text-gray-500"
               }`}
             >
-              {r.toUpperCase()}
+              {t(r).toUpperCase()}
             </Text>
           </TouchableOpacity>
         ))}

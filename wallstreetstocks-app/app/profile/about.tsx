@@ -12,10 +12,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function About() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   const currentYear = new Date().getFullYear();
 
@@ -30,7 +32,7 @@ export default function About() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>About</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('About')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -39,20 +41,19 @@ export default function About() {
           {/* Logo / App Name */}
           <View style={styles.logoContainer}>
             <Text style={styles.logo}>🚀</Text>
-            <Text style={[styles.appName, { color: colors.text }]}>Wallstreetstocks</Text>
-            <Text style={[styles.tagline, { color: colors.textSecondary }]}>Connect, Share, Inspire</Text>
+            <Text style={[styles.appName, { color: colors.text }]}>{t('Wallstreetstocks')}</Text>
+            <Text style={[styles.tagline, { color: colors.textSecondary }]}>{t('Connect, Share, Inspire')}</Text>
           </View>
 
           {/* Version */}
           <View style={[styles.versionBox, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.versionLabel, { color: colors.textTertiary }]}>Version</Text>
+            <Text style={[styles.versionLabel, { color: colors.textTertiary }]}>{t('Version')}</Text>
             <Text style={[styles.versionNumber, { color: colors.text }]}>1.0.0</Text>
           </View>
 
           {/* Description */}
           <Text style={[styles.description, { color: colors.textSecondary }]}>
-            Welcome to Wallstreetstocks — the next-generation social platform built for real connections,
-            authentic expression, and meaningful conversations.
+            {t('Welcome to Wallstreetstocks — the next-generation social platform built for real connections, authentic expression, and meaningful conversations.')}
           </Text>
 
           <Text style={[styles.description, { color: colors.textSecondary }]}>
@@ -61,7 +62,7 @@ export default function About() {
           </Text>
 
           {/* Features */}
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>What We Offer</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('What We Offer')}</Text>
           <View style={styles.featureList}>
             {[
               'Real-time global conversations',
@@ -73,15 +74,15 @@ export default function About() {
             ].map((feature, index) => (
               <View key={index} style={styles.featureItem}>
                 <Text style={styles.checkmark}>✓</Text>
-                <Text style={[styles.featureText, { color: colors.text }]}>{feature}</Text>
+                <Text style={[styles.featureText, { color: colors.text }]}>{t(feature)}</Text>
               </View>
             ))}
           </View>
 
           {/* Team / Credit */}
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Made With ❤️ By</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Made With ❤️ By')}</Text>
           <Text style={[styles.madeBy, { color: colors.textSecondary }]}>
-            An independent developer passionate about building better social experiences.
+            {t('An independent developer passionate about building better social experiences.')}
           </Text>
 
           {/* Links */}
@@ -91,7 +92,7 @@ export default function About() {
               onPress={() => Linking.openURL('https://x.com/wallstreet66666')}
             >
               <Text style={[styles.xLogo, { color: colors.text }]}>𝕏</Text>
-              <Text style={[styles.linkText, { color: colors.text }]}>Follow us on X</Text>
+              <Text style={[styles.linkText, { color: colors.text }]}>{t('Follow us on X')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -99,7 +100,7 @@ export default function About() {
               onPress={() => Linking.openURL('https://tiktok.com/wallstreetstocks1')}
             >
               <Ionicons name="logo-tiktok" size={20} color={colors.text} />
-              <Text style={[styles.linkText, { color: colors.text }]}>TikTok</Text>
+              <Text style={[styles.linkText, { color: colors.text }]}>{t('TikTok')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -113,7 +114,7 @@ export default function About() {
 
           {/* Financial Disclaimer */}
           <View style={[styles.disclaimerContainer, { backgroundColor: isDark ? '#2C2700' : '#FFF9E6', borderColor: isDark ? '#5C4D00' : '#FFE4A0' }]}>
-            <Text style={[styles.disclaimerTitle, { color: isDark ? '#FFD700' : '#B8860B' }]}>Important Disclaimer</Text>
+            <Text style={[styles.disclaimerTitle, { color: isDark ? '#FFD700' : '#B8860B' }]}>{t('Important Disclaimer')}</Text>
             <Text style={[styles.disclaimerText, { color: colors.textSecondary }]}>
               Wallstreetstocks is for informational and educational purposes only.
               The information provided does not constitute investment advice, financial advice,
@@ -141,10 +142,10 @@ export default function About() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={[styles.copyright, { color: colors.textTertiary }]}>
-              © {currentYear} Wallstreetstocks. All rights reserved.
+              © {currentYear} {t('Wallstreetstocks. All rights reserved.')}
             </Text>
             <Text style={[styles.finalLine, { color: colors.textSecondary }]}>
-              Thank you for being part of our journey 🌟
+              {t('Thank you for being part of our journey 🌟')}
             </Text>
           </View>
         </View>

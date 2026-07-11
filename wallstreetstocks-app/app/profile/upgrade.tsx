@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 type PlanId = 'basic' | 'pro' | 'elite';
 type BillingCycle = 'monthly' | 'yearly';
@@ -19,6 +20,8 @@ type BillingCycle = 'monthly' | 'yearly';
 export default function Upgrade() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t: translate } = useLanguage();
+  const t = (key: string) => translate(key as any);
   const [selectedPlan, setSelectedPlan] = useState<PlanId>('pro');
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('yearly');
 
@@ -103,19 +106,19 @@ export default function Upgrade() {
     const plan = plans[selectedPlan];
     const price = getPrice(plan);
     const period = billingCycle === 'yearly' ? 'year' : 'month';
-    
+
     Alert.alert(
-      'Confirm Subscription',
+      t('Confirm Subscription'),
       `Subscribe to ${plan.name} for $${price.toFixed(2)}/${period === 'year' ? 'mo (billed annually)' : 'month'}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Subscribe', 
+        { text: t('Cancel'), style: 'cancel' },
+        {
+          text: t('Subscribe'),
           onPress: () => {
             Alert.alert(
-              'Success! 🎉',
+              t('Success! 🎉'),
               `Welcome to WallStreetStocks ${plan.name}! Your premium features are now active.`,
-              [{ text: 'Get Started', onPress: () => router.back() }]
+              [{ text: t('Get Started'), onPress: () => router.back() }]
             );
           }
         },
@@ -132,16 +135,16 @@ export default function Upgrade() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="close" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Choose Your Plan</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Choose Your Plan')}</Text>
         <View style={{ width: 28 }} />
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={styles.heroSection}>
-          <Text style={[styles.heroTitle, { color: colors.text }]}>Unlock Premium Research</Text>
+          <Text style={[styles.heroTitle, { color: colors.text }]}>{t('Unlock Premium Research')}</Text>
           <Text style={[styles.heroSubtitle, { color: colors.textSecondary }]}>
-            Get advanced tools, AI insights, and real-time data to make smarter investment decisions
+            {t('Get advanced tools, AI insights, and real-time data to make smarter investment decisions')}
           </Text>
         </View>
 
@@ -153,7 +156,7 @@ export default function Upgrade() {
               onPress={() => setBillingCycle('monthly')}
             >
               <Text style={[styles.billingOptionText, { color: colors.textSecondary }, billingCycle === 'monthly' && [styles.billingOptionTextActive, { color: colors.text }]]}>
-                Monthly
+                {t('Monthly')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -161,10 +164,10 @@ export default function Upgrade() {
               onPress={() => setBillingCycle('yearly')}
             >
               <Text style={[styles.billingOptionText, { color: colors.textSecondary }, billingCycle === 'yearly' && [styles.billingOptionTextActive, { color: colors.text }]]}>
-                Yearly
+                {t('Yearly')}
               </Text>
               <View style={styles.saveBadge}>
-                <Text style={styles.saveBadgeText}>Save 33%</Text>
+                <Text style={styles.saveBadgeText}>{t('Save 33%')}</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -186,7 +189,7 @@ export default function Upgrade() {
             >
               {'popular' in plan && plan.popular && (
                 <View style={styles.popularBadge}>
-                  <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
+                  <Text style={styles.popularBadgeText}>{t('MOST POPULAR')}</Text>
                 </View>
               )}
 
@@ -195,8 +198,8 @@ export default function Upgrade() {
                   <Ionicons name={plan.icon as any} size={24} color={plan.color} />
                 </View>
                 <View style={styles.planInfo}>
-                  <Text style={[styles.planName, { color: colors.text }]}>{plan.name}</Text>
-                  <Text style={[styles.planDescription, { color: colors.textSecondary }]}>{plan.description}</Text>
+                  <Text style={[styles.planName, { color: colors.text }]}>{t(plan.name)}</Text>
+                  <Text style={[styles.planDescription, { color: colors.textSecondary }]}>{t(plan.description)}</Text>
                 </View>
                 <View style={[
                   styles.radioOuter,
@@ -213,7 +216,7 @@ export default function Upgrade() {
                 <Text style={[styles.planPrice, { color: colors.text }]}>${getPrice(plan).toFixed(2)}</Text>
                 <Text style={[styles.planPeriod, { color: colors.textSecondary }]}>/month</Text>
                 {billingCycle === 'yearly' && (
-                  <Text style={[styles.billedText, { color: colors.textTertiary }]}>billed annually</Text>
+                  <Text style={[styles.billedText, { color: colors.textTertiary }]}>{t('billed annually')}</Text>
                 )}
               </View>
 
@@ -232,7 +235,7 @@ export default function Upgrade() {
         {/* Features Comparison */}
         <View style={styles.featuresSection}>
           <Text style={[styles.featuresSectionTitle, { color: colors.text }]}>
-            {selectedPlanData.name} Features
+            {t(selectedPlanData.name)} {t('Features')}
           </Text>
           <View style={styles.featuresList}>
             {selectedPlanData.features.map((feature, index) => (
@@ -247,7 +250,7 @@ export default function Upgrade() {
                   { color: colors.text },
                   !feature.included && { color: colors.textTertiary }
                 ]}>
-                  {feature.text}
+                  {t(feature.text)}
                 </Text>
               </View>
             ))}
@@ -256,7 +259,7 @@ export default function Upgrade() {
 
         {/* Compare All Plans */}
         <TouchableOpacity style={styles.compareButton}>
-          <Text style={styles.compareButtonText}>Compare All Plans</Text>
+          <Text style={styles.compareButtonText}>{t('Compare All Plans')}</Text>
           <Ionicons name="chevron-forward" size={18} color="#B8860B" />
         </TouchableOpacity>
 
@@ -264,15 +267,15 @@ export default function Upgrade() {
         <View style={[styles.trustSection, { borderColor: isDark ? colors.border : '#f0f0f0' }]}>
           <View style={styles.trustBadge}>
             <Ionicons name="shield-checkmark" size={20} color="#34C759" />
-            <Text style={[styles.trustText, { color: colors.textSecondary }]}>Secure Payment</Text>
+            <Text style={[styles.trustText, { color: colors.textSecondary }]}>{t('Secure Payment')}</Text>
           </View>
           <View style={styles.trustBadge}>
             <Ionicons name="refresh" size={20} color="#B8860B" />
-            <Text style={[styles.trustText, { color: colors.textSecondary }]}>Cancel Anytime</Text>
+            <Text style={[styles.trustText, { color: colors.textSecondary }]}>{t('Cancel Anytime')}</Text>
           </View>
           <View style={styles.trustBadge}>
             <Ionicons name="card" size={20} color="#FF9500" />
-            <Text style={[styles.trustText, { color: colors.textSecondary }]}>7-Day Trial</Text>
+            <Text style={[styles.trustText, { color: colors.textSecondary }]}>{t('7-Day Trial')}</Text>
           </View>
         </View>
 
@@ -284,33 +287,33 @@ export default function Upgrade() {
             ))}
           </View>
           <Text style={[styles.testimonialText, { color: colors.text }]}>
-            &quot;The AI insights alone are worth the subscription. I&apos;ve discovered so many great research opportunities!&quot;
+            {t('"The AI insights alone are worth the subscription. I\'ve discovered so many great research opportunities!"')}
           </Text>
-          <Text style={[styles.testimonialAuthor, { color: colors.textSecondary }]}>— Michael R., Pro Member</Text>
+          <Text style={[styles.testimonialAuthor, { color: colors.textSecondary }]}>{t('— Michael R., Pro Member')}</Text>
         </View>
 
         {/* FAQ */}
         <View style={styles.faqSection}>
-          <Text style={[styles.faqTitle, { color: colors.text }]}>Common Questions</Text>
+          <Text style={[styles.faqTitle, { color: colors.text }]}>{t('Common Questions')}</Text>
 
           <View style={styles.faqItem}>
-            <Text style={[styles.faqQuestion, { color: colors.text }]}>Can I cancel anytime?</Text>
+            <Text style={[styles.faqQuestion, { color: colors.text }]}>{t('Can I cancel anytime?')}</Text>
             <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>
-              Yes! You can cancel your subscription at any time. You&apos;ll continue to have access until the end of your billing period.
+              {t("Yes! You can cancel your subscription at any time. You'll continue to have access until the end of your billing period.")}
             </Text>
           </View>
 
           <View style={styles.faqItem}>
-            <Text style={[styles.faqQuestion, { color: colors.text }]}>Is there a free trial?</Text>
+            <Text style={[styles.faqQuestion, { color: colors.text }]}>{t('Is there a free trial?')}</Text>
             <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>
-              Yes, all plans include a 7-day free trial. You won&apos;t be charged until the trial ends.
+              {t("Yes, all plans include a 7-day free trial. You won't be charged until the trial ends.")}
             </Text>
           </View>
 
           <View style={styles.faqItem}>
-            <Text style={[styles.faqQuestion, { color: colors.text }]}>Can I switch plans?</Text>
+            <Text style={[styles.faqQuestion, { color: colors.text }]}>{t('Can I switch plans?')}</Text>
             <Text style={[styles.faqAnswer, { color: colors.textSecondary }]}>
-              Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect on your next billing cycle.
+              {t('Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect on your next billing cycle.')}
             </Text>
           </View>
         </View>
@@ -327,7 +330,7 @@ export default function Upgrade() {
       {/* Fixed Bottom CTA */}
       <View style={[styles.bottomCTA, { backgroundColor: colors.background, borderTopColor: isDark ? colors.border : '#f0f0f0' }]}>
         <View style={styles.ctaPriceContainer}>
-          <Text style={[styles.ctaPlanName, { color: colors.textSecondary }]}>{selectedPlanData.name}</Text>
+          <Text style={[styles.ctaPlanName, { color: colors.textSecondary }]}>{t(selectedPlanData.name)}</Text>
           <View style={styles.ctaPriceRow}>
             <Text style={[styles.ctaPrice, { color: colors.text }]}>${getPrice(selectedPlanData).toFixed(2)}</Text>
             <Text style={[styles.ctaPeriod, { color: colors.textSecondary }]}>/{billingCycle === 'yearly' ? 'mo' : 'month'}</Text>
@@ -337,7 +340,7 @@ export default function Upgrade() {
           style={[styles.subscribeButton, { backgroundColor: selectedPlanData.color === '#FFD700' ? '#B8860B' : selectedPlanData.color }]}
           onPress={handleSubscribe}
         >
-          <Text style={styles.subscribeButtonText}>Start Free Trial</Text>
+          <Text style={styles.subscribeButtonText}>{t('Start Free Trial')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -693,4 +696,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
- 

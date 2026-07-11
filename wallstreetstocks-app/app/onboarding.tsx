@@ -25,6 +25,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
@@ -109,6 +110,7 @@ export default function OnboardingScreen() {
   const currentIndex = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const { t } = useLanguage();
 
   const { packages, loadOfferings, purchase, refreshStatus } = useSubscription();
 
@@ -184,16 +186,16 @@ export default function OnboardingScreen() {
           <View style={styles.trialIconContainer}>
             <Ionicons name="diamond-outline" size={60} color="#FFD700" />
           </View>
-          <Text style={styles.trialTitle}>Unlock Premium</Text>
+          <Text style={styles.trialTitle}>{t('Unlock Premium')}</Text>
           <Text style={styles.trialSubtitle}>
-            Try free for 7 days, then $9.99/mo
+            {t('Try free for 7 days, then $9.99/mo')}
           </Text>
 
           <View style={styles.trialFeatures}>
             {TRIAL_FEATURES.map((feature, i) => (
               <View key={i} style={styles.trialFeatureRow}>
                 <Ionicons name={feature.icon} size={20} color="#FFD700" />
-                <Text style={styles.trialFeatureText}>{feature.text}</Text>
+                <Text style={styles.trialFeatureText}>{t(feature.text)}</Text>
               </View>
             ))}
           </View>
@@ -206,8 +208,8 @@ export default function OnboardingScreen() {
         <View style={styles.iconContainer}>
           <Ionicons name={item.icon!} size={80} color="#FFD700" />
         </View>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.subtitle}>{item.subtitle}</Text>
+        <Text style={styles.title}>{t(item.title)}</Text>
+        <Text style={styles.subtitle}>{t(item.subtitle)}</Text>
       </View>
     );
   };
@@ -216,7 +218,7 @@ export default function OnboardingScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Skip button */}
       <TouchableOpacity style={styles.skipButton} onPress={completeOnboarding}>
-        <Text style={styles.skipText}>Skip</Text>
+        <Text style={styles.skipText}>{t('Skip')}</Text>
       </TouchableOpacity>
 
       {/* Slides */}
@@ -260,21 +262,21 @@ export default function OnboardingScreen() {
                 <ActivityIndicator color="#000" />
               ) : (
                 <>
-                  <Text style={styles.trialButtonText}>Start 7-Day Free Trial</Text>
-                  <Text style={styles.trialButtonSubtext}>Cancel anytime</Text>
+                  <Text style={styles.trialButtonText}>{t('Start 7-Day Free Trial')}</Text>
+                  <Text style={styles.trialButtonSubtext}>{t('Cancel anytime')}</Text>
                 </>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.freeButton} onPress={completeOnboarding}>
-              <Text style={styles.freeButtonText}>Continue with Free</Text>
+              <Text style={styles.freeButtonText}>{t('Continue with Free')}</Text>
             </TouchableOpacity>
 
             <Text style={styles.termsText}>
-              7-day free trial, then $9.99/mo. Cancel anytime.{'\n'}
-              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>Terms</Text>
+              {t('7-day free trial, then $9.99/mo. Cancel anytime.')}{'\n'}
+              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>{t('Terms')}</Text>
               {' & '}
-              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://www.wallstreetstocks.ai/privacy')}>Privacy</Text>
+              <Text style={styles.termsLink} onPress={() => Linking.openURL('https://www.wallstreetstocks.ai/privacy')}>{t('Privacy')}</Text>
             </Text>
           </View>
         ) : (
@@ -283,7 +285,7 @@ export default function OnboardingScreen() {
             style={styles.nextButton}
             onPress={handleNext}
           >
-            <Text style={styles.nextButtonText}>Next</Text>
+            <Text style={styles.nextButtonText}>{t('Next')}</Text>
           </TouchableOpacity>
         )}
       </View>

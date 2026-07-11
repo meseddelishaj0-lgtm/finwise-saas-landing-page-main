@@ -19,6 +19,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import GoogleLogo from '../components/GoogleLogo';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+import { useLanguage } from '@/context/LanguageContext';
 
 // Only import AppleAuthentication on iOS to prevent Android crashes
 let AppleAuthentication: typeof import('expo-apple-authentication') | null = null;
@@ -74,6 +75,7 @@ export default function Signup() {
   const usernameCheckTimeout = useRef<number | null>(null);
   const { signup, socialLogin } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
 
   // Google OAuth configuration (iOS uses expo-auth-session, Android uses native SDK)
   // Provide both client IDs to prevent hook errors, but Android uses native SDK for actual sign-in
@@ -118,10 +120,10 @@ export default function Signup() {
       } else if (error.code === statusCodes.IN_PROGRESS) {
         
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Error', 'Google Play Services is not available');
+        Alert.alert(t('Error'), t('Google Play Services is not available'));
       } else {
-        
-        Alert.alert('Error', error.message || 'Google sign-in failed');
+
+        Alert.alert(t('Error'), error.message || t('Google sign-in failed'));
       }
     } finally {
       setLoading(false);
@@ -154,12 +156,12 @@ export default function Signup() {
     }
     
     if (cleaned.length < 3) {
-      setUsernameError('Username must be at least 3 characters');
+      setUsernameError(t('Username must be at least 3 characters'));
       return;
     }
-    
+
     if (cleaned.length > 20) {
-      setUsernameError('Username must be 20 characters or less');
+      setUsernameError(t('Username must be 20 characters or less'));
       return;
     }
     
@@ -186,7 +188,7 @@ export default function Signup() {
           setUsernameError('');
         } else {
           setUsernameAvailable(false);
-          setUsernameError('Username is already taken');
+          setUsernameError(t('Username is already taken'));
         }
       } catch (error) {
         
@@ -199,39 +201,39 @@ export default function Signup() {
 
   const handleSignup = async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Please enter your name');
+      Alert.alert(t('Error'), t('Please enter your name'));
       return;
     }
     if (!username.trim()) {
-      Alert.alert('Error', 'Please choose a username');
+      Alert.alert(t('Error'), t('Please choose a username'));
       return;
     }
     if (username.length < 3 || username.length > 20) {
-      Alert.alert('Error', 'Username must be 3-20 characters');
+      Alert.alert(t('Error'), t('Username must be 3-20 characters'));
       return;
     }
     if (usernameError) {
-      Alert.alert('Error', usernameError);
+      Alert.alert(t('Error'), usernameError);
       return;
     }
     if (usernameAvailable === false) {
-      Alert.alert('Error', 'This username is already taken');
+      Alert.alert(t('Error'), t('This username is already taken'));
       return;
     }
     if (!email) {
-      Alert.alert('Error', 'Please enter your email');
+      Alert.alert(t('Error'), t('Please enter your email'));
       return;
     }
     if (!password) {
-      Alert.alert('Error', 'Please enter a password');
+      Alert.alert(t('Error'), t('Please enter a password'));
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert(t('Error'), t('Password must be at least 6 characters'));
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('Error'), t('Passwords do not match'));
       return;
     }
 
@@ -240,7 +242,7 @@ export default function Signup() {
       await signup(email, password, name, username);
       router.replace('/onboarding');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create account');
+      Alert.alert(t('Error'), error.message || t('Failed to create account'));
     } finally {
       setLoading(false);
     }
@@ -267,7 +269,7 @@ export default function Signup() {
         router.replace('/(tabs)');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Google sign-in failed');
+      Alert.alert(t('Error'), error.message || t('Google sign-in failed'));
     } finally {
       setLoading(false);
     }
@@ -275,7 +277,7 @@ export default function Signup() {
 
   const handleAppleSignIn = async () => {
     if (Platform.OS !== 'ios' || !AppleAuthentication) {
-      Alert.alert('Error', 'Apple Sign In is only available on iOS');
+      Alert.alert(t('Error'), t('Apple Sign In is only available on iOS'));
       return;
     }
 
@@ -295,7 +297,7 @@ export default function Signup() {
       }
       
       if (!appleEmail) {
-        Alert.alert('Error', 'Could not retrieve email from Apple');
+        Alert.alert(t('Error'), t('Could not retrieve email from Apple'));
         return;
       }
 
@@ -317,7 +319,7 @@ export default function Signup() {
       }
     } catch (error: any) {
       if (error.code !== 'ERR_CANCELED') {
-        Alert.alert('Error', error.message || 'Apple sign-in failed');
+        Alert.alert(t('Error'), error.message || t('Apple sign-in failed'));
       }
     } finally {
       setLoading(false);
@@ -334,12 +336,12 @@ export default function Signup() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.subtitle}>Join the community</Text>
+        <Text style={styles.title}>{t('Create Account')}</Text>
+      <Text style={styles.subtitle}>{t('Join the community')}</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Full Name"
+        placeholder={t('Full Name')}
         placeholderTextColor="#999"
         value={name}
         onChangeText={setName}
@@ -351,7 +353,7 @@ export default function Signup() {
         <View style={styles.usernameRow}>
           <TextInput
             style={[styles.input, { flex: 1 }, usernameError ? styles.inputErrorBorder : usernameAvailable === true ? styles.inputSuccessBorder : null]}
-            placeholder="Username (e.g. wallstreetbull)"
+            placeholder={t('Username (e.g. wallstreetbull)')}
             placeholderTextColor="#999"
             value={username}
             onChangeText={validateUsername}
@@ -366,17 +368,17 @@ export default function Signup() {
         {usernameError ? (
           <Text style={styles.errorText}>{usernameError}</Text>
         ) : usernameAvailable === true && username.length >= 3 ? (
-          <Text style={styles.successText}>✓ @{username} is available!</Text>
+          <Text style={styles.successText}>✓ @{username} {t('is available!')}</Text>
         ) : username.length >= 3 && !checkingUsername ? (
-          <Text style={styles.hintText}>Checking availability...</Text>
+          <Text style={styles.hintText}>{t('Checking availability...')}</Text>
         ) : username.length > 0 ? (
-          <Text style={styles.hintText}>3-20 characters, letters, numbers, underscores only</Text>
+          <Text style={styles.hintText}>{t('3-20 characters, letters, numbers, underscores only')}</Text>
         ) : null}
       </View>
 
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder={t('Email')}
         placeholderTextColor="#999"
         value={email}
         onChangeText={setEmail}
@@ -388,7 +390,7 @@ export default function Signup() {
       <View style={styles.passwordContainer}>
         <TextInput
           style={styles.passwordInput}
-          placeholder="Password"
+          placeholder={t('Password')}
           placeholderTextColor="#999"
           value={password}
           onChangeText={setPassword}
@@ -409,7 +411,7 @@ export default function Signup() {
 
       <TextInput
         style={styles.input}
-        placeholder="Confirm Password"
+        placeholder={t('Confirm Password')}
         placeholderTextColor="#999"
         value={confirmPassword}
         onChangeText={setConfirmPassword}
@@ -417,19 +419,19 @@ export default function Signup() {
         editable={!loading}
       />
 
-      <TouchableOpacity 
-        style={[styles.button, loading && styles.buttonDisabled]} 
+      <TouchableOpacity
+        style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleSignup}
         disabled={loading}
       >
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Create Account</Text>
+          <Text style={styles.buttonText}>{t('Create Account')}</Text>
         )}
       </TouchableOpacity>
 
-      <Text style={styles.or}>or</Text>
+      <Text style={styles.or}>{t('or')}</Text>
 
       <TouchableOpacity
         style={styles.socialButton}
@@ -439,7 +441,7 @@ export default function Signup() {
         <View style={styles.socialIcon}>
           <GoogleLogo size={20} />
         </View>
-        <Text style={styles.socialText}>Continue with Google</Text>
+        <Text style={styles.socialText}>{t('Continue with Google')}</Text>
       </TouchableOpacity>
 
       {Platform.OS === 'ios' && AppleAuthentication && (
@@ -453,12 +455,12 @@ export default function Signup() {
       )}
 
       <TouchableOpacity onPress={() => router.push('/login')} disabled={loading}>
-        <Text style={styles.link}>Already have an account? Log In</Text>
+        <Text style={styles.link}>{t('Already have an account? Log In')}</Text>
       </TouchableOpacity>
 
       <Text style={styles.terms}>
-        By signing up, you agree to the{' '}
-        <Text style={styles.underline}>Terms and Conditions</Text>
+        {t('By signing up, you agree to the')}{' '}
+        <Text style={styles.underline}>{t('Terms and Conditions')}</Text>
       </Text>
       </ScrollView>
     </KeyboardAvoidingView>

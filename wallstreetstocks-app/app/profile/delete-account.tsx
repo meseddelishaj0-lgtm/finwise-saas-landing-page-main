@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://finwise-saas-landing-page-main.vercel.app';
 
@@ -23,22 +24,23 @@ export default function DeleteAccountScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [confirmText, setConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDeleteAccount = async () => {
     if (confirmText !== 'DELETE') {
-      Alert.alert('Confirmation Required', 'Please type DELETE to confirm account deletion.');
+      Alert.alert(t('Confirmation Required'), t('Please type DELETE to confirm account deletion.'));
       return;
     }
 
     Alert.alert(
-      'Delete Account',
-      'Are you absolutely sure? This action cannot be undone. All your data, watchlists, and preferences will be permanently deleted.',
+      t('Delete Account'),
+      t('Are you absolutely sure? This action cannot be undone. All your data, watchlists, and preferences will be permanently deleted.'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Delete Forever',
+          text: t('Delete Forever'),
           style: 'destructive',
           onPress: async () => {
             setIsDeleting(true);
@@ -64,13 +66,13 @@ export default function DeleteAccountScreen() {
               await logout();
 
               Alert.alert(
-                'Account Deleted',
-                'Your account has been permanently deleted.',
-                [{ text: 'OK', onPress: () => router.replace('/login') }]
+                t('Account Deleted'),
+                t('Your account has been permanently deleted.'),
+                [{ text: t('OK'), onPress: () => router.replace('/login') }]
               );
             } catch (error) {
-              
-              Alert.alert('Error', 'Failed to delete account. Please try again.');
+
+              Alert.alert(t('Error'), t('Failed to delete account. Please try again.'));
             } finally {
               setIsDeleting(false);
             }
@@ -93,7 +95,7 @@ export default function DeleteAccountScreen() {
         </TouchableOpacity>
 
         <View style={styles.titleContainer}>
-          <Text style={styles.titleText}>Delete Account</Text>
+          <Text style={styles.titleText}>{t('Delete Account')}</Text>
         </View>
 
         <View style={{ width: 24 }} />
@@ -108,51 +110,51 @@ export default function DeleteAccountScreen() {
         </View>
 
         {/* Warning Title */}
-        <Text style={[styles.warningTitle, { color: colors.text }]}>Delete Your Account?</Text>
+        <Text style={[styles.warningTitle, { color: colors.text }]}>{t('Delete Your Account?')}</Text>
         <Text style={[styles.warningSubtitle, { color: colors.textSecondary }]}>
-          This action is permanent and cannot be undone.
+          {t('This action is permanent and cannot be undone.')}
         </Text>
 
         {/* Consequences List */}
         <View style={[styles.consequencesList, { backgroundColor: isDark ? '#2A1010' : '#FFF5F5', borderColor: isDark ? '#5C2020' : '#FF3B3020' }]}>
-          <Text style={[styles.consequencesTitle, { color: colors.text }]}>What happens when you delete your account:</Text>
+          <Text style={[styles.consequencesTitle, { color: colors.text }]}>{t('What happens when you delete your account:')}</Text>
 
           <View style={styles.consequenceItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>All your personal data will be permanently deleted</Text>
+            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>{t('All your personal data will be permanently deleted')}</Text>
           </View>
 
           <View style={styles.consequenceItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>Your watchlists and saved stocks will be removed</Text>
+            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>{t('Your watchlists and saved stocks will be removed')}</Text>
           </View>
 
           <View style={styles.consequenceItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>Your community posts and comments will be deleted</Text>
+            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>{t('Your community posts and comments will be deleted')}</Text>
           </View>
 
           <View style={styles.consequenceItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>Your referral history and rewards will be lost</Text>
+            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>{t('Your referral history and rewards will be lost')}</Text>
           </View>
 
           <View style={styles.consequenceItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>You will not be able to recover this account</Text>
+            <Text style={[styles.consequenceText, { color: colors.textSecondary }]}>{t('You will not be able to recover this account')}</Text>
           </View>
         </View>
 
         {/* Confirmation Input */}
         <View style={styles.confirmSection}>
           <Text style={[styles.confirmLabel, { color: colors.text }]}>
-            Type <Text style={styles.deleteWord}>DELETE</Text> to confirm:
+            {t('Type')} <Text style={styles.deleteWord}>DELETE</Text> {t('to confirm:')}
           </Text>
           <TextInput
             style={[styles.confirmInput, { backgroundColor: colors.surface, borderColor: isDark ? colors.border : '#ddd', color: colors.text }]}
             value={confirmText}
             onChangeText={setConfirmText}
-            placeholder="Type DELETE here"
+            placeholder={t('Type DELETE here')}
             placeholderTextColor={colors.textTertiary}
             autoCapitalize="characters"
             autoCorrect={false}
@@ -174,7 +176,7 @@ export default function DeleteAccountScreen() {
           ) : (
             <>
               <Ionicons name="trash" size={20} color="#fff" />
-              <Text style={styles.deleteButtonText}>Delete My Account</Text>
+              <Text style={styles.deleteButtonText}>{t('Delete My Account')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -185,7 +187,7 @@ export default function DeleteAccountScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Text style={styles.cancelButtonText}>Cancel and Go Back</Text>
+          <Text style={styles.cancelButtonText}>{t('Cancel and Go Back')}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
