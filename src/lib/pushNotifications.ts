@@ -7,7 +7,26 @@
 // alerts, etc.) work unchanged. Targeting is done by OneSignal external_id, which
 // the mobile app sets via OneSignal.login(userId) on launch.
 import { prisma } from '@/lib/prisma';
-import { sendToAllSubscribers, sendToExternalUserIds } from '@/lib/onesignal';
+import { sendToAllSubscribers, sendToExternalUserIds, NotificationCategory } from '@/lib/onesignal';
+
+// Map DB notification types to the mute categories users control in
+// Settings → Notifications. Unknown types send unconditionally.
+const CATEGORY_BY_TYPE: Record<string, NotificationCategory> = {
+  like: 'social',
+  comment: 'social',
+  reply: 'social',
+  follow: 'social',
+  mention: 'social',
+  message: 'messages',
+  price_alert: 'price_alerts',
+  watchlist_alert: 'watchlist',
+  breaking_news: 'market_news',
+  market_alert: 'market_news',
+};
+
+export function categoryForType(type?: string): NotificationCategory | undefined {
+  return type ? CATEGORY_BY_TYPE[type] : undefined;
+}
 
 /**
  * Send push notification to a single user (all their devices).
@@ -20,10 +39,12 @@ export async function sendPushNotificationToUser(
   options?: {
     channelId?: string;
     badge?: number;
+    category?: NotificationCategory;
   }
 ): Promise<void> {
   try {
-    await sendToExternalUserIds([userId], title, body, data);
+    const category = options?.category ?? categoryForType(data?.type);
+    await sendToExternalUserIds([userId], title, body, data, { category });
   } catch (error) {
     console.error('Error sending push notification to user:', error);
   }
@@ -72,9 +93,11 @@ export async function sendPushNotificationToAllUsers(
   data?: Record<string, any>,
   options?: {
     channelId?: string;
+    category?: NotificationCategory;
   }
 ): Promise<{ sent: number; failed: number }> {
-  const result = await sendToAllSubscribers(title, body, data);
+  const category = options?.category ?? categoryForType(data?.type);
+  const result = await sendToAllSubscribers(title, body, data, { category });
   return { sent: result?.recipients ?? 0, failed: 0 };
 }
 
@@ -105,7 +128,8 @@ export async function sendPushNotificationToWatchlistUsers(
       userIds,
       title,
       body,
-      { ...data, type: 'watchlist_alert', ticker }
+      { ...data, type: 'watchlist_alert', ticker },
+      { category: 'watchlist' }
     );
 
     return { sent: result?.recipients ?? 0, failed: 0, usersNotified: userIds.length };

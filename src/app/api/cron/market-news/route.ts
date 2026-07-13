@@ -182,6 +182,7 @@ export async function GET(req: NextRequest) {
         },
         {
           image: article.image || undefined,
+          category: 'market_news',
         }
       );
 

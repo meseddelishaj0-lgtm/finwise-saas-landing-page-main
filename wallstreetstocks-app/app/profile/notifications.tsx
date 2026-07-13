@@ -1,14 +1,127 @@
 // app/profile/notifications.tsx
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
+
+// OneSignal is a native module — absent in Expo Go, present in production builds
+let OneSignal: any = null;
+try {
+  OneSignal = require('react-native-onesignal').default;
+} catch {}
+
+const PREFS_KEY = 'notifPrefs';
+
+// Tag keys must match the server (src/lib/onesignal.ts NotificationCategory):
+// tag `pref_<category>` = "off" mutes; removing the tag re-enables.
+interface CategoryDef {
+  key: string; // pref tag suffix
+  title: string;
+  subtitle: string;
+  icon: string;
+  color: string;
+}
+
+const SOCIAL_CATEGORIES: CategoryDef[] = [
+  { key: 'messages', title: 'Messages', subtitle: 'New direct messages', icon: 'chatbubble', color: '#0A84FF' },
+  { key: 'social', title: 'Social Activity', subtitle: 'Likes, comments, follows and mentions', icon: 'heart', color: '#FF2D55' },
+];
+
+const MARKET_CATEGORIES: CategoryDef[] = [
+  { key: 'price_alerts', title: 'Price Alerts', subtitle: 'Alerts when your price targets hit', icon: 'pricetag', color: '#34C759' },
+  { key: 'watchlist', title: 'Watchlist Alerts', subtitle: 'News about stocks in your watchlist', icon: 'star', color: '#FFD60A' },
+  { key: 'market_news', title: 'Market News', subtitle: 'Top market headlines during the day', icon: 'newspaper', color: '#FF9500' },
+  { key: 'market_movers', title: 'Market Movers', subtitle: 'Big gainers and losers alerts', icon: 'trending-up', color: '#AF52DE' },
+  { key: 'daily_recap', title: 'Daily Recap', subtitle: 'End-of-day market summary', icon: 'time', color: '#8E8E93' },
+];
+
+const ALL_KEYS = [...SOCIAL_CATEGORIES, ...MARKET_CATEGORIES].map((c) => c.key);
 
 export default function Notifications() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
+
+  const accent = isDark ? '#FFD60A' : '#B8860B';
+  const [masterOn, setMasterOn] = useState(true);
+  const [prefs, setPrefs] = useState<Record<string, boolean>>(
+    Object.fromEntries(ALL_KEYS.map((k) => [k, true]))
+  );
+
+  // Load saved prefs + real OneSignal opt-in state
+  useEffect(() => {
+    AsyncStorage.getItem(PREFS_KEY)
+      .then((raw) => {
+        if (!raw) return;
+        try {
+          const saved = JSON.parse(raw);
+          if (saved.categories) setPrefs((prev) => ({ ...prev, ...saved.categories }));
+          if (typeof saved.master === 'boolean') setMasterOn(saved.master);
+        } catch {}
+      })
+      .catch(() => {});
+    try {
+      OneSignal?.User?.pushSubscription
+        ?.getOptedInAsync?.()
+        .then((opted: boolean) => setMasterOn(opted))
+        .catch(() => {});
+    } catch {}
+  }, []);
+
+  const persist = (master: boolean, categories: Record<string, boolean>) => {
+    AsyncStorage.setItem(PREFS_KEY, JSON.stringify({ master, categories })).catch(() => {});
+  };
+
+  const toggleMaster = (value: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setMasterOn(value);
+    persist(value, prefs);
+    try {
+      if (value) OneSignal?.User?.pushSubscription?.optIn();
+      else OneSignal?.User?.pushSubscription?.optOut();
+    } catch {}
+  };
+
+  const toggleCategory = (key: string, value: boolean) => {
+    Haptics.selectionAsync().catch(() => {});
+    const next = { ...prefs, [key]: value };
+    setPrefs(next);
+    persist(masterOn, next);
+    try {
+      if (value) OneSignal?.User?.removeTag(`pref_${key}`);
+      else OneSignal?.User?.addTag(`pref_${key}`, 'off');
+    } catch {}
+  };
+
+  const Row = ({ def }: { def: CategoryDef }) => {
+    const enabled = prefs[def.key];
+    return (
+      <View
+        style={[styles.row, { borderBottomColor: colors.borderLight, opacity: masterOn ? 1 : 0.4 }]}
+      >
+        <View style={[styles.iconContainer, { backgroundColor: def.color + '15' }]}>
+          <Ionicons name={def.icon as any} size={18} color={def.color} />
+        </View>
+        <View style={styles.rowText}>
+          <Text style={[styles.rowTitle, { color: colors.text }]}>{t(def.title)}</Text>
+          <Text style={[styles.rowSubtitle, { color: colors.textTertiary }]}>{t(def.subtitle)}</Text>
+        </View>
+        <Switch
+          value={masterOn && enabled}
+          onValueChange={(v) => toggleCategory(def.key, v)}
+          disabled={!masterOn}
+          trackColor={{ false: isDark ? '#3A3A3C' : '#E9E9EA', true: accent }}
+          thumbColor="#FFFFFF"
+          ios_backgroundColor={isDark ? '#3A3A3C' : '#E9E9EA'}
+        />
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -20,22 +133,119 @@ export default function Notifications() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>Notifications</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{t('Notifications')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={styles.content}>
-        <Text style={[styles.message, { color: colors.textSecondary }]}>Manage push notifications, email alerts, and what you get notified about.</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Master switch */}
+        <View
+          style={[
+            styles.masterCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: masterOn ? accent + '55' : colors.borderLight,
+            },
+          ]}
+        >
+          <View style={[styles.iconContainer, styles.masterIcon, { backgroundColor: accent + '18' }]}>
+            <Ionicons name={masterOn ? 'notifications' : 'notifications-off'} size={22} color={accent} />
+          </View>
+          <View style={styles.rowText}>
+            <Text style={[styles.masterTitle, { color: colors.text }]}>{t('Push Notifications')}</Text>
+            <Text style={[styles.rowSubtitle, { color: colors.textTertiary }]}>
+              {t('Receive push notifications from WallStreetStocks')}
+            </Text>
+          </View>
+          <Switch
+            value={masterOn}
+            onValueChange={toggleMaster}
+            trackColor={{ false: isDark ? '#3A3A3C' : '#E9E9EA', true: accent }}
+            thumbColor="#FFFFFF"
+            ios_backgroundColor={isDark ? '#3A3A3C' : '#E9E9EA'}
+          />
+        </View>
+
+        {!masterOn && (
+          <Text style={[styles.offHint, { color: colors.textTertiary }]}>
+            {t('Turn on push notifications above to choose what you get notified about.')}
+          </Text>
+        )}
+
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('Social & Messages')}</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+          {SOCIAL_CATEGORIES.map((def) => (
+            <Row key={def.key} def={def} />
+          ))}
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('Markets & Alerts')}</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.borderLight }]}>
+          {MARKET_CATEGORIES.map((def) => (
+            <Row key={def.key} def={def} />
+          ))}
+        </View>
+
+        <Text style={[styles.footnote, { color: colors.textTertiary }]}>
+          {t('Changes apply instantly across the app.')}
+        </Text>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', minHeight: 56 },
+  container: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    minHeight: 56,
+  },
   backButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', zIndex: 10 },
   title: { fontSize: 18, fontWeight: '600' },
-  content: { flex: 1, padding: 20, justifyContent: 'center', alignItems: 'center' },
-  message: { fontSize: 16, color: '#666', textAlign: 'center', lineHeight: 24 },
+  content: { padding: 16, paddingBottom: 48 },
+  masterCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+  },
+  masterIcon: { width: 42, height: 42, borderRadius: 12 },
+  masterTitle: { fontSize: 16, fontWeight: '700' },
+  offHint: { fontSize: 12, textAlign: 'center', marginTop: 12, paddingHorizontal: 12 },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 24,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  section: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 12,
+  },
+  iconContainer: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rowText: { flex: 1 },
+  rowTitle: { fontSize: 15, fontWeight: '600' },
+  rowSubtitle: { fontSize: 12, marginTop: 1 },
+  footnote: { fontSize: 12, textAlign: 'center', marginTop: 24 },
 });

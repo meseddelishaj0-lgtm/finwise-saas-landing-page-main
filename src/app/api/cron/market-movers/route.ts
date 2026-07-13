@@ -139,7 +139,7 @@ export async function GET(req: NextRequest) {
       type: 'market_mover',
       symbols: bigMovers.map(m => m.symbol),
       symbol: bigMovers[0].symbol,
-    });
+    }, { category: 'market_movers' });
 
     // Record in SentNotification
     await prisma.sentNotification.create({

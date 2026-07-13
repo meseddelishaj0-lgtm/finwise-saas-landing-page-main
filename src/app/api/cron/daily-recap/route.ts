@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
     // Send via OneSignal
     const result = await sendToAllSubscribers(title, body, {
       type: 'daily_recap',
-    });
+    }, { category: 'daily_recap' });
 
     // Record in SentNotification
     await prisma.sentNotification.create({

@@ -34,6 +34,65 @@ interface OneSignalResponse {
   errors?: any;
 }
 
+// Notification categories users can mute in Settings → Notifications.
+// The app sets a OneSignal tag `pref_<category>` = "off" when muted and
+// removes it when re-enabled — so "no tag" means enabled, which keeps
+// every existing user receiving everything by default.
+export type NotificationCategory =
+  | 'messages'
+  | 'social'
+  | 'price_alerts'
+  | 'watchlist'
+  | 'market_news'
+  | 'market_movers'
+  | 'daily_recap';
+
+const categoryTag = (category: NotificationCategory) => `pref_${category}`;
+
+/**
+ * Fetch a user's OneSignal tags by external_id. Returns null on any error
+ * (callers treat null as "allow" — a lookup failure must never eat a
+ * notification).
+ */
+async function getUserTags(externalId: string): Promise<Record<string, string> | null> {
+  if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_API_KEY) return null;
+  try {
+    const res = await fetch(
+      `https://api.onesignal.com/apps/${ONESIGNAL_APP_ID}/users/by/external_id/${encodeURIComponent(externalId)}`,
+      { headers: { Authorization: `Key ${ONESIGNAL_REST_API_KEY}` } }
+    );
+    if (!res.ok) return null;
+    const json = await res.json();
+    return (json?.properties?.tags as Record<string, string>) ?? {};
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Drop external ids whose tags mute the given category. Lookups run in
+ * batches; failures fail open (user stays in the list).
+ */
+async function filterIdsByCategory(
+  externalIds: string[],
+  category: NotificationCategory
+): Promise<string[]> {
+  const key = categoryTag(category);
+  const out: string[] = [];
+  const BATCH = 20;
+  for (let i = 0; i < externalIds.length; i += BATCH) {
+    const chunk = externalIds.slice(i, i + BATCH);
+    const results = await Promise.all(
+      chunk.map(async (id) => {
+        const tags = await getUserTags(id);
+        return tags === null || tags[key] !== 'off' ? id : null;
+      })
+    );
+    for (const id of results) if (id) out.push(id);
+  }
+  return out;
+}
+
 /**
  * Send a raw OneSignal notification with full control over the payload.
  */
@@ -87,15 +146,25 @@ export async function sendToAllSubscribers(
     image?: string;
     url?: string;
     ttl?: number;
+    category?: NotificationCategory;
   }
 ): Promise<OneSignalResponse | null> {
   const payload: Partial<OneSignalNotificationPayload> = {
-    included_segments: ['Total Subscriptions'],
     headings: { en: title },
     contents: { en: body },
     data,
     priority: 10,
   };
+
+  // With a category, target via a tag filter (respects per-user mutes;
+  // "!=" also matches users without the tag). Otherwise use the segment.
+  if (options?.category) {
+    payload.filters = [
+      { field: 'tag', key: categoryTag(options.category), relation: '!=', value: 'off' },
+    ];
+  } else {
+    payload.included_segments = ['Total Subscriptions'];
+  }
 
   if (options?.image) {
     payload.big_picture = options.image;
@@ -130,12 +199,20 @@ export async function sendToExternalUserIds(
     image?: string;
     url?: string;
     ttl?: number;
+    category?: NotificationCategory;
   }
 ): Promise<OneSignalResponse | null> {
-  const externalIds = [...new Set(userIds.map((id) => String(id)))].filter(Boolean);
+  let externalIds = [...new Set(userIds.map((id) => String(id)))].filter(Boolean);
 
   if (externalIds.length === 0) {
     return null;
+  }
+
+  // include_aliases can't be combined with tag filters, so per-user sends
+  // check each recipient's mute tags before sending.
+  if (options?.category) {
+    externalIds = await filterIdsByCategory(externalIds, options.category);
+    if (externalIds.length === 0) return null;
   }
 
   const payload: Partial<OneSignalNotificationPayload> = {
