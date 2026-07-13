@@ -134,12 +134,6 @@ export default function MenuPage() {
           badgeColor: tierBadge.color,
         },
         {
-          label: "Notifications",
-          route: "/notifications",
-          icon: "notifications-outline",
-          color: "#FF9500",
-        },
-        {
           label: "Price Alerts",
           route: "/price-alerts",
           icon: "trending-up",
