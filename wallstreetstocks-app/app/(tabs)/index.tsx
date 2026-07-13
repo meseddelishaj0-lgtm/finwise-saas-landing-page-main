@@ -602,27 +602,27 @@ export default function Dashboard() {
   // Removing refreshWatchlist() call here prevents the flash/glitch when navigating back
   // The watchlist context auto-loads on mount and WebSocket keeps prices updated
 
-  // Fetch unread messages count
+  // Fetch unread notifications count (bell badge in the header)
   const fetchUnreadMessagesCount = useCallback(async () => {
     try {
       const storedUserId = await AsyncStorage.getItem('userId');
       if (!storedUserId) return;
 
-      const response = await fetch('https://www.wallstreetstocks.ai/api/messages', {
-        headers: { 'x-user-id': storedUserId },
-      });
+      const response = await fetch(
+        `https://www.wallstreetstocks.ai/api/notifications?userId=${storedUserId}`
+      );
 
       if (!response.ok) return;
 
       const data = await response.json();
-      const conversations = data.conversations || [];
-      const totalUnread = conversations.reduce((sum: number, conv: any) => sum + (conv.unreadCount || 0), 0);
+      const items = Array.isArray(data) ? data : [];
+      const totalUnread = items.filter((n: any) => !n.isRead).length;
       setUnreadMessagesCount(totalUnread);
     } catch {
     }
   }, []);
 
-  // Refresh unread messages count when screen comes into focus
+  // Refresh unread notifications count when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchUnreadMessagesCount();
@@ -2205,8 +2205,8 @@ export default function Dashboard() {
             )}
           </View>
 
-          <TouchableOpacity onPress={() => router.push('/messages')} style={styles.messagesIconContainer}>
-            <Ionicons name="chatbubble-ellipses-outline" size={26} color={colors.primary} />
+          <TouchableOpacity onPress={() => router.push('/notifications' as any)} style={styles.messagesIconContainer}>
+            <Ionicons name="notifications-outline" size={26} color={colors.primary} />
             {unreadMessagesCount > 0 && (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadBadgeText}>
