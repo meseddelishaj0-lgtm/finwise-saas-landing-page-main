@@ -21,8 +21,8 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 const BAR_MARGIN = 14;
-const BAR_HEIGHT = 62;
-const BUBBLE_INSET = 5;
+const BAR_HEIGHT = 72;
+const BUBBLE_INSET = 6;
 
 export default function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const { colors, isDark } = useTheme();
@@ -47,6 +47,19 @@ export default function GlassTabBar({ state, descriptors, navigation }: BottomTa
   const bottomOffset = Math.max(insets.bottom, 10) + (Platform.OS === 'ios' ? 6 : 10);
 
   return (
+    <>
+      {/* Fade content into the background beneath the floating bar so
+          nothing stays readable under the tabs */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={[
+          'rgba(0,0,0,0)',
+          colors.background,
+          colors.background,
+        ]}
+        locations={[0, 0.5, 1]}
+        style={[styles.backdrop, { height: bottomOffset + BAR_HEIGHT + 48 }]}
+      />
     <View
       pointerEvents="box-none"
       style={[styles.wrap, { bottom: bottomOffset }]}
@@ -146,7 +159,7 @@ export default function GlassTabBar({ state, descriptors, navigation }: BottomTa
                       ? ICONS[route.name] ?? 'ellipse'
                       : (`${ICONS[route.name] ?? 'ellipse'}-outline` as keyof typeof Ionicons.glyphMap)
                   }
-                  size={22}
+                  size={24}
                   color={focused ? accent : colors.textTertiary}
                 />
                 <Text
@@ -164,10 +177,17 @@ export default function GlassTabBar({ state, descriptors, navigation }: BottomTa
         </View>
       </View>
     </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  backdrop: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   wrap: {
     position: 'absolute',
     left: BAR_MARGIN,
@@ -219,7 +239,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   label: {
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.2,
     maxWidth: '92%',
