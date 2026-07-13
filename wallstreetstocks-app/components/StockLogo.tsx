@@ -1,5 +1,7 @@
 import React, { useState, useEffect, memo } from 'react';
-import { View, Image, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
+import { cachedJson } from '@/lib/cachedFetch';
 
 // Twelve Data API key
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
@@ -201,11 +203,13 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
 
     const fetchLogo = async () => {
       try {
-        const response = await fetch(
-          `https://api.twelvedata.com/logo?symbol=${normalizedSymbol}&apikey=${TWELVE_DATA_API_KEY}`
+        // 24h disk cache — logo URLs are stable, no need to refetch per launch
+        const data = await cachedJson(
+          `https://api.twelvedata.com/logo?symbol=${normalizedSymbol}&apikey=${TWELVE_DATA_API_KEY}`,
+          24 * 60 * 60 * 1000,
+          { cacheKey: `tdlogo:${cacheKey}` }
         );
-        const data = await response.json();
-        
+
         if (data && data.url && !data.code) {
           // Cache the result
           stockLogoCache[cacheKey] = data.url;
@@ -293,7 +297,9 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
                   setImageError(true);
                 }
               }}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="disk"
+              transition={80}
             />
             {/* Show fallback icon while loading */}
             {!imageLoaded && (
@@ -364,7 +370,9 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
                 setImageError(true);
               }
             }}
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="disk"
+            transition={80}
           />
           {/* Show fallback while loading */}
           {!imageLoaded && (

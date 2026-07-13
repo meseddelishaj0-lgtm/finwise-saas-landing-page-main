@@ -1029,7 +1029,6 @@ export default function Explore() {
                   stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
                   setData(stockData);
                 } catch (error) {
-                  console.log('Error fetching Europe stocks:', error);
                 }
                 setLoading(false);
               }
@@ -1119,7 +1118,6 @@ export default function Explore() {
                   stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
                   setData(stockData);
                 } catch (error) {
-                  console.log('Error fetching Asia stocks:', error);
                 }
                 setLoading(false);
               }

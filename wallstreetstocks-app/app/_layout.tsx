@@ -125,13 +125,6 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
       const data = rawData?.custom?.a || rawData || {};
       const articleUrl = data?.url || rawData?.url || notification?.launchURL || rawData?.custom?.u;
 
-      console.log('[OneSignal] Notification tapped:', JSON.stringify({
-        additionalData: rawData,
-        resolvedData: data,
-        launchURL: notification?.launchURL,
-        resolvedUrl: articleUrl,
-      }));
-
       // Wait for navigation stack to be fully mounted on cold start
       await new Promise(resolve => setTimeout(resolve, 800));
 

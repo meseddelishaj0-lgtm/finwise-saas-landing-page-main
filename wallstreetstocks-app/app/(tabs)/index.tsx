@@ -1,5 +1,6 @@
 // app/(tabs)/index.tsx - REDESIGNED CLEAN WHITE VERSION WITH WATCHLIST
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { cachedJson } from '@/lib/cachedFetch';
 import {
   View,
   Text,
@@ -608,13 +609,12 @@ export default function Dashboard() {
       const storedUserId = await AsyncStorage.getItem('userId');
       if (!storedUserId) return;
 
-      const response = await fetch(
-        `https://www.wallstreetstocks.ai/api/notifications?userId=${storedUserId}`
+      const data = await cachedJson(
+        `https://www.wallstreetstocks.ai/api/notifications?userId=${storedUserId}`,
+        30 * 1000,
+        { cacheKey: `notif-count:${storedUserId}` }
       );
 
-      if (!response.ok) return;
-
-      const data = await response.json();
       const items = Array.isArray(data) ? data : [];
       const totalUnread = items.filter((n: any) => !n.isRead).length;
       setUnreadMessagesCount(totalUnread);
@@ -1191,10 +1191,11 @@ export default function Dashboard() {
   const fetchNews = async () => {
     setNewsLoading(true);
     try {
-      const res = await fetch(
-        `${BASE_URL}/stock_news?limit=10&apikey=${FMP_API_KEY}`
+      const data = await cachedJson(
+        `${BASE_URL}/stock_news?limit=10&apikey=${FMP_API_KEY}`,
+        3 * 60 * 1000,
+        { cacheKey: 'home-news' }
       );
-      const data = await res.json();
 
       if (data && Array.isArray(data)) {
         setNews(data);
@@ -1366,11 +1367,15 @@ export default function Dashboard() {
             || null;
           if (userId) {
             const fetchList = async (list: string) => {
-              const res = await fetch(`https://www.wallstreetstocks.ai/api/stock-picks?list=${list}`, {
-                headers: { 'x-user-id': userId, 'Cache-Control': 'no-cache' },
-              });
-              const data = await res.json().catch(() => null);
-              return res.ok && Array.isArray(data?.picks) && data.picks.length > 0 ? data.picks : null;
+              const data = await cachedJson(
+                `https://www.wallstreetstocks.ai/api/stock-picks?list=${list}`,
+                3 * 60 * 1000,
+                {
+                  init: { headers: { 'x-user-id': userId } },
+                  cacheKey: `stock-picks:${list}:${userId}`,
+                }
+              ).catch(() => null);
+              return Array.isArray(data?.picks) && data.picks.length > 0 ? data.picks : null;
             };
             const top3 = (arr: any[]) => arr.slice(0, 3).map((p: any) => ({
               symbol: p.symbol,
