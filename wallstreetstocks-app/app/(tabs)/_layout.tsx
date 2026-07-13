@@ -42,7 +42,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      tabBar={(props) => <GlassTabBar {...props} />}
+      tabBar={(props) => <GlassTabBar {...(props as any)} />}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
@@ -53,7 +53,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t('Home'),
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color, focused }: { color: any; focused: boolean }) => (
             <TabIcon name="home" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
@@ -62,7 +62,7 @@ export default function TabLayout() {
         name="explore"
         options={{
           title: t('Markets'),
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color, focused }: { color: any; focused: boolean }) => (
             <TabIcon name="globe" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
@@ -71,7 +71,7 @@ export default function TabLayout() {
         name="trending"
         options={{
           title: t('Trending'),
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color, focused }: { color: any; focused: boolean }) => (
             <TabIcon name="flame" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
@@ -80,7 +80,7 @@ export default function TabLayout() {
         name="ai-tools"
         options={{
           title: t('AI'),
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color, focused }: { color: any; focused: boolean }) => (
             <TabIcon name="sparkles" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
@@ -89,7 +89,7 @@ export default function TabLayout() {
         name="community"
         options={{
           title: t('Social'),
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color, focused }: { color: any; focused: boolean }) => (
             <TabIcon name="chatbubbles" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}
@@ -98,7 +98,7 @@ export default function TabLayout() {
         name="screener"
         options={{
           title: t('Screen'),
-          tabBarIcon: ({ color, focused }) => (
+          tabBarIcon: ({ color, focused }: { color: any; focused: boolean }) => (
             <TabIcon name="funnel" color={color} focused={focused} accentColor={colors.primary} />
           ),
         }}

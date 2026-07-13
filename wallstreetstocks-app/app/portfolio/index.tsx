@@ -274,7 +274,7 @@ export default function PortfolioScreen() {
               <TouchableOpacity
                 key={holding.id}
                 style={[styles.holdingCard, { backgroundColor: colors.card }]}
-                onPress={() => router.push(`/symbol/${holding.symbol}`)}
+                onPress={() => router.push(`/symbol/${holding.symbol}` as any)}
                 onLongPress={() => deleteHolding(holding.id)}
               >
                 <View style={styles.holdingHeader}>

@@ -13,7 +13,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Mail, Send, AtSign } from "lucide-react-native";
+import { ChevronLeft, Mail, Send, AtSign } from "@/components/lucideShim";
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 

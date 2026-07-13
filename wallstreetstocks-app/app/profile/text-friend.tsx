@@ -13,7 +13,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, MessageSquare, Send, Smartphone } from "lucide-react-native";
+import { ChevronLeft, MessageSquare, Send, Smartphone } from "@/components/lucideShim";
 import { useTheme } from '@/context/ThemeContext';
 
 export default function TextFriendPage() {

@@ -25,7 +25,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { LineChart as GiftedLineChart } from 'react-native-gifted-charts';
 import { Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

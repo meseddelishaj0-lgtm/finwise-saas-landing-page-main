@@ -129,7 +129,7 @@ export default function ProfileSetupScreen() {
       await refreshProfile();
       
       // Navigate to onboarding for first-time users
-      router.replace('/onboarding');
+      router.replace('/onboarding' as any);
     } catch (error: any) {
       Alert.alert(t('Error'), error.message || t('Failed to save profile'));
     } finally {
@@ -145,7 +145,7 @@ export default function ProfileSetupScreen() {
         { text: t('Go Back'), style: 'cancel' },
         {
           text: t('Skip'),
-          onPress: () => router.replace('/onboarding'),
+          onPress: () => router.replace('/onboarding' as any),
         },
       ]
     );

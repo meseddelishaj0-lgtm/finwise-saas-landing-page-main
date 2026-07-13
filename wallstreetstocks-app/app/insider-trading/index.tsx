@@ -61,7 +61,7 @@ export default function InsiderTradingScreen() {
   const [searchedSymbol, setSearchedSymbol] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'buys' | 'sells'>('all');
   const [stats, setStats] = useState({ totalBuys: 0, totalSells: 0, netActivity: 0 });
-  const searchTimeoutRef = useRef<number | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const calculateStats = (tradeData: InsiderTrade[]) => {
     let buys = 0;

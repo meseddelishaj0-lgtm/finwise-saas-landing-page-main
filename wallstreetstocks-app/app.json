@@ -2,12 +2,11 @@
   "expo": {
     "name": "wallstreetstocksapp",
     "slug": "wallstreetstocks-app",
-    "version": "1.1.5",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/wallstreetstocks.png",
     "scheme": "wallstreetstocksapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "platforms": [
       "ios",
       "android"
@@ -106,16 +105,12 @@
         "backgroundColor": "#0B1A2E",
         "foregroundImage": "./assets/images/wallstreetstocks-android.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
       "allowBackup": true,
       "permissions": [
         "com.google.android.gms.permission.AD_ID"
-      ],
-      "config": {
-        "googleMobileAdsAppId": "ca-app-pub-7939235723023664~5272582285"
-      }
+      ]
     },
     "web": {
       "output": "static",
@@ -169,12 +164,20 @@
         {
           "ios": {
             "extraPods": [
-              { "name": "GoogleUtilities", "modular_headers": true },
-              { "name": "RecaptchaInterop", "modular_headers": true }
+              {
+                "name": "GoogleUtilities",
+                "modular_headers": true
+              },
+              {
+                "name": "RecaptchaInterop",
+                "modular_headers": true
+              }
             ]
           }
         }
-      ]
+      ],
+      "expo-image",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true,

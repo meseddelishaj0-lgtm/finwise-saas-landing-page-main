@@ -72,7 +72,7 @@ export default function Signup() {
   const [usernameError, setUsernameError] = useState('');
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
-  const usernameCheckTimeout = useRef<number | null>(null);
+  const usernameCheckTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { signup, socialLogin } = useAuth();
   const router = useRouter();
   const { t } = useLanguage();
@@ -240,7 +240,7 @@ export default function Signup() {
     setLoading(true);
     try {
       await signup(email, password, name, username);
-      router.replace('/onboarding');
+      router.replace('/onboarding' as any);
     } catch (error: any) {
       Alert.alert(t('Error'), error.message || t('Failed to create account'));
     } finally {

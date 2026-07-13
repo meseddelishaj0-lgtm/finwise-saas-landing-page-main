@@ -23,7 +23,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { useUserProfile } from '@/context/UserProfileContext';
 import FormattedContent from '@/components/FormattedContent';
@@ -4566,7 +4566,7 @@ const styles = StyleSheet.create({
     right: 8,
   },
   uploadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -5007,7 +5007,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   imageViewerOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 5,
   },
   

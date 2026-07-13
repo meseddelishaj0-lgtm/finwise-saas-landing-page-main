@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, {
+  type SharedValue,
   useSharedValue,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -90,7 +91,7 @@ const TRIAL_FEATURES = [
   { icon: 'shield-checkmark' as const, text: 'Ad-Free Experience' },
 ];
 
-function Dot({ index, scrollX, width }: { index: number; scrollX: Animated.SharedValue<number>; width: number }) {
+function Dot({ index, scrollX, width }: { index: number; scrollX: SharedValue<number>; width: number }) {
   const animatedStyle = useAnimatedStyle(() => {
     const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
     const dotWidth = interpolate(scrollX.value, inputRange, [8, 24, 8], Extrapolation.CLAMP);
@@ -225,8 +226,8 @@ export default function OnboardingScreen() {
       <AnimatedFlatList
         ref={flatListRef}
         data={SLIDES}
-        renderItem={renderSlide}
-        keyExtractor={(item: Slide) => item.id}
+        renderItem={renderSlide as any}
+        keyExtractor={((item: Slide) => item.id) as any}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}

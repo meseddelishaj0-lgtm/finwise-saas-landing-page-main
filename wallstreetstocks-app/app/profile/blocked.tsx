@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { getBlockedUserDetails, unblockUser } from '@/services/communityApi';
 import { useTheme } from '@/context/ThemeContext';

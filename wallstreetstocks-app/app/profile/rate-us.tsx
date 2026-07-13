@@ -11,7 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { ChevronLeft, Star, ExternalLink, Heart, ThumbsUp } from "lucide-react-native";
+import { ChevronLeft, Star, ExternalLink, Heart, ThumbsUp } from "@/components/lucideShim";
 import * as StoreReview from "expo-store-review";
 import { useTheme } from '@/context/ThemeContext';
 

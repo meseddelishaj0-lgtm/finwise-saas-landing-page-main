@@ -1,6 +1,6 @@
 // app/profile/subscription.tsx
 import React, { useEffect, useState, useCallback } from "react";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from 'expo-router';
 import {
   View,
   Text,
@@ -35,7 +35,7 @@ import {
   XCircle,
   ArrowUpCircle,
   ExternalLink,
-} from "lucide-react-native";
+} from "@/components/lucideShim";
 import Purchases, { PurchasesPackage, CustomerInfo } from "react-native-purchases";
 import {
   openSubscriptionManagement,

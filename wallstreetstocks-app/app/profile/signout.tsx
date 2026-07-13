@@ -9,7 +9,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { LogOut, ChevronLeft, AlertCircle } from 'lucide-react-native';
+import { LogOut, ChevronLeft, AlertCircle } from '@/components/lucideShim';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
