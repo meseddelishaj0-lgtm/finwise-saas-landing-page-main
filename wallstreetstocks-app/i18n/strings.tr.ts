@@ -1638,5 +1638,7 @@ const strings: Record<string, string> = {
   "Watchlist Alerts": "İzleme listesi uyarıları",
   "Daily Recap": "Günlük özet",
   "End-of-day market summary": "Gün sonu piyasa özeti",
+  "Notifications from WallStreetStocks are stopped for this device.": "WallStreetStocks bildirimleri bu cihaz için durduruldu.",
+  "Also turn off in iPhone Settings": "iPhone Ayarlarından da kapat",
 };
 export default strings;

@@ -1,6 +1,6 @@
 // app/profile/notifications.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -167,9 +167,22 @@ export default function Notifications() {
         </View>
 
         {!masterOn && (
-          <Text style={[styles.offHint, { color: colors.textTertiary }]}>
-            {t('Turn on push notifications above to choose what you get notified about.')}
-          </Text>
+          <>
+            <Text style={[styles.offHint, { color: colors.textTertiary }]}>
+              {t('Notifications from WallStreetStocks are stopped for this device.')}
+            </Text>
+            <TouchableOpacity
+              onPress={() => Linking.openSettings().catch(() => {})}
+              style={[styles.settingsLink, { borderColor: accent + '55' }]}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="settings-outline" size={15} color={accent} />
+              <Text style={[styles.settingsLinkText, { color: accent }]}>
+                {t('Also turn off in iPhone Settings')}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={accent} />
+            </TouchableOpacity>
+          </>
         )}
 
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('Social & Messages')}</Text>
@@ -219,6 +232,19 @@ const styles = StyleSheet.create({
   masterIcon: { width: 42, height: 42, borderRadius: 12 },
   masterTitle: { fontSize: 16, fontWeight: '700' },
   offHint: { fontSize: 12, textAlign: 'center', marginTop: 12, paddingHorizontal: 12 },
+  settingsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    alignSelf: 'center',
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  settingsLinkText: { fontSize: 13, fontWeight: '600' },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '600',

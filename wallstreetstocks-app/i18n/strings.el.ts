@@ -1638,5 +1638,7 @@ const strings: Record<string, string> = {
   "Watchlist Alerts": "Ειδοποιήσεις λίστας παρακολούθησης",
   "Daily Recap": "Ημερήσια ανασκόπηση",
   "End-of-day market summary": "Σύνοψη αγοράς στο τέλος της ημέρας",
+  "Notifications from WallStreetStocks are stopped for this device.": "Οι ειδοποιήσεις του WallStreetStocks έχουν σταματήσει για αυτήν τη συσκευή.",
+  "Also turn off in iPhone Settings": "Απενεργοποίηση και στις Ρυθμίσεις iPhone",
 };
 export default strings;

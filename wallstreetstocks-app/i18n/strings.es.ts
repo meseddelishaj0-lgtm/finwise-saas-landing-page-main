@@ -1638,5 +1638,7 @@ const strings: Record<string, string> = {
   "Watchlist Alerts": "Alertas de la lista de seguimiento",
   "Daily Recap": "Resumen diario",
   "End-of-day market summary": "Resumen del mercado al cierre",
+  "Notifications from WallStreetStocks are stopped for this device.": "Las notificaciones de WallStreetStocks están detenidas en este dispositivo.",
+  "Also turn off in iPhone Settings": "Desactivar también en Ajustes del iPhone",
 };
 export default strings;
