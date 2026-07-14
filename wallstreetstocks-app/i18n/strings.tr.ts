@@ -1669,5 +1669,8 @@ const strings: Record<string, string> = {
   "Alerts on": "Açık uyarılar",
   "Explore Premium — AI picks, forecasts & more": "Premium'u keşfet — YZ seçimleri, tahminler ve daha fazlası",
   "Start investing": "Yatırıma başla",
+  "Stock Valuation": "Hisse Değerlemesi",
+  "Stock Valuation & AI-Powered Analysis": "Hisse değerlemesi ve YZ analizi",
+  "Stock Valuation Analysis": "Hisse Değerleme Analizi",
 };
 export default strings;

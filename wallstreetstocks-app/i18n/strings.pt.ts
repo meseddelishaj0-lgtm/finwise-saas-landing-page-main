@@ -1669,5 +1669,8 @@ const strings: Record<string, string> = {
   "Alerts on": "Alertas ativos",
   "Explore Premium — AI picks, forecasts & more": "Conheça o Premium: picks com IA, previsões e mais",
   "Start investing": "Começar a investir",
+  "Stock Valuation": "Avaliação da ação",
+  "Stock Valuation & AI-Powered Analysis": "Avaliação de ações e análise com IA",
+  "Stock Valuation Analysis": "Análise de avaliação de ações",
 };
 export default strings;

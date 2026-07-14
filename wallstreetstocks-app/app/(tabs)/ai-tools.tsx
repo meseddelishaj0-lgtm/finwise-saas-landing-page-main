@@ -839,7 +839,7 @@ Always remind users that this is educational information, not financial advice.`
                   </Text>
 
                   <View style={styles.premiumFeaturesList}>
-                    {['DCF Valuation Analysis', 'AI-Powered Insights', 'Buy/Sell Recommendations', 'Risk Assessment'].map((feature, idx) => (
+                    {[t('Stock Valuation Analysis'), 'AI-Powered Insights', 'Buy/Sell Recommendations', 'Risk Assessment'].map((feature, idx) => (
                       <View key={idx} style={styles.premiumFeatureItem}>
                         <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
                         <Text style={styles.premiumFeatureText}>{feature}</Text>
@@ -863,7 +863,7 @@ Always remind users that this is educational information, not financial advice.`
             {/* Search Card */}
             <View style={[styles.searchCard, { backgroundColor: isDark ? colors.card : colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3 }]}>
               <Text style={[styles.searchTitle, { color: colors.text }]}>Stock Analyzer</Text>
-              <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>DCF Valuation & AI-Powered Analysis</Text>
+              <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>{t('Stock Valuation & AI-Powered Analysis')}</Text>
 
               <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : colors.border }]}>
                 <Ionicons name="search" size={20} color={colors.textTertiary} />
@@ -966,7 +966,7 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={[styles.dcfCard, { backgroundColor: colors.background }]}>
                     <View style={styles.dcfHeader}>
                       <Ionicons name="calculator" size={22} color="#B8860B" />
-                      <Text style={[styles.dcfTitle, { color: colors.text }]}>DCF Valuation</Text>
+                      <Text style={[styles.dcfTitle, { color: colors.text }]}>{t('Stock Valuation')}</Text>
                     </View>
 
                     <View style={styles.dcfContent}>
@@ -1387,7 +1387,7 @@ Always remind users that this is educational information, not financial advice.`
                     winner={comparisonResult.stock1.eps && comparisonResult.stock2.eps ? (comparisonResult.stock1.eps > comparisonResult.stock2.eps ? 1 : 2) : 0}
                   />
                   <CompareRow
-                    label="DCF Valuation"
+                    label={t('Stock Valuation')}
                     value1={comparisonResult.stock1.dcfDiffPercent ? `${comparisonResult.stock1.isUndervalued ? '+' : ''}${comparisonResult.stock1.dcfDiffPercent.toFixed(1)}%` : '—'}
                     value2={comparisonResult.stock2.dcfDiffPercent ? `${comparisonResult.stock2.isUndervalued ? '+' : ''}${comparisonResult.stock2.dcfDiffPercent.toFixed(1)}%` : '—'}
                     color1={comparisonResult.stock1.isUndervalued ? '#00C853' : '#FF3B30'}

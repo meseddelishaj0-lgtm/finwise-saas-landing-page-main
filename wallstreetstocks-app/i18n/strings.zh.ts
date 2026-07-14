@@ -1669,5 +1669,8 @@ const strings: Record<string, string> = {
   "Alerts on": "已开启提醒",
   "Explore Premium — AI picks, forecasts & more": "探索 Premium——AI 精选、预测等更多功能",
   "Start investing": "开始投资",
+  "Stock Valuation": "股票估值",
+  "Stock Valuation & AI-Powered Analysis": "股票估值与 AI 分析",
+  "Stock Valuation Analysis": "股票估值分析",
 };
 export default strings;
