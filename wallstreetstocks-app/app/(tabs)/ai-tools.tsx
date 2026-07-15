@@ -342,7 +342,7 @@ Return ONLY a JSON object:
         aiAnalysis = JSON.parse(content.replace(/```json\n?|\n?```/g, ''));
       } catch {
         aiAnalysis = {
-          aiSummary: `${quote.name} is currently trading at $${quote.price}. ${isUndervalued ? 'The stock appears undervalued based on DCF analysis.' : 'Conduct further research before investing.'}`,
+          aiSummary: `${quote.name} is currently trading at $${quote.price}. ${isUndervalued ? 'The stock appears undervalued based on our valuation analysis.' : 'Conduct further research before investing.'}`,
           strengths: ['Market presence', 'Trading volume', 'Industry position'],
           risks: ['Market volatility', 'Economic conditions', 'Competition'],
           sentiment: 'neutral',
@@ -1194,7 +1194,7 @@ Always remind users that this is educational information, not financial advice.`
             {/* Search Card */}
             <View style={[styles.searchCard, { backgroundColor: isDark ? colors.card : colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3 }]}>
               <Text style={[styles.searchTitle, { color: colors.text }]}>Stock Comparison</Text>
-              <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>Side-by-side analysis with DCF valuation</Text>
+              <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>{t('Side-by-side analysis with stock valuation')}</Text>
 
               <View style={styles.compareInputRow}>
                 <View style={styles.compareInputWrapper}>

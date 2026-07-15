@@ -1672,5 +1672,6 @@ const strings: Record<string, string> = {
   "Stock Valuation": "Valorisation de l'action",
   "Stock Valuation & AI-Powered Analysis": "Valorisation d'actions et analyse IA",
   "Stock Valuation Analysis": "Analyse de valorisation d'actions",
+  "Side-by-side analysis with stock valuation": "Analyse côte à côte avec valorisation d'actions",
 };
 export default strings;
