@@ -23,13 +23,13 @@ export async function POST(request: NextRequest) {
     if (body.userId) {
       user = await prisma.user.update({
         where: { id: Number(body.userId) },
-        data: { isVerified: verified },
+        data: { isVerified: verified, verifiedBadge: verified ? 'manual' : null },
         select: { id: true, username: true, name: true, isVerified: true },
       });
     } else if (body.username) {
       user = await prisma.user.update({
         where: { username: String(body.username) },
-        data: { isVerified: verified },
+        data: { isVerified: verified, verifiedBadge: verified ? 'manual' : null },
         select: { id: true, username: true, name: true, isVerified: true },
       });
     } else {

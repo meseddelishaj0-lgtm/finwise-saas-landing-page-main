@@ -2,6 +2,7 @@
 // Sync subscription tier from mobile app after purchase
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { syncDiamondVerification } from '@/lib/verification';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,8 @@ export async function POST(request: NextRequest) {
         subscriptionExpiry: true,
       },
     });
+
+    await syncDiamondVerification(userIdNum, normalizedTier);
 
     console.log(`✅ Subscription synced for user ${userIdNum}: ${normalizedTier}`);
 

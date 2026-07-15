@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { syncDiamondVerification } from '@/lib/verification';
 
 /**
  * POST /api/webhooks/revenuecat
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
             subscriptionProductId: productId,
           },
         });
+        await syncDiamondVerification(userId, tier);
         console.log(`Subscription activated for user ${userId}: ${productId} (tier: ${tier})`);
         break;
 
@@ -113,6 +115,7 @@ export async function POST(request: NextRequest) {
             subscriptionProductId: null,
           },
         });
+        await syncDiamondVerification(userId, 'free');
         console.log(`Subscription expired for user ${userId}`);
         break;
 

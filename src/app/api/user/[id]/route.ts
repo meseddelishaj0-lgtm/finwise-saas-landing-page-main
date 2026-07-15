@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@/generated/prisma/client/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
+import { syncDiamondVerification } from '@/lib/verification';
 
 export const dynamic = 'force-dynamic';
 
@@ -247,6 +248,10 @@ export async function PUT(
 
       return user;
     });
+
+    if (updateData.subscriptionTier !== undefined) {
+      await syncDiamondVerification(userId, updateData.subscriptionTier);
+    }
 
     console.log('✅ User profile updated:', { id: updatedUser.id, name: updatedUser.name, tier: updatedUser.subscriptionTier });
 
