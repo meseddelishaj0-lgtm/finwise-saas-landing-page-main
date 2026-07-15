@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserDisplayName, getUserHandle } from '@/context/UserProfileContext';
@@ -299,6 +300,7 @@ export default function UserProfile() {
               )}
 
               <Text style={[styles.userName, { color: colors.text }]}>{getUserDisplayName(user)}</Text>
+              <VerifiedBadge verified={(user as any)?.isVerified} size={17} />
               <Text style={[styles.userHandle, { color: colors.textSecondary }]}>@{getUserHandle(user)}</Text>
 
               {user.bio && <Text style={[styles.bio, { color: colors.text }]}>{user.bio}</Text>}

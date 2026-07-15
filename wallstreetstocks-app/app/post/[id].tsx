@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getUserDisplayName, getUserHandle } from '@/context/UserProfileContext';
@@ -260,6 +261,7 @@ export default function PostDetail() {
               <Avatar user={post.user} size={44} />
               <View style={styles.authorInfo}>
                 <Text style={styles.authorName}>{getUserDisplayName(post.user)}</Text>
+                <VerifiedBadge verified={(post.user as any)?.isVerified} />
                 <Text style={styles.authorHandle}>@{getUserHandle(post.user)}</Text>
               </View>
               <Text style={styles.postTime}>{formatTimeAgo(post.createdAt)}</Text>
@@ -312,6 +314,7 @@ export default function PostDetail() {
                 <View style={styles.commentContent}>
                   <View style={styles.commentHeader}>
                     <Text style={styles.commentAuthor}>{getUserDisplayName(comment.user)}</Text>
+                    <VerifiedBadge verified={(comment.user as any)?.isVerified} size={12} />
                     <Text style={styles.commentTime}>{formatTimeAgo(comment.createdAt)}</Text>
                   </View>
                   <Text style={styles.commentText}>{comment.content}</Text>

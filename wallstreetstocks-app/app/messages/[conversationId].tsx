@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
@@ -397,9 +398,7 @@ export default function ConversationScreen() {
                 <Text style={[styles.headerTitle, { color: colors.text }]}>
                   {otherUser.name || otherUser.username}
                 </Text>
-                {otherUser.isVerified && (
-                  <Ionicons name="checkmark-circle" size={14} color="#B8860B" style={{ marginLeft: 4 }} />
-                )}
+                <VerifiedBadge verified={otherUser.isVerified} size={14} />
               </View>
               <Text style={[styles.headerUsername, { color: colors.textSecondary }]}>@{otherUser.username}</Text>
             </View>

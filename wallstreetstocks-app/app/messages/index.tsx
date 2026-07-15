@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -352,9 +353,7 @@ export default function MessagesScreen() {
                 <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
                   {item.otherUser.name || item.otherUser.username}
                 </Text>
-                {item.otherUser.isVerified && (
-                  <Ionicons name="checkmark-circle" size={14} color="#B8860B" style={{ marginLeft: 4 }} />
-                )}
+                <VerifiedBadge verified={item.otherUser.isVerified} size={14} />
               </View>
               {item.lastMessage && (
                 <Text style={[styles.time, { color: colors.textSecondary }]}>{formatTime(item.lastMessage.createdAt)}</Text>

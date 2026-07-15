@@ -30,6 +30,7 @@ import FormattedContent from '@/components/FormattedContent';
 import TrendingTickers from '@/components/TrendingTickers';
 import { FEATURE_TIERS } from '@/components/PremiumFeatureGate';
 import { SubscriptionBadgeInline } from '@/components/SubscriptionBadge';
+import VerifiedBadge from '@/components/VerifiedBadge';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -2560,6 +2561,7 @@ export default function CommunityPage() {
                   <Text style={[styles.username, { color: colors.text }]}>
                     {getUserDisplayName(post.user)}
                   </Text>
+                  <VerifiedBadge verified={(post.user as any)?.isVerified} />
                   <SubscriptionBadgeInline tier={post.user?.subscriptionTier as any} />
                   <Text style={[styles.userHandle, { color: colors.textSecondary }]}>@{getUserHandle(post.user)}</Text>
                   {post.ticker && (
@@ -2797,6 +2799,7 @@ export default function CommunityPage() {
                 <Text style={[styles.profileName, { color: colors.text }]}>
                   {getUserDisplayName(selectedProfile)}
                 </Text>
+                <VerifiedBadge verified={(selectedProfile as any)?.isVerified} size={16} />
                 <SubscriptionBadgeInline tier={selectedProfile?.subscriptionTier as any} />
                 {profileLoading && (
                   <ActivityIndicator size="small" color="#B8860B" style={{ marginLeft: 8 }} />
@@ -3365,6 +3368,7 @@ export default function CommunityPage() {
                         <Text style={[styles.commentUsername, { color: colors.text }]}>
                           {getUserDisplayName(comment.user!)}
                         </Text>
+                        <VerifiedBadge verified={(comment.user as any)?.isVerified} size={12} />
                         <SubscriptionBadgeInline tier={comment.user?.subscriptionTier as any} />
                         <Text style={[styles.commentHandle, { color: colors.textTertiary }]}>@{getUserHandle(comment.user!)}</Text>
                       </TouchableOpacity>
