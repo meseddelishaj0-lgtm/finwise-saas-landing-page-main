@@ -16,6 +16,7 @@ export interface UserProfileData {
   profileImage: string | null;
   bannerImage: string | null;
   subscriptionTier: string | null;
+  isVerified?: boolean;
   createdAt: string;
   _count?: {
     posts: number;

@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/auth";
 import { useUserProfile } from "@/context/UserProfileContext";
 import { SubscriptionBadgeInline } from "@/components/SubscriptionBadge";
 import { useTheme } from "@/context/ThemeContext";
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -302,6 +303,7 @@ export default function PersonalInfoScreen() {
         <View style={styles.profileInfo}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={[styles.userName, { color: colors.text }]}>{displayName}</Text>
+            <VerifiedBadge verified={(userProfile as any)?.isVerified} size={17} />
             <SubscriptionBadgeInline tier={userProfile?.subscriptionTier as any} />
           </View>
           <Text style={[styles.userHandle, { color: colors.textSecondary }]}>@{displayUsername}</Text>

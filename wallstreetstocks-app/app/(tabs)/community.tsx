@@ -459,6 +459,7 @@ interface UserProfile extends User {
   bio?: string;
   createdAt?: string;
   subscriptionTier?: string | null;
+  isVerified?: boolean;
   _count?: {
     posts: number;
     followers: number;
@@ -809,6 +810,7 @@ export default function CommunityPage() {
         profileImage: userProfile.profileImage,
         bio: userProfile.bio ?? undefined,
         subscriptionTier: userProfile.subscriptionTier,
+        isVerified: (userProfile as any).isVerified,
         _count: userProfile._count || { posts: 0, followers: 0, following: 0 },
       });
       setProfileModal(true);
