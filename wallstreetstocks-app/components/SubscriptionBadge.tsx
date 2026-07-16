@@ -126,7 +126,8 @@ export default function SubscriptionBadge({
 
 // Compact inline badge for displaying next to usernames in posts
 export function SubscriptionBadgeInline({ tier }: { tier: SubscriptionTier }) {
-  if (!tier || tier === 'free') {
+  // Diamond members carry the blue verified seal instead — no gem needed
+  if (!tier || tier === 'free' || tier === 'diamond') {
     return null;
   }
 
