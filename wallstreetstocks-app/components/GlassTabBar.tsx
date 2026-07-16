@@ -13,7 +13,7 @@ import { useTheme } from '@/context/ThemeContext';
 
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   index: 'home',
-  explore: 'globe',
+  markets: 'globe',
   trending: 'flame',
   'ai-tools': 'sparkles',
   community: 'chatbubbles',

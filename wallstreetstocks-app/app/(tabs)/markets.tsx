@@ -466,10 +466,13 @@ export default function Explore() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [data, setData] = useState<MarketItem[]>([]);
+  useEffect(() => { dataRef.current = data; }, [data]);
   const [searchResults, setSearchResults] = useState<MarketItem[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [headerCards, setHeaderCards] = useState<ChipData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [serviceTick, setServiceTick] = useState(0);
+  const dataRef = useRef<MarketItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [treasuryRates, setTreasuryRates] = useState<TreasuryRate | null>(null);
   const [treasuryHistory, setTreasuryHistory] = useState<TreasuryRate[]>([]);
@@ -1543,7 +1546,20 @@ export default function Explore() {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [activeTab, stockRegion]);
+  }, [activeTab, stockRegion, serviceTick]);
+
+  // Cold-start fix: on first open the preload may still be in flight, so
+  // the instant US path finds nothing and the fallback fetch can race to
+  // an empty result ("No data available" until pull-to-refresh). When the
+  // service finishes loading, nudge the effect above to re-populate.
+  useEffect(() => {
+    const unsubscribe = marketDataService.subscribe(() => {
+      if (dataRef.current.length === 0) {
+        setServiceTick((t) => t + 1);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   // NO focus refresh needed - WebSocket provides real-time updates
 
@@ -1936,7 +1952,7 @@ export default function Explore() {
       {/* Header with Search */}
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Explore')}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Markets')}</Text>
         </View>
         <View style={styles.headerRight}>
           {showSearch ? (
