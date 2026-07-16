@@ -345,6 +345,15 @@ function ThemedApp() {
               gestureEnabled: false,
             }}
           />
+          {/* Disable swipe-back on the symbol screen — it fights the
+              chart's crosshair drag (worse since the SDK 57 nav update);
+              the screen has its own back button */}
+          <Stack.Screen
+            name="symbol/[symbol]"
+            options={{
+              gestureEnabled: false,
+            }}
+          />
         </Stack>
       </View>
     </ErrorBoundary>
