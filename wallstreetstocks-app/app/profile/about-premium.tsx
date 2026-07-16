@@ -108,6 +108,7 @@ export default function AboutPremium() {
       color: '#B9F2FF',
       features: [
         'Everything in Platinum',
+        'Verified Profile Badge',
         '15 Expert Stock Picks',
         'AI Tools & Assistant',
         'Insider Trading Data',

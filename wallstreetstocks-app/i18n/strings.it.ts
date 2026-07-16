@@ -1673,5 +1673,6 @@ const strings: Record<string, string> = {
   "Stock Valuation & AI-Powered Analysis": "Valutazione dei titoli e analisi IA",
   "Stock Valuation Analysis": "Analisi di valutazione dei titoli",
   "Side-by-side analysis with stock valuation": "Analisi affiancata con valutazione dei titoli",
+  "Verified Profile Badge": "Badge profilo verificato",
 };
 export default strings;

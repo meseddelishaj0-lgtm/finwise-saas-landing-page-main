@@ -36,6 +36,7 @@ const TIER_FEATURES: Record<string, string[]> = {
   ],
   diamond: [
     'Everything in Platinum',
+    'Verified Profile Badge',
     '15 Expert Stock Picks',
     'AI Tools (Analyzer, Compare, Forecast)',
     'AI Financial Assistant',

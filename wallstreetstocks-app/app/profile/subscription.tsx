@@ -45,9 +45,15 @@ import {
 import { useSubscription } from "@/context/SubscriptionContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 // Screen dimensions for responsive layout
 const _screenWidth = Dimensions.get("window").width;
+
+// Feature-row icon adapter: renders the real blue verified seal
+const VerifiedSealIcon = ({ size }: { size?: number; color?: string }) => (
+  <VerifiedBadge verified size={size} style={{ marginLeft: 0 }} />
+);
 
 // Product IDs matching your RevenueCat setup
 const PRODUCT_IDS = {
@@ -129,6 +135,7 @@ const TIERS = {
     yearlyPrice: "$99.99",
     features: [
       { icon: Check, text: "Everything in Platinum" },
+      { icon: VerifiedSealIcon, text: "Verified Profile Badge" },
       { icon: TrendingUp, text: "15 Expert Stock Picks" },
       { icon: Cpu, text: "AI Tools (Analyzer, Compare, Forecast)" },
       { icon: Cpu, text: "AI Financial Assistant" },

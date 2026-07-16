@@ -1673,5 +1673,6 @@ const strings: Record<string, string> = {
   "Stock Valuation & AI-Powered Analysis": "股票估值与 AI 分析",
   "Stock Valuation Analysis": "股票估值分析",
   "Side-by-side analysis with stock valuation": "并列对比分析，含股票估值",
+  "Verified Profile Badge": "认证徽章",
 };
 export default strings;
