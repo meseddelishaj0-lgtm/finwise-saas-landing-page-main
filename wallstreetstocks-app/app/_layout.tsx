@@ -345,13 +345,14 @@ function ThemedApp() {
               gestureEnabled: false,
             }}
           />
-          {/* Disable swipe-back on the symbol screen — it fights the
-              chart's crosshair drag (worse since the SDK 57 nav update);
-              the screen has its own back button */}
+          {/* Symbol screen: edge-only swipe-back. Full-screen back
+              gestures (SDK 57 default) fight the chart's crosshair drag,
+              so keep the gesture but confine it to the left edge. */}
           <Stack.Screen
             name="symbol/[symbol]"
             options={{
-              gestureEnabled: false,
+              gestureEnabled: true,
+              fullScreenGestureEnabled: false,
             }}
           />
         </Stack>
