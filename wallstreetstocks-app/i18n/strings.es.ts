@@ -1674,5 +1674,14 @@ const strings: Record<string, string> = {
   "Stock Valuation Analysis": "Análisis de valoración de acciones",
   "Side-by-side analysis with stock valuation": "Análisis comparativo con valoración de acciones",
   "Verified Profile Badge": "Insignia de perfil verificado",
+  "Market Calendar": "Calendario de mercado",
+  "Upcoming Earnings": "Próximos resultados",
+  "Upcoming IPOs": "Próximas OPV",
+  "Upcoming Dividends": "Próximos dividendos",
+  "Next 14 days": "Próximos 14 días",
+  "Next 30 days": "Próximos 30 días",
+  "Est. EPS": "BPA est.",
+  "No upcoming events": "Sin eventos próximos",
+  "per share": "por acción",
 };
 export default strings;

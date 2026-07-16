@@ -1674,5 +1674,14 @@ const strings: Record<string, string> = {
   "Stock Valuation Analysis": "股票估值分析",
   "Side-by-side analysis with stock valuation": "并列对比分析，含股票估值",
   "Verified Profile Badge": "认证徽章",
+  "Market Calendar": "市场日历",
+  "Upcoming Earnings": "即将公布财报",
+  "Upcoming IPOs": "即将上市 IPO",
+  "Upcoming Dividends": "即将派息",
+  "Next 14 days": "未来 14 天",
+  "Next 30 days": "未来 30 天",
+  "Est. EPS": "预期 EPS",
+  "No upcoming events": "暂无近期事件",
+  "per share": "每股",
 };
 export default strings;

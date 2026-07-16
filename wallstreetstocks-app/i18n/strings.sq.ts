@@ -1674,5 +1674,14 @@ const strings: Record<string, string> = {
   "Stock Valuation Analysis": "Analizë e vlerësimit të aksioneve",
   "Side-by-side analysis with stock valuation": "Analizë krah për krah me vlerësim aksionesh",
   "Verified Profile Badge": "Simboli i profilit të verifikuar",
+  "Market Calendar": "Kalendari i tregut",
+  "Upcoming Earnings": "Rezultatet e ardhshme",
+  "Upcoming IPOs": "IPO-të e ardhshme",
+  "Upcoming Dividends": "Dividendët e ardhshëm",
+  "Next 14 days": "14 ditët e ardhshme",
+  "Next 30 days": "30 ditët e ardhshme",
+  "Est. EPS": "EPS i vlerësuar",
+  "No upcoming events": "Asnjë ngjarje e ardhshme",
+  "per share": "për aksion",
 };
 export default strings;

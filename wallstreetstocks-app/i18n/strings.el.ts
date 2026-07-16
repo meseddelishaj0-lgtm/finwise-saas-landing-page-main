@@ -1674,5 +1674,14 @@ const strings: Record<string, string> = {
   "Stock Valuation Analysis": "Ανάλυση αποτίμησης μετοχών",
   "Side-by-side analysis with stock valuation": "Συγκριτική ανάλυση με αποτίμηση μετοχών",
   "Verified Profile Badge": "Σήμα επαληθευμένου προφίλ",
+  "Market Calendar": "Ημερολόγιο αγοράς",
+  "Upcoming Earnings": "Επερχόμενα αποτελέσματα",
+  "Upcoming IPOs": "Επερχόμενες IPO",
+  "Upcoming Dividends": "Επερχόμενα μερίσματα",
+  "Next 14 days": "Επόμενες 14 ημέρες",
+  "Next 30 days": "Επόμενες 30 ημέρες",
+  "Est. EPS": "Εκτ. EPS",
+  "No upcoming events": "Καμία επερχόμενη εκδήλωση",
+  "per share": "ανά μετοχή",
 };
 export default strings;

@@ -1674,5 +1674,14 @@ const strings: Record<string, string> = {
   "Stock Valuation Analysis": "Hisse Değerleme Analizi",
   "Side-by-side analysis with stock valuation": "Hisse değerlemesiyle yan yana analiz",
   "Verified Profile Badge": "Onaylı Profil Rozeti",
+  "Market Calendar": "Piyasa takvimi",
+  "Upcoming Earnings": "Yaklaşan bilançolar",
+  "Upcoming IPOs": "Yaklaşan halka arzlar",
+  "Upcoming Dividends": "Yaklaşan temettüler",
+  "Next 14 days": "Önümüzdeki 14 gün",
+  "Next 30 days": "Önümüzdeki 30 gün",
+  "Est. EPS": "Tah. EPS",
+  "No upcoming events": "Yaklaşan etkinlik yok",
+  "per share": "hisse başına",
 };
 export default strings;

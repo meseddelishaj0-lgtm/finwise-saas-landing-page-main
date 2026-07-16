@@ -354,16 +354,29 @@ const HomeWatchlistSkeleton = ({ isDark }: { isDark: boolean }) => (
   </View>
 );
 
-// Strategy discovery cards — deep-link into the screener with a preset
-// applied (ids/gradients match the screener's own preset cards)
-const STRATEGY_CARDS = [
-  { id: 'momentum', name: 'Momentum', icon: 'flash', gradient: ['#E91E63', '#F06292'], description: 'Stocks in strong uptrends', isPremium: true },
-  { id: 'breakout', name: 'Swing Trades', icon: 'pulse', gradient: ['#D500F9', '#E040FB'], description: 'Breakouts near 52W highs', isPremium: true },
-  { id: 'quality', name: 'Fundamentals', icon: 'shield-checkmark', gradient: ['#5C6BC0', '#7986CB'], description: 'Elite ROE & margins', isPremium: false },
-  { id: 'growth', name: 'High Growth', icon: 'rocket', gradient: ['#FF9800', '#FFB74D'], description: 'Revenue compounding fast', isPremium: false },
-  { id: 'undervalued', name: 'Undervalued', icon: 'diamond', gradient: ['#7C4DFF', '#B388FF'], description: 'Bargains under 15x P/E', isPremium: false },
-  { id: 'dividend', name: 'Dividends', icon: 'cash', gradient: ['#00BCD4', '#4DD0E1'], description: 'Yields of 4% and up', isPremium: false },
-] as const;
+// Market Calendar cards (upcoming earnings / IPOs / dividends).
+// Well-known large caps get priority so the earnings/dividends cards
+// aren't dominated by tiny tickers from the raw FMP calendars.
+const CAL_PRIORITY = new Set([
+  'AAPL','MSFT','NVDA','GOOGL','GOOG','AMZN','META','TSLA','AVGO','JPM','LLY','V','MA','UNH',
+  'XOM','WMT','HD','PG','COST','ORCL','NFLX','AMD','CRM','BAC','KO','PEP','DIS','CSCO','INTC',
+  'PLTR','UBER','MU','TSM','ANET','VRT','SHOP','CRWD','NOW','SNOW','DDOG','ISRG','TTD','ABBV',
+  'MRK','PFE','TMO','ABT','NKE','MCD','SBUX','CAT','GE','BA','GS','MS','C','WFC','T','VZ','IBM',
+]);
+const isUsSymbol = (sym: string) => /^[A-Z]{1,5}$/.test(sym || '');
+const calDate = (d: string) => {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mon = months[parseInt((d || '').slice(5, 7), 10) - 1] || '';
+  return `${mon} ${parseInt((d || '').slice(8, 10), 10) || ''}`;
+};
+// Priority names first, then remaining US symbols, both date-ordered
+const pickCalRows = (rows: any[], take: number) => {
+  const dated = rows.filter((r) => r?.symbol && isUsSymbol(r.symbol));
+  dated.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const prio = dated.filter((r) => CAL_PRIORITY.has(r.symbol));
+  const rest = dated.filter((r) => !CAL_PRIORITY.has(r.symbol));
+  return [...prio, ...rest].slice(0, take);
+};
 
 // Market Overview symbols - crypto (24/7 movement for Apple review) + major index ETFs
 const MARKET_OVERVIEW_SYMBOLS = [
@@ -1188,6 +1201,45 @@ export default function Dashboard() {
   };
 
   // Fetch market news from FMP API
+  const [calendars, setCalendars] = useState<{
+    earnings: any[];
+    ipos: any[];
+    dividends: any[];
+  }>({ earnings: [], ipos: [], dividends: [] });
+
+  const fetchCalendars = async () => {
+    try {
+      const today = new Date();
+      const iso = (d: Date) => d.toISOString().slice(0, 10);
+      const plus = (days: number) => new Date(today.getTime() + days * 86400000);
+      const [earnings, ipos, dividends] = await Promise.all([
+        cachedJson(
+          `${BASE_URL}/earning_calendar?from=${iso(today)}&to=${iso(plus(14))}&apikey=${FMP_API_KEY}`,
+          6 * 60 * 60 * 1000,
+          { cacheKey: 'cal-earnings' }
+        ).catch(() => []),
+        cachedJson(
+          `${BASE_URL}/ipo_calendar?from=${iso(today)}&to=${iso(plus(30))}&apikey=${FMP_API_KEY}`,
+          6 * 60 * 60 * 1000,
+          { cacheKey: 'cal-ipos' }
+        ).catch(() => []),
+        cachedJson(
+          `${BASE_URL}/stock_dividend_calendar?from=${iso(today)}&to=${iso(plus(14))}&apikey=${FMP_API_KEY}`,
+          6 * 60 * 60 * 1000,
+          { cacheKey: 'cal-dividends' }
+        ).catch(() => []),
+      ]);
+      setCalendars({
+        earnings: pickCalRows(Array.isArray(earnings) ? earnings.filter((r: any) => r.epsEstimated != null) : [], 3),
+        ipos: (Array.isArray(ipos) ? ipos : [])
+          .filter((r: any) => r.symbol)
+          .sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)))
+          .slice(0, 3),
+        dividends: pickCalRows(Array.isArray(dividends) ? dividends.filter((r: any) => (r.dividend || 0) > 0) : [], 3),
+      });
+    } catch {}
+  };
+
   const fetchNews = async () => {
     setNewsLoading(true);
     try {
@@ -1981,6 +2033,7 @@ export default function Dashboard() {
     // Market chips and trending use cached data so they're instant
     fetchMarketChips();
     fetchNews();
+    fetchCalendars();
 
     // PHASE 2: Load secondary content after a brief delay (50ms)
     // This prevents UI from freezing by spreading out the work
@@ -3083,48 +3136,106 @@ export default function Dashboard() {
           </View>
         </View>
 
-        {/* Strategy Discovery Cards */}
+        {/* Market Calendar: upcoming earnings / IPOs / dividends */}
         <View style={styles.strategiesSection}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Strategies')}</Text>
-            <TouchableOpacity onPress={() => router.push('/screener' as any)}>
-              <Text style={[styles.strategiesSeeAll, { color: colors.primary }]}>{t('Open Screener')}</Text>
-            </TouchableOpacity>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Market Calendar')}</Text>
           </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.strategiesScrollContent}
+            snapToInterval={width * 0.78 + 12}
+            decelerationRate="fast"
           >
-            {STRATEGY_CARDS.map((strategy, idx) => (
-              <FadeSlideIn key={strategy.id} delay={Math.min(idx, 6) * 50} distance={10}>
-                <ScalePress
-                  activeScale={0.93}
-                  onPress={() => router.push(`/screener?preset=${strategy.id}` as any)}
+            {([
+              {
+                key: 'earnings',
+                title: t('Upcoming Earnings'),
+                sub: t('Next 14 days'),
+                icon: 'bar-chart',
+                tint: '#FFD60A',
+                rows: calendars.earnings.map((r: any) => ({
+                  symbol: r.symbol,
+                  detail: t('Est. EPS') + ' $' + Number(r.epsEstimated).toFixed(2),
+                  date: calDate(r.date),
+                  nav: true,
+                })),
+              },
+              {
+                key: 'ipos',
+                title: t('Upcoming IPOs'),
+                sub: t('Next 30 days'),
+                icon: 'rocket',
+                tint: '#34C759',
+                rows: calendars.ipos.map((r: any) => ({
+                  symbol: r.symbol,
+                  detail: (r.company || '').slice(0, 26),
+                  date: calDate(r.date),
+                  nav: false,
+                })),
+              },
+              {
+                key: 'dividends',
+                title: t('Upcoming Dividends'),
+                sub: t('Next 14 days'),
+                icon: 'cash',
+                tint: '#0A84FF',
+                rows: calendars.dividends.map((r: any) => ({
+                  symbol: r.symbol,
+                  detail: '$' + Number(r.dividend).toFixed(2) + ' ' + t('per share'),
+                  date: calDate(r.date),
+                  nav: true,
+                })),
+              },
+            ] as any[]).map((card, idx) => (
+              <FadeSlideIn key={card.key} delay={Math.min(idx, 4) * 60} distance={10}>
+                <View
+                  style={[
+                    styles.calendarCard,
+                    {
+                      backgroundColor: isDark ? colors.surface : '#FFFFFF',
+                      borderColor: isDark ? card.tint + '30' : colors.border,
+                    },
+                  ]}
                 >
-                  <LinearGradient
-                    colors={strategy.gradient as unknown as [string, string]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.strategyCard}
-                  >
-                    {strategy.isPremium && (
-                      <View style={styles.strategyProBadge}>
-                        <Ionicons name="lock-closed" size={8} color="#fff" />
-                        <Text style={styles.strategyProText}>{t('PRO')}</Text>
-                      </View>
-                    )}
-                    <View style={styles.strategyIconCircle}>
-                      <Ionicons name={strategy.icon as any} size={20} color="#fff" />
+                  <View style={styles.calendarHeader}>
+                    <View style={[styles.calendarIconBubble, { backgroundColor: card.tint + '1C' }]}>
+                      <Ionicons name={card.icon} size={17} color={card.tint} />
                     </View>
-                    <Text style={styles.strategyName}>{t(strategy.name)}</Text>
-                    <Text style={styles.strategyDesc} numberOfLines={2}>{t(strategy.description)}</Text>
-                    <View style={styles.strategyExploreRow}>
-                      <Text style={styles.strategyExploreText}>{t('Explore')}</Text>
-                      <Ionicons name="arrow-forward" size={12} color="rgba(255,255,255,0.9)" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.calendarTitle, { color: colors.text }]}>{card.title}</Text>
+                      <Text style={[styles.calendarSub, { color: colors.textTertiary }]}>{card.sub}</Text>
                     </View>
-                  </LinearGradient>
-                </ScalePress>
+                  </View>
+                  {card.rows.length === 0 ? (
+                    <Text style={[styles.calendarEmpty, { color: colors.textTertiary }]}>{t('No upcoming events')}</Text>
+                  ) : (
+                    card.rows.map((row: any, i: number) => (
+                      <ScalePress
+                        key={row.symbol + i}
+                        activeScale={0.97}
+                        onPress={() => {
+                          if (row.nav) router.push(`/symbol/${row.symbol}` as any);
+                        }}
+                        style={[
+                          styles.calendarRow,
+                          i < card.rows.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: isDark ? colors.borderLight : '#EEE' },
+                        ]}
+                      >
+                        <View style={{ flex: 1, marginRight: 8 }}>
+                          <Text style={[styles.calendarSymbol, { color: colors.text }]}>{row.symbol}</Text>
+                          <Text style={[styles.calendarDetail, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {row.detail}
+                          </Text>
+                        </View>
+                        <View style={[styles.calendarDateChip, { backgroundColor: card.tint + '16' }]}>
+                          <Text style={[styles.calendarDateText, { color: card.tint }]}>{row.date}</Text>
+                        </View>
+                      </ScalePress>
+                    ))
+                  )}
+                </View>
               </FadeSlideIn>
             ))}
           </ScrollView>
@@ -4953,6 +5064,42 @@ const styles = StyleSheet.create({
     paddingRight: 20,
     paddingVertical: 4,
   },
+  calendarCard: {
+    width: width * 0.78,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 14,
+    marginRight: 12,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  calendarIconBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarTitle: { fontSize: 15, fontWeight: '700' },
+  calendarSub: { fontSize: 11, marginTop: 1 },
+  calendarEmpty: { fontSize: 12, textAlign: 'center', paddingVertical: 18 },
+  calendarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 9,
+  },
+  calendarSymbol: { fontSize: 14, fontWeight: '700' },
+  calendarDetail: { fontSize: 11, marginTop: 1 },
+  calendarDateChip: {
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 9,
+  },
+  calendarDateText: { fontSize: 11, fontWeight: '700' },
   strategyCard: {
     width: 148,
     borderRadius: 18,
