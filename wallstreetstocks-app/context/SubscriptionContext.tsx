@@ -317,9 +317,15 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
           hasReferralPremium = backendStatus.hasReferralPremium;
           referralPremiumExpiry = backendStatus.referralPremiumExpiry;
 
-          // If user has referral premium but no RevenueCat subscription, use backend tier
-          // Tier is based on referral count: 5-14=Gold, 15-29=Platinum, 30+=Diamond
-          if (!isPremium && hasReferralPremium) {
+          // If RevenueCat reports no subscription, fall back to the backend
+          // tier (maintained by the RevenueCat webhook and expiry-checked
+          // server-side). Covers paid users during RevenueCat hiccups and
+          // referral-premium users alike — and never lets a paid Diamond
+          // get repainted as referral gold.
+          if (!isPremium && backendStatus.backendTier && backendStatus.backendTier !== 'free') {
+            isPremium = true;
+            currentTier = backendStatus.backendTier;
+          } else if (!isPremium && hasReferralPremium) {
             isPremium = true;
             currentTier = backendStatus.backendTier || 'gold';
           }
@@ -381,6 +387,20 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const purchase = useCallback(async (pkg: PurchasesPackage): Promise<boolean> => {
     try {
       setState(prev => ({ ...prev, isLoading: true, error: null }));
+
+      // Never purchase under an anonymous RevenueCat identity — the
+      // entitlement would attach to the device's anonymous ID and vanish
+      // when the app later identifies as the real user.
+      try {
+        const Purchases = require('react-native-purchases').default;
+        const preInfo = await Purchases.getCustomerInfo();
+        const uid = (await AsyncStorage.getItem('userId'))
+          || JSON.parse((await AsyncStorage.getItem('userData')) || 'null')?.id?.toString()
+          || null;
+        if (uid && preInfo?.originalAppUserId?.startsWith('$RCAnonymousID')) {
+          await Purchases.logIn(String(uid));
+        }
+      } catch {}
 
       const result = await purchasePackage(pkg);
 

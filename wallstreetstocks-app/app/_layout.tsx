@@ -93,7 +93,7 @@ const queryClient = new QueryClient();
 
 function AppInitializer({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { initialize, isInitialized, currentTier } = useSubscription();
+  const { initialize, isInitialized, currentTier, identifyUser: rcIdentify, logOut: rcLogOut } = useSubscription();
   const { initializeReferral, initialized: referralInitialized } = useReferral();
   const appState = useRef(AppState.currentState);
   const trackingRequested = useRef(false);
@@ -263,11 +263,29 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     requestPermissionsSequentially();
   }, []);
 
+  // Keep RevenueCat's identity in lockstep with the auth user. Auth loads
+  // async, so this must re-run when user?.id resolves — initializing once
+  // with an undefined id left RevenueCat anonymous (no entitlements) and
+  // paying users appeared free/gold after a restart or re-login.
+  const rcIdentityRef = useRef<string | null>(null);
   useEffect(() => {
+    const uid = user?.id ? String(user.id) : null;
     if (!isInitialized) {
-      initialize(user?.id);
+      initialize(uid ?? undefined);
+      rcIdentityRef.current = uid;
+      return;
     }
+    if (uid && rcIdentityRef.current !== uid) {
+      // logIn also migrates purchases made under an anonymous identity
+      rcIdentityRef.current = uid;
+      rcIdentify(uid);
+    } else if (!uid && rcIdentityRef.current) {
+      rcIdentityRef.current = null;
+      rcLogOut();
+    }
+  }, [user?.id, isInitialized]);
 
+  useEffect(() => {
     // Pre-load popular stocks data on app startup
     preloadAppData();
 
