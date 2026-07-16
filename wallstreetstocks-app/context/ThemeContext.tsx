@@ -63,7 +63,10 @@ const THEME_STORAGE_KEY = 'app_theme_mode';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const systemColorScheme = useColorScheme();
-  const [mode, setModeState] = useState<ThemeMode>('system');
+  // Dark is the default experience — users without a saved preference
+  // (fresh installs) start in dark mode; an explicit choice in Display
+  // settings always wins via loadTheme.
+  const [mode, setModeState] = useState<ThemeMode>('dark');
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load saved theme preference
