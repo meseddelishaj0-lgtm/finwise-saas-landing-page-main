@@ -74,6 +74,13 @@ const MANUAL_MOMENTUM: Pick[] = [
   { symbol: "SHOP", category: "E-Commerce", reason: "Merchant growth re-accelerating with strong price action" },
   { symbol: "CRWD", category: "Cybersecurity", reason: "Category leader in a strong relative-strength uptrend" },
   { symbol: "AMD", category: "Semiconductors", reason: "Riding the AI accelerator cycle with improving momentum" },
+  { symbol: "TSM", category: "Semiconductors", reason: "Foundry monopoly momentum as AI chip orders stack up" },
+  { symbol: "ANET", category: "Networking", reason: "AI data-center networking wins powering the uptrend" },
+  { symbol: "VRT", category: "Data Center", reason: "Power and cooling demand from AI buildouts driving strength" },
+  { symbol: "UBER", category: "Mobility", reason: "Record bookings and buybacks sustaining price momentum" },
+  { symbol: "SPOT", category: "Streaming Audio", reason: "Margin inflection and subscriber growth in a firm uptrend" },
+  { symbol: "GE", category: "Aerospace", reason: "Engine aftermarket strength keeping shares near highs" },
+  { symbol: "MU", category: "Memory", reason: "HBM demand cycle fueling explosive momentum" },
 ];
 
 // ============================================================================
@@ -88,6 +95,13 @@ const MANUAL_GROWTH: Pick[] = [
   { symbol: "SHOP", category: "E-Commerce", reason: "Take-rate expansion on growing merchant volume" },
   { symbol: "NOW", category: "Enterprise Software", reason: "Durable 20%+ growth from workflow automation demand" },
   { symbol: "CRWD", category: "Cybersecurity", reason: "Land-and-expand model compounding ARR growth" },
+  { symbol: "MELI", category: "E-Commerce", reason: "LatAm commerce and fintech compounding at scale" },
+  { symbol: "NU", category: "Fintech", reason: "Customer base compounding across Latin America" },
+  { symbol: "AXON", category: "Public Safety Tech", reason: "Recurring software growth on top of hardware moat" },
+  { symbol: "SNOW", category: "Data Cloud", reason: "Consumption model re-accelerating with AI workloads" },
+  { symbol: "DDOG", category: "Observability", reason: "Cloud monitoring spend compounding with AI adoption" },
+  { symbol: "ISRG", category: "Medical Devices", reason: "Procedure growth compounding recurring instrument sales" },
+  { symbol: "TTD", category: "Ad Tech", reason: "Connected-TV ad share gains driving durable growth" },
 ];
 
 const MANUAL_LISTS: Record<string, Pick[]> = {
