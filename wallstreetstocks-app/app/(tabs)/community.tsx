@@ -127,18 +127,21 @@ const PREMIUM_TOOLS = [
 // ===== DIRECT API CALLS =====
 const API_BASE = 'https://www.wallstreetstocks.ai';
 
-const fetchPosts = async (forumSlug?: string, currentUserId?: number): Promise<any[]> => {
+// Returns the posts array on success, [] for a genuinely empty feed, and null
+// when the request FAILS — so the UI can tell "no posts" apart from "couldn't
+// load" (and show a retry instead of a misleading empty state).
+const fetchPosts = async (forumSlug?: string, currentUserId?: number): Promise<any[] | null> => {
   try {
     const params = new URLSearchParams();
     if (forumSlug) params.append('forum', forumSlug);
     if (currentUserId) params.append('currentUserId', currentUserId.toString());
     const query = params.toString() ? `?${params.toString()}` : '';
     const response = await fetch(`${API_BASE}/api/posts${query}`);
-    if (!response.ok) throw new Error('Failed to fetch posts');
+    if (!response.ok) return null;
     const data = await response.json();
     return Array.isArray(data) ? data : [];
   } catch {
-    return [];
+    return null;
   }
 };
 
@@ -521,12 +524,14 @@ export default function CommunityPage() {
   const { colors, isDark } = useTheme();
   const navRouter = useRouter();
   const searchParams = useLocalSearchParams<{ openPostId?: string; openUserId?: string }>();
-  const { user: authUser } = useAuth();
+  const { user: authUser, loading: authLoading } = useAuth();
   const { profile: userProfile, getDisplayName: getContextDisplayName } = useUserProfile();
   const { canAccess, withPremiumAccess } = usePremiumFeature();
   const { t } = useLanguage();
 
   const [posts, setPosts] = useState<Post[]>([]);
+  const [feedError, setFeedError] = useState(false);
+  const postsLoadedRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -1036,19 +1041,27 @@ export default function CommunityPage() {
 
   const loadPosts = useCallback(async () => {
     try {
-      setLoading(posts.length === 0);
+      // Full-screen spinner only before the first successful load; refreshes
+      // keep the current feed visible.
+      setLoading(!postsLoadedRef.current);
       const userId = getUserId();
       const fetchedPosts = await fetchPosts(undefined, userId || undefined);
-      // Filter out hidden posts
-      const filteredPosts = (fetchedPosts || []).filter((p: Post) => !hiddenPosts.includes(p.id));
-      setPosts(filteredPosts);
+      if (fetchedPosts === null) {
+        // Request failed — keep whatever is already on screen and let the empty
+        // state (if the list is empty) show a retry instead of "No posts yet".
+        setFeedError(true);
+      } else {
+        setFeedError(false);
+        postsLoadedRef.current = true;
+        setPosts(fetchedPosts.filter((p: Post) => !hiddenPosts.includes(p.id)));
+      }
     } catch {
-      Alert.alert(t('Error'), t('Failed to load posts'));
+      setFeedError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [posts.length, getUserId, hiddenPosts]);
+  }, [getUserId, hiddenPosts]);
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
@@ -2097,10 +2110,14 @@ export default function CommunityPage() {
   // NOTE: Do NOT call fetchUserProfile here - UserProfileContext handles profile loading
   // Calling it here would overwrite local updates with stale API data
   useEffect(() => {
+    // Wait for auth to hydrate (persisted, so ~instant) before the first load,
+    // so the feed is fetched once with the correct identity — no anonymous
+    // flash of blocked users' posts / missing like-status, and no double fetch.
+    if (authLoading) return;
     fetchCurrentUserData();
     loadPosts(); // Direct API call to /api/posts
     loadNotifications(); // Separate call for notifications
-  }, [loadPosts, loadNotifications]);
+  }, [authLoading, loadPosts, loadNotifications]);
 
   // NOTE: Do NOT refresh profile on tab focus or auth changes!
   // The UserProfileContext already has the correct data from local updates.
@@ -2721,7 +2738,19 @@ export default function CommunityPage() {
           </View>
         )}
         ListEmptyComponent={
-          !loading ? (
+          loading ? null : feedError ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="cloud-offline-outline" size={64} color={colors.textTertiary} />
+              <Text style={styles.emptyTitle}>{t("Couldn't load posts")}</Text>
+              <Text style={styles.emptySubtitle}>{t('Check your connection and try again.')}</Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => loadPosts()}
+              >
+                <Text style={styles.emptyButtonText}>{t('Retry')}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
             <View style={styles.emptyState}>
               <Ionicons name="chatbubbles-outline" size={64} color={colors.textTertiary} />
               <Text style={styles.emptyTitle}>{t('No posts yet')}</Text>
@@ -2733,7 +2762,7 @@ export default function CommunityPage() {
                 <Text style={styles.emptyButtonText}>{t('Create Post')}</Text>
               </TouchableOpacity>
             </View>
-          ) : null
+          )
         }
       />
 
