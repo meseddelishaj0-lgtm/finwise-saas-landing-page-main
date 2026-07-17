@@ -123,7 +123,7 @@ export default function AIStockPicksPage() {
           Back to Gold Dashboard
         </Link>
         <Link
-          href="/pricing"
+          href="/plans"
           className="px-6 py-3 rounded-full text-amber-700 font-semibold border border-amber-400 hover:bg-amber-100 transition-all"
         >
           Upgrade to Platinum 🚀

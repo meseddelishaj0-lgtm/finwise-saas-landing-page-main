@@ -37,8 +37,20 @@ async function deleteUser(userId: number) {
     prisma.screenerPreset.deleteMany({ where: { userId } }),
     // Portfolios (holdings cascade on portfolioId)
     prisma.portfolio.deleteMany({ where: { userId } }),
-    // Comment/post children cascade on commentId/postId
+    // The user's own comments (may live on OTHER users' posts)
     prisma.comment.deleteMany({ where: { userId } }),
+    // Children on the user's OWN posts, authored by ANYONE. Comment.post is a
+    // RESTRICT relation, so a reply from another user would otherwise block
+    // (P2003) the post delete and roll back the whole account deletion. Clear
+    // post-scoped children first, then the posts.
+    prisma.like.deleteMany({ where: { post: { userId } } }),
+    prisma.reaction.deleteMany({ where: { post: { userId } } }),
+    prisma.sentiment.deleteMany({ where: { post: { userId } } }),
+    prisma.postView.deleteMany({ where: { post: { userId } } }),
+    prisma.mention.deleteMany({ where: { post: { userId } } }),
+    prisma.notification.deleteMany({ where: { post: { userId } } }),
+    prisma.report.deleteMany({ where: { post: { userId } } }),
+    prisma.comment.deleteMany({ where: { post: { userId } } }),
     prisma.post.deleteMany({ where: { userId } }),
     // Finally the account
     prisma.user.delete({ where: { id: userId } }),

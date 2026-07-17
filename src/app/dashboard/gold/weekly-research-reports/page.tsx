@@ -72,7 +72,7 @@ export default function WeeklyResearchReportsPage() {
       )}
 
       <div className="mt-16 flex flex-col sm:flex-row justify-center gap-4">
-        <Link href="/pricing" className="px-6 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 hover:opacity-90 transition-all">
+        <Link href="/plans" className="px-6 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 hover:opacity-90 transition-all">
           Back to Gold Plan
         </Link>
       </div>

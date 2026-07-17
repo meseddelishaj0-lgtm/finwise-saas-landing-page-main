@@ -2,14 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { enforceRateLimit, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  // The reset code is only 6 digits — without a cap it can be brute-forced
+  // within the 15-min validity window. Limit hard by IP and per-email so
+  // guessing the code is infeasible. (NEVER log the code — see below.)
+  const ipLimited = enforceRateLimit(request, "reset-password", 10, 15 * 60 * 1000);
+  if (ipLimited) return ipLimited;
+
   try {
     const { email, code, newPassword } = await request.json();
 
-    console.log("Reset password request:", { email, code });
+    if (email) {
+      const { ok, retryAfter } = rateLimit(
+        `reset-password-email:${String(email).toLowerCase()}`,
+        8,
+        15 * 60 * 1000,
+      );
+      if (!ok) {
+        return NextResponse.json(
+          { error: "Too many attempts. Please request a new reset code." },
+          { status: 429, headers: { "Retry-After": String(retryAfter) } },
+        );
+      }
+    }
 
     if (!email || !code || !newPassword) {
       return NextResponse.json(
@@ -65,8 +84,6 @@ export async function POST(request: NextRequest) {
         resetCodeExpiry: null,
       },
     });
-
-    console.log("Password reset successful for:", user.id);
 
     // Create JWT token to auto-login
     const token = jwt.sign(

@@ -3,6 +3,7 @@ import { PrismaClient } from "@/generated/prisma/client/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { enforceRateLimit, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +15,29 @@ function createFreshPrisma() {
 }
 
 export async function POST(request: NextRequest) {
+  // Blunt credential stuffing / password guessing.
+  const ipLimited = enforceRateLimit(request, "login", 15, 5 * 60 * 1000);
+  if (ipLimited) return ipLimited;
+
   const prisma = createFreshPrisma();
 
   try {
     const { email, password } = await request.json();
 
-    console.log("Mobile login request:", { email });
+    if (email) {
+      const { ok, retryAfter } = rateLimit(
+        `login-email:${String(email).toLowerCase()}`,
+        8,
+        5 * 60 * 1000,
+      );
+      if (!ok) {
+        await prisma.$disconnect();
+        return NextResponse.json(
+          { error: "Too many attempts. Please try again later." },
+          { status: 429, headers: { "Retry-After": String(retryAfter) } },
+        );
+      }
+    }
 
     if (!email || !password) {
       await prisma.$disconnect();

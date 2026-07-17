@@ -20,9 +20,6 @@ export const metadata: Metadata = {
     apple: "/images/wallstreetstocks.png",
   },
   manifest: "/manifest.json", // ✅ good for SEO & PWA
-  alternates: {
-    canonical: "https://www.wallstreetstocks.ai/", // ✅ canonical URL added
-  },
   metadataBase: new URL("https://www.wallstreetstocks.ai"), // ✅ helps Next.js generate full absolute URLs
 };
 

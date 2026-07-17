@@ -29,20 +29,16 @@ async function getStockPrice(symbol: string): Promise<number | null> {
 // Protected by API key to prevent abuse
 export async function POST(req: NextRequest) {
   try {
-    // Verify API key for cron job security
+    // Cron auth — FAIL CLOSED. Require either Vercel's internal cron header
+    // (which Vercel sets on cron invocations and strips from external requests)
+    // OR the shared CRON_SECRET. Previously, if CRON_SECRET was unset the whole
+    // check short-circuited and anyone could trigger it.
     const authHeader = req.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
-
-    // Allow if CRON_SECRET matches or if called from same origin in dev
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      // Also check for Vercel cron header
-      const vercelCron = req.headers.get('x-vercel-cron');
-      if (!vercelCron) {
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        );
-      }
+    const isVercelCron = !!req.headers.get('x-vercel-cron');
+    const secretOk = !!cronSecret && authHeader === `Bearer ${cronSecret}`;
+    if (!isVercelCron && !secretOk) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get all active, non-triggered alerts
@@ -169,52 +165,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET endpoint to manually check a single symbol (for testing)
+// Vercel Cron invokes the scheduled path with a GET request, so the actual
+// alert check must run here (it previously lived only in POST, which the cron
+// never hit — alerts silently never fired). POST does its own auth and reads
+// no body, so we delegate. The old GET was an UNAUTHENTICATED test path that
+// also leaked any user's alerts by ?userId — removed.
 export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const symbol = searchParams.get('symbol');
-    const userId = searchParams.get('userId');
-
-    if (!symbol) {
-      return NextResponse.json(
-        { error: 'symbol is required' },
-        { status: 400 }
-      );
-    }
-
-    const currentPrice = await getStockPrice(symbol.toUpperCase());
-
-    if (currentPrice === null) {
-      return NextResponse.json(
-        { error: 'Failed to fetch price' },
-        { status: 500 }
-      );
-    }
-
-    // If userId provided, check their alerts for this symbol
-    let userAlerts = null;
-    if (userId) {
-      userAlerts = await prisma.priceAlert.findMany({
-        where: {
-          userId: parseInt(userId),
-          symbol: symbol.toUpperCase(),
-          isActive: true,
-          isTriggered: false,
-        },
-      });
-    }
-
-    return NextResponse.json({
-      symbol: symbol.toUpperCase(),
-      currentPrice,
-      userAlerts,
-    });
-  } catch (error) {
-    console.error('Error in GET price check:', error);
-    return NextResponse.json(
-      { error: 'Failed to check price' },
-      { status: 500 }
-    );
-  }
+  return POST(req);
 }

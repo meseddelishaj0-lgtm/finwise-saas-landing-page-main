@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  // Blunt automated account-farm creation.
+  const limited = enforceRateLimit(request, "signup", 8, 60 * 60 * 1000);
+  if (limited) return limited;
+
   try {
     const { email, name, password, username } = await request.json();
-
-    console.log("Mobile email signup request:", { email, name, username });
 
     if (!email) {
       return NextResponse.json(
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Signup error:", error);
     return NextResponse.json(
-      { error: "Internal server error", details: String(error) },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

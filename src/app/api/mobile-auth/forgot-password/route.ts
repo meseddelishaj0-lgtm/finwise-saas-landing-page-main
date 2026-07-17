@@ -2,14 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { enforceRateLimit, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  // Rate-limit by IP and per-email so this can't be used to mail-bomb a victim
+  // or burn the email/reset quota.
+  const ipLimited = enforceRateLimit(request, "forgot-password", 10, 15 * 60 * 1000);
+  if (ipLimited) return ipLimited;
+
   try {
     const { email } = await request.json();
 
-    console.log("Forgot password request:", { email });
+    if (email) {
+      const { ok, retryAfter } = rateLimit(
+        `forgot-password-email:${String(email).toLowerCase()}`,
+        3,
+        15 * 60 * 1000,
+      );
+      if (!ok) {
+        return NextResponse.json(
+          { error: "Too many requests. Please try again later." },
+          { status: 429, headers: { "Retry-After": String(retryAfter) } },
+        );
+      }
+    }
 
     if (!email) {
       return NextResponse.json(
@@ -46,7 +64,6 @@ export async function POST(request: NextRequest) {
     // Send email with Resend
     try {
       await sendPasswordResetEmail(email, resetCode);
-      console.log(`Reset code sent to ${email}`);
     } catch (emailError) {
       console.error("Failed to send email:", emailError);
       // Don't fail the request if email fails - user can retry
