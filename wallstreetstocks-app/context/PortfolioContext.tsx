@@ -248,6 +248,72 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   // registration inherit the previous account's holdings.
   const authUserId = useAuth((state: any) => (state.user?.id ? String(state.user.id) : null));
   const storageKey = authUserId ? `user_portfolios_v2:${authUserId}` : 'user_portfolios_v2:anon';
+  const dirtyKey = `portfolio_dirty:${authUserId ?? 'anon'}`;
+  const serverSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Push the full local portfolio set to the server (fire-and-forget;
+  // the dirty flag stays set until a push succeeds, so offline edits are
+  // retried on the next change or app launch).
+  const pushToServer = useCallback(async (list: Portfolio[]) => {
+    if (!authUserId) return;
+    try {
+      const res = await fetch('https://www.wallstreetstocks.ai/api/portfolio/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': authUserId },
+        body: JSON.stringify({
+          portfolios: list.map((pf) => ({ name: pf.name, holdings: pf.holdings })),
+        }),
+      });
+      if (res.ok) await AsyncStorage.removeItem(dirtyKey);
+    } catch {}
+  }, [authUserId, dirtyKey]);
+
+  // Reconcile local cache with the account's server copy after load:
+  // unsynced local edits win (push), otherwise the server copy wins
+  // (adopt) — so portfolios survive reinstalls and follow the account.
+  const reconcileWithServer = useCallback(async (localList: Portfolio[]) => {
+    if (!authUserId) return;
+    try {
+      const dirty = await AsyncStorage.getItem(dirtyKey);
+      const localHasHoldings = localList.some((pf) => pf.holdings.length > 0);
+      if (dirty && localHasHoldings) {
+        await pushToServer(localList);
+        return;
+      }
+      const res = await fetch('https://www.wallstreetstocks.ai/api/portfolio/sync', {
+        headers: { 'x-user-id': authUserId },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const serverList: Portfolio[] = (Array.isArray(data?.portfolios) ? data.portfolios : [])
+        .map((pf: any) => ({
+          id: generateId(),
+          name: pf.name || 'Main Portfolio',
+          holdings: Array.isArray(pf.holdings) ? pf.holdings : [],
+        }));
+      const serverHasHoldings = serverList.some((pf) => pf.holdings.length > 0);
+
+      if (serverHasHoldings) {
+        // Adopt the account's server copy
+        setPortfolios(serverList);
+        portfoliosRef.current = serverList;
+        const firstId = serverList[0].id;
+        setSelectedPortfolioId(firstId);
+        selectedPortfolioIdRef.current = firstId;
+        const withPrices = await fetchPricesForPortfolio(serverList[0]);
+        setCurrentPortfolio(withPrices);
+        setLastUpdated(new Date());
+        await AsyncStorage.setItem(storageKey, JSON.stringify({
+          portfolios: serverList,
+          selectedPortfolioId: firstId,
+        }));
+      } else if (localHasHoldings) {
+        // First sync for this account: rescue the phone-only portfolio
+        await pushToServer(localList);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUserId, dirtyKey, pushToServer, fetchPricesForPortfolio, storageKey]);
 
   // Load portfolios whenever the signed-in user changes
   useEffect(() => {
@@ -331,21 +397,32 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       } finally {
         setLoading(false);
       }
+      // Background: reconcile with the account's server copy
+      reconcileWithServer(portfoliosRef.current);
     };
 
     loadPortfolios();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]);
 
-  // Save to AsyncStorage (per-user key) whenever portfolios change
+  // Save to AsyncStorage (per-user key) whenever portfolios change, and
+  // mirror to the server shortly after (debounced, last write wins)
   useEffect(() => {
     if (!loading && portfolios.length > 0) {
       AsyncStorage.setItem(storageKey, JSON.stringify({
         portfolios,
         selectedPortfolioId,
       }));
+      AsyncStorage.setItem(dirtyKey, '1').catch(() => {});
+      if (serverSyncTimer.current) clearTimeout(serverSyncTimer.current);
+      serverSyncTimer.current = setTimeout(() => {
+        pushToServer(portfolios);
+      }, 2500);
     }
-  }, [portfolios, selectedPortfolioId, loading, storageKey]);
+    return () => {
+      if (serverSyncTimer.current) clearTimeout(serverSyncTimer.current);
+    };
+  }, [portfolios, selectedPortfolioId, loading, storageKey, dirtyKey, pushToServer]);
 
   // Refresh prices when selected portfolio changes (but not on initial load)
   useEffect(() => {
