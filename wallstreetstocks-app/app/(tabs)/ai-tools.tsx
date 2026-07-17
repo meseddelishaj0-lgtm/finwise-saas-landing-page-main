@@ -2307,7 +2307,9 @@ Always remind users that this is educational information, not financial advice.`
                   const principal = (parseFloat(mortgageHomePrice) || 0) - (parseFloat(mortgageDownPayment) || 0);
                   const rate = (parseFloat(mortgageInterestRate) || 6.5) / 100 / 12;
                   const payments = (parseInt(mortgageTerm) || 30) * 12;
-                  const monthlyPI = principal * (rate * Math.pow(1 + rate, payments)) / (Math.pow(1 + rate, payments) - 1);
+                  // At 0% the amortization denominator is 0 (→ Infinity); fall back to straight-line.
+                  const mFactor = Math.pow(1 + rate, payments);
+                  const monthlyPI = rate > 0 ? principal * (rate * mFactor) / (mFactor - 1) : principal / payments;
                   const monthlyTax = (parseFloat(mortgagePropertyTax) || 0) / 12;
                   const monthlyIns = (parseFloat(mortgageInsurance) || 0) / 12;
                   const totalMonthly = monthlyPI + monthlyTax + monthlyIns;
@@ -2352,7 +2354,9 @@ Always remind users that this is educational information, not financial advice.`
                   const principal = parseFloat(loanAmount) || 0;
                   const rate = (parseFloat(loanInterestRate) || 7.5) / 100 / 12;
                   const payments = (parseInt(loanTerm) || 5) * 12;
-                  const monthlyPayment = principal * (rate * Math.pow(1 + rate, payments)) / (Math.pow(1 + rate, payments) - 1);
+                  // At 0% the amortization denominator is 0 (→ Infinity); fall back to straight-line.
+                  const lFactor = Math.pow(1 + rate, payments);
+                  const monthlyPayment = rate > 0 ? principal * (rate * lFactor) / (lFactor - 1) : principal / payments;
                   const totalPayments = monthlyPayment * payments;
                   const totalInterest = totalPayments - principal;
                   setCalcResult({ type: 'loan', monthlyPayment: Math.round(monthlyPayment), totalPayments: Math.round(totalPayments), totalInterest: Math.round(totalInterest), principal: Math.round(principal) });

@@ -80,7 +80,7 @@ export const StockRowItem = memo(function StockRowItem({
         <Text style={styles.stockName} numberOfLines={1}>{name}</Text>
       </View>
       <View style={styles.stockPriceContainer}>
-        <Text style={styles.stockPrice}>${price.toFixed(2)}</Text>
+        <Text style={styles.stockPrice}>${(Number(price) || 0).toFixed(2)}</Text>
         <View style={[styles.changeContainer, { backgroundColor: isPositive ? '#E8F5E9' : '#FFEBEE' }]}>
           <Ionicons
             name={isPositive ? 'caret-up' : 'caret-down'}
@@ -88,7 +88,7 @@ export const StockRowItem = memo(function StockRowItem({
             color={color}
           />
           <Text style={[styles.changeText, { color }]}>
-            {isPositive ? '+' : ''}{changePercent.toFixed(2)}%
+            {isPositive ? '+' : ''}{(Number(changePercent) || 0).toFixed(2)}%
           </Text>
         </View>
       </View>
@@ -138,9 +138,9 @@ export const TrendingItem = memo(function TrendingItem({
         <Text style={styles.trendingName} numberOfLines={1}>{name}</Text>
       </View>
       <View style={styles.trendingPriceContainer}>
-        <Text style={styles.trendingPrice}>${price.toFixed(2)}</Text>
+        <Text style={styles.trendingPrice}>${(Number(price) || 0).toFixed(2)}</Text>
         <Text style={[styles.trendingChange, { color }]}>
-          {isPositive ? '+' : ''}{changePercent.toFixed(2)}%
+          {isPositive ? '+' : ''}{(Number(changePercent) || 0).toFixed(2)}%
         </Text>
       </View>
     </TouchableOpacity>
@@ -188,10 +188,10 @@ export const WatchlistItem = memo(function WatchlistItem({
         <Text style={styles.watchlistName} numberOfLines={1}>{name}</Text>
       </View>
       <View style={styles.watchlistPriceContainer}>
-        <Text style={styles.watchlistPrice}>${price.toFixed(2)}</Text>
+        <Text style={styles.watchlistPrice}>${(Number(price) || 0).toFixed(2)}</Text>
         <View style={[styles.watchlistChangeContainer, { backgroundColor: bgColor }]}>
           <Text style={[styles.watchlistChange, { color }]}>
-            {isPositive ? '+' : ''}{changePercent.toFixed(2)}%
+            {isPositive ? '+' : ''}{(Number(changePercent) || 0).toFixed(2)}%
           </Text>
         </View>
       </View>
@@ -240,7 +240,7 @@ export const MessageItem = memo(function MessageItem({
       ) : (
         <View style={styles.messageAvatarPlaceholder}>
           <Text style={styles.messageAvatarText}>
-            {userName.charAt(0).toUpperCase()}
+            {(userName || '?').charAt(0).toUpperCase()}
           </Text>
         </View>
       )}
