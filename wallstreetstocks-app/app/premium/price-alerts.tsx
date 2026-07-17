@@ -185,9 +185,17 @@ export default function PriceAlertsScreen() {
       });
       if (res.ok) {
         const data = await res.json();
-        setAlerts(prev =>
-          prev.map(a => (a.id === alert.id ? { ...data.alert, currentPrice: a.currentPrice } : a))
-        );
+        if (data?.alert) {
+          setAlerts(prev =>
+            prev.map(a => (a.id === alert.id ? { ...data.alert, currentPrice: a.currentPrice } : a))
+          );
+        } else {
+          // No alert body returned — just flip the flag locally so we don't
+          // blank out id/symbol/targetPrice (which would crash the row).
+          setAlerts(prev =>
+            prev.map(a => (a.id === alert.id ? { ...a, isActive: !a.isActive } : a))
+          );
+        }
       } else {
         Alert.alert(t('Error'), t('Failed to update alert'));
       }

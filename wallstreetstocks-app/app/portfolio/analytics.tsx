@@ -165,25 +165,12 @@ export default function AnalyticsScreen() {
         const changePercent = startValue > 0 ? (change / startValue) * 100 : 0;
         setChartChange({ value: change, percent: changePercent });
       } else {
-        // Fallback: generate simulated data based on current value
+        // No historical data (e.g. FMP rate limit). Do NOT fabricate a random
+        // performance line — that showed users an invented gain/loss. Render a
+        // flat line at the current value and report 0% change (unavailable).
         const currentValue = currentPortfolio.totalValue;
-        const simulatedData: ChartDataPoint[] = [];
-        const points = range === '1D' ? 24 : range === '5D' ? 40 : range === '1M' ? 30 : 50;
-
-        for (let i = 0; i < points; i++) {
-          const variation = (Math.random() - 0.5) * 0.02;
-          const value = currentValue * (1 + variation * (points - i) / points);
-          simulatedData.push({ value });
-        }
-        simulatedData.push({ value: currentValue });
-        setChartData(simulatedData);
-
-        const startVal = simulatedData[0].value;
-        const endVal = currentValue;
-        setChartChange({
-          value: endVal - startVal,
-          percent: startVal > 0 ? ((endVal - startVal) / startVal) * 100 : 0,
-        });
+        setChartData([{ value: currentValue }, { value: currentValue }]);
+        setChartChange({ value: 0, percent: 0 });
       }
 
       // Fetch S&P 500 performance
@@ -599,7 +586,7 @@ export default function AnalyticsScreen() {
 
         {/* Performance vs S&P 500 */}
         <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>{t('vs S&P 500 (All-Time)')}</Text>
+          <Text style={[styles.cardTitle, { color: colors.textSecondary }]}>{t('Your Return (All-Time) vs S&P 500 (1Y)')}</Text>
           <View style={styles.comparisonContainer}>
             <View style={styles.comparisonItem}>
               <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>{t('Your Portfolio')}</Text>
@@ -611,7 +598,7 @@ export default function AnalyticsScreen() {
               <Text style={[styles.comparisonVsText, { color: colors.textSecondary }]}>{t('vs')}</Text>
             </View>
             <View style={styles.comparisonItem}>
-              <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>{t('S&P 500')}</Text>
+              <Text style={[styles.comparisonLabel, { color: colors.textSecondary }]}>{t('S&P 500 (1Y)')}</Text>
               <Text style={[styles.comparisonValue, { color: sp500Change.percent >= 0 ? '#34C759' : '#FF3B30' }]}>
                 {sp500Change.percent >= 0 ? '+' : ''}{sp500Change.percent.toFixed(2)}%
               </Text>
@@ -628,7 +615,9 @@ export default function AnalyticsScreen() {
             <Text style={[styles.comparisonResult, {
               color: totalGainPercent > sp500Change.percent ? '#34C759' : '#FF3B30'
             }]}>
-              {totalGainPercent > sp500Change.percent ? t('Outperforming') : t('Underperforming')} {t('by')} {Math.abs(totalGainPercent - sp500Change.percent).toFixed(2)}%
+              {/* Windows differ (all-time vs 1Y), so show direction only — not a
+                  precise "by X%" delta that subtracts mismatched periods. */}
+              {totalGainPercent > sp500Change.percent ? t('Ahead of the S&P 500 (1Y)') : t('Behind the S&P 500 (1Y)')}
             </Text>
           </View>
         </View>

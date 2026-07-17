@@ -184,14 +184,17 @@ export default function NewConversationScreen() {
         // Navigate to the actual conversation
         router.replace(`/messages/${data.conversationId}`);
       } else {
-        // Remove temp message on error
+        // Remove temp message and restore the composed text so it isn't lost
         setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
-        const errorData = await response.json();
-        
+        setMessage(content);
+        setSelectedImage(selectedImage);
+        Alert.alert('Message not sent', 'Your message could not be delivered. Please try again.');
       }
     } catch (error) {
-      
       setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
+      setMessage(content);
+      setSelectedImage(selectedImage);
+      Alert.alert('Message not sent', 'Your message could not be delivered. Please try again.');
     } finally {
       setSending(false);
     }

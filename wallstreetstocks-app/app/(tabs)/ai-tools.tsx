@@ -290,7 +290,10 @@ export default function AITools() {
       const dcfValue = dcf.dcf || null;
       const dcfDiff = dcfValue ? dcfValue - quote.price : null;
       const dcfDiffPercent = dcfValue ? ((dcfValue - quote.price) / quote.price) * 100 : null;
-      const isUndervalued = dcfDiffPercent ? dcfDiffPercent > 10 : false;
+      // Undervalued when intrinsic (DCF) value is above price (positive diff).
+      // The old `> 10` threshold labeled stocks 0-10% below intrinsic — which are
+      // undervalued — as "Overvalued".
+      const isUndervalued = dcfDiffPercent != null ? dcfDiffPercent > 0 : false;
 
       // Use OpenAI for AI analysis
       const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {

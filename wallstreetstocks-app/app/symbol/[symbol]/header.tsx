@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useWatchlist } from "../../../context/WatchlistContext";
-import { useStocks } from "../../../context/StockContext";
+import { usePortfolio } from "../../../context/PortfolioContext";
 import { useLanguage } from "@/context/LanguageContext";
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
@@ -15,7 +15,9 @@ export default function SymbolHeader() {
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
   const router = useRouter();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
-  const { addToPortfolio, isInPortfolio } = useStocks();
+  const { addHolding, portfolios } = usePortfolio();
+  const isInPortfolio = (sym: string) =>
+    portfolios.some(p => p.holdings.some(h => h.symbol.toUpperCase() === sym.toUpperCase()));
 
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showPortfolioModal, setShowPortfolioModal] = useState(false);
@@ -56,19 +58,27 @@ export default function SymbolHeader() {
       return;
     }
 
-    setLoading(true);
-    const success = await addToPortfolio({
-      symbol: currentSymbol,
-      shares: parseFloat(shares),
-      avgCost: parseFloat(avgCost),
-    });
+    const sharesNum = parseFloat(shares);
+    const avgCostNum = parseFloat(avgCost);
+    if (!Number.isFinite(sharesNum) || sharesNum <= 0 || !Number.isFinite(avgCostNum) || avgCostNum < 0) {
+      Alert.alert(t("Error"), t("Please enter a valid price"));
+      return;
+    }
 
-    if (success) {
+    setLoading(true);
+    try {
+      // Persist to the real portfolio (AsyncStorage + DB sync), not the old
+      // in-memory StockContext which silently discarded the holding.
+      await addHolding(currentSymbol, sharesNum, avgCostNum);
       setShares('');
       setAvgCost('');
       setShowPortfolioModal(false);
+      Alert.alert(t("Success"), `${currentSymbol} ${t("added to your portfolio!")}`);
+    } catch (err) {
+      Alert.alert(t("Error"), t("Failed to add stock. Please try again."));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleCreateAlert = async () => {

@@ -39,7 +39,6 @@ try {
   // Module not available in Expo Go
 }
 import { SubscriptionProvider, useSubscription } from "../context/SubscriptionContext";
-import { StockProvider } from "../context/StockContext";
 import { WatchlistProvider } from "../context/WatchlistContext";
 import { UserProfileProvider } from "../context/UserProfileContext";
 import { ReferralProvider, useReferral } from "../context/ReferralContext";
@@ -222,12 +221,17 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 
   // Update OneSignal user tags for segmentation (Gold/Platinum/Diamond targeting)
   useEffect(() => {
-    if (OneSignal && user?.id) {
+    if (!OneSignal) return;
+    if (user?.id) {
       OneSignal.login(user.id.toString());
       OneSignal.User.addTags({
         subscription_tier: currentTier || 'free',
         user_id: user.id.toString(),
       });
+    } else {
+      // Signed out — unbind this device from the previous user's external_id so
+      // it stops receiving their personal push (DMs, mentions, price alerts).
+      try { OneSignal.logout(); } catch (_) {}
     }
   }, [user?.id, currentTier]);
 
@@ -372,7 +376,6 @@ export default function RootLayout() {
             <ReferralProvider>
               <WatchlistProvider>
                 <PortfolioProvider>
-                  <StockProvider>
                     <UserProfileProvider>
                       <WebSocketProvider
                         autoConnect={true}  // Twelve Data WebSocket for real-time streaming
@@ -383,7 +386,6 @@ export default function RootLayout() {
                         </AppInitializer>
                       </WebSocketProvider>
                     </UserProfileProvider>
-                  </StockProvider>
                 </PortfolioProvider>
               </WatchlistProvider>
             </ReferralProvider>

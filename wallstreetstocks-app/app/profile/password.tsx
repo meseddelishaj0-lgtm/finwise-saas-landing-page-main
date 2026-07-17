@@ -15,10 +15,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/lib/auth';
+
+const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
 export default function Password() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { user } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -43,20 +47,36 @@ export default function Password() {
       return;
     }
 
+    if (!user?.id) {
+      Alert.alert('Error', 'You must be signed in to change your password.');
+      return;
+    }
+
     setIsChanging(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/mobile-auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, currentPassword, newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsChanging(false);
-      Alert.alert('Success! 🎉', 'Your password has been changed successfully', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      if (!res.ok) {
+        Alert.alert('Error', data?.error || 'Failed to change password');
+        return;
+      }
 
-      // Reset form
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    }, 1500);
+      Alert.alert('Success! 🎉', 'Your password has been changed successfully', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to change password. Please try again.');
+    } finally {
+      setIsChanging(false);
+    }
   };
 
   return (

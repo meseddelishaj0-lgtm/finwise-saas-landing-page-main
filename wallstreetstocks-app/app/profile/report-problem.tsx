@@ -19,7 +19,7 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/context/ThemeContext';
 import Constants from 'expo-constants';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://finwise-saas-landing-page-main.vercel.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://www.wallstreetstocks.ai';
 
 export default function ReportProblem() {
   const router = useRouter();

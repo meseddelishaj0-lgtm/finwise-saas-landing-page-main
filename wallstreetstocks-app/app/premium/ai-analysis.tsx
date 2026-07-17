@@ -315,16 +315,16 @@ Return ONLY the JSON, no other text.`
               <View style={styles.recommendationHeader}>
                 <Text style={styles.recommendationLabel}>{t('AI Recommendation')}</Text>
                 <View style={[styles.sentimentBadge, { backgroundColor: getSentimentColor(result.sentiment) }]}>
-                  <Text style={styles.sentimentText}>{result.sentiment.toUpperCase()}</Text>
+                  <Text style={styles.sentimentText}>{(result.sentiment || 'neutral').toUpperCase()}</Text>
                 </View>
               </View>
               <Text style={[styles.recommendationText, { color: getRecommendationColor(result.recommendation) }]}>
-                {result.recommendation}
+                {result.recommendation || '—'}
               </Text>
               <View style={styles.confidenceBar}>
-                <View style={[styles.confidenceFill, { width: `${result.confidence}%` }]} />
+                <View style={[styles.confidenceFill, { width: `${result.confidence ?? 0}%` }]} />
               </View>
-              <Text style={styles.confidenceText}>{result.confidence}% {t('Confidence')}</Text>
+              <Text style={styles.confidenceText}>{result.confidence ?? 0}% {t('Confidence')}</Text>
             </View>
 
             {/* AI Summary */}

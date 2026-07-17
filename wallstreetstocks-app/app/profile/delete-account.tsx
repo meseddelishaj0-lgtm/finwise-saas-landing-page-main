@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://finwise-saas-landing-page-main.vercel.app';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://www.wallstreetstocks.ai';
 
 export default function DeleteAccountScreen() {
   const router = useRouter();
@@ -54,7 +54,15 @@ export default function DeleteAccountScreen() {
                 body: JSON.stringify({ userId: user?.id }),
               });
 
-              // Clear all local data regardless of API response
+              // Only wipe local data + log out if the server actually deleted the
+              // account. Previously this ran "regardless of API response", so the
+              // app claimed success even when nothing was deleted server-side.
+              if (!response.ok) {
+                Alert.alert(t('Error'), t('Failed to delete account. Please try again.'));
+                setIsDeleting(false);
+                return;
+              }
+
               await AsyncStorage.multiRemove([
                 'personalInfo',
                 'watchlist',

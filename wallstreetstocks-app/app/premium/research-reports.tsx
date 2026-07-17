@@ -360,14 +360,14 @@ Return ONLY the JSON, no other text.`
                   <Text style={styles.reportCompany}>{report.company}</Text>
                   <Text style={styles.reportSector}>{report.sector} • {report.industry}</Text>
                 </View>
-                <View style={[styles.ratingBadge, { backgroundColor: getRatingColor(report.recommendation.rating) }]}>
-                  <Text style={styles.ratingText}>{report.recommendation.rating}</Text>
+                <View style={[styles.ratingBadge, { backgroundColor: getRatingColor(report.recommendation?.rating) }]}>
+                  <Text style={styles.ratingText}>{report.recommendation?.rating || 'N/A'}</Text>
                 </View>
               </View>
               <View style={styles.priceTargetRow}>
                 <View style={styles.priceItem}>
                   <Text style={styles.priceLabel}>Current Price</Text>
-                  <Text style={styles.priceValue}>${report.valuation.current_price.toFixed(2)}</Text>
+                  <Text style={styles.priceValue}>${(report.valuation?.current_price ?? 0).toFixed(2)}</Text>
                 </View>
                 <View style={styles.priceArrow}>
                   <Ionicons name="arrow-forward" size={20} color="#B8860B" />
@@ -375,18 +375,18 @@ Return ONLY the JSON, no other text.`
                 <View style={styles.priceItem}>
                   <Text style={styles.priceLabel}>Price Target</Text>
                   <Text style={[styles.priceValue, { color: '#B8860B' }]}>
-                    ${report.recommendation.price_target.toFixed(2)}
+                    ${(report.recommendation?.price_target ?? 0).toFixed(2)}
                   </Text>
                 </View>
                 <View style={styles.priceItem}>
                   <Text style={styles.priceLabel}>Upside</Text>
-                  <Text style={[styles.priceValue, { color: report.recommendation.upside >= 0 ? '#34C759' : '#FF3B30' }]}>
-                    {report.recommendation.upside >= 0 ? '+' : ''}{report.recommendation.upside.toFixed(1)}%
+                  <Text style={[styles.priceValue, { color: (report.recommendation?.upside ?? 0) >= 0 ? '#34C759' : '#FF3B30' }]}>
+                    {(report.recommendation?.upside ?? 0) >= 0 ? '+' : ''}{(report.recommendation?.upside ?? 0).toFixed(1)}%
                   </Text>
                 </View>
               </View>
               <Text style={styles.generatedAt}>
-                Generated {new Date(report.generatedAt).toLocaleDateString()} • {report.recommendation.timeframe} outlook
+                Generated {new Date(report.generatedAt).toLocaleDateString()} • {report.recommendation?.timeframe || 'N/A'} outlook
               </Text>
             </View>
 

@@ -273,12 +273,17 @@ export default function ConversationScreen() {
           prev.map((m) => (m.id === tempMessage.id ? data.message : m))
         );
       } else {
-        // Remove temp message on error
+        // Remove temp message and restore the composed text so it isn't lost
         setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
+        setMessage(content);
+        setSelectedImage(selectedImage);
+        Alert.alert('Message not sent', 'Your message could not be delivered. Please try again.');
       }
     } catch (error) {
-      
       setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
+      setMessage(content);
+      setSelectedImage(selectedImage);
+      Alert.alert('Message not sent', 'Your message could not be delivered. Please try again.');
     } finally {
       setSending(false);
     }
@@ -382,7 +387,7 @@ export default function ConversationScreen() {
         {otherUser && (
           <TouchableOpacity
             style={styles.headerUser}
-            onPress={() => router.push(`/profile/${otherUser.id}` as any)}
+            onPress={() => router.push(`/profile/user/${otherUser.id}` as any)}
           >
             {otherUser.profileImage ? (
               <Image source={{ uri: otherUser.profileImage }} style={styles.headerAvatar} />
