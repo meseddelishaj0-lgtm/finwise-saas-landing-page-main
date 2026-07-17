@@ -30,7 +30,6 @@ const TIER_FEATURES: Record<string, string[]> = {
     'Everything in Gold',
     '8 Expert Stock Picks',
     'Screener Filters & Premium Presets',
-    'Real-time price alerts',
     'Unlimited watchlists',
     'Priority support',
   ],

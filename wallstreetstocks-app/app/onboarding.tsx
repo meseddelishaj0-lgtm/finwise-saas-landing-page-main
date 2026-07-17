@@ -540,7 +540,7 @@ export default function Onboarding() {
 
   const PLANS = [
     { key: 'gold', name: 'Gold', price: '$4.99', tag: null, emoji: '🥇', features: ['5 Expert Stock Picks', 'Ad-free experience'] },
-    { key: 'platinum', name: 'Platinum', price: '$6.99', tag: 'MOST POPULAR', emoji: '🏆', features: ['8 Expert Stock Picks', 'Real-time price alerts'] },
+    { key: 'platinum', name: 'Platinum', price: '$6.99', tag: 'MOST POPULAR', emoji: '🏆', features: ['8 Expert Stock Picks', 'Screener Filters & Premium Presets'] },
     { key: 'diamond', name: 'Diamond', price: '$9.99', tag: 'BEST VALUE', emoji: '💎', features: ['15 Picks + AI Tools', 'Verified Profile Badge'] },
   ];
 

@@ -1,5 +1,5 @@
 // app/premium/price-alerts.tsx
-// Platinum Feature - Real-time Price Alerts
+// Price Alerts — free feature (available to all tiers)
 import React, { useState, useEffect } from 'react';
 import { buildAuthHeaders } from '../../lib/authHeaders';
 import {
@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { priceStore } from '@/stores/priceStore';
 import { useWebSocket } from '@/context/WebSocketContext';
@@ -36,7 +35,6 @@ interface PriceAlert {
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
 export default function PriceAlertsScreen() {
-  const { canAccess } = usePremiumFeature();
   const { subscribe: wsSubscribe } = useWebSocket();
   const { t } = useLanguage();
   const [alerts, setAlerts] = useState<PriceAlert[]>([]);
@@ -47,12 +45,7 @@ export default function PriceAlertsScreen() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
 
-  // Redirect to paywall if user doesn't have access
-  useEffect(() => {
-    if (!canAccess(FEATURE_TIERS.REALTIME_ALERTS)) {
-      router.replace('/(modals)/paywall');
-    }
-  }, [canAccess]);
+  // Price alerts are a free feature — no paywall gate.
 
   useEffect(() => {
     loadAlerts();
@@ -249,10 +242,6 @@ export default function PriceAlertsScreen() {
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <View style={styles.platinumBadge}>
-            <Ionicons name="diamond" size={14} color="#000" />
-            <Text style={styles.platinumBadgeText}>{t('Platinum')}</Text>
-          </View>
           <Text style={styles.headerTitle}>{t('Price Alerts')}</Text>
         </View>
         <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.addButton}>

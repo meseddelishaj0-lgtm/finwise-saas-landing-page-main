@@ -32,12 +32,6 @@ export default function AboutPremium() {
       color: '#FF9500',
     },
     {
-      icon: 'notifications',
-      title: 'Smart Alerts',
-      description: 'Set unlimited price alerts and get notified instantly on any device.',
-      color: '#FF2D55',
-    },
-    {
       icon: 'newspaper',
       title: 'Premium News',
       description: 'Exclusive access to breaking news, analyst reports, and market insights.',
@@ -95,7 +89,6 @@ export default function AboutPremium() {
         'Everything in Gold',
         '8 Expert Stock Picks',
         'Screener Filters & Presets',
-        'Real-time price alerts',
         'Unlimited watchlists',
         'Priority support',
       ],

@@ -118,7 +118,6 @@ const TIERS = {
       { icon: Check, text: "Everything in Gold" },
       { icon: TrendingUp, text: "8 Expert Stock Picks" },
       { icon: BarChart3, text: "Screener Filters & Premium Presets" },
-      { icon: Bell, text: "Real-time price alerts" },
       { icon: TrendingUp, text: "Unlimited watchlists" },
       { icon: Headphones, text: "Priority support" },
     ],
