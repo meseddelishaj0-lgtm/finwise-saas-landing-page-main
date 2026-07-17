@@ -8,7 +8,7 @@ import { setToMemory, CACHE_KEYS } from "../../../utils/memoryCache";
 import { useLanguage } from "@/context/LanguageContext";
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL = 'https://www.wallstreetstocks.ai/api/td';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 const QUOTE_CACHE_PREFIX = 'quote_cache_';
 
 // Pre-fetch quote data for faster tab loading (chart.tsx fetches its own chart data)

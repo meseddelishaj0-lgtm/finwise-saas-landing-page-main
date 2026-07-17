@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 const WATCHLIST_KEY = 'user_watchlist';
 const API_URL = 'https://www.wallstreetstocks.ai';
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL = 'https://www.wallstreetstocks.ai/api/td';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 // Debounce delay for AsyncStorage saves (500ms)
 const SAVE_DEBOUNCE_MS = 500;

@@ -80,12 +80,12 @@ export default function ResearchReportsScreen() {
 
       // Fetch comprehensive data
       const [quoteRes, profileRes, ratiosRes, incomeRes, balanceRes, cashFlowRes] = await Promise.all([
-        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/quote/${tickerUpper}?apikey=${FMP_API_KEY}`),
-        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/profile/${tickerUpper}?apikey=${FMP_API_KEY}`),
-        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/ratios/${tickerUpper}?limit=1&apikey=${FMP_API_KEY}`),
-        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/income-statement/${tickerUpper}?limit=4&apikey=${FMP_API_KEY}`),
-        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/balance-sheet-statement/${tickerUpper}?limit=1&apikey=${FMP_API_KEY}`),
-        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/cash-flow-statement/${tickerUpper}?limit=1&apikey=${FMP_API_KEY}`),
+        fetch(`https://financialmodelingprep.com/api/v3/quote/${tickerUpper}?apikey=${FMP_API_KEY}`),
+        fetch(`https://financialmodelingprep.com/api/v3/profile/${tickerUpper}?apikey=${FMP_API_KEY}`),
+        fetch(`https://financialmodelingprep.com/api/v3/ratios/${tickerUpper}?limit=1&apikey=${FMP_API_KEY}`),
+        fetch(`https://financialmodelingprep.com/api/v3/income-statement/${tickerUpper}?limit=4&apikey=${FMP_API_KEY}`),
+        fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${tickerUpper}?limit=1&apikey=${FMP_API_KEY}`),
+        fetch(`https://financialmodelingprep.com/api/v3/cash-flow-statement/${tickerUpper}?limit=1&apikey=${FMP_API_KEY}`),
       ]);
 
       const [quoteData, profileData, ratiosData, incomeData, balanceData, cashFlowData] = await Promise.all([

@@ -613,7 +613,7 @@ export default function Explore() {
   // This saves 700+ API credits/minute and makes tab switching instant
 
   const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
-  const BASE_URL = "https://www.wallstreetstocks.ai/api/fmp/api/v3";
+  const BASE_URL = "https://financialmodelingprep.com/api/v3";
 
   // Popular US stocks for Twelve Data (most active/popular)
   const US_STOCKS_TWELVE = [
@@ -773,7 +773,7 @@ export default function Explore() {
     setTreasuryLoading(true);
     try {
       const response = await fetchWithTimeout(
-        `https://www.wallstreetstocks.ai/api/fmp/stable/treasury-rates?apikey=${FMP_API_KEY}`,
+        `https://financialmodelingprep.com/stable/treasury-rates?apikey=${FMP_API_KEY}`,
         { timeout: 10000 }
       );
       const data = await response.json();
@@ -1010,7 +1010,7 @@ export default function Explore() {
                   for (let i = 0; i < europeSymbols.length; i += batchSize) {
                     const batch = europeSymbols.slice(i, i + batchSize);
                     const response = await fetch(
-                      `https://www.wallstreetstocks.ai/api/td/quote?symbol=${batch.join(',')}&apikey=${TWELVE_DATA_API_KEY}`
+                      `https://api.twelvedata.com/quote?symbol=${batch.join(',')}&apikey=${TWELVE_DATA_API_KEY}`
                     );
                     const result = await response.json();
                     const quotes = result.symbol ? [result] : Object.values(result);
@@ -1099,7 +1099,7 @@ export default function Explore() {
                   for (let i = 0; i < asiaSymbols.length; i += batchSize) {
                     const batch = asiaSymbols.slice(i, i + batchSize);
                     const response = await fetch(
-                      `https://www.wallstreetstocks.ai/api/td/quote?symbol=${batch.join(',')}&apikey=${TWELVE_DATA_API_KEY}`
+                      `https://api.twelvedata.com/quote?symbol=${batch.join(',')}&apikey=${TWELVE_DATA_API_KEY}`
                     );
                     const result = await response.json();
                     const quotes = result.symbol ? [result] : Object.values(result);
@@ -1252,10 +1252,10 @@ export default function Explore() {
           url = `${BASE_URL}/quote/${BOND_SYMBOLS.join(",")}?apikey=${FMP_API_KEY}`;
           break;
         case "ipo":
-          url = `https://www.wallstreetstocks.ai/api/fmp/stable/ipos-calendar?apikey=${FMP_API_KEY}`;
+          url = `https://financialmodelingprep.com/stable/ipos-calendar?apikey=${FMP_API_KEY}`;
           break;
         case "ma":
-          url = `https://www.wallstreetstocks.ai/api/fmp/stable/mergers-acquisitions-latest?page=0&limit=100&apikey=${FMP_API_KEY}`;
+          url = `https://financialmodelingprep.com/stable/mergers-acquisitions-latest?page=0&limit=100&apikey=${FMP_API_KEY}`;
           break;
         case "dividends":
           break;
@@ -1270,7 +1270,7 @@ export default function Explore() {
         const dividendPromises = dividendStocks.map(async (symbol) => {
           try {
             const res = await fetchWithTimeout(
-              `https://www.wallstreetstocks.ai/api/fmp/stable/dividends?symbol=${symbol}&apikey=${FMP_API_KEY}`,
+              `https://financialmodelingprep.com/stable/dividends?symbol=${symbol}&apikey=${FMP_API_KEY}`,
               { timeout: 10000 }
             );
             const divData = await res.json();

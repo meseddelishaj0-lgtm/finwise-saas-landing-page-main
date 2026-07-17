@@ -86,7 +86,7 @@ export default function PortfolioOptimizerScreen() {
 
     try {
       const response = await fetch(
-        `https://www.wallstreetstocks.ai/api/fmp/api/v3/quote/${symbols}?apikey=${FMP_API_KEY}`
+        `https://financialmodelingprep.com/api/v3/quote/${symbols}?apikey=${FMP_API_KEY}`
       );
       const data = await response.json();
 
@@ -146,7 +146,7 @@ export default function PortfolioOptimizerScreen() {
     // Verify symbol exists
     try {
       const response = await fetch(
-        `https://www.wallstreetstocks.ai/api/fmp/api/v3/quote/${newSymbol.toUpperCase()}?apikey=${FMP_API_KEY}`
+        `https://financialmodelingprep.com/api/v3/quote/${newSymbol.toUpperCase()}?apikey=${FMP_API_KEY}`
       );
       const data = await response.json();
 
@@ -197,7 +197,7 @@ export default function PortfolioOptimizerScreen() {
       // Fetch sector data for each holding
       const profiles = await Promise.all(
         holdings.map(h =>
-          fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/profile/${h.symbol}?apikey=${FMP_API_KEY}`)
+          fetch(`https://financialmodelingprep.com/api/v3/profile/${h.symbol}?apikey=${FMP_API_KEY}`)
             .then(r => r.json())
         )
       );

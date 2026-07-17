@@ -34,7 +34,7 @@ export default function StocksSection() {
 
         // FMP majors indexes endpoint
         const res = await fetch(
-          `https://www.wallstreetstocks.ai/api/fmp/api/v3/majors-indexes?apikey=${FMP_API_KEY}`
+          `https://financialmodelingprep.com/api/v3/majors-indexes?apikey=${FMP_API_KEY}`
         );
         const data = await res.json();
 

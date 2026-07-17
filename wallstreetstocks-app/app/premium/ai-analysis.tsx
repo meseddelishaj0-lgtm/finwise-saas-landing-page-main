@@ -17,7 +17,7 @@ import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import { useLanguage } from '@/context/LanguageContext';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const BASE_URL = 'https://www.wallstreetstocks.ai/api/fmp/api/v3';
+const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 interface AnalysisResult {
   ticker: string;

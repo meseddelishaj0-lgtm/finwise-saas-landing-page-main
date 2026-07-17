@@ -24,7 +24,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // FMP API Configuration
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const FMP_BASE_URL = 'https://www.wallstreetstocks.ai/api/fmp/api/v3';
+const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 // AI calls go through our server proxy — the OpenAI key lives ONLY on the
 // server (OPENAI_API_KEY), never in the app bundle.

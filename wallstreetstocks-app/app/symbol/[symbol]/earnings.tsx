@@ -79,7 +79,7 @@ export default function EarningsTab() {
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       const response = await fetch(
-        `https://www.wallstreetstocks.ai/api/fmp/api/v3/historical/earning_calendar/${cleanSymbol}?apikey=${FMP_KEY}`,
+        `https://financialmodelingprep.com/api/v3/historical/earning_calendar/${cleanSymbol}?apikey=${FMP_KEY}`,
         { signal: controller.signal }
       );
 

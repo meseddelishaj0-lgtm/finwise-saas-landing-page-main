@@ -6,7 +6,7 @@ import { buildAuthHeaders } from '../lib/authHeaders';
 import { useAuth } from '@/lib/auth';
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL = 'https://www.wallstreetstocks.ai/api/td';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 const BATCH_SIZE = 8;
 
 interface HoldingBase {

@@ -5,7 +5,7 @@
 import { getFromMemory, setToMemory, CACHE_KEYS } from '../utils/memoryCache';
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL = 'https://www.wallstreetstocks.ai/api/td';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 // Cache TTL: 5 minutes for chart-synced prices
 const CACHE_TTL = 300000;
