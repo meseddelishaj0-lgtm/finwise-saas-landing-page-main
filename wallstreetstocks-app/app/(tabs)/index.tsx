@@ -1,6 +1,7 @@
 // app/(tabs)/index.tsx - REDESIGNED CLEAN WHITE VERSION WITH WATCHLIST
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { cachedJson } from '@/lib/cachedFetch';
+import { parseLocaleNumber } from '@/lib/parseNumber';
 import {
   View,
   Text,
@@ -1721,8 +1722,8 @@ export default function Dashboard() {
         return;
       }
 
-      const shares = parseFloat(newStockShares);
-      const avgCost = parseFloat(newStockAvgCost);
+      const shares = parseLocaleNumber(newStockShares);
+      const avgCost = parseLocaleNumber(newStockAvgCost);
 
       // Add holding using context
       await contextAddHolding(symbol, shares, avgCost);
@@ -1797,8 +1798,8 @@ export default function Dashboard() {
       return;
     }
 
-    const newShares = parseFloat(editShares);
-    const newAvgCost = parseFloat(editAvgCost);
+    const newShares = parseLocaleNumber(editShares);
+    const newAvgCost = parseLocaleNumber(editAvgCost);
 
     if (isNaN(newShares) || newShares <= 0) {
       Alert.alert(t('Error'), t('Please enter a valid number of shares'));

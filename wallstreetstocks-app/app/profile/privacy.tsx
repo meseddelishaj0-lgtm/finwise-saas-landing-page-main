@@ -215,7 +215,7 @@ For privacy-related inquiries, please include "Privacy Inquiry" in your email su
           <Text style={styles.contactEmail}>wallstreetstocks@outlook.com</Text>
           <TouchableOpacity
             style={styles.contactButton}
-            onPress={() => router.push('/profile/contact-us' as any)}
+            onPress={() => router.push('/profile/contact' as any)}
           >
             <Text style={styles.contactButtonText}>Contact Support</Text>
           </TouchableOpacity>

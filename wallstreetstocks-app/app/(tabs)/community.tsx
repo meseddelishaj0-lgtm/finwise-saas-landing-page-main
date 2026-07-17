@@ -613,11 +613,28 @@ export default function CommunityPage() {
     return displayName.substring(0, 2).toUpperCase();
   };
 
+  // Refs mirror these reactive values so the data-loading callbacks below can
+  // stay referentially STABLE. Previously getUserId depended on currentUser and
+  // loadPosts on hiddenPosts / fetchSuggestedUsers on posts+localFollowChanges,
+  // so hiding a post or toggling a follow recreated the callback → re-fired its
+  // load effect → a full refetch. The callbacks now read the latest value via
+  // these refs instead of via their dependency array.
+  const authUserIdRef = useRef<number | string | null>(authUser?.id ?? null);
+  const currentUserRef = useRef(currentUser);
+  const hiddenPostsRef = useRef(hiddenPosts);
+  const postsRef = useRef(posts);
+  const localFollowChangesRef = useRef(localFollowChanges);
+  useEffect(() => { authUserIdRef.current = authUser?.id ?? null; }, [authUser?.id]);
+  useEffect(() => { currentUserRef.current = currentUser; }, [currentUser]);
+  useEffect(() => { hiddenPostsRef.current = hiddenPosts; }, [hiddenPosts]);
+  useEffect(() => { postsRef.current = posts; }, [posts]);
+  useEffect(() => { localFollowChangesRef.current = localFollowChanges; }, [localFollowChanges]);
+
   const getUserId = useCallback((): number | null => {
-    if (authUser?.id) return Number(authUser.id);
-    if (currentUser?.id) return Number(currentUser.id);
+    if (authUserIdRef.current) return Number(authUserIdRef.current);
+    if (currentUserRef.current?.id) return Number(currentUserRef.current.id);
     return null;
-  }, [authUser?.id, currentUser?.id]);
+  }, []);
 
   const formatTimeAgo = (dateString: string): string => {
     try {
@@ -664,7 +681,7 @@ export default function CommunityPage() {
         
         // Merge with local follow changes to preserve optimistic updates
         const mergedUsers = mappedUsers.map((user) => {
-          const localChange = localFollowChanges.get(user.id);
+          const localChange = localFollowChangesRef.current.get(user.id);
           if (localChange !== undefined) {
             return { ...user, isFollowing: localChange };
           }
@@ -673,7 +690,7 @@ export default function CommunityPage() {
         setSuggestedUsers(mergedUsers);
       } else {
         // Fallback: get active users from posts
-        const uniqueUsers = posts
+        const uniqueUsers = postsRef.current
           .map(p => p.user)
           .filter((user, index, self) =>
             user &&
@@ -685,7 +702,7 @@ export default function CommunityPage() {
       }
     } catch {
       // Fallback to users from posts
-      const uniqueUsers = posts
+      const uniqueUsers = postsRef.current
         .map(p => p.user)
         .filter((user, index, self) =>
           user &&
@@ -697,7 +714,7 @@ export default function CommunityPage() {
     } finally {
       setSuggestedLoading(false);
     }
-  }, [posts, getUserId, localFollowChanges]);
+  }, [getUserId]);
 
   const handleQuickFollow = async (targetUserId: number) => {
     const userId = getUserId();
@@ -1053,7 +1070,7 @@ export default function CommunityPage() {
       } else {
         setFeedError(false);
         postsLoadedRef.current = true;
-        setPosts(fetchedPosts.filter((p: Post) => !hiddenPosts.includes(p.id)));
+        setPosts(fetchedPosts.filter((p: Post) => !hiddenPostsRef.current.includes(p.id)));
       }
     } catch {
       setFeedError(true);
@@ -1061,7 +1078,7 @@ export default function CommunityPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [getUserId, hiddenPosts]);
+  }, [getUserId]);
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {

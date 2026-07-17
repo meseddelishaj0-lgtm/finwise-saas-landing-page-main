@@ -118,7 +118,7 @@ export default function MessagesScreen() {
 
       const data = await response.json();
       if (data.conversations) {
-        setConversations(data.conversations);
+        setConversations(Array.isArray(data.conversations) ? data.conversations : []);
       }
     } catch (error) {
       
@@ -140,7 +140,7 @@ export default function MessagesScreen() {
       const response = await fetch(`${API_BASE_URL}/user/suggested?userId=${uid}&limit=20`);
       if (response.ok) {
         const data = await response.json();
-        setSuggestedUsers(data);
+        setSuggestedUsers(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       
@@ -352,9 +352,9 @@ export default function MessagesScreen() {
             <View style={styles.conversationHeader}>
               <View style={styles.nameRow}>
                 <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
-                  {item.otherUser.name || item.otherUser.username}
+                  {item.otherUser?.name || item.otherUser?.username || 'User'}
                 </Text>
-                <VerifiedBadge verified={item.otherUser.isVerified} size={14} />
+                <VerifiedBadge verified={item.otherUser?.isVerified} size={14} />
               </View>
               {item.lastMessage && (
                 <Text style={[styles.time, { color: colors.textSecondary }]}>{formatTime(item.lastMessage.createdAt)}</Text>

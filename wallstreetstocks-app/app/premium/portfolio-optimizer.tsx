@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import { useLanguage } from '@/context/LanguageContext';
+import { parseLocaleNumber } from '@/lib/parseNumber';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 
@@ -135,8 +136,8 @@ export default function PortfolioOptimizerScreen() {
       return;
     }
 
-    const shares = parseFloat(newShares);
-    const avgPrice = parseFloat(newAvgPrice);
+    const shares = parseLocaleNumber(newShares);
+    const avgPrice = parseLocaleNumber(newAvgPrice);
 
     if (isNaN(shares) || isNaN(avgPrice) || shares <= 0 || avgPrice <= 0) {
       Alert.alert(t('Error'), t('Please enter valid numbers'));
@@ -284,12 +285,28 @@ Provide actionable advice for a balanced, risk-adjusted portfolio. Return ONLY v
         };
       }
 
+      // Guarantee the shape the render reads — a successfully parsed but partial
+      // LLM object (e.g. missing riskAnalysis) would otherwise crash the results.
       setOptimization({
+        ...parsedOptimization,
         currentAllocation: {
           stocks: holdings.length,
           sectors: sectorAllocation,
         },
-        ...parsedOptimization,
+        recommendations: Array.isArray(parsedOptimization?.recommendations) ? parsedOptimization.recommendations : [],
+        suggestions: Array.isArray(parsedOptimization?.suggestions) ? parsedOptimization.suggestions : [],
+        targetAllocation:
+          parsedOptimization?.targetAllocation && typeof parsedOptimization.targetAllocation === 'object'
+            ? parsedOptimization.targetAllocation
+            : {},
+        riskAnalysis: {
+          diversificationScore: Number.isFinite(Number(parsedOptimization?.riskAnalysis?.diversificationScore))
+            ? Number(parsedOptimization.riskAnalysis.diversificationScore)
+            : 50,
+          volatilityRisk: parsedOptimization?.riskAnalysis?.volatilityRisk ?? 'Unable to analyze',
+          concentrationRisk: parsedOptimization?.riskAnalysis?.concentrationRisk ?? 'Unable to analyze',
+          sectorExposure: parsedOptimization?.riskAnalysis?.sectorExposure ?? 'Unable to analyze',
+        },
       });
 
     } catch (err) {

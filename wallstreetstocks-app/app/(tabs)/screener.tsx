@@ -688,6 +688,7 @@ export default function Screener() {
   const [showHeatMap, setShowHeatMap] = useState(false);
   const [heatMapStocks, setHeatMapStocks] = useState<HeatMapStock[]>([]);
   const [heatMapLoading, setHeatMapLoading] = useState(false);
+  const [heatMapError, setHeatMapError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Array<{ symbol: string; name: string; exchangeShortName: string }>>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -826,6 +827,7 @@ export default function Screener() {
   // Fetch Heat Map Data
   const fetchHeatMapData = async () => {
     setHeatMapLoading(true);
+    setHeatMapError(null);
     try {
       const [activesRes, gainersRes, losersRes] = await Promise.all([
         fetch(`${FMP_BASE_URL}/stock_market/actives?apikey=${FMP_API_KEY}`),
@@ -833,11 +835,16 @@ export default function Screener() {
         fetch(`${FMP_BASE_URL}/stock_market/losers?apikey=${FMP_API_KEY}`),
       ]);
 
-      const [actives, gainers, losers] = await Promise.all([
+      const [activesData, gainersData, losersData] = await Promise.all([
         activesRes.json(),
         gainersRes.json(),
         losersRes.json(),
       ]);
+
+      // FMP may return a non-array error object; coerce so the spread can't throw
+      const actives = Array.isArray(activesData) ? activesData : [];
+      const gainers = Array.isArray(gainersData) ? gainersData : [];
+      const losers = Array.isArray(losersData) ? losersData : [];
 
       const allStocks = [...actives, ...gainers, ...losers];
       const uniqueStocks = allStocks.reduce((acc: HeatMapStock[], stock: any) => {
@@ -875,7 +882,12 @@ export default function Screener() {
       }
 
       setHeatMapStocks(uniqueStocks);
+      if (uniqueStocks.length === 0) {
+        setHeatMapError(t('Heat map data is unavailable right now'));
+      }
     } catch (err) {
+      setHeatMapStocks([]);
+      setHeatMapError(t('Heat map data is unavailable right now'));
     } finally {
       setHeatMapLoading(false);
     }
@@ -1682,8 +1694,16 @@ export default function Screener() {
               <ActivityIndicator size="large" color="#8B5CF6" />
               <Text style={styles.heatMapLoadingText}>{t('Mapping the market…')}</Text>
             </View>
+          ) : heatMapError || sortedSectors.length === 0 ? (
+            <View style={styles.heatMapLoading}>
+              <Ionicons name="alert-circle" size={48} color="#FF5252" />
+              <Text style={styles.heatMapLoadingText}>{heatMapError || t('Heat map data is unavailable right now')}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={fetchHeatMapData}>
+                <Text style={styles.retryButtonText}>{t('Try Again')}</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
-            <ScrollView 
+            <ScrollView
               contentContainerStyle={styles.heatMapScrollContent}
               showsVerticalScrollIndicator={false}
             >

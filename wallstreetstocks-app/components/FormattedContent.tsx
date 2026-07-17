@@ -16,21 +16,24 @@ export default function FormattedContent({
   onMentionPress,
   style 
 }: Props) {
+  // Guard against null/undefined content to avoid crashing the feed/comment list
+  const text = content ?? '';
+
   // Parse content and create array of text parts
   const parts: Array<{ type: 'text' | 'ticker' | 'mention'; value: string }> = [];
-  
+
   // Combined regex for both tickers and mentions
   const regex = /(\$[A-Za-z]{1,5})|(@[A-Za-z0-9_]{1,30})/g;
-  
+
   let lastIndex = 0;
   let match;
-  
-  while ((match = regex.exec(content)) !== null) {
+
+  while ((match = regex.exec(text)) !== null) {
     // Add text before this match
     if (match.index > lastIndex) {
       parts.push({
         type: 'text',
-        value: content.substring(lastIndex, match.index),
+        value: text.substring(lastIndex, match.index),
       });
     }
     
@@ -52,10 +55,10 @@ export default function FormattedContent({
   }
   
   // Add remaining text
-  if (lastIndex < content.length) {
+  if (lastIndex < text.length) {
     parts.push({
       type: 'text',
-      value: content.substring(lastIndex),
+      value: text.substring(lastIndex),
     });
   }
 

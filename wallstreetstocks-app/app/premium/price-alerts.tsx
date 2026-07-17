@@ -2,6 +2,7 @@
 // Price Alerts — free feature (available to all tiers)
 import React, { useState, useEffect } from 'react';
 import { buildAuthHeaders } from '../../lib/authHeaders';
+import { parseLocaleNumber } from '../../lib/parseNumber';
 import {
   View,
   Text,
@@ -129,7 +130,7 @@ export default function PriceAlertsScreen() {
       return;
     }
 
-    const targetPrice = parseFloat(newPrice);
+    const targetPrice = parseLocaleNumber(newPrice);
     if (isNaN(targetPrice) || targetPrice <= 0) {
       Alert.alert(t('Error'), t('Please enter a valid price'));
       return;

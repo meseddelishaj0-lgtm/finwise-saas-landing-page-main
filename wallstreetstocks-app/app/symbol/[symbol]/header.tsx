@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { buildAuthHeaders } from "../../../lib/authHeaders";
+import { parseLocaleNumber } from "../../../lib/parseNumber";
 import { useWatchlist } from "../../../context/WatchlistContext";
 import { usePortfolio } from "../../../context/PortfolioContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -59,8 +60,8 @@ export default function SymbolHeader() {
       return;
     }
 
-    const sharesNum = parseFloat(shares);
-    const avgCostNum = parseFloat(avgCost);
+    const sharesNum = parseLocaleNumber(shares);
+    const avgCostNum = parseLocaleNumber(avgCost);
     if (!Number.isFinite(sharesNum) || sharesNum <= 0 || !Number.isFinite(avgCostNum) || avgCostNum < 0) {
       Alert.alert(t("Error"), t("Please enter a valid price"));
       return;
@@ -85,7 +86,7 @@ export default function SymbolHeader() {
   const handleCreateAlert = async () => {
     if (!alertType || !priceValue) return;
 
-    const price = parseFloat(priceValue);
+    const price = parseLocaleNumber(priceValue);
     if (isNaN(price) || price <= 0) {
       Alert.alert(t("Error"), t("Please enter a valid price"));
       return;

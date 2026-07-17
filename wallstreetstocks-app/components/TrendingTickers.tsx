@@ -38,7 +38,7 @@ export default function TrendingTickers({ onTickerPress }: Props) {
       );
       if (response.ok) {
         const data = await response.json();
-        setTickers(data);
+        setTickers(Array.isArray(data) ? data : []);
       }
     } catch (error) {
       // Silently handle trending fetch errors

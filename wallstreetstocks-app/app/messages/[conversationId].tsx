@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import VerifiedBadge from '@/components/VerifiedBadge';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '@/context/ThemeContext';
@@ -67,21 +67,30 @@ export default function ConversationScreen() {
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     loadUserId();
   }, []);
 
-  useEffect(() => {
-    // Poll for new messages every 5 seconds
-    const interval = setInterval(() => {
-      if (userId && conversationId) {
+  // Poll for new messages every 5s, but ONLY while this screen is focused —
+  // otherwise pushing another screen on top keeps the poll hammering the network
+  // and setState-ing on a covered screen. useFocusEffect stops it on blur.
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId || !conversationId) return;
+      const interval = setInterval(() => {
         fetchMessages(userId, true);
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [userId, conversationId]);
+      }, 5000);
+      return () => clearInterval(interval);
+    }, [userId, conversationId])
+  );
 
   const loadUserId = async () => {
     const storedUserId = await AsyncStorage.getItem('userId');
@@ -105,6 +114,7 @@ export default function ConversationScreen() {
       }
 
       const data = await response.json();
+      if (!isMountedRef.current) return;
       if (Array.isArray(data.messages)) {
         // Preserve just-sent optimistic messages (client temp ids are Date.now(),
         // far larger than DB ids) that the server hasn't returned yet — otherwise
@@ -119,9 +129,9 @@ export default function ConversationScreen() {
         setOtherUser(data.conversation.otherUser);
       }
     } catch (error) {
-      
+
     } finally {
-      if (!silent) {
+      if (!silent && isMountedRef.current) {
         setLoading(false);
       }
     }

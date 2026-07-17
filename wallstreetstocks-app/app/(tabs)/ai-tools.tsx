@@ -376,13 +376,16 @@ Return ONLY a JSON object:
         currentRatio: ratios.currentRatio,
         revenueGrowth: growth.revenueGrowth ? growth.revenueGrowth * 100 : null,
         netIncomeGrowth: growth.netIncomeGrowth ? growth.netIncomeGrowth * 100 : null,
-        aiSummary: aiAnalysis.aiSummary,
-        strengths: aiAnalysis.strengths,
-        risks: aiAnalysis.risks,
-        sentiment: aiAnalysis.sentiment,
-        confidence: aiAnalysis.confidence,
-        recommendation: aiAnalysis.recommendation,
-        priceTarget: aiAnalysis.priceTarget,
+        // Defensive defaults: the LLM JSON can parse successfully yet omit or
+        // rename a field. Render sites read these directly (.map/.toUpperCase/
+        // .includes), so a missing key would red-screen the results view.
+        aiSummary: aiAnalysis?.aiSummary ?? '',
+        strengths: Array.isArray(aiAnalysis?.strengths) ? aiAnalysis.strengths : [],
+        risks: Array.isArray(aiAnalysis?.risks) ? aiAnalysis.risks : [],
+        sentiment: aiAnalysis?.sentiment ?? 'neutral',
+        confidence: aiAnalysis?.confidence ?? null,
+        recommendation: aiAnalysis?.recommendation ?? 'hold',
+        priceTarget: aiAnalysis?.priceTarget ?? null,
       });
     } catch {
       setAnalyzerError('Analysis failed. Please try again.');
@@ -568,16 +571,24 @@ Return JSON only:
         ratiosRes.json(),
       ]);
 
-      if (!quoteData || quoteData.length === 0) {
+      // Array-guard: an FMP error body is a truthy object with no `.length`,
+      // which would slip past a plain falsy check and crash on quoteData[0].
+      if (!Array.isArray(quoteData) || quoteData.length === 0) {
         setForecastError(`No data found for ${symbol}`);
         return;
       }
 
       const quote = quoteData[0];
-      const history = historyData.historical || [];
+      const history = Array.isArray(historyData?.historical) ? historyData.historical : [];
 
       // Calculate technical indicators
       const prices = history.slice(0, 30).map((h: any) => h.close).reverse();
+      // Without price history the stats below become NaN/±Infinity (rendered as
+      // literal "Infinity" in support/resistance), so bail cleanly instead.
+      if (prices.length === 0) {
+        setForecastError(`Not enough price history for ${symbol}`);
+        return;
+      }
       const avgPrice = prices.reduce((a: number, b: number) => a + b, 0) / prices.length;
       const volatility = Math.sqrt(prices.reduce((sum: number, p: number) => sum + Math.pow(p - avgPrice, 2), 0) / prices.length) / avgPrice * 100;
       const momentum = ((quote.price - prices[0]) / prices[0]) * 100;
@@ -638,6 +649,10 @@ Return ONLY a JSON object with this exact structure:
         };
       }
 
+      // Normalize per-field: the LLM can return a partial nested object (e.g.
+      // priceTargets with only `base`), so a whole-block `|| {...}` default
+      // isn't enough — render reads .conservative/.trend/etc. directly.
+      const numOr = (v: any, d: number) => (Number.isFinite(Number(v)) ? Number(v) : d);
       setForecastResult({
         symbol,
         name: quote.name || symbol,
@@ -649,16 +664,27 @@ Return ONLY a JSON object with this exact structure:
         momentum: momentum || 0,
         volatility: volatility || 0,
         avgVolume: quote.avgVolume || 0,
-        priceTargets: aiAnalysis.priceTargets || { conservative: quote.price * 0.9, base: quote.price, bullish: quote.price * 1.1 },
-        probabilities: aiAnalysis.probabilities || { upside: 50, downside: 50 },
+        priceTargets: {
+          conservative: numOr(aiAnalysis?.priceTargets?.conservative, quote.price * 0.9),
+          base: numOr(aiAnalysis?.priceTargets?.base, quote.price),
+          bullish: numOr(aiAnalysis?.priceTargets?.bullish, quote.price * 1.1),
+        },
+        probabilities: {
+          upside: numOr(aiAnalysis?.probabilities?.upside, 50),
+          downside: numOr(aiAnalysis?.probabilities?.downside, 50),
+        },
         timeframe: '3 months',
-        sentiment: aiAnalysis.sentiment || 'neutral',
-        confidence: aiAnalysis.confidence || 50,
-        recommendation: aiAnalysis.recommendation || 'Hold',
-        catalysts: aiAnalysis.catalysts || [],
-        risks: aiAnalysis.risks || [],
-        technicalSignals: aiAnalysis.technicalSignals || { trend: 'sideways', support: low52w, resistance: high52w },
-        summary: aiAnalysis.summary || `Analysis for ${symbol}`,
+        sentiment: aiAnalysis?.sentiment || 'neutral',
+        confidence: numOr(aiAnalysis?.confidence, 50),
+        recommendation: aiAnalysis?.recommendation || 'Hold',
+        catalysts: Array.isArray(aiAnalysis?.catalysts) ? aiAnalysis.catalysts : [],
+        risks: Array.isArray(aiAnalysis?.risks) ? aiAnalysis.risks : [],
+        technicalSignals: {
+          trend: aiAnalysis?.technicalSignals?.trend || 'sideways',
+          support: numOr(aiAnalysis?.technicalSignals?.support, low52w),
+          resistance: numOr(aiAnalysis?.technicalSignals?.resistance, high52w),
+        },
+        summary: aiAnalysis?.summary || `Analysis for ${symbol}`,
       });
     } catch {
       setForecastError('Forecast failed. Please try again.');

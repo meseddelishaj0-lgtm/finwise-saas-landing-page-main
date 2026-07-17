@@ -149,7 +149,7 @@ Return ONLY the JSON, no other text.`
       setResult({
         ticker: tickerUpper,
         company: quote.name,
-        price: quote.price,
+        price: quote.price ?? 0,
         change: quote.change,
         changePercent: quote.changesPercentage,
         marketCap: quote.marketCap,
@@ -337,7 +337,7 @@ Return ONLY the JSON, no other text.`
             </View>
 
             {/* Valuation */}
-            {result.intrinsicValue && (
+            {result.intrinsicValue && result.price > 0 && (
               <View style={styles.valuationCard}>
                 <View style={styles.cardHeader}>
                   <Ionicons name="calculator" size={20} color="#B8860B" />

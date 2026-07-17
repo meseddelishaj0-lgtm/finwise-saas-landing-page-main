@@ -20,6 +20,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { usePortfolio } from '@/context/PortfolioContext';
 import { useAuth } from '@/lib/auth';
+import { parseLocaleNumber } from '@/lib/parseNumber';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
@@ -79,8 +80,8 @@ export default function PortfolioScreen() {
       Alert.alert(t('Error'), t('Please fill in all fields'));
       return;
     }
-    const shares = parseFloat(newHolding.shares);
-    const avgCost = parseFloat(newHolding.avgCost);
+    const shares = parseLocaleNumber(newHolding.shares);
+    const avgCost = parseLocaleNumber(newHolding.avgCost);
     if (!Number.isFinite(shares) || shares <= 0 || !Number.isFinite(avgCost) || avgCost < 0) {
       Alert.alert(t('Error'), t('Please enter valid numbers'));
       return;

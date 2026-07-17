@@ -209,6 +209,25 @@ Return ONLY the JSON, no other text.`
         industry: profile.industry,
         generatedAt: new Date().toISOString(),
         ...parsedReport,
+        // Guarantee the nested objects the render/share read directly, so a
+        // partial LLM response can't crash (financial_analysis.* at 420-432,
+        // recommendation.* in the share handler).
+        financial_analysis: {
+          revenue_growth: parsedReport?.financial_analysis?.revenue_growth ?? 'N/A',
+          profit_margins: parsedReport?.financial_analysis?.profit_margins ?? 'N/A',
+          balance_sheet: parsedReport?.financial_analysis?.balance_sheet ?? 'N/A',
+          cash_flow: parsedReport?.financial_analysis?.cash_flow ?? 'N/A',
+        },
+        recommendation: {
+          rating: parsedReport?.recommendation?.rating ?? 'N/A',
+          price_target: Number.isFinite(Number(parsedReport?.recommendation?.price_target))
+            ? Number(parsedReport.recommendation.price_target)
+            : quote.price,
+          upside: Number.isFinite(Number(parsedReport?.recommendation?.upside))
+            ? Number(parsedReport.recommendation.upside)
+            : 0,
+          timeframe: parsedReport?.recommendation?.timeframe ?? '12 months',
+        },
         valuation: {
           current_price: quote.price,
           fair_value: parsedReport.recommendation?.price_target || quote.price,

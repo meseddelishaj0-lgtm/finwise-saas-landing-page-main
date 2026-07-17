@@ -95,6 +95,22 @@ export default function FundamentalsTab() {
       if (ratiosData?.[0]) setRatios(ratiosData[0]);
       if (metricsData?.[0]) setKeyMetrics(metricsData[0]);
 
+      // FMP free-tier/rate-limit returns HTTP 200 with an { "Error Message": ... }
+      // body, so res.json() succeeds but no setter fires and the screen shows a
+      // silent wall of "—". Surface the error UI instead.
+      const allData = [profileData, incomeData, balanceData, cashData, ratiosData, metricsData];
+      const hasFmpError = allData.some((d) => d && !Array.isArray(d) && d["Error Message"]);
+      const hasUsableData =
+        profileData?.[0] ||
+        (Array.isArray(incomeData) && incomeData.length > 0) ||
+        (Array.isArray(balanceData) && balanceData.length > 0) ||
+        (Array.isArray(cashData) && cashData.length > 0) ||
+        ratiosData?.[0] ||
+        metricsData?.[0];
+      if (hasFmpError || !hasUsableData) {
+        setError(t("Unable to load fundamentals"));
+      }
+
     } catch (err: any) {
 
       setError(t("Unable to load fundamentals"));
@@ -260,21 +276,28 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
   const latest = data[0];
   const previous = data[1];
 
-  const grossMargin = latest?.revenue ? (latest.grossProfit / latest.revenue) * 100 : 0;
-  const operatingMargin = latest?.revenue ? (latest.operatingIncome / latest.revenue) * 100 : 0;
-  const netMargin = latest?.revenue ? (latest.netIncome / latest.revenue) * 100 : 0;
+  // Guard both numerator and divisor: a company can report revenue but omit
+  // grossProfit/operatingIncome/netIncome, which would yield NaN → "NaN%".
+  const calcMargin = (numerator: any, revenue: any): number | null =>
+    Number.isFinite(numerator) && Number.isFinite(revenue) && revenue !== 0
+      ? (numerator / revenue) * 100
+      : null;
+
+  const grossMargin = calcMargin(latest?.grossProfit, latest?.revenue);
+  const operatingMargin = calcMargin(latest?.operatingIncome, latest?.revenue);
+  const netMargin = calcMargin(latest?.netIncome, latest?.revenue);
 
   const revenueChange = getYoYChange(latest?.revenue, previous?.revenue);
   const netIncomeChange = getYoYChange(latest?.netIncome, previous?.netIncome);
 
-  const MarginBar = ({ label, value, color }: { label: string; value: number; color: string }) => (
+  const MarginBar = ({ label, value, color }: { label: string; value: number | null; color: string }) => (
     <View style={incomeStyles.marginItem}>
       <View style={incomeStyles.marginHeader}>
         <Text style={incomeStyles.marginLabel}>{t(label)}</Text>
-        <Text style={[incomeStyles.marginValue, { color }]}>{value.toFixed(1)}%</Text>
+        <Text style={[incomeStyles.marginValue, { color }]}>{value === null ? '—' : `${value.toFixed(1)}%`}</Text>
       </View>
       <View style={incomeStyles.marginBarBg}>
-        <View style={[incomeStyles.marginBarFill, { width: `${Math.min(Math.max(value, 0), 100)}%`, backgroundColor: color }]} />
+        <View style={[incomeStyles.marginBarFill, { width: `${value === null ? 0 : Math.min(Math.max(value, 0), 100)}%`, backgroundColor: color }]} />
       </View>
     </View>
   );
@@ -283,7 +306,7 @@ const IncomeTab = ({ data, fmtNum, getYoYChange }: any) => {
     <>
       {/* Hero Section */}
       <View style={incomeStyles.heroSection}>
-        <Text style={incomeStyles.heroSubtitle}>{t('FY')} {new Date(latest?.date).getFullYear()}</Text>
+        <Text style={incomeStyles.heroSubtitle}>{t('FY')} {latest?.date ? new Date(latest.date).getFullYear() : '—'}</Text>
 
         {/* Key Metrics Cards */}
         <View style={incomeStyles.metricsGrid}>
@@ -702,7 +725,10 @@ const BalanceTab = ({ data, fmtNum }: any) => {
   const totalAssets = latest?.totalAssets || 0;
   const totalLiabilities = latest?.totalLiabilities || 0;
   const totalEquity = latest?.totalStockholdersEquity || 0;
-  const currentRatio = latest?.totalCurrentLiabilities ? (latest.totalCurrentAssets / latest.totalCurrentLiabilities) : 0;
+  const currentRatio: number | null =
+    Number.isFinite(latest?.totalCurrentAssets) && Number.isFinite(latest?.totalCurrentLiabilities) && latest?.totalCurrentLiabilities !== 0
+      ? (latest.totalCurrentAssets / latest.totalCurrentLiabilities)
+      : null;
   const debtToEquity = totalEquity ? ((latest?.totalDebt || 0) / totalEquity) : 0;
   const workingCapital = (latest?.totalCurrentAssets || 0) - (latest?.totalCurrentLiabilities || 0);
 
@@ -756,10 +782,10 @@ const BalanceTab = ({ data, fmtNum }: any) => {
         <View style={balanceStyles.ratiosGrid}>
           <View style={balanceStyles.ratioCard}>
             <Text style={balanceStyles.ratioLabel}>{t('Current Ratio')}</Text>
-            <Text style={[balanceStyles.ratioValue, { color: currentRatio >= 1.5 ? '#00C853' : currentRatio >= 1 ? '#FF9500' : '#FF3B30' }]}>
-              {currentRatio.toFixed(2)}x
+            <Text style={[balanceStyles.ratioValue, { color: currentRatio === null ? '#8E8E93' : currentRatio >= 1.5 ? '#00C853' : currentRatio >= 1 ? '#FF9500' : '#FF3B30' }]}>
+              {currentRatio === null ? '—' : `${currentRatio.toFixed(2)}x`}
             </Text>
-            <Text style={balanceStyles.ratioHint}>{currentRatio >= 1.5 ? t('Healthy') : currentRatio >= 1 ? t('Adequate') : t('Low')}</Text>
+            <Text style={balanceStyles.ratioHint}>{currentRatio === null ? '—' : currentRatio >= 1.5 ? t('Healthy') : currentRatio >= 1 ? t('Adequate') : t('Low')}</Text>
           </View>
           <View style={balanceStyles.ratioCard}>
             <Text style={balanceStyles.ratioLabel}>{t('Debt/Equity')}</Text>
@@ -1157,7 +1183,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
     <>
       {/* Hero Section */}
       <View style={cashFlowStyles.heroSection}>
-        <Text style={cashFlowStyles.heroSubtitle}>{t('FY')} {new Date(latest?.date).getFullYear()}</Text>
+        <Text style={cashFlowStyles.heroSubtitle}>{t('FY')} {latest?.date ? new Date(latest.date).getFullYear() : '—'}</Text>
 
         {/* Key Metrics Cards */}
         <View style={cashFlowStyles.metricsRow}>

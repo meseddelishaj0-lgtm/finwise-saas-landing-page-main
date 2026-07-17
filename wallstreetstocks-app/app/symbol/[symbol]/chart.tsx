@@ -1,6 +1,7 @@
 // app/symbol/[symbol]/chart.tsx - Stock Chart with WebSocket Real-Time Prices
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { buildAuthHeaders } from '../../../lib/authHeaders';
+import { parseLocaleNumber } from '../../../lib/parseNumber';
 import { isEasternDST } from '../../../lib/easternTime';
 import {
   View,
@@ -332,6 +333,11 @@ export default function ChartTab() {
 
   // Refs
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Guards against a slower older fetch (e.g. a previous timeframe) resolving
+  // after a newer one and overwriting the chart, and against setState after
+  // unmount. Every fetchChartData call claims the next sequence number.
+  const fetchSeqRef = useRef(0);
+  const isMountedRef = useRef(true);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // ============================================================================
@@ -532,6 +538,10 @@ export default function ChartTab() {
   const fetchChartData = useCallback(async (showLoading = true) => {
     if (!cleanSymbol || !apiSymbol) return;
 
+    // Claim this call's sequence number; any later call supersedes us.
+    const seq = ++fetchSeqRef.current;
+    const isCurrent = () => seq === fetchSeqRef.current && isMountedRef.current;
+
     const cacheKey = `chart_cache_${cleanSymbol}_${timeframe}`;
     const memCacheKey = CACHE_KEYS.chart(cleanSymbol, timeframe);
     const ttl = CACHE_TTL[timeframe];
@@ -549,6 +559,7 @@ export default function ChartTab() {
     // Try async cache
     if (!skipCache && rawChartDataRef.current.length === 0) {
       const asyncCached = await getAsyncCache<ChartDataPoint[]>(cacheKey, ttl);
+      if (!isCurrent()) return;
       if (asyncCached && asyncCached.length > 0) {
         const restored = asyncCached.map(d => ({ ...d, date: new Date(d.date) }));
         setRawChartData(restored);
@@ -575,6 +586,9 @@ export default function ChartTab() {
 
       const res = await fetch(url);
       const data = await res.json();
+
+      // Discard if a newer fetch (timeframe/symbol change) started, or unmounted.
+      if (!isCurrent()) return;
 
       if (data?.values && Array.isArray(data.values) && data.values.length > 0) {
         // Reverse: Twelve Data returns newest first
@@ -618,11 +632,11 @@ export default function ChartTab() {
         setError('No data available');
       }
     } catch (err) {
-      if (rawChartDataRef.current.length === 0) {
+      if (isCurrent() && rawChartDataRef.current.length === 0) {
         setError('Unable to load chart');
       }
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [cleanSymbol, apiSymbol, timeframe, isCrypto]);
 
@@ -641,19 +655,28 @@ export default function ChartTab() {
   }, [rawChartData]);
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!cleanSymbol) {
       setLoading(false);
       setError('No symbol provided');
       return;
     }
 
-    // Pulse animation
-    Animated.loop(
+    // Pulse animation (captured so we can stop it on cleanup — otherwise a new
+    // loop stacks on every symbol/timeframe change)
+    const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.3, duration: 1000, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
       ])
-    ).start();
+    );
+    pulse.start();
 
     // Initial fetch
     fetchQuote();
@@ -666,6 +689,7 @@ export default function ChartTab() {
     }, 60000);
 
     return () => {
+      pulse.stop();
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [cleanSymbol, timeframe, fetchQuote, fetchChartData]);
@@ -689,7 +713,7 @@ export default function ChartTab() {
       return;
     }
 
-    const price = parseFloat(alertPrice);
+    const price = parseLocaleNumber(alertPrice);
     if (isNaN(price) || price <= 0) {
       Alert.alert('Error', 'Please enter a valid price');
       return;
@@ -742,7 +766,7 @@ export default function ChartTab() {
   // Above/Below buttons still work as a manual override.
   const handleAlertPriceChange = (text: string) => {
     setAlertPrice(text);
-    const p = parseFloat(text);
+    const p = parseLocaleNumber(text);
     const ref = livePrice ?? currentPrice;
     if (ref != null && Number.isFinite(p) && p > 0) {
       setAlertDirection(p < ref ? 'below' : 'above');
