@@ -243,7 +243,7 @@ const fetchNotifications = async (userId: number): Promise<any[]> => {
 const markAllNotificationsRead = async (userId: number): Promise<void> => {
   await fetch(`${API_BASE}/api/notifications/read-all`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ userId }),
   });
 };

@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildAuthHeaders } from '../lib/authHeaders';
 import { useTheme } from '@/context/ThemeContext';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
@@ -83,7 +84,7 @@ export default function Notifications() {
       const userId = await AsyncStorage.getItem('userId');
       await fetch(`${API_BASE_URL}/notifications/${notificationId}/read`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ userId }),
       });
 
@@ -100,7 +101,7 @@ export default function Notifications() {
       const userId = await AsyncStorage.getItem('userId');
       await fetch(`${API_BASE_URL}/notifications/read-all`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ userId }),
       });
 
