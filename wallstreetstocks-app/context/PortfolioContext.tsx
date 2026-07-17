@@ -2,6 +2,7 @@
 // Shared portfolio state across the app
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@/lib/auth';
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
@@ -243,11 +244,36 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchPricesForPortfolio]);
 
-  // Load portfolios from AsyncStorage on mount
+  // Portfolios are stored PER USER — a shared device-wide key let a new
+  // registration inherit the previous account's holdings.
+  const authUserId = useAuth((state: any) => (state.user?.id ? String(state.user.id) : null));
+  const storageKey = authUserId ? `user_portfolios_v2:${authUserId}` : 'user_portfolios_v2:anon';
+
+  // Load portfolios whenever the signed-in user changes
   useEffect(() => {
     const loadPortfolios = async () => {
+      setLoading(true);
+      // Clear any previous account's data immediately so it never flashes
+      setPortfolios([]);
+      setCurrentPortfolio(null);
+      portfoliosRef.current = [];
       try {
-        const saved = await AsyncStorage.getItem('user_portfolios_v2');
+        let saved = await AsyncStorage.getItem(storageKey);
+
+        // One-time adoption of the old shared key by the device's current
+        // user (the historical owner of that data), then retire it.
+        if (!saved && authUserId) {
+          const legacy = await AsyncStorage.getItem('user_portfolios_v2');
+          const claimed = await AsyncStorage.getItem('user_portfolios_claimed');
+          if (legacy && !claimed) {
+            await AsyncStorage.setItem(storageKey, legacy);
+            await AsyncStorage.setItem('user_portfolios_claimed', authUserId);
+            await AsyncStorage.removeItem('user_portfolios_v2');
+            await AsyncStorage.removeItem('user_portfolio_holdings');
+            saved = legacy;
+          }
+        }
+
         if (saved) {
           const data = JSON.parse(saved);
           const loadedPortfolios = data.portfolios || [];
@@ -269,17 +295,12 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
             setLastUpdated(new Date());
           }
         } else {
-          // Migrate from old format or create default
-          const oldSaved = await AsyncStorage.getItem('user_portfolio_holdings');
-          const defaultHoldings = oldSaved ? JSON.parse(oldSaved) : [
-            { symbol: 'AAPL', shares: 10, avgCost: 150 },
-            { symbol: 'TSLA', shares: 5, avgCost: 200 },
-            { symbol: 'MSFT', shares: 8, avgCost: 300 },
-          ];
+          // Fresh account: start with an empty portfolio — holdings come
+          // from onboarding or manual adds, never demo data.
           const defaultPortfolio: Portfolio = {
             id: generateId(),
             name: 'Main Portfolio',
-            holdings: defaultHoldings,
+            holdings: [],
           };
 
           setPortfolios([defaultPortfolio]);
@@ -289,7 +310,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
           portfoliosRef.current = [defaultPortfolio];
           selectedPortfolioIdRef.current = defaultPortfolio.id;
 
-          await AsyncStorage.setItem('user_portfolios_v2', JSON.stringify({
+          await AsyncStorage.setItem(storageKey, JSON.stringify({
             portfolios: [defaultPortfolio],
             selectedPortfolioId: defaultPortfolio.id,
           }));
@@ -313,22 +334,18 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     };
 
     loadPortfolios();
-  }, [fetchPricesForPortfolio]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey]);
 
-  // Save to AsyncStorage whenever portfolios change
+  // Save to AsyncStorage (per-user key) whenever portfolios change
   useEffect(() => {
     if (!loading && portfolios.length > 0) {
-      AsyncStorage.setItem('user_portfolios_v2', JSON.stringify({
+      AsyncStorage.setItem(storageKey, JSON.stringify({
         portfolios,
         selectedPortfolioId,
       }));
-      // Also save current holdings in old format for backwards compatibility
-      const current = portfolios.find(p => p.id === selectedPortfolioId);
-      if (current) {
-        AsyncStorage.setItem('user_portfolio_holdings', JSON.stringify(current.holdings));
-      }
     }
-  }, [portfolios, selectedPortfolioId, loading]);
+  }, [portfolios, selectedPortfolioId, loading, storageKey]);
 
   // Refresh prices when selected portfolio changes (but not on initial load)
   useEffect(() => {
