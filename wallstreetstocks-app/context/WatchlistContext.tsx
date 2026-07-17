@@ -110,14 +110,15 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         setWatchlist(parsed);
         pendingWatchlistRef.current = parsed;
       } else {
-        // Default watchlist for new users (onboarding replaces/extends it)
-        const defaultWatchlist = ['NVDA', 'GOOGL', 'AMZN', 'META'];
-        setWatchlist(defaultWatchlist);
-        pendingWatchlistRef.current = defaultWatchlist;
-        await AsyncStorage.setItem(scopedKey, JSON.stringify(defaultWatchlist));
+        // New users start with an EMPTY watchlist (same as the portfolio).
+        // The server reconcile below adopts an existing account's watchlist on
+        // reinstall; a genuinely new account stays empty until the user adds
+        // symbols themselves.
+        setWatchlist([]);
+        pendingWatchlistRef.current = [];
       }
     } catch (err) {
-      setWatchlist(['NVDA', 'GOOGL', 'AMZN', 'META']);
+      setWatchlist([]);
     } finally {
       setWatchlistLoading(false);
       setInitialized(true);
