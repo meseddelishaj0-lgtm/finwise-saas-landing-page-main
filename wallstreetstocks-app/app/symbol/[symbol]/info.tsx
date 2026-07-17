@@ -72,19 +72,21 @@ export default function InfoTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCompanyInfo = async () => {
+  const fetchCompanyInfo = async (isCancelled: () => boolean = () => false) => {
     if (!cleanSymbol) {
+      if (isCancelled()) return;
       setLoading(false);
       setError('No symbol provided');
       return;
     }
 
+    if (isCancelled()) return;
     setLoading(true);
     setError(null);
 
     try {
-      
-      
+
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -100,7 +102,9 @@ export default function InfoTab() {
       }
 
       const data = await response.json();
-      
+
+      // Skip applying a stale response (symbol changed / unmounted mid-fetch)
+      if (isCancelled()) return;
 
       if (data && Array.isArray(data) && data.length > 0) {
         setProfile(data[0]);
@@ -109,25 +113,26 @@ export default function InfoTab() {
         throw new Error('No company information available');
       }
     } catch (err: any) {
-      
-      
+      if (isCancelled()) return;
+
       const errorMessage = err.name === 'AbortError'
         ? 'Request timeout. Please try again.'
         : err.message?.includes('Network')
         ? 'Network error. Check your connection.'
         : `Unable to load company information for ${cleanSymbol}`;
-      
+
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      if (!isCancelled()) setLoading(false);
     }
   };
 
   useEffect(() => {
-    
+    let cancelled = false;
     if (cleanSymbol) {
-      fetchCompanyInfo();
+      fetchCompanyInfo(() => cancelled);
     }
+    return () => { cancelled = true; };
   }, [cleanSymbol]);
 
   const handleRetry = () => {

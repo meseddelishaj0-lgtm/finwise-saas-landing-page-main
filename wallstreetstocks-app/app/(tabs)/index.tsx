@@ -435,6 +435,8 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  // Monotonic id so a slow earlier search can't overwrite a newer one's results.
+  const searchSeqRef = useRef(0);
 
   // Add Stock Modal
   const [addStockModal, setAddStockModal] = useState(false);
@@ -1892,11 +1894,15 @@ export default function Dashboard() {
       return;
     }
 
+    const seq = ++searchSeqRef.current;
     try {
       const res = await fetch(
         `${BASE_URL}/search?query=${query}&limit=10&apikey=${FMP_API_KEY}`
       );
       const data = await res.json();
+
+      // A newer search started after this one — discard stale results.
+      if (seq !== searchSeqRef.current) return;
 
       if (data && Array.isArray(data)) {
         setSearchResults(data);

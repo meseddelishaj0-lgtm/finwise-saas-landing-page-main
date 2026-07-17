@@ -217,6 +217,8 @@ export default function InsiderTradingScreen() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
+    // A malformed/missing filing date would otherwise render "Invalid Date".
+    if (isNaN(date.getTime())) return '—';
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));

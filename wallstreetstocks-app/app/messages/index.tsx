@@ -83,6 +83,9 @@ export default function MessagesScreen() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [suggestedUsers, setSuggestedUsers] = useState<SearchUser[]>([]);
   const [startingConversation, setStartingConversation] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  // Monotonic id so a slow earlier user search can't overwrite a newer one.
+  const searchSeqRef = useRef(0);
 
   useEffect(() => {
     loadUserId();
@@ -99,6 +102,7 @@ export default function MessagesScreen() {
   };
 
   const fetchConversations = async (uid: string) => {
+    setLoadError(false);
     try {
       const response = await fetch(`${API_BASE_URL}/messages`, {
         headers: await buildAuthHeaders(uid),
@@ -106,13 +110,14 @@ export default function MessagesScreen() {
 
       // Check if response is OK
       if (!response.ok) {
-        
+        setLoadError(true);
         return;
       }
 
       // Check content type to ensure it's JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
+        setLoadError(true);
         return;
       }
 
@@ -121,7 +126,7 @@ export default function MessagesScreen() {
         setConversations(Array.isArray(data.conversations) ? data.conversations : []);
       }
     } catch (error) {
-      
+      setLoadError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -153,14 +158,18 @@ export default function MessagesScreen() {
       return;
     }
 
+    const seq = ++searchSeqRef.current;
     setSearchLoading(true);
     try {
       // Search for users by username or name
       const response = await fetch(
         `${API_BASE_URL}/user/by-username?query=${encodeURIComponent(query)}&userId=${userId}`
       );
+      // A newer search started after this one — discard stale results.
+      if (seq !== searchSeqRef.current) return;
       if (response.ok) {
         const data = await response.json();
+        if (seq !== searchSeqRef.current) return;
         // Handle both single user and array responses
         if (Array.isArray(data)) {
           setSearchResults(data.filter((u: SearchUser) => u.id.toString() !== userId));
@@ -176,10 +185,9 @@ export default function MessagesScreen() {
         setSearchResults([]);
       }
     } catch (error) {
-      
-      setSearchResults([]);
+      if (seq === searchSeqRef.current) setSearchResults([]);
     } finally {
-      setSearchLoading(false);
+      if (seq === searchSeqRef.current) setSearchLoading(false);
     }
   };
 
@@ -413,6 +421,26 @@ export default function MessagesScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : loadError && conversations.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="cloud-offline-outline" size={64} color={colors.textSecondary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Couldn't Load Messages</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+            Something went wrong. Please try again.
+          </Text>
+          <TouchableOpacity
+            style={styles.startMessageButton}
+            onPress={() => {
+              if (userId) {
+                setLoading(true);
+                fetchConversations(userId);
+              }
+            }}
+          >
+            <Ionicons name="refresh" size={20} color="#FFF" />
+            <Text style={styles.startMessageButtonText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       ) : conversations.length === 0 ? (
         <View style={styles.emptyState}>

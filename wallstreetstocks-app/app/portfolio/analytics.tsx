@@ -298,12 +298,16 @@ export default function AnalyticsScreen() {
   const totalGain = currentPortfolio.totalGain;
   const totalGainPercent = currentPortfolio.totalGainPercent;
 
+  // Guard against a zero total (all prices failed to load) so allocation
+  // percentages and the diversification score don't render "NaN".
+  const safeTotal = totalValue > 0 ? totalValue : 1;
+
   // Pie chart data
   const pieColors = ['#B8860B', '#34C759', '#FF9500', '#FF3B30', '#AF52DE', '#5AC8FA', '#FFCC00', '#FF2D55'];
   const pieData = currentPortfolio.holdings.map((h, idx) => ({
     value: h.currentValue,
     color: pieColors[idx % pieColors.length],
-    text: `${((h.currentValue / totalValue) * 100).toFixed(0)}%`,
+    text: `${((h.currentValue / safeTotal) * 100).toFixed(0)}%`,
     label: h.symbol,
   }));
 
@@ -318,12 +322,12 @@ export default function AnalyticsScreen() {
   const sectorPieData = sectorEntries.map(([sector, value], idx) => ({
     value,
     color: sectorColors[idx % sectorColors.length],
-    text: `${((value / totalValue) * 100).toFixed(0)}%`,
+    text: `${((value / safeTotal) * 100).toFixed(0)}%`,
     label: sector,
   }));
 
   // Diversification score (Herfindahl Index)
-  const holdingWeights = currentPortfolio.holdings.map(h => h.currentValue / totalValue);
+  const holdingWeights = currentPortfolio.holdings.map(h => h.currentValue / safeTotal);
   const herfindahlIndex = holdingWeights.reduce((sum, w) => sum + (w * w), 0);
   const diversificationScore = Math.round((1 - herfindahlIndex) * 100);
 

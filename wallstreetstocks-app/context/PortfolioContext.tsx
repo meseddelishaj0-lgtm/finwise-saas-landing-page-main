@@ -437,11 +437,16 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   }, [portfolios, selectedPortfolioId, loading, storageKey, dirtyKey, pushToServer]);
 
   // Refresh prices when selected portfolio changes (but not on initial load)
+  const priceRefreshSeq = useRef(0);
   useEffect(() => {
     if (!loading && selectedPortfolioId && portfolios.length > 0) {
       const portfolio = portfolios.find(p => p.id === selectedPortfolioId);
       if (portfolio) {
+        // Guard against a rapid switch: only the latest request may apply, so an
+        // older portfolio's prices can't resolve last and land on the new one.
+        const seq = ++priceRefreshSeq.current;
         fetchPricesForPortfolio(portfolio).then(portfolioWithPrices => {
+          if (seq !== priceRefreshSeq.current) return;
           setCurrentPortfolio(portfolioWithPrices);
           setLastUpdated(new Date());
         });

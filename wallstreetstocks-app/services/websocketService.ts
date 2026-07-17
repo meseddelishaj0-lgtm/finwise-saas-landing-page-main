@@ -55,6 +55,10 @@ class WebSocketService {
   private subscribedSymbols: Set<string> = new Set();
   private pendingSubscriptions: Set<string> = new Set();
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  // True while we are deliberately closing (e.g. app backgrounded), so the
+  // onclose handler doesn't immediately schedule a reconnect and undo it.
+  private intentionalClose: boolean = false;
+  private reconnectAttempts: number = 0;
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private status: ConnectionStatus = 'disconnected';
   private listeners: Set<(status: ConnectionStatus) => void> = new Set();
@@ -88,6 +92,8 @@ class WebSocketService {
       return;
     }
 
+    // A fresh connect attempt is no longer an intentional-close state.
+    this.intentionalClose = false;
     this.setStatus('connecting');
 
     try {
@@ -95,6 +101,7 @@ class WebSocketService {
 
       this.ws.onopen = () => {
         this.isConnected = true;
+        this.reconnectAttempts = 0;
         this.setStatus('connected');
         this.startHeartbeat();
 
@@ -117,8 +124,9 @@ class WebSocketService {
         this.setStatus('disconnected');
         this.stopHeartbeat();
 
-        // Auto-reconnect if we have subscriptions
-        if (this.subscribedSymbols.size > 0) {
+        // Auto-reconnect only for UNEXPECTED closes with live subscriptions —
+        // never right after a deliberate disconnect (backgrounding).
+        if (!this.intentionalClose && this.subscribedSymbols.size > 0) {
           this.scheduleReconnect();
         }
       };
@@ -317,6 +325,7 @@ class WebSocketService {
 
   // Disconnect WebSocket
   disconnect(): void {
+    this.intentionalClose = true;
     this.cancelReconnect();
     this.stopHeartbeat();
     this.isConnected = false;
@@ -333,9 +342,12 @@ class WebSocketService {
   private scheduleReconnect(): void {
     this.cancelReconnect();
 
+    // Exponential backoff (capped at 30s) so a downed relay isn't hit every 3s.
+    const delay = Math.min(RECONNECT_DELAY * 2 ** this.reconnectAttempts, 30000);
+    this.reconnectAttempts++;
     this.reconnectTimeout = setTimeout(() => {
       this.connect();
-    }, RECONNECT_DELAY);
+    }, delay);
   }
 
   // Cancel scheduled reconnect

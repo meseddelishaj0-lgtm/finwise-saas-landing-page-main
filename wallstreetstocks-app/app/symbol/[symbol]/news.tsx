@@ -84,8 +84,9 @@ export default function NewsTab() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchNews = useCallback(async (isRefresh = false) => {
+  const fetchNews = useCallback(async (isRefresh = false, isCancelled: () => boolean = () => false) => {
     if (!cleanSymbol) {
+      if (isCancelled()) return;
       setLoading(false);
       setError('No symbol provided. Please navigate from a stock page.');
       return;
@@ -100,6 +101,7 @@ export default function NewsTab() {
         if (cached) {
           const { data, timestamp } = JSON.parse(cached);
           if (Date.now() - timestamp < NEWS_CACHE_TTL && Array.isArray(data) && data.length > 0) {
+            if (isCancelled()) return;
             setNews(data);
             setLoading(false);
             // Continue to fetch fresh data in background
@@ -110,6 +112,7 @@ export default function NewsTab() {
       }
     }
 
+    if (isCancelled()) return;
     if (isRefresh) {
       setRefreshing(true);
     } else if (news.length === 0) {
@@ -135,6 +138,9 @@ export default function NewsTab() {
 
       const data = await response.json();
 
+      // Skip applying a stale response (symbol changed / unmounted mid-fetch)
+      if (isCancelled()) return;
+
       if (Array.isArray(data) && data.length > 0) {
         setNews(data);
         setError(null);
@@ -146,6 +152,7 @@ export default function NewsTab() {
         }
       }
     } catch (err: any) {
+      if (isCancelled()) return;
       // Only show error if we don't have cached data
       if (news.length === 0) {
         if (err.name === 'AbortError') {
@@ -157,20 +164,22 @@ export default function NewsTab() {
         }
       }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (!isCancelled()) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [cleanSymbol, news.length]);
 
   useEffect(() => {
-    
+    let cancelled = false;
     if (cleanSymbol) {
-      fetchNews();
+      fetchNews(false, () => cancelled);
     } else {
-      
       setLoading(false);
       setError('No symbol provided. Please navigate from a stock page.');
     }
+    return () => { cancelled = true; };
   }, [cleanSymbol]);
 
   const handleRefresh = () => {

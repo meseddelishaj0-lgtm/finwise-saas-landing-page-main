@@ -558,17 +558,23 @@ Return JSON only:
     setForecastTicker(symbol);
 
     try {
-      // Fetch stock data from FMP
-      const [quoteRes, historyRes, ratiosRes] = await Promise.all([
+      // Fetch stock data from FMP (ratios were fetched here but never used —
+      // dropped to save an API round-trip).
+      const [quoteRes, historyRes] = await Promise.all([
         fetch(`${FMP_BASE_URL}/quote/${symbol}?apikey=${FMP_API_KEY}`),
         fetch(`${FMP_BASE_URL}/historical-price-full/${symbol}?timeseries=90&apikey=${FMP_API_KEY}`),
-        fetch(`${FMP_BASE_URL}/ratios/${symbol}?limit=1&apikey=${FMP_API_KEY}`),
       ]);
+
+      // A non-OK status returns an error body, not data — surface it rather
+      // than parsing it as a quote/history payload.
+      if (!quoteRes.ok || !historyRes.ok) {
+        setForecastError('Forecast failed. Please try again.');
+        return;
+      }
 
       const [quoteData, historyData] = await Promise.all([
         quoteRes.json(),
         historyRes.json(),
-        ratiosRes.json(),
       ]);
 
       // Array-guard: an FMP error body is a truthy object with no `.length`,

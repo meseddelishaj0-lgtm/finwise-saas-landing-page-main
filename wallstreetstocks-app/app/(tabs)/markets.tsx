@@ -938,6 +938,11 @@ export default function Explore() {
   const fetchLiveData = async () => {
     setError(null);
 
+    // Capture the tab/region this request belongs to. If the user switches
+    // region while an async batch is in flight, dataOwnerKeyRef will have moved
+    // on and we skip the stale setData below.
+    const requestOwnerKey = activeTab === "stocks" ? `${activeTab}-${stockRegion}` : activeTab;
+
     try {
       let url = "";
 
@@ -1012,6 +1017,9 @@ export default function Explore() {
                     const response = await fetch(
                       `https://api.twelvedata.com/quote?symbol=${batch.join(',')}&apikey=${TWELVE_DATA_API_KEY}`
                     );
+                    // Region switched while this batch was in flight — abandon.
+                    if (dataOwnerKeyRef.current !== requestOwnerKey) return;
+                    if (!response.ok) continue;
                     const result = await response.json();
                     const quotes = result.symbol ? [result] : Object.values(result);
                     
@@ -1046,12 +1054,14 @@ export default function Explore() {
                   }
                   
                   stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+                  // Region may have switched before the batches finished.
+                  if (dataOwnerKeyRef.current !== requestOwnerKey) return;
                   setData(stockData);
                 } catch (error) {
                 }
                 setLoading(false);
               }
-              
+
               // Subscribe to WebSocket for real-time updates
               if (wsConnected) {
                 wsSubscribe(europeSymbols);
@@ -1101,6 +1111,9 @@ export default function Explore() {
                     const response = await fetch(
                       `https://api.twelvedata.com/quote?symbol=${batch.join(',')}&apikey=${TWELVE_DATA_API_KEY}`
                     );
+                    // Region switched while this batch was in flight — abandon.
+                    if (dataOwnerKeyRef.current !== requestOwnerKey) return;
+                    if (!response.ok) continue;
                     const result = await response.json();
                     const quotes = result.symbol ? [result] : Object.values(result);
                     
@@ -1135,12 +1148,14 @@ export default function Explore() {
                   }
                   
                   stockData.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
+                  // Region may have switched before the batches finished.
+                  if (dataOwnerKeyRef.current !== requestOwnerKey) return;
                   setData(stockData);
                 } catch (error) {
                 }
                 setLoading(false);
               }
-              
+
               // Subscribe to WebSocket for real-time updates
               if (wsConnected) {
                 wsSubscribe(asiaSymbols);

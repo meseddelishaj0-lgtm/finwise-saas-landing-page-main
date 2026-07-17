@@ -72,6 +72,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       });
       if (!res.ok) return;
       const data = await res.json();
+      // Account may have switched while this fetch was in flight — don't let a
+      // prior user's server watchlist land in the newly signed-in user's UI.
+      if (scopedKeyRef.current !== scopedKey) return;
       const serverList: string[] = Array.isArray(data?.tickers) ? data.tickers : [];
       if (serverList.length > 0) {
         setWatchlist(serverList);

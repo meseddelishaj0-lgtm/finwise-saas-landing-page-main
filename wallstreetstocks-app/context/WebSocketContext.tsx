@@ -1,7 +1,7 @@
 // context/WebSocketContext.tsx
 // React context for WebSocket real-time price streaming
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { websocketService, ConnectionStatus } from '../services/websocketService';
 
 interface WebSocketContextValue {
@@ -29,6 +29,17 @@ export function WebSocketProvider({
   const [subscribedSymbols, setSubscribedSymbols] = useState<string[]>([]);
   const initializedRef = useRef(false);
 
+  // Pull the current symbol set from the service, but only trigger a state
+  // update (and thus consumer re-renders) when it actually changed — otherwise
+  // the 2s poll below re-rendered every useWebSocket() consumer twice a minute
+  // for nothing (getSubscribedSymbols returns a fresh array each call).
+  const syncSubscribedSymbols = useCallback(() => {
+    const next = websocketService.getSubscribedSymbols();
+    setSubscribedSymbols(prev =>
+      prev.length === next.length && prev.every((s, i) => s === next[i]) ? prev : next
+    );
+  }, []);
+
   // Listen for status changes
   useEffect(() => {
     const unsubscribe = websocketService.onStatusChange((newStatus) => {
@@ -40,16 +51,12 @@ export function WebSocketProvider({
 
   // Update subscribed symbols periodically
   useEffect(() => {
-    const updateSymbols = () => {
-      setSubscribedSymbols(websocketService.getSubscribedSymbols());
-    };
-
-    // Update every 2 seconds
-    const interval = setInterval(updateSymbols, 2000);
-    updateSymbols();
+    // Update every 2 seconds (no-op re-render when unchanged)
+    const interval = setInterval(syncSubscribedSymbols, 2000);
+    syncSubscribedSymbols();
 
     return () => clearInterval(interval);
-  }, []);
+  }, [syncSubscribedSymbols]);
 
   // Auto-connect and subscribe to initial symbols
   useEffect(() => {
@@ -82,26 +89,24 @@ export function WebSocketProvider({
   const subscribe = useCallback((symbols: string | string[]) => {
     websocketService.subscribe(symbols);
     // Update local state
-    setTimeout(() => {
-      setSubscribedSymbols(websocketService.getSubscribedSymbols());
-    }, 100);
-  }, []);
+    setTimeout(syncSubscribedSymbols, 100);
+  }, [syncSubscribedSymbols]);
 
   const unsubscribe = useCallback((symbols: string | string[]) => {
     websocketService.unsubscribe(symbols);
     // Update local state
-    setTimeout(() => {
-      setSubscribedSymbols(websocketService.getSubscribedSymbols());
-    }, 100);
-  }, []);
+    setTimeout(syncSubscribedSymbols, 100);
+  }, [syncSubscribedSymbols]);
 
-  const value: WebSocketContextValue = {
+  // Memoize so the context value reference is stable across renders where
+  // nothing changed — otherwise every consumer re-rendered on any provider render.
+  const value = useMemo<WebSocketContextValue>(() => ({
     status,
     isConnected: status === 'connected',
     subscribe,
     unsubscribe,
     subscribedSymbols,
-  };
+  }), [status, subscribe, unsubscribe, subscribedSymbols]);
 
   return (
     <WebSocketContext.Provider value={value}>

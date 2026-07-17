@@ -58,35 +58,51 @@ export default function FundamentalsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAllData = async () => {
+  const fetchAllData = async (isCancelled: () => boolean = () => false) => {
     if (!cleanSymbol) {
+      if (isCancelled()) return;
       setLoading(false);
       setError(t("No symbol provided"));
       return;
     }
 
+    if (isCancelled()) return;
     setLoading(true);
     setError(null);
+
+    // A single hung FMP endpoint would leave the `await` (and the full-screen
+    // spinner) stuck forever. Abort the whole batch after a timeout so loading
+    // always resolves; on abort we fall through to the error + Retry path.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
     try {
       // Fetch all data in parallel
       const [profileRes, incomeRes, balanceRes, cashRes, ratiosRes, metricsRes] = await Promise.all([
-        fetch(`https://financialmodelingprep.com/api/v3/profile/${cleanSymbol}?apikey=${FMP_KEY}`),
-        fetch(`https://financialmodelingprep.com/api/v3/income-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`),
-        fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`),
-        fetch(`https://financialmodelingprep.com/api/v3/cash-flow-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`),
-        fetch(`https://financialmodelingprep.com/api/v3/ratios/${cleanSymbol}?limit=1&apikey=${FMP_KEY}`),
-        fetch(`https://financialmodelingprep.com/api/v3/key-metrics/${cleanSymbol}?limit=1&apikey=${FMP_KEY}`),
+        fetch(`https://financialmodelingprep.com/api/v3/profile/${cleanSymbol}?apikey=${FMP_KEY}`, { signal: controller.signal }),
+        fetch(`https://financialmodelingprep.com/api/v3/income-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`, { signal: controller.signal }),
+        fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`, { signal: controller.signal }),
+        fetch(`https://financialmodelingprep.com/api/v3/cash-flow-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`, { signal: controller.signal }),
+        fetch(`https://financialmodelingprep.com/api/v3/ratios/${cleanSymbol}?limit=1&apikey=${FMP_KEY}`, { signal: controller.signal }),
+        fetch(`https://financialmodelingprep.com/api/v3/key-metrics/${cleanSymbol}?limit=1&apikey=${FMP_KEY}`, { signal: controller.signal }),
       ]);
 
+      // Route error HTTP statuses to the error state instead of parsing them as
+      // data. Each endpoint is tolerated independently so a single failing one
+      // doesn't wipe out data that did load (handled by hasUsableData below).
       const [profileData, incomeData, balanceData, cashData, ratiosData, metricsData] = await Promise.all([
-        profileRes.json(),
-        incomeRes.json(),
-        balanceRes.json(),
-        cashRes.json(),
-        ratiosRes.json(),
-        metricsRes.json(),
+        profileRes.ok ? profileRes.json() : null,
+        incomeRes.ok ? incomeRes.json() : [],
+        balanceRes.ok ? balanceRes.json() : [],
+        cashRes.ok ? cashRes.json() : [],
+        ratiosRes.ok ? ratiosRes.json() : null,
+        metricsRes.ok ? metricsRes.json() : null,
       ]);
+
+      clearTimeout(timeoutId);
+
+      // Skip applying a stale response (symbol changed / unmounted mid-fetch)
+      if (isCancelled()) return;
 
       if (profileData?.[0]) setProfile(profileData[0]);
       if (Array.isArray(incomeData)) setIncomeStatement(incomeData);
@@ -112,15 +128,18 @@ export default function FundamentalsTab() {
       }
 
     } catch (err: any) {
-
+      if (isCancelled()) return;
       setError(t("Unable to load fundamentals"));
     } finally {
-      setLoading(false);
+      clearTimeout(timeoutId);
+      if (!isCancelled()) setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (cleanSymbol) fetchAllData();
+    let cancelled = false;
+    if (cleanSymbol) fetchAllData(() => cancelled);
+    return () => { cancelled = true; };
   }, [cleanSymbol]);
 
   // Formatting helpers
@@ -195,7 +214,7 @@ export default function FundamentalsTab() {
       {error && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={fetchAllData} style={styles.retryBtn}>
+          <TouchableOpacity onPress={() => fetchAllData()} style={styles.retryBtn}>
             <Text style={styles.retryText}>{t('Retry')}</Text>
           </TouchableOpacity>
         </View>

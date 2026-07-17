@@ -62,19 +62,21 @@ export default function EarningsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchEarnings = async () => {
+  const fetchEarnings = async (isCancelled: () => boolean = () => false) => {
     if (!cleanSymbol) {
+      if (isCancelled()) return;
       setLoading(false);
       setError(t('No symbol provided'));
       return;
     }
 
+    if (isCancelled()) return;
     setLoading(true);
     setError(null);
 
     try {
-      
-      
+
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -90,11 +92,13 @@ export default function EarningsTab() {
       }
 
       const data = await response.json();
-      
+
+      // Skip applying a stale response (symbol changed / unmounted mid-fetch)
+      if (isCancelled()) return;
 
       if (data && Array.isArray(data) && data.length > 0) {
         // Sort by date, most recent first
-        const sorted = data.sort((a: EarningsData, b: EarningsData) => 
+        const sorted = data.sort((a: EarningsData, b: EarningsData) =>
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
         setEarnings(sorted.slice(0, 20)); // Last 20 earnings reports
@@ -104,26 +108,27 @@ export default function EarningsTab() {
         setError(`No earnings data available for ${cleanSymbol}`);
       }
     } catch (err: any) {
-      
-      
+      if (isCancelled()) return;
+
       const errorMessage = err.name === 'AbortError'
         ? t('Request timeout. Please try again.')
         : err.message?.includes('Network')
         ? t('Network error. Check your connection.')
         : `Unable to load earnings data for ${cleanSymbol}`;
-      
+
       setError(errorMessage);
       setEarnings([]);
     } finally {
-      setLoading(false);
+      if (!isCancelled()) setLoading(false);
     }
   };
 
   useEffect(() => {
-    
+    let cancelled = false;
     if (cleanSymbol) {
-      fetchEarnings();
+      fetchEarnings(() => cancelled);
     }
+    return () => { cancelled = true; };
   }, [cleanSymbol]);
 
   const handleRetry = () => {

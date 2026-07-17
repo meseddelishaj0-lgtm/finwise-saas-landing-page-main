@@ -120,8 +120,9 @@ export default function SentimentTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSentiment = useCallback(async (skipCache = false) => {
+  const fetchSentiment = useCallback(async (skipCache = false, isCancelled: () => boolean = () => false) => {
     if (!cleanSymbol) {
+      if (isCancelled()) return;
       setLoading(false);
       setError('No symbol provided');
       return;
@@ -136,6 +137,7 @@ export default function SentimentTab() {
         if (cached) {
           const { sentimentData, ratingsData, timestamp } = JSON.parse(cached);
           if (Date.now() - timestamp < SENTIMENT_CACHE_TTL) {
+            if (isCancelled()) return;
             if (sentimentData) setSentiment(sentimentData);
             if (ratingsData) setRatings(ratingsData);
             setLoading(false);
@@ -147,6 +149,7 @@ export default function SentimentTab() {
       }
     }
 
+    if (isCancelled()) return;
     if (sentiment.length === 0 && !ratings) {
       setLoading(true);
     }
@@ -180,7 +183,6 @@ export default function SentimentTab() {
           const daily = processSentiment(sentimentData);
           if (daily.length > 0) {
             newSentiment = daily;
-            setSentiment(daily);
           }
         }
       }
@@ -190,9 +192,14 @@ export default function SentimentTab() {
         const ratingsData = await ratingsRes.json();
         if (ratingsData && Array.isArray(ratingsData) && ratingsData.length > 0) {
           newRatings = ratingsData[0];
-          setRatings(newRatings);
         }
       }
+
+      // Skip applying a stale response (symbol changed / unmounted mid-fetch)
+      if (isCancelled()) return;
+
+      if (newSentiment) setSentiment(newSentiment);
+      if (newRatings) setRatings(newRatings);
 
       // Cache the data
       if (newSentiment || newRatings) {
@@ -209,6 +216,7 @@ export default function SentimentTab() {
 
       setError(null);
     } catch (err: any) {
+      if (isCancelled()) return;
       // Only show error if we don't have cached data
       if (sentiment.length === 0 && !ratings) {
         const errorMessage = err.name === 'AbortError'
@@ -219,15 +227,16 @@ export default function SentimentTab() {
         setError(errorMessage);
       }
     } finally {
-      setLoading(false);
+      if (!isCancelled()) setLoading(false);
     }
   }, [cleanSymbol, sentiment.length, ratings]);
 
   useEffect(() => {
-    
+    let cancelled = false;
     if (cleanSymbol) {
-      fetchSentiment();
+      fetchSentiment(false, () => cancelled);
     }
+    return () => { cancelled = true; };
   }, [cleanSymbol]);
 
   const handleRetry = () => {
