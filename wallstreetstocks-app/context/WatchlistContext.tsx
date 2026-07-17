@@ -210,7 +210,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         try {
           await fetch(`${API_URL}/api/watchlist`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
             body: JSON.stringify({ userId, ticker: upperSymbol }),
           });
         } catch (apiErr) {
@@ -242,6 +242,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       try {
         await fetch(`${API_URL}/api/watchlist?userId=${userId}&ticker=${upperSymbol}`, {
           method: 'DELETE',
+          headers: await buildAuthHeaders(userId),
         });
       } catch (apiErr) {
       }

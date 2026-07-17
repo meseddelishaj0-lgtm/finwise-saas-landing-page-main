@@ -3,6 +3,7 @@ import { PrismaClient } from "@/generated/prisma/client/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { syncDiamondVerification } from '@/lib/verification';
 import { getVerifiedSubscription } from '@/lib/verifySubscription';
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -151,6 +152,13 @@ export async function PUT(
     if (isNaN(userId)) {
       await prisma.$disconnect();
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
+    }
+
+    // Only the account owner may edit this profile (token must match the id).
+    const _auth = resolveMobileUserId(req, userId);
+    if (!_auth.ok) {
+      await prisma.$disconnect();
+      return NextResponse.json({ error: _auth.error }, { status: _auth.status });
     }
 
     const body = await req.json();

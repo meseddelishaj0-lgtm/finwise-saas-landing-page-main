@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 import { PrismaClient } from "@/generated/prisma/client/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import prisma from "@/lib/prisma";
@@ -15,6 +16,8 @@ function createFreshPrisma() {
 export async function POST(req: NextRequest) {
   try {
     const { postId, commentId, userId } = await req.json();
+    const _auth = resolveMobileUserId(req, userId);
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
 
     if (!userId) {
       return NextResponse.json({ error: "userId is required" }, { status: 401 });

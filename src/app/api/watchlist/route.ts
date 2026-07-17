@@ -1,6 +1,7 @@
 // api/watchlist/route.ts
 // User watchlist for tracking stocks
 import { NextRequest, NextResponse } from "next/server";
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 import prisma from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { userId, ticker, notes } = await req.json();
+    const _auth = resolveMobileUserId(req, userId);
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
 
     if (!userId || !ticker) {
       return NextResponse.json(
@@ -79,6 +82,8 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId");
     const ticker = searchParams.get("ticker");
+    const _authDel = resolveMobileUserId(req, userId);
+    if (!_authDel.ok) return NextResponse.json({ error: _authDel.error }, { status: _authDel.status });
 
     if (!userId || !ticker) {
       return NextResponse.json(

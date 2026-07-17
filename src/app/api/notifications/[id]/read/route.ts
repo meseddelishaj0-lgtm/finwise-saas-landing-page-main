@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 import prisma from "@/lib/prisma";
 
 // POST /api/notifications/:id/read - Mark notification as read
@@ -8,6 +9,8 @@ export async function POST(
 ) {
   try {
     const { userId } = await req.json();
+    const _auth = resolveMobileUserId(req, userId);
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
 
     if (!userId) {
       return NextResponse.json({ error: "userId is required" }, { status: 401 });

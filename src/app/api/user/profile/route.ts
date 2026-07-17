@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getVerifiedSubscription } from '@/lib/verifySubscription';
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,11 @@ export async function PUT(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
+
+    // Only the profile's owner may edit it (token-verified; legacy x-user-id
+    // fallback until STRICT_MOBILE_AUTH is enabled).
+    const _auth = resolveMobileUserId(request, userId);
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
 
     const numericUserId = parseInt(userId);
 

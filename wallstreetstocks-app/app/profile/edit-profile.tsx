@@ -1,5 +1,6 @@
 // app/profile/edit-profile.tsx
 import React, { useState } from 'react';
+import { buildAuthHeaders } from '../../lib/authHeaders';
 import { 
   View, 
   Text, 
@@ -285,10 +286,10 @@ export default function EditProfile() {
         // Use /api/user/:id endpoint which is more reliable
         const response = await fetch(`${API_BASE_URL}/api/user/${userId}`, {
           method: 'PUT',
-          headers: {
+          headers: await buildAuthHeaders(undefined, {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
-          },
+          }),
           body: JSON.stringify(payload),
         });
 

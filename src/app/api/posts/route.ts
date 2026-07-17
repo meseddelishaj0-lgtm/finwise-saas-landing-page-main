@@ -1,5 +1,6 @@
 // api/posts/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 import { PrismaClient, Prisma } from "@/generated/prisma/client/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import prisma from "@/lib/prisma";
@@ -147,6 +148,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { title, content, forumId, userId, ticker, mediaUrl } = await req.json();
+    const _auth = resolveMobileUserId(req, userId);
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
 
     if (!userId) {
       return NextResponse.json({ error: "userId is required" }, { status: 401 });

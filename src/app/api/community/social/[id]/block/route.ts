@@ -1,5 +1,6 @@
 // app/api/community/users/[id]/block/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 import { prisma } from '../../../../../../lib/prisma';
 
 export async function POST(
@@ -8,6 +9,8 @@ export async function POST(
 ) {
   try {
     const { userId } = await request.json();
+    const _auth = resolveMobileUserId(request, userId);
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
     const targetUserId = parseInt(params.id);
 
     if (!userId) {
@@ -110,6 +113,8 @@ export async function GET(
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const _authS = resolveMobileUserId(request, userId);
+    if (!_authS.ok) return NextResponse.json({ error: _authS.error }, { status: _authS.status });
     const targetUserId = parseInt(params.id);
 
     if (!userId) {
@@ -148,6 +153,8 @@ export async function DELETE(
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const _authS = resolveMobileUserId(request, userId);
+    if (!_authS.ok) return NextResponse.json({ error: _authS.error }, { status: _authS.status });
     const targetUserId = parseInt(params.id);
 
     if (!userId) {

@@ -1,5 +1,6 @@
 // app/api/community/users/[id]/follow/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 import { prisma } from '../../../../../../lib/prisma';
 import { sendPushNotificationToUser, NotificationMessages } from '@/lib/pushNotifications';
 
@@ -9,6 +10,8 @@ export async function POST(
 ) {
   try {
     const { userId } = await request.json();
+    const _auth = resolveMobileUserId(request, userId);
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
     const targetUserId = parseInt(params.id);
 
     if (!userId) {
