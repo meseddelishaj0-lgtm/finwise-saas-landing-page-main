@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
     const forumSlug = searchParams.get("forum");
     const userId = searchParams.get("userId");
     const currentUserId = searchParams.get("currentUserId");
+    // Paginate — the feed was an unbounded findMany (returned every post).
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "50", 10) || 50, 1), 100);
+    const offset = Math.max(parseInt(searchParams.get("offset") || "0", 10) || 0, 0);
 
     const where: any = {};
 
@@ -67,6 +70,8 @@ export async function GET(req: NextRequest) {
         } : false,
       },
       orderBy: { createdAt: "desc" },
+      take: limit,
+      skip: offset,
     });
 
     // Fetch fresh user data using transaction to force reading from primary
@@ -83,7 +88,6 @@ export async function GET(req: NextRequest) {
           WHERE id IN (${Prisma.join(userIds)})
         `;
       });
-      console.log('📍 Posts API - Fresh user data:', users.map(u => ({ id: u.id, name: u.name })));
       users.forEach(u => usersMap.set(u.id, u));
     }
 
@@ -106,29 +110,39 @@ export async function GET(req: NextRequest) {
       userLikes.forEach(l => l.postId && userLikedPostIds.add(l.postId));
     }
 
-    // Add sentiment counts and isLiked to each post
-    const postsWithSentiment = await Promise.all(postsWithUsers.map(async (post) => {
-      const sentimentCounts = await freshPrisma.sentiment.groupBy({
-        by: ['type'],
-        where: { postId: post.id },
-        _count: { type: true },
-      });
+    // Sentiment split (bullish/bearish) for ALL posts in ONE grouped query,
+    // rather than a per-post groupBy (was an N+1 over an unbounded post set).
+    const pageIds = postsWithUsers.map(p => p.id);
+    const sentimentGroups = pageIds.length > 0
+      ? await freshPrisma.sentiment.groupBy({
+          by: ['postId', 'type'],
+          where: { postId: { in: pageIds } },
+          _count: { type: true },
+        })
+      : [];
+    const sentimentMap = new Map<number, { bullish: number; bearish: number }>();
+    for (const g of sentimentGroups) {
+      if (g.postId == null) continue;
+      const e = sentimentMap.get(g.postId) || { bullish: 0, bearish: 0 };
+      if (g.type === 'bullish') e.bullish = g._count.type;
+      else if (g.type === 'bearish') e.bearish = g._count.type;
+      sentimentMap.set(g.postId, e);
+    }
 
-      const bullish = sentimentCounts.find(s => s.type === 'bullish')?._count.type || 0;
-      const bearish = sentimentCounts.find(s => s.type === 'bearish')?._count.type || 0;
-
+    const postsWithSentiment = postsWithUsers.map((post) => {
+      const s = sentimentMap.get(post.id) || { bullish: 0, bearish: 0 };
       return {
         ...post,
         tickers: post.tickerMentions.map(tm => tm.ticker),
         isLiked: userLikedPostIds.has(post.id),
         sentiment: {
-          bullish,
-          bearish,
-          total: bullish + bearish,
+          bullish: s.bullish,
+          bearish: s.bearish,
+          total: s.bullish + s.bearish,
           userVote: post.sentiments?.[0]?.type || null,
         },
       };
-    }));
+    });
 
     await freshPrisma.$disconnect();
 

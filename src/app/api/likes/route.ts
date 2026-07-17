@@ -57,12 +57,25 @@ export async function POST(req: NextRequest) {
 
       return NextResponse.json({ liked: false, likesCount }, { status: 200 });
     } else {
-      await prisma.like.create({
-        data: {
-          userId: user.id,
-          ...(postId ? { postId } : { commentId })
+      try {
+        await prisma.like.create({
+          data: {
+            userId: user.id,
+            ...(postId ? { postId } : { commentId })
+          }
+        });
+      } catch (e: any) {
+        // Unique (userId+postId / userId+commentId): a concurrent double-tap
+        // already created the like. Return current state without 500-ing or
+        // sending a duplicate notification.
+        if (e?.code === 'P2002') {
+          const likesCount = await prisma.like.count({
+            where: postId ? { postId } : { commentId },
+          });
+          return NextResponse.json({ liked: true, likesCount }, { status: 200 });
         }
-      });
+        throw e;
+      }
 
       const likesCount = await prisma.like.count({
         where: postId ? { postId } : { commentId }

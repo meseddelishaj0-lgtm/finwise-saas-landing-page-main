@@ -142,6 +142,7 @@ model Comment {
 
   @@index([postId])
   @@index([parentId])
+  @@index([userId])
 }
 
 model Like {
@@ -155,6 +156,14 @@ model Like {
   comment Comment? @relation(fields: [commentId], references: [id])
 
   createdAt DateTime @default(now())
+
+  // One like per user per post / per comment (nulls are distinct, so a
+  // post-like and a comment-like from the same user don't collide — same
+  // pattern as Reaction). Prevents duplicate likes from double-taps.
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+  @@index([postId])
+  @@index([commentId])
 }
 
 model CommentLike {
@@ -183,6 +192,8 @@ model Reaction {
 
   @@unique([userId, postId, emoji])
   @@unique([userId, commentId, emoji])
+  @@index([postId])
+  @@index([commentId])
 }
 
 model Follow {
@@ -210,6 +221,11 @@ model Notification {
   fromUser User? @relation("NotificationFromUser", fields: [fromUserId], references: [id])
   user     User  @relation("NotificationReceiver", fields: [userId], references: [id])
   post     Post? @relation(fields: [postId], references: [id])
+
+  // Hottest table — polled on every foreground. These back the two live
+  // queries (unread filter + createdAt-ordered list / mark-all-read).
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }
 
 model Report {
