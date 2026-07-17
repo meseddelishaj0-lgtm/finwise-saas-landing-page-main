@@ -81,6 +81,12 @@ export const useAuth = create<AuthState>()(
             const { user: cachedUser } = get();
 
             if (cachedUser?.id) {
+              // Keep AsyncStorage 'userId' in sync with the restored session.
+              // Messages, price-alerts and ~15 other screens read this key
+              // directly, but it was only written on the login/signup paths —
+              // so after a session restore it could be missing, silently
+              // breaking those screens for an otherwise-logged-in user.
+              await AsyncStorage.setItem('userId', cachedUser.id.toString());
               // We have cached user data, try to refresh it
               try {
                 const response = await fetch(`${API_URL}/api/user/${cachedUser.id}`, {
