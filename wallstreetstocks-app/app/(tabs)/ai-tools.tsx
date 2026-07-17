@@ -26,8 +26,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
-// OpenAI API - calls should go through backend API
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
+// AI calls go through our server proxy — the OpenAI key lives ONLY on the
+// server (OPENAI_API_KEY), never in the app bundle.
+const AI_API_URL = 'https://www.wallstreetstocks.ai/api/ai/complete';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -296,12 +297,9 @@ export default function AITools() {
       const isUndervalued = dcfDiffPercent != null ? dcfDiffPercent > 0 : false;
 
       // Use OpenAI for AI analysis
-      const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      const aiResponse = await fetch(AI_API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
@@ -485,11 +483,11 @@ Return ONLY a JSON object:
       const stock2 = buildStockData(quote2, dcf2, ratios2, growth2);
 
       // AI Analysis for comparison
-      const aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      const aiResponse = await fetch(AI_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'gpt-4o-mini',
           max_tokens: 800,
           messages: [{
             role: 'user',
@@ -515,7 +513,7 @@ Return JSON only:
       const aiData = await aiResponse.json();
       let parsedAI;
       try {
-        parsedAI = JSON.parse(aiData.content?.[0]?.text || '{}');
+        parsedAI = JSON.parse(aiData.choices?.[0]?.message?.content || '{}');
       } catch {
         parsedAI = {
           winner: 'TIE',
@@ -587,12 +585,9 @@ Return JSON only:
       const low52w = quote.yearLow || Math.min(...prices);
 
       // Use OpenAI for forecast analysis
-      const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      const aiResponse = await fetch(AI_API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
@@ -707,12 +702,9 @@ Always remind users that this is educational information, not financial advice.`
         { role: 'user', content: input }
       ];
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch(AI_API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: conversationHistory,
