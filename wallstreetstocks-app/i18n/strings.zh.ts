@@ -1703,5 +1703,13 @@ const strings: Record<string, string> = {
   "Real-Time SEC Filings": "实时 SEC 文件",
   "Buy/Sell Activity Tracking": "买卖活动追踪",
   "Executive Trade Details": "高管交易明细",
+  "Join": "加入",
+  "investors already on WallStreetStocks": "位投资者已在使用 WallStreetStocks",
+  "Pick your edge": "选择您的优势",
+  "7-day free trial on every plan. Cancel anytime.": "所有方案均含 7 天免费试用，随时可取消。",
+  "month": "月",
+  "Start my free trial": "开始免费试用",
+  "Maybe later — continue with the free plan": "以后再说——继续使用免费版",
+  "15 Picks + AI Tools": "15 只精选股 + AI 工具",
 };
 export default strings;

@@ -1703,5 +1703,13 @@ const strings: Record<string, string> = {
   "Real-Time SEC Filings": "Depositi SEC in tempo reale",
   "Buy/Sell Activity Tracking": "Monitoraggio acquisti/vendite",
   "Executive Trade Details": "Dettagli operazioni dei dirigenti",
+  "Join": "Unisciti a",
+  "investors already on WallStreetStocks": "investitori già su WallStreetStocks",
+  "Pick your edge": "Scegli il tuo vantaggio",
+  "7-day free trial on every plan. Cancel anytime.": "7 giorni di prova gratuita su ogni piano. Annulla quando vuoi.",
+  "month": "mese",
+  "Start my free trial": "Inizia la prova gratuita",
+  "Maybe later — continue with the free plan": "Più tardi — continua con il piano gratuito",
+  "15 Picks + AI Tools": "15 pick + strumenti IA",
 };
 export default strings;

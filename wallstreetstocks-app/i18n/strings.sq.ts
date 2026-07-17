@@ -1703,5 +1703,13 @@ const strings: Record<string, string> = {
   "Real-Time SEC Filings": "Dosje SEC në kohë reale",
   "Buy/Sell Activity Tracking": "Ndjekje e blerjeve/shitjeve",
   "Executive Trade Details": "Detaje të tregtimeve të drejtuesve",
+  "Join": "Bashkohu me",
+  "investors already on WallStreetStocks": "investitorë që tashmë përdorin WallStreetStocks",
+  "Pick your edge": "Zgjidh avantazhin tënd",
+  "7-day free trial on every plan. Cancel anytime.": "7 ditë provë falas në çdo plan. Anulo kurdo.",
+  "month": "muaj",
+  "Start my free trial": "Fillo provën falas",
+  "Maybe later — continue with the free plan": "Ndoshta më vonë — vazhdo me planin falas",
+  "15 Picks + AI Tools": "15 përzgjedhje + vegla IA",
 };
 export default strings;

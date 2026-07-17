@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@/lib/auth';
 
 const WATCHLIST_KEY = 'user_watchlist';
 const API_URL = 'https://www.wallstreetstocks.ai';
@@ -30,19 +31,42 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   // Debounce timer ref for optimized saves
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingWatchlistRef = useRef<string[]>([]);
+  const scopedKeyRef = useRef<string>('');
 
-  // Load watchlist from AsyncStorage on mount
+  // Watchlist is stored PER USER — a shared device-wide key let a new
+  // registration inherit the previous account's watchlist.
+  const authUserId = useAuth((state: any) => (state.user?.id ? String(state.user.id) : null));
+  const scopedKey = authUserId ? `${WATCHLIST_KEY}:${authUserId}` : `${WATCHLIST_KEY}:anon`;
+  scopedKeyRef.current = scopedKey;
+
+  // Load watchlist whenever the signed-in user changes
   const loadWatchlist = useCallback(async () => {
+    setWatchlistLoading(true);
+    setInitialized(false);
+    setWatchlist([]);
     try {
-      const saved = await AsyncStorage.getItem(WATCHLIST_KEY);
+      let saved = await AsyncStorage.getItem(scopedKey);
+
+      // One-time adoption of the old shared key by the device's current user
+      if (!saved && authUserId) {
+        const legacy = await AsyncStorage.getItem(WATCHLIST_KEY);
+        const claimed = await AsyncStorage.getItem('user_watchlist_claimed');
+        if (legacy && !claimed) {
+          await AsyncStorage.setItem(scopedKey, legacy);
+          await AsyncStorage.setItem('user_watchlist_claimed', authUserId);
+          await AsyncStorage.removeItem(WATCHLIST_KEY);
+          saved = legacy;
+        }
+      }
+
       if (saved) {
         const parsed = JSON.parse(saved);
         setWatchlist(parsed);
       } else {
-        // Default watchlist for new users
+        // Default watchlist for new users (onboarding replaces/extends it)
         const defaultWatchlist = ['NVDA', 'GOOGL', 'AMZN', 'META'];
         setWatchlist(defaultWatchlist);
-        await AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(defaultWatchlist));
+        await AsyncStorage.setItem(scopedKey, JSON.stringify(defaultWatchlist));
       }
     } catch (err) {
       setWatchlist(['NVDA', 'GOOGL', 'AMZN', 'META']);
@@ -50,9 +74,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       setWatchlistLoading(false);
       setInitialized(true);
     }
-  }, []);
+  }, [scopedKey, authUserId]);
 
-  // Load on mount
+  // Load on mount and on account switch
   useEffect(() => {
     loadWatchlist();
   }, [loadWatchlist]);
@@ -72,7 +96,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     // Set new debounced save
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-        await AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(pendingWatchlistRef.current));
+        await AsyncStorage.setItem(scopedKey, JSON.stringify(pendingWatchlistRef.current));
       } catch (err) {
       }
     }, SAVE_DEBOUNCE_MS);
@@ -83,7 +107,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [watchlist, initialized]);
+  }, [watchlist, initialized, scopedKey]);
 
   // Ensure save happens on unmount if pending
   useEffect(() => {
@@ -91,7 +115,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
         // Force immediate save on unmount
-        AsyncStorage.setItem(WATCHLIST_KEY, JSON.stringify(pendingWatchlistRef.current)).catch(() => {});
+        if (scopedKeyRef.current) {
+          AsyncStorage.setItem(scopedKeyRef.current, JSON.stringify(pendingWatchlistRef.current)).catch(() => {});
+        }
       }
     };
   }, []);

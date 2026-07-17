@@ -109,7 +109,7 @@ const ALERT_CATEGORIES = [
   { key: 'messages', label: 'Messages', emoji: '💬' },
 ];
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 
 // ---------------------------------------------------------------- screen
 
@@ -127,6 +127,7 @@ export default function Onboarding() {
   const [quotes, setQuotes] = useState<Record<string, { price: number; changePct: number }>>({});
   const [saving, setSaving] = useState(false);
   const [savedCounts, setSavedCounts] = useState({ watch: 0, holdings: 0 });
+  const [selectedPlan, setSelectedPlan] = useState('diamond');
 
   const progress = useSharedValue(1 / TOTAL_STEPS);
   useEffect(() => {
@@ -532,25 +533,90 @@ export default function Onboarding() {
             </View>
           </Animated.View>
         </View>
-        <TouchableOpacity
-          style={styles.premiumLink}
-          onPress={async () => {
-            await completeOnboarding();
-            router.push('/paywall' as any);
-          }}
-        >
-          <Text style={styles.premiumLinkText}>💎 {t('Explore Premium — AI picks, forecasts & more')}</Text>
-        </TouchableOpacity>
-        <CTA label={t('Start investing')} onPress={completeOnboarding} />
+        <CTA label={t('Continue')} onPress={next} />
       </Animated.View>
     );
   };
 
-  const steps = [renderWelcome, renderInterests, renderWatchlist, renderPortfolio, renderAlerts, renderDone];
+  const PLANS = [
+    { key: 'gold', name: 'Gold', price: '$4.99', tag: null, emoji: '🥇', features: ['5 Expert Stock Picks', 'Ad-free experience'] },
+    { key: 'platinum', name: 'Platinum', price: '$6.99', tag: 'MOST POPULAR', emoji: '🏆', features: ['8 Expert Stock Picks', 'Real-time price alerts'] },
+    { key: 'diamond', name: 'Diamond', price: '$9.99', tag: 'BEST VALUE', emoji: '💎', features: ['15 Picks + AI Tools', 'Verified Profile Badge'] },
+  ];
+
+  const renderPlans = () => (
+    <Animated.View key="s6" entering={FadeInRight.duration(300)} style={styles.stepWrap}>
+      <Animated.View entering={FadeInUp.delay(100)} style={styles.socialProof}>
+        <Text style={styles.socialProofStars}>★★★★★</Text>
+        <Text style={styles.socialProofTitle}>
+          {t('Join')} <Text style={{ color: GOLD }}>2,000+</Text> {t('investors already on WallStreetStocks')}
+        </Text>
+      </Animated.View>
+      <Text style={styles.stepTitle}>{t('Pick your edge')}</Text>
+      <Text style={styles.stepSub}>{t('7-day free trial on every plan. Cancel anytime.')}</Text>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        {PLANS.map((plan, i) => {
+          const on = selectedPlan === plan.key;
+          return (
+            <Animated.View key={plan.key} entering={FadeInUp.delay(120 * i).springify()}>
+              <TouchableOpacity
+                style={[styles.planCard, on && styles.planCardOn]}
+                onPress={() => {
+                  tap();
+                  setSelectedPlan(plan.key);
+                }}
+                activeOpacity={0.85}
+              >
+                {plan.tag && (
+                  <View style={[styles.planTag, plan.key === 'diamond' && { backgroundColor: '#B9F2FF' }]}>
+                    <Text style={styles.planTagText}>{t(plan.tag)}</Text>
+                  </View>
+                )}
+                <View style={styles.planTop}>
+                  <Text style={styles.planEmoji}>{plan.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.planName, on && { color: GOLD }]}>{plan.name}</Text>
+                    <Text style={styles.planPrice}>
+                      {plan.price}
+                      <Text style={styles.planPer}>/{t('month')}</Text>
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={on ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={24}
+                    color={on ? GOLD : '#555'}
+                  />
+                </View>
+                {plan.features.map((f) => (
+                  <View key={f} style={styles.planFeatureRow}>
+                    <Ionicons name="checkmark" size={13} color={GOLD} />
+                    <Text style={styles.planFeature}>{t(f)}</Text>
+                  </View>
+                ))}
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        })}
+      </ScrollView>
+      <CTA
+        label={`${t('Start my free trial')} →`}
+        onPress={async () => {
+          thump();
+          await completeOnboarding();
+          router.push('/paywall' as any);
+        }}
+      />
+      <TouchableOpacity style={styles.freeLink} onPress={completeOnboarding}>
+        <Text style={styles.freeLinkText}>{t('Maybe later — continue with the free plan')}</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
+  const steps = [renderWelcome, renderInterests, renderWatchlist, renderPortfolio, renderAlerts, renderDone, renderPlans];
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header showBack={step > 0 && step < TOTAL_STEPS - 1} showSkip={step > 0 && step < TOTAL_STEPS - 1} />
+      <Header showBack={step > 0 && step < 5} showSkip={step > 0 && step < 5} />
       {steps[step]()}
     </SafeAreaView>
   );
@@ -736,6 +802,37 @@ const styles = StyleSheet.create({
   },
   summaryNum: { color: GOLD, fontSize: 24, fontWeight: '800' },
   summaryLabel: { color: '#999', fontSize: 12, marginTop: 2 },
+  socialProof: { alignItems: 'center', marginTop: 8, marginBottom: 4 },
+  socialProofStars: { color: GOLD, fontSize: 16, letterSpacing: 3 },
+  socialProofTitle: { color: '#CCC', fontSize: 13, fontWeight: '600', marginTop: 4, textAlign: 'center' },
+  planCard: {
+    backgroundColor: CARD,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.08)',
+    padding: 14,
+    marginBottom: 12,
+  },
+  planCardOn: { borderColor: GOLD, backgroundColor: 'rgba(255,214,10,0.07)' },
+  planTag: {
+    position: 'absolute',
+    top: -9,
+    right: 14,
+    backgroundColor: GOLD,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  planTagText: { color: '#000', fontSize: 9, fontWeight: '800', letterSpacing: 0.4 },
+  planTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  planEmoji: { fontSize: 26 },
+  planName: { color: '#FFF', fontSize: 17, fontWeight: '800' },
+  planPrice: { color: '#DDD', fontSize: 14, fontWeight: '700', marginTop: 1 },
+  planPer: { color: '#888', fontSize: 12, fontWeight: '500' },
+  planFeatureRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 3 },
+  planFeature: { color: '#BBB', fontSize: 12.5 },
+  freeLink: { alignItems: 'center', paddingVertical: 12 },
+  freeLinkText: { color: '#888', fontSize: 13, fontWeight: '600' },
   premiumLink: { alignItems: 'center', paddingVertical: 12 },
   premiumLinkText: { color: GOLD_DIM, fontSize: 14, fontWeight: '700' },
 
