@@ -43,6 +43,7 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [feedError, setFeedError] = useState(false);
 
   const fetchNotifications = async () => {
     try {
@@ -56,14 +57,15 @@ export default function Notifications() {
 
       if (res.ok) {
         const data = await res.json();
+        setFeedError(false);
         setNotifications(Array.isArray(data) ? data : []);
       } else {
-        
-        setNotifications([]);
+        // Request failed — keep any notifications already on screen and let the
+        // empty state show a retry instead of a misleading "No notifications".
+        setFeedError(true);
       }
     } catch (error) {
-      
-      setNotifications([]);
+      setFeedError(true);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -265,6 +267,20 @@ export default function Notifications() {
 
       {loading ? (
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+      ) : feedError && notifications.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="cloud-offline-outline" size={64} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>Couldn&apos;t load notifications</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+            Check your connection and try again.
+          </Text>
+          <TouchableOpacity
+            onPress={() => { setLoading(true); fetchNotifications(); }}
+            style={{ marginTop: 20, backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 }}
+          >
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : notifications.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="notifications-outline" size={64} color={colors.textTertiary} />
