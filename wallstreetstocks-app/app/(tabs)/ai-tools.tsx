@@ -834,15 +834,14 @@ Always remind users that this is educational information, not financial advice.`
                   <Text style={styles.premiumLockedTitle}>AI Stock Analyzer</Text>
                   <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
                   <Text style={styles.premiumLockedDescription}>
-                    Get DCF valuations, AI-powered analysis, strengths & risks assessment,
-                    and professional recommendations for any stock.
+                    {t('Get stock valuations, AI-powered analysis, strengths & risks assessment, and professional recommendations for any stock.')}
                   </Text>
 
                   <View style={styles.premiumFeaturesList}>
-                    {[t('Stock Valuation Analysis'), 'AI-Powered Insights', 'Buy/Sell Recommendations', 'Risk Assessment'].map((feature, idx) => (
+                    {['Stock Valuation Analysis', 'AI-Powered Insights', 'Buy/Sell Recommendations', 'Risk Assessment'].map((feature, idx) => (
                       <View key={idx} style={styles.premiumFeatureItem}>
                         <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
-                        <Text style={styles.premiumFeatureText}>{feature}</Text>
+                        <Text style={styles.premiumFeatureText}>{t(feature)}</Text>
                       </View>
                     ))}
                   </View>
@@ -928,7 +927,7 @@ Always remind users that this is educational information, not financial advice.`
               <View style={[styles.loadingCard, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color="#B8860B" />
                 <Text style={[styles.loadingText, { color: colors.text }]}>Analyzing {analyzerTicker}...</Text>
-                <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>Fetching DCF valuation & running AI analysis</Text>
+                <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>{t('Fetching stock valuation & running AI analysis')}</Text>
               </View>
             )}
 
@@ -1171,14 +1170,13 @@ Always remind users that this is educational information, not financial advice.`
                   <Text style={styles.premiumLockedTitle}>Stock Comparison</Text>
                   <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
                   <Text style={styles.premiumLockedDescription}>
-                    Compare two stocks side-by-side with DCF valuations,
-                    financial metrics, and AI-powered winner analysis.
+                    {t('Compare two stocks side-by-side with stock valuations, financial metrics, and AI-powered winner analysis.')}
                   </Text>
                   <View style={styles.premiumFeaturesList}>
-                    {['Side-by-side Analysis', 'DCF Value Comparison', 'AI Winner Selection', 'Key Metrics Grid'].map((feature, idx) => (
+                    {['Side-by-side Analysis', 'Stock Value Comparison', 'AI Winner Selection', 'Key Metrics Grid'].map((feature, idx) => (
                       <View key={idx} style={styles.premiumFeatureItem}>
                         <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
-                        <Text style={styles.premiumFeatureText}>{feature}</Text>
+                        <Text style={styles.premiumFeatureText}>{t(feature)}</Text>
                       </View>
                     ))}
                   </View>
@@ -1494,7 +1492,7 @@ Always remind users that this is educational information, not financial advice.`
                     {['Price Target Forecasts', 'Probability Analysis', 'Technical Signals', 'Risk & Catalyst Alerts'].map((feature, idx) => (
                       <View key={idx} style={styles.premiumFeatureItem}>
                         <Ionicons name="checkmark-circle" size={18} color="#B9F2FF" />
-                        <Text style={styles.premiumFeatureText}>{feature}</Text>
+                        <Text style={styles.premiumFeatureText}>{t(feature)}</Text>
                       </View>
                     ))}
                   </View>
