@@ -1,5 +1,10 @@
 // Auto-generated screen strings (it). Keys are the English strings.
 const strings: Record<string, string> = {
+  // Price-alert auto-direction labels
+  "Auto": "Auto",
+  "reaches": "raggiunge",
+  "Auto picks above or below based on the current price.": "Auto sceglie sopra o sotto in base al prezzo attuale.",
+  "Automatic (based on target price)": "Automatico (in base al prezzo obiettivo)",
   " one-time": "una tantum",
   "\"The AI insights alone are worth the subscription. I've discovered so many great research opportunities!\"": "Le analisi dell'IA da sole valgono l'abbonamento. Ho scoperto tantissime ottime opportunità di ricerca!",
   "% avg volatility": "% volatilità media",

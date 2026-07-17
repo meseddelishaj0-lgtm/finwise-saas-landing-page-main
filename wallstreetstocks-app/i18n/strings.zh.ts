@@ -1,5 +1,10 @@
 // Auto-generated screen strings (zh). Keys are the English strings.
 const strings: Record<string, string> = {
+  // Price-alert auto-direction labels
+  "Auto": "自动",
+  "reaches": "达到",
+  "Auto picks above or below based on the current price.": "自动会根据当前价格选择高于或低于。",
+  "Automatic (based on target price)": "自动（根据目标价格）",
   " one-time": " 一次性",
   "\"The AI insights alone are worth the subscription. I've discovered so many great research opportunities!\"": "“仅凭AI洞察就物超所值了，我发现了好多绝佳的研究机会！”",
   "% avg volatility": "% 平均波动率",

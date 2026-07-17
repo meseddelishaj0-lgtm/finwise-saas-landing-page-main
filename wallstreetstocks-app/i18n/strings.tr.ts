@@ -1,5 +1,10 @@
 // Auto-generated screen strings (tr). Keys are the English strings.
 const strings: Record<string, string> = {
+  // Price-alert auto-direction labels
+  "Auto": "Oto",
+  "reaches": "ulaştığında",
+  "Auto picks above or below based on the current price.": "Oto, güncel fiyata göre yukarı veya aşağıyı seçer.",
+  "Automatic (based on target price)": "Otomatik (hedef fiyata göre)",
   " one-time": " tek seferlik",
   "\"The AI insights alone are worth the subscription. I've discovered so many great research opportunities!\"": "\"Sadece YZ öngörüleri bile aboneliğe değer. Çok sayıda harika araştırma fırsatı keşfettim!\"",
   "% avg volatility": "% ort. volatilite",

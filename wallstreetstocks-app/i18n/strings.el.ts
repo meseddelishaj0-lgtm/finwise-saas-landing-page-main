@@ -1,5 +1,10 @@
 // Auto-generated screen strings (el). Keys are the English strings.
 const strings: Record<string, string> = {
+  // Price-alert auto-direction labels
+  "Auto": "Αυτόμ.",
+  "reaches": "φτάνει",
+  "Auto picks above or below based on the current price.": "Το Αυτόμ. επιλέγει πάνω ή κάτω με βάση την τρέχουσα τιμή.",
+  "Automatic (based on target price)": "Αυτόματο (με βάση την τιμή-στόχο)",
   " one-time": "μία φορά",
   "\"The AI insights alone are worth the subscription. I've discovered so many great research opportunities!\"": "Μόνο οι πληροφορίες AI αξίζουν τη συνδρομή. Έχω ανακαλύψει τόσες πολλές υπέροχες ευκαιρίες έρευνας!",
   "% avg volatility": "% μέση μεταβλητότητα",
