@@ -1024,7 +1024,7 @@ export default function Screener() {
     setSearchQuery('');
     setSearchResults([]);
     setShowSearchResults(false);
-    router.push(`/symbol/${symbol}` as any);
+    router.push(`/symbol/${symbol}/chart` as any);
   };
 
   const enrichStocksWithQuotes = async (stocks: Stock[]): Promise<Stock[]> => {
@@ -1172,7 +1172,7 @@ export default function Screener() {
     else { setSortBy(newSortBy); setSortOrder('desc'); }
   };
 
-  const handleStockPress = (symbol: string) => router.push(`/symbol/${symbol}` as any);
+  const handleStockPress = (symbol: string) => router.push(`/symbol/${symbol}/chart` as any);
 
   const filteredResults = results.filter(stock => {
     if (!searchQuery) return true;

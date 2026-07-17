@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     console.error("Login error:", error);
     await prisma.$disconnect();
     return NextResponse.json(
-      { error: "Internal server error", details: String(error) },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -316,6 +316,8 @@ export default function ChartTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>('1D');
+  const timeframeRef = useRef<Timeframe>('1D');
+  timeframeRef.current = timeframe;
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [pointerData, setPointerData] = useState<{ price: number; date: string; change: number } | null>(null);
 
@@ -509,14 +511,20 @@ export default function ChartTab() {
         if (prevClose > 0) setPreviousClose(prevClose);
         setError(null);
 
-        // Store correct previousClose in priceStore for watchlist consistency
-        priceStore.setQuote({
-          symbol: cleanSymbol,
-          price,
-          change,
-          changePercent,
-          previousClose: refPrice,
-        });
+        // Only publish the daily change to the shared priceStore from the 1D
+        // view. On 5D/1M/1Y/ALL the reference bar is that timeframe's first
+        // point, so `change`/`changePercent` are the multi-period move — writing
+        // them here would make the watchlist/home tabs show e.g. the 1-year % as
+        // "today's" change until a live tick corrects it.
+        if (timeframeRef.current === '1D') {
+          priceStore.setQuote({
+            symbol: cleanSymbol,
+            price,
+            change,
+            changePercent,
+            previousClose: refPrice,
+          });
+        }
       }
     } catch (err) {}
   }, [cleanSymbol, apiSymbol]);

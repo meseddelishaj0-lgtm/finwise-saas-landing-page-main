@@ -3,9 +3,12 @@ import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useWatchlist } from "../../../context/WatchlistContext";
 import { useStocks } from "../../../context/StockContext";
 import { useLanguage } from "@/context/LanguageContext";
+
+const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
 export default function SymbolHeader() {
   const { t } = useLanguage();
@@ -68,32 +71,66 @@ export default function SymbolHeader() {
     setLoading(false);
   };
 
-  const handleCreateAlert = () => {
+  const handleCreateAlert = async () => {
     if (!alertType || !priceValue) return;
-    
-    const alertPrice = parseFloat(priceValue).toFixed(2);
-    
-    // Save alert state
-    setHasActiveAlert(true);
-    setActiveAlertPrice(alertPrice);
-    setActiveAlertType(alertType);
-    
-    // Show confirmation
-    Alert.alert(
-      t("Alert Created ✓"),
-      `You'll be notified when ${currentSymbol} moves ${alertType} $${alertPrice}`,
-      [
-        {
-          text: t("OK"),
-          onPress: () => {
-            // Reset and close
-            setAlertType(null);
-            setPriceValue("");
-            setShowAlertModal(false);
-          }
-        }
-      ]
-    );
+
+    const price = parseFloat(priceValue);
+    if (isNaN(price) || price <= 0) {
+      Alert.alert(t("Error"), t("Please enter a valid price"));
+      return;
+    }
+    const alertPrice = price.toFixed(2);
+
+    setLoading(true);
+    try {
+      const userId = await AsyncStorage.getItem("userId");
+      if (!userId) {
+        Alert.alert(t("Error"), t("Please log in to create price alerts"));
+        return;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/price-alerts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          symbol: currentSymbol,
+          targetPrice: price,
+          direction: alertType,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        let data: any = {};
+        try { data = text ? JSON.parse(text) : {}; } catch {}
+        Alert.alert(t("Error"), data.error || t("Failed to create alert"));
+        return;
+      }
+
+      setHasActiveAlert(true);
+      setActiveAlertPrice(alertPrice);
+      setActiveAlertType(alertType);
+
+      Alert.alert(
+        t("Alert Created ✓"),
+        `You'll be notified when ${currentSymbol} moves ${alertType} $${alertPrice}`,
+        [
+          {
+            text: t("OK"),
+            onPress: () => {
+              setAlertType(null);
+              setPriceValue("");
+              setShowAlertModal(false);
+            },
+          },
+        ]
+      );
+    } catch (err) {
+      Alert.alert(t("Error"), t("Failed to create alert"));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRemoveAlert = () => {

@@ -5,6 +5,13 @@ import { sendPushNotificationToWatchlistUsers } from '@/lib/pushNotifications';
 
 export async function POST(request: NextRequest) {
   try {
+    // Admin-only: these broadcast to the entire user base. Require the admin
+    // key so they can't be used to push phishing to every device.
+    const authHeader = request.headers.get('authorization');
+    if (!process.env.ADMIN_API_KEY || authHeader !== `Bearer ${process.env.ADMIN_API_KEY}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { ticker, title, body: messageBody, alertType, price, change, percentChange } = body;
 

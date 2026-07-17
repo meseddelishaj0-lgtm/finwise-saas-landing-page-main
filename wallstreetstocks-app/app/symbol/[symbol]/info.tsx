@@ -227,11 +227,13 @@ export default function InfoTab() {
         {profile.ipoDate && (
           <InfoRow 
             label="IPO Date" 
-            value={new Date(profile.ipoDate).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })} 
+            value={(() => {
+              // Parse YYYY-MM-DD as local; new Date(str) is UTC midnight and
+              // renders the previous day in US timezones.
+              const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(profile.ipoDate || '');
+              const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(profile.ipoDate);
+              return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            })()}
           />
         )}
       </View>

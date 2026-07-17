@@ -35,6 +35,22 @@ import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+// Format an API date. FMP returns "YYYY-MM-DD"; `new Date(str)` parses it as
+// UTC midnight, which toLocaleDateString then renders as the PREVIOUS day in
+// US timezones. Parse the calendar parts as a local date to avoid the shift,
+// and guard missing/"N/A" values so nothing renders "Invalid Date".
+const fmtLocalDate = (
+  value: string | null | undefined,
+  opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' },
+  fallback = 'N/A',
+): string => {
+  if (!value || value === 'N/A') return fallback;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  const date = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(value);
+  if (isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString('en-US', opts);
+};
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
 
 // WebSocket handles all real-time prices - no API polling needed
@@ -1709,13 +1725,7 @@ export default function Explore() {
             <View style={styles.maBottomItem}>
               <Text style={[styles.maBottomLabel, { color: colors.textSecondary }]}>{t('Deal Date')}</Text>
               <Text style={[styles.maBottomValue, { color: colors.text }]}>
-                {item.dealDate && item.dealDate !== "N/A"
-                  ? new Date(item.dealDate).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })
-                  : t('N/A')}
+                {fmtLocalDate(item.dealDate, { month: 'short', day: 'numeric', year: 'numeric' }, t('N/A'))}
               </Text>
             </View>
             <View style={styles.maBottomItem}>
@@ -1768,11 +1778,7 @@ export default function Explore() {
             <View style={styles.ipoDetailItem}>
               <Text style={[styles.ipoDetailLabel, { color: colors.textSecondary }]}>{t('IPO Date')}</Text>
               <Text style={[styles.ipoDetailValue, { color: colors.text }]}>
-                {item.ipoDate ? new Date(item.ipoDate).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric'
-                }) : t('N/A')}
+                {fmtLocalDate(item.ipoDate, { month: 'short', day: 'numeric', year: 'numeric' }, t('N/A'))}
               </Text>
             </View>
             <View style={styles.ipoDetailItem}>
@@ -1832,23 +1838,13 @@ export default function Explore() {
             <View style={styles.dividendDetailItem}>
               <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>{t('Payment')}</Text>
               <Text style={[styles.dividendDetailValue, { color: colors.text }]}>
-                {item.paymentDate && item.paymentDate !== "N/A"
-                  ? new Date(item.paymentDate).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric'
-                    })
-                  : t('N/A')}
+                {fmtLocalDate(item.paymentDate, { month: 'short', day: 'numeric' }, t('N/A'))}
               </Text>
             </View>
             <View style={styles.dividendDetailItem}>
               <Text style={[styles.dividendDetailLabel, { color: colors.textSecondary }]}>{t('Ex-Date')}</Text>
               <Text style={[styles.dividendDetailValue, { color: colors.text }]}>
-                {item.recordDate && item.recordDate !== "N/A"
-                  ? new Date(item.recordDate).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric'
-                    })
-                  : t('N/A')}
+                {fmtLocalDate(item.recordDate, { month: 'short', day: 'numeric' }, t('N/A'))}
               </Text>
             </View>
           </View>
@@ -2124,12 +2120,7 @@ export default function Explore() {
                 <View>
                   <Text style={[styles.treasuryMainTitle, { color: colors.text }]}>{t('US Treasury Yields')}</Text>
                   <Text style={[styles.treasuryDateText, { color: colors.textSecondary }]}>
-                    {new Date(treasuryRates.date).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
+                    {fmtLocalDate(treasuryRates.date, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }, '')}
                   </Text>
                 </View>
                 <TouchableOpacity onPress={fetchTreasuryRates} style={[styles.treasuryRefreshBtn, { backgroundColor: colors.card }]}>

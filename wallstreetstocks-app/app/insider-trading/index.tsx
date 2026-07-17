@@ -191,10 +191,12 @@ export default function InsiderTradingScreen() {
   }, []);
 
   const formatCurrency = (value: number) => {
-    if (value >= 1000000000) return `$${(value / 1000000000).toFixed(1)}B`;
-    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `$${(value / 1000).toFixed(1)}K`;
-    return `$${value.toFixed(0)}`;
+    const sign = value < 0 ? '-' : '';
+    const v = Math.abs(value);
+    if (v >= 1000000000) return `${sign}$${(v / 1000000000).toFixed(1)}B`;
+    if (v >= 1000000) return `${sign}$${(v / 1000000).toFixed(1)}M`;
+    if (v >= 1000) return `${sign}$${(v / 1000).toFixed(1)}K`;
+    return `${sign}$${v.toFixed(0)}`;
   };
 
   const formatNumber = (value: number) => {

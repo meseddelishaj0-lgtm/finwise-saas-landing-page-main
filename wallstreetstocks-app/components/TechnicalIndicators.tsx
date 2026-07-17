@@ -28,6 +28,7 @@ import {
   interpretMACD,
 } from '../services/technicalIndicators';
 import { useLanguage } from '@/context/LanguageContext';
+import { priceStore } from '@/stores/priceStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const INDICATOR_HEIGHT = 100;
@@ -587,8 +588,12 @@ export default function TechnicalIndicators({
     // Determine if price is near bands
     let bandSignal = t('NEUTRAL');
     let bandColor = '#8E8E93';
-    if (currentBollinger && currentSMA20) {
-      const price = currentBollinger.middle_band;
+    // Compare the live price to the bands. Using middle_band (the SMA) as the
+    // "price" made upperDist/lowerDist always equal half the band width, so the
+    // signal could never fire — it was permanently NEUTRAL for every symbol.
+    const livePrice = priceStore.getQuote(symbol)?.price;
+    if (currentBollinger && livePrice && livePrice > 0) {
+      const price = livePrice;
       const upperDist = currentBollinger.upper_band - price;
       const lowerDist = price - currentBollinger.lower_band;
       const bandWidth = currentBollinger.upper_band - currentBollinger.lower_band;

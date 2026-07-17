@@ -131,7 +131,10 @@ export default function EarningsTab() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Parse YYYY-MM-DD as a local calendar date; `new Date(str)` treats it as
+    // UTC midnight and renders the previous day in US timezones.
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateString || '');
+    const date = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(dateString);
     return date.toLocaleDateString('en-US', { 
       year: 'numeric',
       month: 'short',
@@ -186,10 +189,27 @@ export default function EarningsTab() {
           earning.eps == null ||
           new Date(earning.date).getTime() > Date.now();
 
-        const epsBeat = eps > epsEstimated;
-        const revenueBeat = revenue > revenueEstimated;
+        // Only judge beat/miss when an estimate actually exists — otherwise a
+        // quarter with no estimate would be scored against a fabricated $0
+        // (any profit = "Beat", an exact meet = "Miss").
+        const hasEpsEst = earning.epsEstimated != null && earning.epsEstimated !== 0;
+        const hasRevEst = earning.revenueEstimated != null && earning.revenueEstimated !== 0;
+        const epsBeat = eps >= epsEstimated; // meet counts as beat
+        const revenueBeat = revenue >= revenueEstimated;
         const epsDiff = eps - epsEstimated;
         const revenueDiff = revenue - revenueEstimated;
+
+        // Overall verdict for the header badge
+        const anyMiss = (hasEpsEst && eps < epsEstimated) || (hasRevEst && revenue < revenueEstimated);
+        const hasAnyEst = hasEpsEst || hasRevEst;
+        const verdict: 'upcoming' | 'beat' | 'miss' | 'reported' =
+          isUpcoming ? 'upcoming' : !hasAnyEst ? 'reported' : anyMiss ? 'miss' : 'beat';
+        const verdictColor =
+          verdict === 'upcoming' ? '#FFD60A' : verdict === 'miss' ? '#FF1744' : verdict === 'beat' ? '#00C853' : '#8E8E93';
+        const verdictBg =
+          verdict === 'upcoming' ? '#B8860B20' : verdict === 'miss' ? '#FF174420' : verdict === 'beat' ? '#00C85320' : '#8E8E9320';
+        const verdictLabel =
+          verdict === 'upcoming' ? t('Upcoming') : verdict === 'miss' ? t('Miss') : verdict === 'beat' ? t('Beat') : t('Reported');
 
         return (
           <View key={`${earning.date}-${index}`} style={styles.card}>
@@ -201,15 +221,9 @@ export default function EarningsTab() {
                   {earning.time || t('N/A')} • Q{earning.fiscalDateEnding?.slice(5, 7) || '?'}
                 </Text>
               </View>
-              <View style={[
-                styles.badge,
-                { backgroundColor: isUpcoming ? '#B8860B20' : (epsBeat && revenueBeat) ? '#00C85320' : '#FF174420' }
-              ]}>
-                <Text style={[
-                  styles.badgeText,
-                  { color: isUpcoming ? '#FFD60A' : (epsBeat && revenueBeat) ? '#00C853' : '#FF1744' }
-                ]}>
-                  {isUpcoming ? t('Upcoming') : (epsBeat && revenueBeat) ? t('Beat') : t('Miss')}
+              <View style={[styles.badge, { backgroundColor: verdictBg }]}>
+                <Text style={[styles.badgeText, { color: verdictColor }]}>
+                  {verdictLabel}
                 </Text>
               </View>
             </View>
@@ -222,13 +236,17 @@ export default function EarningsTab() {
               </View>
               <View style={styles.metricRight}>
                 <Text style={styles.metricLabel}>{t('EPS (Expected)')}</Text>
-                <Text style={styles.metricValue}>${epsEstimated.toFixed(2)}</Text>
+                <Text style={styles.metricValue}>{hasEpsEst ? `$${epsEstimated.toFixed(2)}` : '—'}</Text>
               </View>
             </View>
             <View style={styles.differenceRow}>
               {isUpcoming ? (
                 <Text style={[styles.differenceText, { color: '#8E8E93' }]}>
                   {t('Report expected')} {formatDate(earning.date)}
+                </Text>
+              ) : !hasEpsEst ? (
+                <Text style={[styles.differenceText, { color: '#8E8E93' }]}>
+                  {t('No estimate available')}
                 </Text>
               ) : (
                 <Text style={[
@@ -252,17 +270,23 @@ export default function EarningsTab() {
                   </View>
                   <View style={styles.metricRight}>
                     <Text style={styles.metricLabel}>{t('Revenue (Expected)')}</Text>
-                    <Text style={styles.metricValue}>{formatCurrency(revenueEstimated)}</Text>
+                    <Text style={styles.metricValue}>{hasRevEst ? formatCurrency(revenueEstimated) : '—'}</Text>
                   </View>
                 </View>
                 <View style={styles.differenceRow}>
-                  <Text style={[
-                    styles.differenceText,
-                    { color: revenueBeat ? '#00C853' : '#FF1744' }
-                  ]}>
-                    {revenueBeat ? '↑' : '↓'} {formatCurrency(Math.abs(revenueDiff))}
-                    {revenueBeat ? ` ${t('above')}` : ` ${t('below')}`} {t('estimate')}
-                  </Text>
+                  {hasRevEst ? (
+                    <Text style={[
+                      styles.differenceText,
+                      { color: revenueBeat ? '#00C853' : '#FF1744' }
+                    ]}>
+                      {revenueBeat ? '↑' : '↓'} {formatCurrency(Math.abs(revenueDiff))}
+                      {revenueBeat ? ` ${t('above')}` : ` ${t('below')}`} {t('estimate')}
+                    </Text>
+                  ) : (
+                    <Text style={[styles.differenceText, { color: '#8E8E93' }]}>
+                      {t('No estimate available')}
+                    </Text>
+                  )}
                 </View>
               </>
             )}

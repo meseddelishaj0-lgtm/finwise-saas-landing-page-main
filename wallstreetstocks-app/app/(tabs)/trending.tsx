@@ -110,6 +110,12 @@ const STOCK_ROW_HEIGHT = 76; // Fixed row height for getItemLayout optimization
 const TAB_WS_SYMBOLS: Record<string, string[]> = {};
 
 // ETF symbols for indices tab filtering
+const CRYPTO_BASES = new Set([
+  'BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE', 'DOT', 'AVAX', 'LINK', 'MATIC',
+  'LTC', 'BCH', 'UNI', 'ATOM', 'XLM', 'TRX', 'ETC', 'FIL', 'APT', 'ARB',
+  'OP', 'NEAR', 'ICP', 'SHIB', 'PEPE', 'BNB', 'USDT', 'USDC',
+]);
+
 const ETF_SYMBOLS = new Set([
   'SPY', 'VOO', 'VTI', 'QQQ', 'IVV', 'VEA', 'IEFA', 'VWO', 'VTV', 'IEMG',
   'BND', 'AGG', 'VUG', 'IJR', 'IWM', 'VIG', 'SCHD', 'VYM', 'VGT', 'XLF',
@@ -421,11 +427,11 @@ export default function Trending() {
     if (filter === 'etfs') {
       items = items.filter(q => ETF_SYMBOLS.has(q.symbol));
     } else if (filter === 'forex') {
-      items = items.filter(q => q.symbol.includes('/') && !q.symbol.includes('USD') ? true :
-        (q.symbol.length === 7 && q.symbol.includes('/')) ||
-        ['EUR/USD', 'GBP/USD', 'USD/JPY', 'USD/CHF', 'AUD/USD', 'USD/CAD', 'NZD/USD',
-         'EUR/GBP', 'EUR/JPY', 'GBP/JPY', 'AUD/JPY', 'CAD/JPY', 'EUR/AUD', 'EUR/CAD',
-         'GBP/AUD', 'GBP/CHF', 'AUD/NZD', 'AUD/CAD', 'NZD/JPY', 'EUR/CHF'].includes(q.symbol)
+      // Currency pairs only. Crypto is stored under the same slash format
+      // (e.g. "BTC/USD"), so exclude symbols whose base is a crypto ticker —
+      // otherwise Bitcoin/Ethereum show up ranked among forex pairs.
+      items = items.filter(q =>
+        q.symbol.includes('/') && !CRYPTO_BASES.has(q.symbol.split('/')[0])
       );
     } else if (filter === 'stocks') {
       items = items.filter(q => !ETF_SYMBOLS.has(q.symbol) && !q.symbol.includes('/'));
@@ -458,8 +464,10 @@ export default function Trending() {
       let cleaned: StockItem[] = [];
 
       if (activeTab === "indices") {
-        // INDICES: Derive from ETF quotes in priceStore
-        cleaned = getMoversFromStore('etfs', 'gainers');
+        // INDICES: Derive from ETF quotes in priceStore. Use 'volatile' (all
+        // movers by absolute change) so red-day indices aren't dropped by a
+        // gainers-only (>0) filter.
+        cleaned = getMoversFromStore('etfs', 'volatile');
 
         // Fallback: use marketDataService if priceStore is empty
         if (cleaned.length === 0) {
@@ -473,8 +481,9 @@ export default function Trending() {
           })).sort((a, b) => b.changesPercentage - a.changesPercentage).slice(0, 50);
         }
       } else if (activeTab === "forex") {
-        // FOREX: Derive from forex quotes in priceStore
-        cleaned = getMoversFromStore('forex', 'gainers');
+        // FOREX: Derive from forex quotes in priceStore. Use 'volatile' so pairs
+        // that are down on the day aren't filtered out.
+        cleaned = getMoversFromStore('forex', 'volatile');
       } else if (activeTab === "gainers") {
         // GAINERS: Top gaining stocks from priceStore
         cleaned = getMoversFromStore('stocks', 'gainers');

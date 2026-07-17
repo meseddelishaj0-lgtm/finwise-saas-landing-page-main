@@ -214,7 +214,7 @@ const OverviewTab = ({ profile, keyMetrics, ratios, fmtNum, fmtPct, fmtRatio }: 
       <DataRow label="Market Cap" value={fmtNum(profile?.mktCap)} />
       <DataRow label="Enterprise Value" value={fmtNum(keyMetrics?.enterpriseValue)} />
       <DataRow label="P/E Ratio" value={fmtRatio(profile?.pe)} />
-      <DataRow label="Forward P/E" value={fmtRatio(ratios?.priceEarningsToGrowthRatio)} />
+      <DataRow label="PEG Ratio" value={fmtRatio(ratios?.priceEarningsToGrowthRatio)} />
       <DataRow label="P/S Ratio" value={fmtRatio(ratios?.priceToSalesRatio)} />
       <DataRow label="P/B Ratio" value={fmtRatio(ratios?.priceToBookRatio)} />
       <DataRow label="EV/EBITDA" value={fmtRatio(keyMetrics?.evToEbitda)} />
@@ -1763,7 +1763,7 @@ const RatiosTab = ({ ratios, keyMetrics, fmtPct, fmtRatio }: any) => {
       </Section>
 
       <Section title="Per Share">
-        <DataRow label="Earnings/Share" value={keyMetrics?.earningsYield ? `$${(1/keyMetrics.earningsYield).toFixed(2)}` : "—"} />
+        <DataRow label="Earnings Yield" value={keyMetrics?.earningsYield ? `${(keyMetrics.earningsYield * 100).toFixed(2)}%` : "—"} />
         <DataRow label="Book Value/Share" value={keyMetrics?.bookValuePerShare ? `$${keyMetrics.bookValuePerShare.toFixed(2)}` : "—"} />
         <DataRow label="Tangible Book/Share" value={keyMetrics?.tangibleBookValuePerShare ? `$${keyMetrics.tangibleBookValuePerShare.toFixed(2)}` : "—"} />
         <DataRow label="FCF/Share" value={keyMetrics?.freeCashFlowPerShare ? `$${keyMetrics.freeCashFlowPerShare.toFixed(2)}` : "—"} />
