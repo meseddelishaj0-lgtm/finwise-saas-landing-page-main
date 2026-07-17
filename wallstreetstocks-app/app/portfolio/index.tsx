@@ -16,9 +16,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePortfolio } from '@/context/PortfolioContext';
+import { useAuth } from '@/lib/auth';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
@@ -51,88 +52,45 @@ interface Portfolio {
 export default function PortfolioScreen() {
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user: authUser } = useAuth();
+  // Single source of truth — the same PortfolioContext the home tab uses, so
+  // the two views can never diverge and edits here can't be wiped by the
+  // context's replace-all sync.
+  const {
+    currentPortfolio: ctxPortfolio,
+    loading,
+    addHolding: ctxAddHolding,
+    removeHolding: ctxRemoveHolding,
+    refreshPrices,
+  } = usePortfolio();
+
   const [refreshing, setRefreshing] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addingHolding, setAddingHolding] = useState(false);
-  const [newHolding, setNewHolding] = useState({
-    symbol: '',
-    shares: '',
-    avgCost: '',
-  });
+  const [newHolding, setNewHolding] = useState({ symbol: '', shares: '', avgCost: '' });
 
-  useEffect(() => {
-    loadUserId();
-  }, []);
-
-  const loadUserId = async () => {
-    const storedUserId = await AsyncStorage.getItem('userId');
-    setUserId(storedUserId);
-    if (storedUserId) {
-      fetchPortfolios(storedUserId);
-    } else {
-      setLoading(false);
-    }
-  };
-
-  const fetchPortfolios = async (uid: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/portfolio`, {
-        headers: { 'x-user-id': uid },
-      });
-      const data = await response.json();
-      if (data.portfolios) {
-        setPortfolios(data.portfolios);
-      }
-    } catch (error) {
-      
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    if (userId) {
-      fetchPortfolios(userId);
-    }
-  }, [userId]);
+    try { await refreshPrices(); } finally { setRefreshing(false); }
+  }, [refreshPrices]);
 
   const addHolding = async () => {
     if (!newHolding.symbol || !newHolding.shares || !newHolding.avgCost) {
       Alert.alert(t('Error'), t('Please fill in all fields'));
       return;
     }
-
-    if (!userId || portfolios.length === 0) return;
+    const shares = parseFloat(newHolding.shares);
+    const avgCost = parseFloat(newHolding.avgCost);
+    if (!Number.isFinite(shares) || shares <= 0 || !Number.isFinite(avgCost) || avgCost < 0) {
+      Alert.alert(t('Error'), t('Please enter valid numbers'));
+      return;
+    }
 
     setAddingHolding(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/portfolio/holdings`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-        },
-        body: JSON.stringify({
-          portfolioId: portfolios[0].id,
-          symbol: newHolding.symbol.toUpperCase(),
-          shares: parseFloat(newHolding.shares),
-          avgCost: parseFloat(newHolding.avgCost),
-        }),
-      });
-
-      if (response.ok) {
-        setShowAddModal(false);
-        setNewHolding({ symbol: '', shares: '', avgCost: '' });
-        fetchPortfolios(userId);
-      } else {
-        const error = await response.json();
-        Alert.alert(t('Error'), error.error || t('Failed to add holding'));
-      }
+      await ctxAddHolding(newHolding.symbol.toUpperCase().trim(), shares, avgCost);
+      setShowAddModal(false);
+      setNewHolding({ symbol: '', shares: '', avgCost: '' });
     } catch (error) {
       Alert.alert(t('Error'), t('Failed to add holding'));
     } finally {
@@ -140,7 +98,7 @@ export default function PortfolioScreen() {
     }
   };
 
-  const deleteHolding = (holdingId: number) => {
+  const deleteHolding = (symbol: string) => {
     Alert.alert(
       t('Delete Holding'),
       t('Are you sure you want to remove this stock from your portfolio?'),
@@ -150,13 +108,8 @@ export default function PortfolioScreen() {
           text: t('Delete'),
           style: 'destructive',
           onPress: async () => {
-            if (!userId) return;
             try {
-              await fetch(`${API_BASE_URL}/portfolio/holdings?id=${holdingId}`, {
-                method: 'DELETE',
-                headers: { 'x-user-id': userId },
-              });
-              fetchPortfolios(userId);
+              await ctxRemoveHolding(symbol);
             } catch (error) {
               Alert.alert(t('Error'), t('Failed to delete holding'));
             }
@@ -179,7 +132,7 @@ export default function PortfolioScreen() {
     return `${sign}${value.toFixed(2)}%`;
   };
 
-  if (!userId) {
+  if (!authUser?.id) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -215,7 +168,32 @@ export default function PortfolioScreen() {
     );
   }
 
-  const portfolio = portfolios[0];
+  // Adapt the context's priced portfolio to this screen's display shape.
+  const portfolio = ctxPortfolio
+    ? {
+        totalValue: ctxPortfolio.totalValue,
+        totalGainLoss: ctxPortfolio.totalGain,
+        totalGainLossPercent: ctxPortfolio.totalGainPercent,
+        dayChange: ctxPortfolio.dayChange,
+        dayChangePercent: ctxPortfolio.dayChangePercent,
+        holdings: ctxPortfolio.holdings.map((h) => {
+          const changePerShare = h.shares > 0 ? h.dayChange / h.shares : 0;
+          const prevClose = h.currentPrice - changePerShare;
+          return {
+            symbol: h.symbol,
+            name: h.symbol,
+            shares: h.shares,
+            avgCost: h.avgCost,
+            currentPrice: h.currentPrice,
+            marketValue: h.currentValue,
+            gainLoss: h.gain,
+            gainLossPercent: h.gainPercent,
+            dayChange: h.dayChange,
+            dayChangePercent: prevClose > 0 ? (changePerShare / prevClose) * 100 : 0,
+          };
+        }),
+      }
+    : null;
   const hasHoldings = portfolio && portfolio.holdings.length > 0;
 
   return (
@@ -272,10 +250,10 @@ export default function PortfolioScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Holdings')} ({portfolio.holdings.length})</Text>
             {portfolio.holdings.map((holding) => (
               <TouchableOpacity
-                key={holding.id}
+                key={holding.symbol}
                 style={[styles.holdingCard, { backgroundColor: colors.card }]}
-                onPress={() => router.push(`/symbol/${holding.symbol}` as any)}
-                onLongPress={() => deleteHolding(holding.id)}
+                onPress={() => router.push(`/symbol/${holding.symbol}/chart` as any)}
+                onLongPress={() => deleteHolding(holding.symbol)}
               >
                 <View style={styles.holdingHeader}>
                   <View>
