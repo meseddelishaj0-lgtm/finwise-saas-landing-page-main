@@ -41,7 +41,7 @@ export default function PriceAlertsScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newSymbol, setNewSymbol] = useState('');
   const [newPrice, setNewPrice] = useState('');
-  const [newCondition, setNewCondition] = useState<'above' | 'below'>('above');
+  const [newCondition, setNewCondition] = useState<'auto' | 'above' | 'below'>('auto');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
 
@@ -158,7 +158,7 @@ export default function PriceAlertsScreen() {
         setShowCreateModal(false);
         setNewSymbol('');
         setNewPrice('');
-        setNewCondition('above');
+        setNewCondition('auto');
       } else {
         Alert.alert(t('Error'), data.error || t('Failed to create alert'));
       }
@@ -411,6 +411,25 @@ export default function PriceAlertsScreen() {
                 <TouchableOpacity
                   style={[
                     styles.conditionButton,
+                    newCondition === 'auto' && styles.conditionButtonActiveGold,
+                  ]}
+                  onPress={() => setNewCondition('auto')}
+                >
+                  <Ionicons
+                    name="swap-vertical"
+                    size={20}
+                    color={newCondition === 'auto' ? '#FFF' : '#B8860B'}
+                  />
+                  <Text style={[
+                    styles.conditionText,
+                    newCondition === 'auto' && styles.conditionTextActive,
+                  ]}>
+                    {t('Auto')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.conditionButton,
                     newCondition === 'above' && styles.conditionButtonActive,
                   ]}
                   onPress={() => setNewCondition('above')}
@@ -424,7 +443,7 @@ export default function PriceAlertsScreen() {
                     styles.conditionText,
                     newCondition === 'above' && styles.conditionTextActive,
                   ]}>
-                    {t('Price goes above')}
+                    {t('Above')}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -443,10 +462,13 @@ export default function PriceAlertsScreen() {
                     styles.conditionText,
                     newCondition === 'below' && styles.conditionTextActive,
                   ]}>
-                    {t('Price goes below')}
+                    {t('Below')}
                   </Text>
                 </TouchableOpacity>
               </View>
+              <Text style={styles.conditionHint}>
+                {t('Auto picks above or below based on the current price.')}
+              </Text>
 
               <TouchableOpacity style={[styles.createAlertButton, creating && { opacity: 0.6 }]} onPress={createAlert} disabled={creating}>
                 <Ionicons name="notifications" size={20} color="#000" />
@@ -741,8 +763,8 @@ const styles = StyleSheet.create({
   },
   conditionRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
+    gap: 8,
+    marginBottom: 8,
   },
   conditionButton: {
     flex: 1,
@@ -752,7 +774,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F7',
     paddingVertical: 14,
     borderRadius: 12,
-    gap: 8,
+    gap: 5,
   },
   conditionButtonActive: {
     backgroundColor: '#34C759',
@@ -760,10 +782,18 @@ const styles = StyleSheet.create({
   conditionButtonActiveRed: {
     backgroundColor: '#FF3B30',
   },
+  conditionButtonActiveGold: {
+    backgroundColor: '#B8860B',
+  },
   conditionText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#333',
+  },
+  conditionHint: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginBottom: 20,
   },
   conditionTextActive: {
     color: '#FFF',

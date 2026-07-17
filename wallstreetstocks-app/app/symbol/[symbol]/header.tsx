@@ -27,7 +27,7 @@ export default function SymbolHeader() {
   const [activeAlertPrice, setActiveAlertPrice] = useState<string | null>(null);
   const [activeAlertType, setActiveAlertType] = useState<"above" | "below" | null>(null);
   const [alertTab, setAlertTab] = useState<"price" | "indicator">("price");
-  const [alertType, setAlertType] = useState<"above" | "below" | null>(null);
+  const [alertType, setAlertType] = useState<"auto" | "above" | "below" | null>(null);
   const [priceValue, setPriceValue] = useState("");
   const [shares, setShares] = useState('');
   const [avgCost, setAvgCost] = useState('');
@@ -111,21 +111,29 @@ export default function SymbolHeader() {
         }),
       });
 
+      const text = await res.text();
+      let data: any = {};
+      try { data = text ? JSON.parse(text) : {}; } catch {}
+
       if (!res.ok) {
-        const text = await res.text();
-        let data: any = {};
-        try { data = text ? JSON.parse(text) : {}; } catch {}
         Alert.alert(t("Error"), data.error || t("Failed to create alert"));
         return;
       }
 
+      // The server resolves "auto" to a concrete direction from the current
+      // price, so read it back rather than storing "auto".
+      const resolvedType: "above" | "below" =
+        data?.alert?.direction === "below" ? "below" : "above";
+
       setHasActiveAlert(true);
       setActiveAlertPrice(alertPrice);
-      setActiveAlertType(alertType);
+      setActiveAlertType(resolvedType);
 
       Alert.alert(
         t("Alert Created ✓"),
-        `You'll be notified when ${currentSymbol} moves ${alertType} $${alertPrice}`,
+        alertType === "auto"
+          ? `You'll be notified when ${currentSymbol} reaches $${alertPrice}`
+          : `You'll be notified when ${currentSymbol} moves ${alertType} $${alertPrice}`,
         [
           {
             text: t("OK"),
@@ -403,7 +411,9 @@ export default function SymbolHeader() {
                 // Price Input State
                 <View style={styles.priceInputContainer}>
                   <Text style={styles.priceInputLabel}>
-                    {t("Alert me when")} {currentSymbol} {t("price moves")} {alertType ? t(alertType) : alertType}:
+                    {alertType === "auto"
+                      ? `${t("Alert me when")} ${currentSymbol} ${t("reaches")}:`
+                      : `${t("Alert me when")} ${currentSymbol} ${t("price moves")} ${alertType ? t(alertType) : alertType}:`}
                   </Text>
                   <View style={styles.priceInputWrapper}>
                     <Text style={styles.dollarSign}>$</Text>
@@ -435,11 +445,19 @@ export default function SymbolHeader() {
                   <Ionicons name="chevron-forward" size={20} color="#666" />
                 </TouchableOpacity>
                 
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.alertTypeOption}
                   onPress={() => setAlertType("below")}
                 >
                   <Text style={styles.alertTypeText}>{t("Price moves below")}</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#666" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.alertTypeOption}
+                  onPress={() => setAlertType("auto")}
+                >
+                  <Text style={styles.alertTypeText}>{t("Automatic (based on target price)")}</Text>
                   <Ionicons name="chevron-forward" size={20} color="#666" />
                 </TouchableOpacity>
               </View>

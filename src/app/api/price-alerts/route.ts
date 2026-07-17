@@ -6,6 +6,22 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
+// Fetch the current price so we can auto-pick the alert direction (above/below)
+// from the target the user chose, relative to where the stock trades now.
+async function getStockPrice(symbol: string): Promise<number | null> {
+  try {
+    const url = `https://financialmodelingprep.com/api/v3/quote/${encodeURIComponent(
+      symbol
+    )}?apikey=${process.env.FMP_API_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const price = data?.[0]?.price;
+    return typeof price === 'number' && Number.isFinite(price) ? price : null;
+  } catch {
+    return null;
+  }
+}
+
 // GET /api/price-alerts?userId=123 - Get user's price alerts
 export async function GET(req: NextRequest) {
   try {
@@ -54,7 +70,7 @@ export async function POST(req: NextRequest) {
     const priceNum =
       typeof body?.targetPrice === 'number' ? body.targetPrice : parseFloat(body?.targetPrice);
     const rawDir = String(body?.direction ?? body?.condition ?? body?.type ?? '').toLowerCase();
-    const direction =
+    let direction =
       rawDir === 'above' || rawDir === 'up' || rawDir === 'over'
         ? 'above'
         : rawDir === 'below' || rawDir === 'down' || rawDir === 'under'
@@ -67,10 +83,17 @@ export async function POST(req: NextRequest) {
     if (!Number.isFinite(priceNum) || priceNum <= 0) {
       return NextResponse.json({ error: 'a valid targetPrice is required' }, { status: 400 });
     }
-    if (!direction) {
-      return NextResponse.json({ error: 'direction must be "above" or "below"' }, { status: 400 });
-    }
     const targetPrice = priceNum;
+
+    // No explicit direction (or an "auto"/"either"/"both" request) → derive it
+    // from the current price: a target above the market fires when it rises to
+    // it, a target below fires when it falls to it. This lets the app just ask
+    // for a price and let the chosen price decide the direction.
+    if (!direction) {
+      const current = await getStockPrice(symbol.toUpperCase());
+      // Ties and price-fetch failures default to "above" (rising to target).
+      direction = current != null && targetPrice < current ? 'below' : 'above';
+    }
 
     // Check if user exists
     const user = await prisma.user.findUnique({

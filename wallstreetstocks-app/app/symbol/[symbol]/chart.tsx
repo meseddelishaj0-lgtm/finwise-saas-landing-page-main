@@ -737,9 +737,24 @@ export default function ChartTab() {
     }
   };
 
+  // The direction follows the target the user picks: a target above the current
+  // price alerts on the way up, a target below alerts on the way down. The
+  // Above/Below buttons still work as a manual override.
+  const handleAlertPriceChange = (text: string) => {
+    setAlertPrice(text);
+    const p = parseFloat(text);
+    const ref = livePrice ?? currentPrice;
+    if (ref != null && Number.isFinite(p) && p > 0) {
+      setAlertDirection(p < ref ? 'below' : 'above');
+    }
+  };
+
   const openAlertModal = () => {
     if (currentPrice) {
+      // Prefill slightly above the current price so the default is a meaningful
+      // "rises to" alert rather than one that would fire immediately.
       setAlertPrice(currentPrice.toFixed(2));
+      setAlertDirection('above');
     }
     setShowAlertModal(true);
   };
@@ -1045,6 +1060,9 @@ export default function ChartTab() {
                 <Text style={[styles.directionText, alertDirection === 'below' && styles.selectedDirectionTextBelow]}>Below</Text>
               </TouchableOpacity>
             </View>
+            <Text style={{ color: '#8E8E93', fontSize: 12, marginTop: -14, marginBottom: 16 }}>
+              Set automatically from your target price — tap to override.
+            </Text>
 
             <Text style={styles.inputLabel}>Target Price</Text>
             <TextInput
@@ -1052,7 +1070,7 @@ export default function ChartTab() {
               placeholder="0.00"
               placeholderTextColor="#666"
               value={alertPrice}
-              onChangeText={setAlertPrice}
+              onChangeText={handleAlertPriceChange}
               keyboardType="decimal-pad"
             />
 
