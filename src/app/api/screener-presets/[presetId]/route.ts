@@ -2,6 +2,7 @@
 // Delete a specific screener preset
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { resolveMobileUserId } from "@/lib/mobileAuth";
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +13,13 @@ export async function DELETE(
 ) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
     const presetId = params.presetId;
 
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    // Verify the caller owns the id so a spoofed ?userId can't delete another
+    // user's preset (the query below is already scoped to this id).
+    const auth = resolveMobileUserId(req, searchParams.get("userId"));
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     if (!presetId) {
@@ -27,7 +30,7 @@ export async function DELETE(
     const preset = await prisma.screenerPreset.findFirst({
       where: {
         id: parseInt(presetId, 10),
-        userId: parseInt(userId, 10),
+        userId: auth.userId,
       },
     });
 

@@ -8,6 +8,7 @@
 // back and returns an error — the client only wipes local data on a 2xx.
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getTokenUserId } from "@/lib/mobileAuth";
 
 async function deleteUser(userId: number) {
   await prisma.$transaction([
@@ -46,12 +47,21 @@ async function deleteUser(userId: number) {
 
 async function handle(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const raw = body?.userId ?? new URL(req.url).searchParams.get("userId");
-    const userId = parseInt(String(raw), 10);
-    if (!Number.isFinite(userId)) {
-      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    // Account deletion is irreversible, so it REQUIRES a verified token — we
+    // never trust the spoofable client-supplied userId, and there is no strict-
+    // mode fallback here. A caller can only delete their own account.
+    const tokenUserId = getTokenUserId(req);
+    if (tokenUserId == null) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
+
+    const body = await req.json().catch(() => ({}));
+    const claimed = body?.userId ?? new URL(req.url).searchParams.get("userId");
+    if (claimed != null && String(claimed) !== "" && Number(claimed) !== tokenUserId) {
+      return NextResponse.json({ error: "User mismatch" }, { status: 403 });
+    }
+
+    const userId = tokenUserId;
 
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
     if (!user) {

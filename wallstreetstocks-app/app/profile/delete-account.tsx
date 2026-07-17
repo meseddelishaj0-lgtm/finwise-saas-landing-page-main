@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { removePersonalInfo } from '@/lib/personalInfoStore';
+import { buildAuthHeaders } from '@/lib/authHeaders';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -49,9 +50,7 @@ export default function DeleteAccountScreen() {
               // Call API to delete account
               const response = await fetch(`${API_BASE_URL}/api/user/delete`, {
                 method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
+                headers: await buildAuthHeaders(user?.id, { 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ userId: user?.id }),
               });
 

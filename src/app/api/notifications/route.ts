@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { resolveMobileUserId } from "@/lib/mobileAuth";
 
 export const dynamic = 'force-dynamic';
 
@@ -7,15 +8,17 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
     const unread = searchParams.get("unread");
 
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 401 });
+    // Notifications are private — verify the caller owns the requested id so a
+    // spoofed ?userId can't read another user's notifications.
+    const auth = resolveMobileUserId(req, searchParams.get("userId"));
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) }
+      where: { id: auth.userId }
     });
 
     if (!user) {

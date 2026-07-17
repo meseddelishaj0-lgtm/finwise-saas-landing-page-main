@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@/generated/prisma/client/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
+import { resolveMobileUserId } from "@/lib/mobileAuth";
 
 export const dynamic = 'force-dynamic';
 
@@ -16,12 +17,16 @@ export async function POST(req: NextRequest) {
   const prisma = createFreshPrisma();
 
   try {
-    const { followerId, followingId } = await req.json();
+    const { followerId: claimedFollowerId, followingId } = await req.json();
 
-    if (!followerId) {
+    // The acting user is the follower — verify the caller owns that id so a
+    // spoofed followerId can't force someone else to follow/unfollow.
+    const auth = resolveMobileUserId(req, claimedFollowerId);
+    if (!auth.ok) {
       await prisma.$disconnect();
-      return NextResponse.json({ error: "followerId is required" }, { status: 401 });
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    const followerId = auth.userId;
 
     if (!followingId) {
       await prisma.$disconnect();
@@ -89,12 +94,14 @@ export async function DELETE(req: NextRequest) {
   const prisma = createFreshPrisma();
 
   try {
-    const { followerId, followingId } = await req.json();
+    const { followerId: claimedFollowerId, followingId } = await req.json();
 
-    if (!followerId) {
+    const auth = resolveMobileUserId(req, claimedFollowerId);
+    if (!auth.ok) {
       await prisma.$disconnect();
-      return NextResponse.json({ error: "followerId is required" }, { status: 401 });
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    const followerId = auth.userId;
 
     if (!followingId) {
       await prisma.$disconnect();

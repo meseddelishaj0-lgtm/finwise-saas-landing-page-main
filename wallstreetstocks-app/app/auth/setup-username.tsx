@@ -60,7 +60,7 @@ export default function SetupUsername() {
     setError('');
     
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await AsyncStorage.getItem('authToken');
       const res = await fetch(`${API_BASE_URL}/users/check-username?username=${encodeURIComponent(name)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -97,7 +97,7 @@ export default function SetupUsername() {
     setLoading(true);
 
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await AsyncStorage.getItem('authToken');
       const userId = await AsyncStorage.getItem('userId');
 
       const res = await fetch(`${API_BASE_URL}/users/${userId}/username`, {

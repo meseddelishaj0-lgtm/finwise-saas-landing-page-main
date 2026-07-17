@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { resolveMobileUserId } from "@/lib/mobileAuth";
 
 // DELETE /api/reactions/:id - Delete reaction
 export async function DELETE(
@@ -7,11 +8,15 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { userId } = await req.json();
+    const { userId: claimedUserId } = await req.json();
 
-    if (!userId) {
-      return NextResponse.json({ error: "userId is required" }, { status: 401 });
+    // Verify the caller owns the id before the ownership check below, so a
+    // spoofed userId can't delete another user's reaction.
+    const auth = resolveMobileUserId(req, claimedUserId);
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
+    const userId = auth.userId;
 
     const reactionId = parseInt(params.id, 10);
 

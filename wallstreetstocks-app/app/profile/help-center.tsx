@@ -16,7 +16,10 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/lib/auth';
 
+// Per-user so recently-viewed articles / thumbs feedback don't bleed across
+// accounts on a shared device.
 const RECENTLY_VIEWED_KEY = 'help_recently_viewed';
 const ARTICLE_FEEDBACK_KEY = 'help_article_feedback';
 
@@ -249,6 +252,9 @@ export default function HelpCenter() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const recentlyViewedKey = `${RECENTLY_VIEWED_KEY}:${user?.id ?? 'anon'}`;
+  const articleFeedbackKey = `${ARTICLE_FEEDBACK_KEY}:${user?.id ?? 'anon'}`;
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -257,20 +263,22 @@ export default function HelpCenter() {
   const [articleFeedback, setArticleFeedback] = useState<Record<string, boolean>>({});
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<string | null>(null);
 
-  // Load recently viewed and feedback
+  // Load recently viewed and feedback (re-run on account switch)
   useEffect(() => {
     loadStoredData();
-  }, []);
+  }, [user?.id]);
 
   const loadStoredData = async () => {
     try {
       const [recentData, feedbackData] = await Promise.all([
-        AsyncStorage.getItem(RECENTLY_VIEWED_KEY),
-        AsyncStorage.getItem(ARTICLE_FEEDBACK_KEY),
+        AsyncStorage.getItem(recentlyViewedKey),
+        AsyncStorage.getItem(articleFeedbackKey),
       ]);
 
-      if (recentData) setRecentlyViewed(JSON.parse(recentData));
-      if (feedbackData) setArticleFeedback(JSON.parse(feedbackData));
+      // Reset to empty (not just skip) so a new account doesn't inherit the
+      // previous user's in-memory list on switch.
+      setRecentlyViewed(recentData ? JSON.parse(recentData) : []);
+      setArticleFeedback(feedbackData ? JSON.parse(feedbackData) : {});
     } catch (err) {
       
     }
@@ -281,7 +289,7 @@ export default function HelpCenter() {
     try {
       const updated = [articleId, ...recentlyViewed.filter(id => id !== articleId)].slice(0, 5);
       setRecentlyViewed(updated);
-      await AsyncStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(updated));
+      await AsyncStorage.setItem(recentlyViewedKey, JSON.stringify(updated));
     } catch (err) {
       
     }
@@ -293,7 +301,7 @@ export default function HelpCenter() {
       const updated = { ...articleFeedback, [articleId]: helpful };
       setArticleFeedback(updated);
       setFeedbackSubmitted(articleId);
-      await AsyncStorage.setItem(ARTICLE_FEEDBACK_KEY, JSON.stringify(updated));
+      await AsyncStorage.setItem(articleFeedbackKey, JSON.stringify(updated));
 
       // Reset feedback submitted state after 3 seconds
       setTimeout(() => setFeedbackSubmitted(null), 3000);

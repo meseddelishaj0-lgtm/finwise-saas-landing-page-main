@@ -17,7 +17,10 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/lib/auth';
 
+// Per-user so a support transcript (which contains the user's own typed
+// messages) doesn't bleed to the next account on a shared device.
 const CHAT_HISTORY_KEY = 'live_chat_history';
 
 interface Message {
@@ -117,16 +120,18 @@ export default function LiveChat() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const chatKey = `${CHAT_HISTORY_KEY}:${user?.id ?? 'anon'}`;
   const scrollViewRef = useRef<ScrollView>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
 
-  // Load chat history
+  // Load chat history (re-run on account switch so histories don't bleed)
   useEffect(() => {
     loadChatHistory();
-  }, []);
+  }, [user?.id]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -137,7 +142,7 @@ export default function LiveChat() {
 
   const loadChatHistory = async () => {
     try {
-      const history = await AsyncStorage.getItem(CHAT_HISTORY_KEY);
+      const history = await AsyncStorage.getItem(chatKey);
       if (history) {
         const parsed = JSON.parse(history);
         // Only load recent messages (last 24 hours)
@@ -175,7 +180,7 @@ export default function LiveChat() {
 
   const saveChatHistory = async (newMessages: Message[]) => {
     try {
-      await AsyncStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(newMessages));
+      await AsyncStorage.setItem(chatKey, JSON.stringify(newMessages));
     } catch (err) {
       
     }
@@ -221,7 +226,7 @@ export default function LiveChat() {
   };
 
   const clearChat = async () => {
-    await AsyncStorage.removeItem(CHAT_HISTORY_KEY);
+    await AsyncStorage.removeItem(chatKey);
     addWelcomeMessage();
   };
 
