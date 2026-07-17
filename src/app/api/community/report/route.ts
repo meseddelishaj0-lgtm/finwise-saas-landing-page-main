@@ -1,17 +1,25 @@
 // app/api/community/report/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, reportedUserId, postId, commentId, reason, description } = await request.json();
+    const body = await request.json();
+    // Accept both the server's canonical names and the app's names
+    // (reporterId/reportedId) so the report feature works regardless of build.
+    const reportedUserId = body.reportedUserId ?? body.reportedId ?? null;
+    const { postId, commentId, reason, description } = body;
+    const claimedReporter = body.userId ?? body.reporterId;
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
-      );
+    // Reporter identity: trust the signed token when present so reports can't be
+    // forged under different user ids to trip the auto-flag threshold below.
+    // Falls back to the client-supplied id for pre-token builds (see mobileAuth).
+    const resolved = resolveMobileUserId(request, claimedReporter);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: resolved.status });
     }
+    const userId = resolved.userId;
 
     if (!reportedUserId && !postId && !commentId) {
       return NextResponse.json(
@@ -20,7 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!reason) {
+    if (!reason || typeof reason !== 'string') {
       return NextResponse.json(
         { error: 'Report reason is required' },
         { status: 400 }
@@ -110,13 +118,19 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const adminKey = searchParams.get('adminKey');
     const status = searchParams.get('status') || 'pending';
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Simple admin check - in production, use proper authentication
-    if (adminKey !== process.env.ADMIN_API_KEY) {
+    // Prefer the admin key from a header — passing it in the URL query leaks it
+    // into server/proxy access logs and browser history. Query param kept as a
+    // fallback for existing tooling; migrate callers to the header.
+    const adminKey =
+      request.headers.get('x-admin-key') ||
+      (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '') ||
+      searchParams.get('adminKey');
+
+    if (!process.env.ADMIN_API_KEY || adminKey !== process.env.ADMIN_API_KEY) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -187,10 +201,14 @@ export async function GET(request: NextRequest) {
 // PATCH - Update report status (admin only)
 export async function PATCH(request: NextRequest) {
   try {
-    const { reportId, status, adminKey, resolution } = await request.json();
+    const { reportId, status, adminKey: bodyAdminKey, resolution } = await request.json();
 
-    // Simple admin check - in production, use proper authentication
-    if (adminKey !== process.env.ADMIN_API_KEY) {
+    const adminKey =
+      request.headers.get('x-admin-key') ||
+      (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '') ||
+      bodyAdminKey;
+
+    if (!process.env.ADMIN_API_KEY || adminKey !== process.env.ADMIN_API_KEY) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

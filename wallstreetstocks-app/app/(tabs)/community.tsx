@@ -34,6 +34,7 @@ import VerifiedBadge from '@/components/VerifiedBadge';
 import { usePremiumFeature } from '@/hooks/usePremiumFeature';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { buildAuthHeaders } from '../../lib/authHeaders';
 import FadeSlideIn from '@/components/FadeSlideIn';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
@@ -322,8 +323,9 @@ const muteUser = async (muterId: number, mutedId: number): Promise<{ success: bo
 const reportUser = async (reporterId: number, reportedId: number, reason: string, postId?: number, commentId?: number): Promise<{ success: boolean }> => {
   const response = await fetch(`${API_BASE}/api/community/report`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reporterId, reportedId, reason, postId, commentId }),
+    headers: await buildAuthHeaders(reporterId, { 'Content-Type': 'application/json' }),
+    // Server canonical field names (it also accepts reporterId/reportedId).
+    body: JSON.stringify({ userId: reporterId, reportedUserId: reportedId, reason, postId, commentId }),
   });
   return { success: response.ok };
 };
