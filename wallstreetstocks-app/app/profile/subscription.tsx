@@ -40,6 +40,7 @@ import Purchases, { PurchasesPackage, CustomerInfo } from "react-native-purchase
 import {
   openSubscriptionManagement,
   getSubscriptionDetails,
+  getActiveEntitlement,
   formatExpirationDate,
 } from "@/services/revenueCat";
 import { useSubscription } from "@/context/SubscriptionContext";
@@ -69,19 +70,9 @@ const PRODUCT_IDS = {
 type BillingPeriod = 'monthly' | 'yearly';
 
 // Entitlement IDs - must match RevenueCat
-const ENTITLEMENT_IDS = {
-  GOLD: 'gold_access',
-  PLATINUM: 'platinum_access',
-  DIAMOND: 'diamond_access',
-} as const;
-
-// Helper to get any active entitlement
-const getActiveEntitlement = (activeEntitlements: Record<string, any>): string | null => {
-  if (activeEntitlements[ENTITLEMENT_IDS.DIAMOND]) return ENTITLEMENT_IDS.DIAMOND;
-  if (activeEntitlements[ENTITLEMENT_IDS.PLATINUM]) return ENTITLEMENT_IDS.PLATINUM;
-  if (activeEntitlements[ENTITLEMENT_IDS.GOLD]) return ENTITLEMENT_IDS.GOLD;
-  return null;
-};
+// getActiveEntitlement is imported from @/services/revenueCat so this screen
+// resolves the active entitlement exactly like SubscriptionContext (the shared
+// version also matches non-standard entitlement ids via includes()).
 
 // Tier configuration
 const TIERS = {
@@ -185,7 +176,7 @@ export default function SubscriptionPage() {
   // maintained centrally in i18n/translations.ts, but this screen's keys are
   // added incrementally here without touching that shared file.
   const t = (key: string): string => translate(key as any);
-  const { refreshStatus: refreshGlobalSubscription } = useSubscription();
+  const { currentTier: globalTier, refreshStatus: refreshGlobalSubscription } = useSubscription();
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -247,6 +238,9 @@ export default function SubscriptionPage() {
       loadOfferings(),
       checkSubscriptionStatus(),
       loadSubscriptionDetails(),
+      // Refresh the app-wide tier too so the highlighted plan is current
+      // whenever this screen opens (after an upgrade/downgrade/restore).
+      refreshGlobalSubscription(),
     ]);
     setLoading(false);
   };
@@ -545,20 +539,15 @@ export default function SubscriptionPage() {
   };
 
   const isSubscribedToTier = (tierKey: TierKey): boolean => {
-    // First check subscriptionDetails.tierName (from entitlement - most reliable)
-    if (subscriptionDetails?.tierName) {
-      const currentTier = subscriptionDetails.tierName.toLowerCase();
-      // Lifetime users have access to all tiers
-      if (currentTier === 'lifetime' && tierKey !== 'lifetime') return false;
-      return currentTier === tierKey;
-    }
-
-    // Fallback to activeSubscription (product ID)
-    if (!activeSubscription) return false;
-    const sub = activeSubscription.toLowerCase();
-    // Lifetime check
-    if (sub.includes('lifetime') && tierKey !== 'lifetime') return false;
-    return sub.includes(tierKey);
+    // Use the app-wide access tier (SubscriptionContext) as the source of truth
+    // so the highlighted "current plan" always matches what the user actually
+    // has — App Store subscription, backend, or referral premium — then fall
+    // back to the RevenueCat-derived values on this screen.
+    const tier = (globalTier || subscriptionDetails?.tierName || activeSubscription || '').toLowerCase();
+    if (!tier || tier === 'free') return false;
+    // Lifetime grants diamond-level access but is its own plan row.
+    if (tier.includes('lifetime')) return tierKey === 'lifetime';
+    return tier.includes(tierKey);
   };
 
   const getCurrentTierLevel = (): number => {
