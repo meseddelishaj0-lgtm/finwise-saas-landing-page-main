@@ -1,7 +1,8 @@
 // context/ReferralContext.tsx - Referral Program Management
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import { useAuth } from '@/lib/auth';
 
 const REFERRAL_DATA_KEY = 'referral_data';
 const REFERRAL_CODE_KEY = 'referral_code';
@@ -134,24 +135,50 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Load referral data from storage
+  // Referral data is stored PER USER — a shared device-wide key let a new
+  // registration inherit the previous account's referral code AND their earned
+  // premium. Scope by user id and reset on account switch.
+  const authUserId = useAuth((state: any) => (state.user?.id ? String(state.user.id) : null));
+  const scopedKey = authUserId ? `${REFERRAL_DATA_KEY}:${authUserId}` : `${REFERRAL_DATA_KEY}:anon`;
+  const scopedKeyRef = useRef(scopedKey);
+  scopedKeyRef.current = scopedKey;
+
+  // Load referral data from storage for the current user
   const loadReferralData = useCallback(async () => {
+    setLoading(true);
+    setReferralData(null);
+    setInitialized(false);
     try {
-      const saved = await AsyncStorage.getItem(REFERRAL_DATA_KEY);
+      let saved = await AsyncStorage.getItem(scopedKey);
+
+      // One-time adoption of the old device-wide key by the device's current
+      // user (mirrors the portfolio/watchlist migration), then remove it so
+      // later accounts on the same device start clean.
+      if (!saved && authUserId) {
+        const legacy = await AsyncStorage.getItem(REFERRAL_DATA_KEY);
+        const claimed = await AsyncStorage.getItem('referral_data_claimed');
+        if (legacy && !claimed) {
+          await AsyncStorage.setItem(scopedKey, legacy);
+          await AsyncStorage.setItem('referral_data_claimed', authUserId);
+          await AsyncStorage.removeItem(REFERRAL_DATA_KEY);
+          saved = legacy;
+        }
+      }
+
       if (saved) {
-        const data = JSON.parse(saved);
-        setReferralData(data);
+        setReferralData(JSON.parse(saved));
+        setInitialized(true);
       }
     } catch (err) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [scopedKey, authUserId]);
 
-  // Save referral data to storage
+  // Save referral data to storage (per-user key)
   const saveReferralData = useCallback(async (data: ReferralData) => {
     try {
-      await AsyncStorage.setItem(REFERRAL_DATA_KEY, JSON.stringify({
+      await AsyncStorage.setItem(scopedKeyRef.current, JSON.stringify({
         ...data,
         updatedAt: new Date().toISOString(),
       }));
@@ -165,8 +192,8 @@ export function ReferralProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     try {
-      // Check if already initialized
-      const saved = await AsyncStorage.getItem(REFERRAL_DATA_KEY);
+      // Check if already initialized (per-user key)
+      const saved = await AsyncStorage.getItem(scopedKeyRef.current);
       if (saved) {
         const existingData = JSON.parse(saved);
         setReferralData(existingData);
