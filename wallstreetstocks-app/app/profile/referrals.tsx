@@ -406,7 +406,7 @@ export default function Referrals() {
                 <View key={referral.id || index} style={[styles.historyItem, { borderBottomColor: isDark ? colors.border : '#e5e5e5' }]}>
                   <View style={styles.historyAvatar}>
                     <Text style={styles.historyAvatarText}>
-                      {referral.referredName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                      {(referral.referredName || '?').split(' ').map(n => n[0] || '').join('').toUpperCase()}
                     </Text>
                   </View>
                   <View style={styles.historyContent}>

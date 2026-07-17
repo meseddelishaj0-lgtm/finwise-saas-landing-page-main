@@ -131,9 +131,9 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         const holdingsWithPrices: HoldingWithPrices[] = portfolio.holdings.map(h => ({
           symbol: h.symbol.toUpperCase(),
           shares: h.shares,
-          avgCost: h.avgCost > 0 ? h.avgCost : 1,
-          currentPrice: h.avgCost > 0 ? h.avgCost : 1,
-          currentValue: h.shares * (h.avgCost > 0 ? h.avgCost : 1),
+          avgCost: h.avgCost > 0 ? h.avgCost : 0,
+          currentPrice: h.avgCost > 0 ? h.avgCost : 0,
+          currentValue: h.shares * (h.avgCost > 0 ? h.avgCost : 0),
           gain: 0,
           gainPercent: 0,
           dayChange: 0,
@@ -156,7 +156,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       const holdingsWithPrices: HoldingWithPrices[] = portfolio.holdings.map(h => {
         const quote = priceData.find((q: any) => q.symbol === h.symbol.toUpperCase());
 
-        const avgCost = h.avgCost > 0 ? h.avgCost : 1;
+        const avgCost = h.avgCost > 0 ? h.avgCost : 0;
         const currentPrice = quote?.price || avgCost;
         const currentValue = h.shares * currentPrice;
         const cost = h.shares * avgCost;
@@ -182,7 +182,8 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       const totalGain = totalValue - totalCost;
       const totalGainPercent = totalCost > 0 ? ((totalGain / totalCost) * 100) : 0;
       const dayChange = holdingsWithPrices.reduce((sum, h) => sum + h.dayChange, 0);
-      const dayChangePercent = totalValue > 0 ? (dayChange / (totalValue - dayChange)) * 100 : 0;
+      const prevValue = totalValue - dayChange;
+      const dayChangePercent = prevValue > 0 ? (dayChange / prevValue) * 100 : 0;
 
 
       return {
@@ -200,9 +201,9 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       const holdingsWithPrices: HoldingWithPrices[] = portfolio.holdings.map(h => ({
         symbol: h.symbol.toUpperCase(),
         shares: h.shares,
-        avgCost: h.avgCost > 0 ? h.avgCost : 1,
-        currentPrice: h.avgCost > 0 ? h.avgCost : 1,
-        currentValue: h.shares * (h.avgCost > 0 ? h.avgCost : 1),
+        avgCost: h.avgCost > 0 ? h.avgCost : 0,
+        currentPrice: h.avgCost > 0 ? h.avgCost : 0,
+        currentValue: h.shares * (h.avgCost > 0 ? h.avgCost : 0),
         gain: 0,
         gainPercent: 0,
         dayChange: 0,
@@ -250,6 +251,10 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const authUserId = useAuth((state: any) => (state.user?.id ? String(state.user.id) : null));
   const storageKey = authUserId ? `user_portfolios_v2:${authUserId}` : 'user_portfolios_v2:anon';
   const dirtyKey = `portfolio_dirty:${authUserId ?? 'anon'}`;
+  // Tracks the currently-loaded account so async work from a previous user can't
+  // write its portfolios into the newly signed-in user's state after a switch.
+  const storageKeyRef = useRef(storageKey);
+  storageKeyRef.current = storageKey;
   const serverSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Push the full local portfolio set to the server (fire-and-forget;
@@ -294,6 +299,9 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         }));
       const serverHasHoldings = serverList.some((pf) => pf.holdings.length > 0);
 
+      // Account switched while this request was in flight — discard the result
+      if (storageKeyRef.current !== storageKey) return;
+
       if (serverHasHoldings) {
         // Adopt the account's server copy
         setPortfolios(serverList);
@@ -302,6 +310,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         setSelectedPortfolioId(firstId);
         selectedPortfolioIdRef.current = firstId;
         const withPrices = await fetchPricesForPortfolio(serverList[0]);
+        if (storageKeyRef.current !== storageKey) return;
         setCurrentPortfolio(withPrices);
         setLastUpdated(new Date());
         await AsyncStorage.setItem(storageKey, JSON.stringify({
@@ -358,6 +367,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
           const selectedPortfolio = loadedPortfolios.find((p: Portfolio) => p.id === loadedSelectedId);
           if (selectedPortfolio) {
             const portfolioWithPrices = await fetchPricesForPortfolio(selectedPortfolio);
+            if (storageKeyRef.current !== storageKey) return;
             setCurrentPortfolio(portfolioWithPrices);
             setLastUpdated(new Date());
           }
@@ -384,6 +394,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
           // Fetch prices
           const portfolioWithPrices = await fetchPricesForPortfolio(defaultPortfolio);
+          if (storageKeyRef.current !== storageKey) return;
           setCurrentPortfolio(portfolioWithPrices);
           setLastUpdated(new Date());
         }

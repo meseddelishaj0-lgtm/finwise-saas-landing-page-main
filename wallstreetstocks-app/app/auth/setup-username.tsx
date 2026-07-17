@@ -43,6 +43,10 @@ export default function SetupUsername() {
       return;
     }
 
+    // Invalidate the previous result until the new name is re-checked, so
+    // Continue can't submit an unverified username during the debounce window.
+    setIsAvailable(null);
+
     const timer = setTimeout(() => {
       checkUsername(username);
     }, 500);

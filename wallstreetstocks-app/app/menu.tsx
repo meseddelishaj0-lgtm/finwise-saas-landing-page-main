@@ -75,7 +75,7 @@ export default function MenuPage() {
   const handleRateApp = () => {
     const appStoreUrl = Platform.OS === 'ios'
       ? 'https://apps.apple.com/app/id6756940110?action=write-review'
-      : 'https://play.google.com/store/apps/details?id=com.wallstreetstocks.app';
+      : 'https://play.google.com/store/apps/details?id=ai.wallstreetstocks.app';
     Linking.openURL(appStoreUrl);
   };
 

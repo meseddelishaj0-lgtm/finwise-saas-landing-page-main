@@ -112,7 +112,7 @@ export default function ResearchReportsScreen() {
 
       // Calculate revenue growth
       let revenueGrowth = 'N/A';
-      if (income.length >= 2) {
+      if (income.length >= 2 && income[1].revenue > 0) {
         const growth = ((income[0].revenue - income[1].revenue) / income[1].revenue * 100);
         revenueGrowth = `${growth.toFixed(1)}%`;
       }

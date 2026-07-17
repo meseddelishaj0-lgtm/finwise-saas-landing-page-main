@@ -106,14 +106,24 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     const activeSubscription = entitlement?.productIdentifier || null;
     const currentTier = getTierFromEntitlementOrProduct(activeEntitlementId, activeSubscription);
 
-    setState(prev => ({
-      ...prev,
-      customerInfo,
-      isPremium: !!entitlement,
-      activeSubscription,
-      currentTier,
-      expirationDate: entitlement?.expirationDate || null,
-    }));
+    setState(prev => {
+      if (entitlement) {
+        // Active App Store entitlement — authoritative.
+        return {
+          ...prev,
+          customerInfo,
+          isPremium: true,
+          activeSubscription,
+          currentTier,
+          expirationDate: entitlement.expirationDate || null,
+        };
+      }
+      // No RevenueCat entitlement does NOT mean "not premium" — the user may
+      // have a backend/referral-granted tier. Don't downgrade from this routine
+      // listener (that transiently dropped referral-premium users to free);
+      // refreshStatus() reconciles with the backend on launch/focus.
+      return { ...prev, customerInfo, activeSubscription: null };
+    });
   }, []);
 
   // Sync subscription tier to database using the reliable /api/user/:id endpoint

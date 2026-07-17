@@ -155,14 +155,22 @@ export default function PortfolioOptimizerScreen() {
         return;
       }
 
-      const newHolding: PortfolioHolding = {
-        symbol: newSymbol.toUpperCase(),
-        shares,
-        avgPrice,
-        currentPrice: data[0].price,
-      };
-
-      setHoldings([...holdings, newHolding]);
+      const sym = newSymbol.toUpperCase();
+      // Merge into an existing lot instead of adding a duplicate row — duplicate
+      // symbols double-counted weights, collided on key={symbol}, and remove
+      // deleted both lots at once.
+      setHoldings(prev => {
+        const idx = prev.findIndex(h => h.symbol === sym);
+        if (idx >= 0) {
+          const ex = prev[idx];
+          const totalShares = ex.shares + shares;
+          const mergedAvg = totalShares > 0 ? (ex.shares * ex.avgPrice + shares * avgPrice) / totalShares : avgPrice;
+          const copy = [...prev];
+          copy[idx] = { ...ex, shares: totalShares, avgPrice: mergedAvg, currentPrice: data[0].price };
+          return copy;
+        }
+        return [...prev, { symbol: sym, shares, avgPrice, currentPrice: data[0].price }];
+      });
       setNewSymbol('');
       setNewShares('');
       setNewAvgPrice('');

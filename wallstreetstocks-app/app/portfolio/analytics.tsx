@@ -129,8 +129,11 @@ export default function AnalyticsScreen() {
           break;
       }
 
-      // Fetch historical data for each holding and aggregate
-      const chartDataMap: { [key: string]: number } = {};
+      // Fetch each holding's history and aggregate BY DATE (not array index —
+      // holdings with different-length histories were summed at mismatched
+      // positions, and a failed fetch silently skewed the total).
+      const dateMap = new Map<string, { sum: number; count: number }>();
+      let holdingsWithData = 0;
 
       for (const holding of currentPortfolio.holdings) {
         try {
@@ -139,22 +142,27 @@ export default function AnalyticsScreen() {
           const histData = await histResponse.json();
 
           if (Array.isArray(histData) && histData.length > 0) {
-            const dataPoints = histData.slice(0, limit).reverse();
-            dataPoints.forEach((point: any, index: number) => {
-              const key = index.toString();
+            holdingsWithData++;
+            for (const point of histData.slice(0, limit)) {
+              const date = point.date;
+              if (!date) continue;
               const value = (point.close || point.price || 0) * holding.shares;
-              chartDataMap[key] = (chartDataMap[key] || 0) + value;
-            });
+              const e = dateMap.get(date) || { sum: 0, count: 0 };
+              e.sum += value;
+              e.count += 1;
+              dateMap.set(date, e);
+            }
           }
         } catch (err) {
-          
         }
       }
 
-      // Convert to chart format
-      const dataPoints = Object.entries(chartDataMap)
-        .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
-        .map(([_, value]) => ({ value }));
+      // Keep only dates every fetched holding contributed to, oldest→newest, so
+      // the value series is internally consistent.
+      const dataPoints = Array.from(dateMap.entries())
+        .filter(([, v]) => holdingsWithData > 0 && v.count === holdingsWithData)
+        .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+        .map(([, v]) => ({ value: v.sum }));
 
       if (dataPoints.length > 0) {
         setChartData(dataPoints);

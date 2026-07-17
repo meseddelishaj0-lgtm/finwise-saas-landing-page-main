@@ -105,7 +105,14 @@ export default function ConversationScreen() {
 
       const data = await response.json();
       if (Array.isArray(data.messages)) {
-        setMessages(data.messages);
+        // Preserve just-sent optimistic messages (client temp ids are Date.now(),
+        // far larger than DB ids) that the server hasn't returned yet — otherwise
+        // the 5s poll could drop a message mid-send.
+        setMessages(prev => {
+          const serverIds = new Set(data.messages.map((m: Message) => m.id));
+          const pendingOptimistic = prev.filter(m => m.id > 1e12 && !serverIds.has(m.id));
+          return [...data.messages, ...pendingOptimistic];
+        });
       }
       if (data.conversation?.otherUser) {
         setOtherUser(data.conversation.otherUser);
