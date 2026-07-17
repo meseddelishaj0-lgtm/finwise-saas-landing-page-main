@@ -23,12 +23,8 @@ export default function CreditDerivativesAnalysisPage() {
   const [query, setQuery] = useState("AAPL-CDS"); // default symbol
   const [data, setData] = useState<any | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
-  const [aiSummary, setAiSummary] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const fmpKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
 
   // ✅ Fetch credit derivative data
   const fetchCreditData = async (symbol: string) => {
@@ -37,7 +33,7 @@ export default function CreditDerivativesAnalysisPage() {
       setError(null);
 
       const res = await fetch(
-        `https://financialmodelingprep.com/api/v4/creditRating?symbol=${symbol}&apikey=${fmpKey}`
+        `/api/proxy/fmp/api/v4/creditRating?symbol=${symbol}`
       );
 
       if (!res.ok) throw new Error("Request failed");
@@ -58,40 +54,12 @@ export default function CreditDerivativesAnalysisPage() {
       }));
       setChartData(mock);
 
-      fetchAiSummary(symbol, latest);
+      // AI commentary removed — needs a server route
     } catch (err: any) {
       console.error(err);
       setError("Unable to fetch credit derivative data for that symbol.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // ✅ AI market summary
-  const fetchAiSummary = async (symbol: string, latest: any) => {
-    try {
-      const prompt = `
-      Provide a concise professional analysis (3 sentences max) of current credit risk for ${symbol}.
-      The latest credit rating is ${latest.rating} (${latest.ratingScore}).
-      Explain implications for bond yields and default probability. Keep tone analytical and objective.
-      `;
-
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-
-      const json = await res.json();
-      setAiSummary(json.choices?.[0]?.message?.content || "");
-    } catch (err) {
-      console.error("AI Summary Error:", err);
     }
   };
 
@@ -196,17 +164,7 @@ export default function CreditDerivativesAnalysisPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* 🤖 AI Summary */}
-          {aiSummary && (
-            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold mb-2">
-                AI Credit Market Summary
-              </h3>
-              <p className="text-gray-700 whitespace-pre-line leading-relaxed">
-                {aiSummary}
-              </p>
-            </div>
-          )}
+          {/* AI commentary removed — needs a server route */}
         </>
       )}
 

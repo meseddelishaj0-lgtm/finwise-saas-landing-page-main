@@ -17,12 +17,8 @@ export default function AssetBackedSecuritiesAnalysisPage() {
   const [query, setQuery] = useState("MBS"); // default asset-backed security
   const [data, setData] = useState<any | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
-  const [aiSummary, setAiSummary] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const fmpKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
 
   const fetchABSData = async (symbol: string) => {
     try {
@@ -30,7 +26,7 @@ export default function AssetBackedSecuritiesAnalysisPage() {
       setError(null);
 
       const res = await fetch(
-        `https://financialmodelingprep.com/api/v3/rating/${symbol}?apikey=${fmpKey}`
+        `/api/proxy/fmp/api/v3/rating/${symbol}`
       );
       const json = await res.json();
 
@@ -45,38 +41,12 @@ export default function AssetBackedSecuritiesAnalysisPage() {
       }));
       setChartData(mockChart);
 
-      fetchAiSummary(symbol, latest);
+      // AI commentary removed — needs a server route
     } catch (err: any) {
       console.error(err);
       setError("Could not retrieve ABS data.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchAiSummary = async (symbol: string, latest: any) => {
-    try {
-      const prompt = `
-      Write a 3-sentence analysis on the current performance of ${symbol} asset-backed securities.
-      Include yield trends, risk sentiment, and investor demand. Assume recent yield: ${latest.ratingScore || "N/A"}.
-      Keep tone objective and professional.
-      `;
-
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-      const json = await res.json();
-      setAiSummary(json.choices?.[0]?.message?.content || "");
-    } catch (err) {
-      console.error("AI Summary Error:", err);
     }
   };
 
@@ -156,14 +126,7 @@ export default function AssetBackedSecuritiesAnalysisPage() {
             </ResponsiveContainer>
           </div>
 
-          {aiSummary && (
-            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold mb-2">
-                AI Market Summary
-              </h3>
-              <p className="text-gray-700 leading-relaxed">{aiSummary}</p>
-            </div>
-          )}
+          {/* AI commentary removed — needs a server route */}
         </>
       )}
 

@@ -13,8 +13,6 @@ import {
 import { ArrowLeft, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 
-const FMP_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY!;
-
 export default function LiquidityHeatmap() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +23,7 @@ export default function LiquidityHeatmap() {
     try {
       // Placeholder API: using yield curve data as liquidity proxy
       const res = await fetch(
-        `https://financialmodelingprep.com/api/v4/treasury?apikey=${FMP_KEY}`
+        `/api/proxy/fmp/api/v4/treasury`
       );
       const raw = await res.json();
       const latest = raw[0];

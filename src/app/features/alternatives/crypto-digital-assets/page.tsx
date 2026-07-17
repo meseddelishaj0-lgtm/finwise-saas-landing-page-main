@@ -25,14 +25,12 @@ export default function CryptoScreenerPage() {
   const [sortAsc, setSortAsc] = useState<boolean>(false);
   const router = useRouter();
 
-  const apiKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
-
   useEffect(() => {
     const fetchCryptos = async () => {
       try {
         setLoading(true);
         const res = await fetch(
-          `https://financialmodelingprep.com/api/v3/quotes/crypto?apikey=${apiKey}`
+          `/api/proxy/fmp/api/v3/quotes/crypto`
         );
         if (!res.ok) throw new Error("Failed to fetch crypto data");
         const data = await res.json();
@@ -60,7 +58,7 @@ export default function CryptoScreenerPage() {
       }
     };
     fetchCryptos();
-  }, [apiKey]);
+  }, []);
 
   const filteredCryptos = useMemo(() => {
     let filtered = cryptos.filter(

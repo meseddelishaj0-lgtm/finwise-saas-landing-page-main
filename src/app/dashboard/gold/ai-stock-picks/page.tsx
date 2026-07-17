@@ -16,14 +16,12 @@ export default function AIStockPicksPage() {
   const [stocks, setStocks] = useState<StockData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const FINNHUB_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY!;
-
   useEffect(() => {
     const fetchStocks = async () => {
       try {
         // Fetch trending stocks from Finnhub
         const res = await fetch(
-          `https://finnhub.io/api/v1/news?category=general&token=${FINNHUB_KEY}`
+          `/api/proxy/finnhub/api/v1/news?category=general`
         );
         const data = await res.json();
 

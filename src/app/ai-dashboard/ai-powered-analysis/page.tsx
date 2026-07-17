@@ -48,11 +48,10 @@ const AIPoweredAnalysisPage = () => {
     setLoading(true);
     setError("");
     try {
-      const apiKey = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
       const [quoteRes, profileRes, metricsRes] = await Promise.all([
-        fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${apiKey}`),
-        fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${apiKey}`),
-        fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${ticker}&metric=all&token=${apiKey}`),
+        fetch(`/api/proxy/finnhub/api/v1/quote?symbol=${ticker}`),
+        fetch(`/api/proxy/finnhub/api/v1/stock/profile2?symbol=${ticker}`),
+        fetch(`/api/proxy/finnhub/api/v1/stock/metric?symbol=${ticker}&metric=all`),
       ]);
 
       const quote = await quoteRes.json();

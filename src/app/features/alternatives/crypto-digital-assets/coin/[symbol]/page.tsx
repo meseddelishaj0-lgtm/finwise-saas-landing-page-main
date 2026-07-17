@@ -23,7 +23,6 @@ type Range = "1D" | "5D" | "1M" | "6M" | "YTD" | "1Y" | "5Y" | "ALL";
 export default function CryptoDetailPage() {
   const { symbol } = useParams();
   const router = useRouter();
-  const apiKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
 
   const [data, setData] = useState<HistoricalData[]>([]);
   const [price, setPrice] = useState<number | null>(null);
@@ -42,7 +41,7 @@ export default function CryptoDetailPage() {
 
         // 1️⃣ Live quote
         const quoteRes = await fetch(
-          `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${apiKey}`
+          `/api/proxy/fmp/api/v3/quote/${symbol}`
         );
         const quoteData = await quoteRes.json();
         if (quoteData && quoteData.length > 0) {
@@ -53,7 +52,7 @@ export default function CryptoDetailPage() {
 
         // 2️⃣ Historical data
         const histRes = await fetch(
-          `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}?apikey=${apiKey}`
+          `/api/proxy/fmp/api/v3/historical-price-full/${symbol}`
         );
         const histData = await histRes.json();
 
@@ -75,7 +74,7 @@ export default function CryptoDetailPage() {
     };
 
     if (symbol) fetchCryptoData();
-  }, [symbol, apiKey]);
+  }, [symbol]);
 
   const filterByRange = (range: Range): HistoricalData[] => {
     if (!data.length) return [];

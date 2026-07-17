@@ -4,9 +4,14 @@ import { enforceRateLimit } from '@/lib/rateLimit';
 export async function POST(req: Request) {
   const _rl = enforceRateLimit(req, 'ai', 15, 60_000);
   if (_rl) return _rl;
-  const { prompt } = await req.json();
 
   try {
+    // Parse inside try — a malformed/empty body was an unhandled 500 before.
+    const { prompt } = await req.json();
+    if (!prompt || typeof prompt !== "string" || prompt.length > 4000) {
+      return NextResponse.json({ insight: "AI summary unavailable." }, { status: 400 });
+    }
+
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -15,6 +20,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
+        max_tokens: 800,
         messages: [
           { role: "system", content: "You are a financial strategist." },
           { role: "user", content: prompt },

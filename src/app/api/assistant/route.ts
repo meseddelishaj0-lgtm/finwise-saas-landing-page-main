@@ -7,8 +7,12 @@ export async function POST(req: Request) {
   try {
     const { message } = await req.json();
 
-    if (!message) {
+    if (!message || typeof message !== "string") {
       return NextResponse.json({ reply: "⚠️ No message provided." }, { status: 400 });
+    }
+    // Cap input size to blunt cost/abuse.
+    if (message.length > 4000) {
+      return NextResponse.json({ reply: "⚠️ Message too long." }, { status: 400 });
     }
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -19,6 +23,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         model: "gpt-4o", // GPT-5-level model
+        max_tokens: 1000, // cap output cost
         messages: [
           {
             role: "system",
@@ -34,10 +39,8 @@ export async function POST(req: Request) {
 
     if (data.error) {
       console.error("OpenAI API error:", data.error);
-      return NextResponse.json(
-        { reply: "⚠️ OpenAI API error: " + data.error.message },
-        { status: 500 }
-      );
+      // Don't echo the provider's error text back to the client.
+      return NextResponse.json({ reply: "⚠️ AI service error." }, { status: 502 });
     }
 
     const reply = data.choices?.[0]?.message?.content ?? "⚠️ No response from AI.";

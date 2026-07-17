@@ -13,8 +13,6 @@ import {
 import { ArrowLeft, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 
-const FMP_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY!;
-
 interface YieldData {
   maturity: string;
   yield: number;
@@ -28,7 +26,7 @@ export default function YieldCurveVisualizer() {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://financialmodelingprep.com/api/v4/treasury?apikey=${FMP_KEY}`
+        `/api/proxy/fmp/api/v4/treasury`
       );
       const raw = await res.json();
       // Pick most recent yields

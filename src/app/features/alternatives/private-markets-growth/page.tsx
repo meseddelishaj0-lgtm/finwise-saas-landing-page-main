@@ -23,9 +23,6 @@ import {
 } from "recharts";
 import { useRouter } from "next/navigation";
 
-// ENV KEYS
-const FMP_API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
-
 export default function PrivateMarketsGrowthPage() {
   const router = useRouter();
 
@@ -40,7 +37,7 @@ export default function PrivateMarketsGrowthPage() {
       try {
         // Example FMP endpoint for private market proxies
         const res = await fetch(
-          `https://financialmodelingprep.com/api/v4/etf-sector-allocation?symbol=XLK&apikey=${FMP_API_KEY}`
+          `/api/proxy/fmp/api/v4/etf-sector-allocation?symbol=XLK`
         );
         const json = await res.json();
 

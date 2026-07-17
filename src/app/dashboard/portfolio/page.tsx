@@ -46,7 +46,6 @@ const COLORS = [
   "#F97316",
   "#14B8A6",
 ];
-const FINNHUB = process.env.NEXT_PUBLIC_FINNHUB_API_KEY || "";
 
 const PortfolioPage = () => {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
@@ -106,7 +105,7 @@ const PortfolioPage = () => {
     if (!newTicker || !newShares || !newCost) return alert("Fill all fields");
     try {
       const res = await fetch(
-        `https://finnhub.io/api/v1/quote?symbol=${newTicker}&token=${FINNHUB}`
+        `/api/proxy/finnhub/api/v1/quote?symbol=${newTicker}`
       );
       const data = await res.json();
       const currentPrice = data.c || 0;

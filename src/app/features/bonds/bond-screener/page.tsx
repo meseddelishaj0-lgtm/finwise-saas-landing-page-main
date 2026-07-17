@@ -25,20 +25,16 @@ export default function GlobalBondsDashboardPage() {
   const [bonds, setBonds] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
   const [query, setQuery] = useState("");
-  const [aiSummary, setAiSummary] = useState("");
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState("");
   const prevData = useRef<Record<string, number>>({});
-
-  const fmpKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
 
   // ✅ Fetch live bonds directly from FMP
   const fetchBondData = async () => {
     setLoading(true);
     try {
       const res = await fetch(
-        `https://financialmodelingprep.com/api/v4/government_bonds_yield?apikey=${fmpKey}`
+        `/api/proxy/fmp/api/v4/government_bonds_yield`
       );
       const data = await res.json();
 
@@ -61,44 +57,11 @@ export default function GlobalBondsDashboardPage() {
       setBonds(mapped);
       setFiltered(mapped);
       setLastUpdated(new Date().toLocaleTimeString());
-      fetchAiSummary(mapped.slice(0, 8));
+      // AI commentary removed — needs a server route
     } catch (err) {
       console.error("Error fetching bond data:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // ✅ AI summary
-  const fetchAiSummary = async (data: any[]) => {
-    try {
-      const summaryText = data
-        .filter((b) => b.yield)
-        .map((b) => `${b.symbol}: ${b.yield}%`)
-        .join(", ");
-
-      const prompt = `
-        Provide a short professional 3–5 sentence analysis of global bond yields.
-        Data: ${summaryText}.
-        Focus on inflation expectations, interest rate direction, and investor sentiment.
-      `;
-
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-
-      const json = await res.json();
-      setAiSummary(json.choices?.[0]?.message?.content || "");
-    } catch (err) {
-      console.error("AI summary error", err);
     }
   };
 
@@ -295,17 +258,7 @@ export default function GlobalBondsDashboardPage() {
         </div>
       )}
 
-      {/* AI Summary */}
-      {aiSummary && (
-        <div className="mt-8 bg-gray-50 border border-gray-200 rounded-2xl p-6">
-          <h3 className="text-lg font-semibold mb-2">
-            AI Global Bond Market Summary
-          </h3>
-          <p className="text-gray-700 whitespace-pre-line leading-relaxed">
-            {aiSummary}
-          </p>
-        </div>
-      )}
+      {/* AI commentary removed — needs a server route */}
 
       {/* Disclaimer */}
       <div className="mt-10 text-xs text-gray-500">

@@ -44,8 +44,11 @@ export async function POST(req: NextRequest) {
   try {
     const { message, history } = await req.json();
 
-    if (!message) {
+    if (!message || typeof message !== 'string') {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+    }
+    if (message.length > 4000) {
+      return NextResponse.json({ error: 'Message too long' }, { status: 400 });
     }
 
     if (!OPENAI_API_KEY) {
@@ -69,11 +72,13 @@ export async function POST(req: NextRequest) {
 
 Be helpful, concise, and actionable. Always mention that past performance doesn't guarantee future results when giving specific advice. Use data when available but be clear about limitations.`
       },
-      // Include recent history if provided (last 10 messages)
-      ...(history || []).slice(-10).map((msg: any) => ({
-        role: msg.role,
-        content: msg.content
-      })),
+      // Include recent history if provided (last 10 messages). Only allow
+      // user/assistant roles — a client-supplied role:'system' would let a
+      // caller inject instructions past our system prompt (prompt injection).
+      ...(Array.isArray(history) ? history : [])
+        .slice(-10)
+        .filter((msg: any) => msg && (msg.role === 'user' || msg.role === 'assistant') && typeof msg.content === 'string')
+        .map((msg: any) => ({ role: msg.role, content: String(msg.content).slice(0, 4000) })),
       {
         role: 'user',
         content: message + stockContext
@@ -98,10 +103,7 @@ Be helpful, concise, and actionable. Always mention that past performance doesn'
 
     if (data.error) {
       console.error('OpenAI API error:', data.error);
-      return NextResponse.json(
-        { error: data.error.message || 'AI service error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'AI service error' }, { status: 502 });
     }
 
     const reply = data.choices?.[0]?.message?.content || 'I apologize, but I could not generate a response. Please try again.';

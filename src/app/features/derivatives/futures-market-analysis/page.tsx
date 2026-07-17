@@ -22,12 +22,8 @@ export default function FuturesMarketAnalysisPage() {
   const [query, setQuery] = useState("");
   const [data, setData] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
-  const [aiSummary, setAiSummary] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const fmpKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
 
   // ✅ Fetch all futures data from FMP Ultimate
   const fetchFuturesData = async () => {
@@ -35,52 +31,18 @@ export default function FuturesMarketAnalysisPage() {
       setLoading(true);
       setError(null);
       const res = await fetch(
-        `https://financialmodelingprep.com/api/v3/quotes/commodity?apikey=${fmpKey}`
+        `/api/proxy/fmp/api/v3/quotes/commodity`
       );
       const json = await res.json();
       if (!json || json.length === 0) throw new Error("No data found");
       setData(json);
       setFiltered(json);
-      fetchAiSummary(json);
+      // AI commentary removed — needs a server route
     } catch (err) {
       console.error(err);
       setError("Failed to load futures data");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // ✅ AI summary
-  const fetchAiSummary = async (contracts: any[]) => {
-    try {
-      const top5 = contracts
-        .slice(0, 5)
-        .map(
-          (c) =>
-            `${c.name}: $${c.price.toFixed(2)} (${c.changesPercentage.toFixed(2)}%)`
-        )
-        .join(", ");
-      const prompt = `
-      Provide a short market overview for key global futures:
-      ${top5}.
-      Focus on major movers, market sentiment, and macroeconomic themes.
-      Keep it under 4 sentences.
-      `;
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-      const json = await res.json();
-      setAiSummary(json.choices?.[0]?.message?.content || "");
-    } catch (err) {
-      console.error("AI Summary Error:", err);
     }
   };
 
@@ -242,15 +204,7 @@ export default function FuturesMarketAnalysisPage() {
         </div>
       )}
 
-      {/* 🤖 AI Summary */}
-      {aiSummary && (
-        <div className="mt-8 bg-gray-50 border border-gray-200 rounded-2xl p-6">
-          <h3 className="text-lg font-semibold mb-2">AI Market Overview</h3>
-          <p className="text-gray-700 whitespace-pre-line leading-relaxed">
-            {aiSummary}
-          </p>
-        </div>
-      )}
+      {/* AI commentary removed — needs a server route */}
 
       {/* ⚠️ Disclaimer */}
       <div className="mt-10 text-xs text-gray-500 leading-relaxed">

@@ -25,9 +25,6 @@ import {
 } from "recharts";
 import { useRouter } from "next/navigation";
 
-// ENV KEYS
-const FMP_API_KEY = process.env.NEXT_PUBLIC_FMP_API_KEY;
-
 export default function MarketTrendsPage() {
   const router = useRouter();
 
@@ -48,19 +45,19 @@ export default function MarketTrendsPage() {
         const [gainersRes, losersRes, indexRes, sectorRes, fearGreedRes] =
           await Promise.all([
             fetch(
-              `https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey=${FMP_API_KEY}`
+              `/api/proxy/fmp/api/v3/stock_market/gainers`
             ),
             fetch(
-              `https://financialmodelingprep.com/api/v3/stock_market/losers?apikey=${FMP_API_KEY}`
+              `/api/proxy/fmp/api/v3/stock_market/losers`
             ),
             fetch(
-              `https://financialmodelingprep.com/api/v3/quotes/index?apikey=${FMP_API_KEY}`
+              `/api/proxy/fmp/api/v3/quotes/index`
             ),
             fetch(
-              `https://financialmodelingprep.com/api/v3/stock/sectors-performance?apikey=${FMP_API_KEY}`
+              `/api/proxy/fmp/api/v3/stock/sectors-performance`
             ),
             fetch(
-              `https://financialmodelingprep.com/api/v4/fear_greed_index?apikey=${FMP_API_KEY}`
+              `/api/proxy/fmp/api/v4/fear_greed_index`
             ).catch(() => null),
           ]);
 

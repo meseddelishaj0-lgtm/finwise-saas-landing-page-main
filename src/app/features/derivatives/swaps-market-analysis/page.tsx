@@ -17,12 +17,8 @@ export default function SwapsMarketAnalysisPage() {
   const [query, setQuery] = useState("USDIRS"); // Default: USD Interest Rate Swap
   const [data, setData] = useState<any | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
-  const [aiSummary, setAiSummary] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const fmpKey = process.env.NEXT_PUBLIC_FMP_API_KEY;
-  const openaiKey = process.env.OPENAI_API_KEY;
 
   // ✅ Fetch Swaps Data (using FMP Ultimate)
   const fetchSwapsData = async (symbol: string) => {
@@ -31,7 +27,7 @@ export default function SwapsMarketAnalysisPage() {
       setError(null);
 
       const res = await fetch(
-        `https://financialmodelingprep.com/api/v4/treasury?symbol=${symbol}&apikey=${fmpKey}`
+        `/api/proxy/fmp/api/v4/treasury?symbol=${symbol}`
       );
 
       if (!res.ok) throw new Error("Request failed");
@@ -52,41 +48,12 @@ export default function SwapsMarketAnalysisPage() {
         }));
 
       setChartData(formatted);
-      fetchAiSummary(symbol, latest);
+      // AI commentary removed — needs a server route
     } catch (err: any) {
       console.error(err);
       setError("Unable to fetch swaps data for that symbol.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // ✅ Generate AI commentary
-  const fetchAiSummary = async (symbol: string, latest: any) => {
-    try {
-      const prompt = `
-      Provide a brief 3-sentence analysis for the current swap market (${symbol}).
-      Latest rate: ${latest.rate}%. Discuss potential macroeconomic drivers
-      such as inflation, interest rate expectations, and yield curve trends.
-      Keep tone professional and concise.
-      `;
-
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-        }),
-      });
-
-      const json = await res.json();
-      setAiSummary(json.choices?.[0]?.message?.content || "");
-    } catch (err) {
-      console.error("AI Summary Error:", err);
     }
   };
 
@@ -191,15 +158,7 @@ export default function SwapsMarketAnalysisPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* 🤖 AI Summary */}
-          {aiSummary && (
-            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold mb-2">AI Market Summary</h3>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                {aiSummary}
-              </p>
-            </div>
-          )}
+          {/* AI commentary removed — needs a server route */}
         </>
       )}
 

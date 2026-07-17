@@ -4,9 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Brain, Search, TrendingUp } from 'lucide-react';
 
-// ✅ Secure environment variable for your Finnhub API key
-const FINNHUB_API_KEY = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
-
 interface StockData {
   symbol: string;
   price: number;
@@ -33,7 +30,7 @@ export default function AIPoweredAnalysisPage() {
     try {
       // ✅ Fetch live data from Finnhub
       const res = await fetch(
-        `https://finnhub.io/api/v1/quote?symbol=${ticker.toUpperCase()}&token=${FINNHUB_API_KEY}`
+        `/api/proxy/finnhub/api/v1/quote?symbol=${ticker.toUpperCase()}`
       );
 
       if (!res.ok) throw new Error('Finnhub API error');
