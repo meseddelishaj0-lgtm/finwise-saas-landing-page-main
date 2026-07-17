@@ -7,7 +7,7 @@ import { priceStore } from '../stores/priceStore';
 import { websocketService } from './websocketService';
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL = 'https://api.twelvedata.com';
+const TWELVE_DATA_URL = 'https://www.wallstreetstocks.ai/api/td';
 
 // Storage keys
 const STORAGE_KEYS = {

@@ -159,11 +159,11 @@ export default function SentimentTab() {
       // Fetch both sentiment and analyst ratings in parallel
       const [sentimentRes, ratingsRes] = await Promise.all([
         fetch(
-          `https://financialmodelingprep.com/api/v4/historical/social-sentiment?symbol=${cleanSymbol}&apikey=${FMP_KEY}`,
+          `https://www.wallstreetstocks.ai/api/fmp/api/v4/historical/social-sentiment?symbol=${cleanSymbol}&apikey=${FMP_KEY}`,
           { signal: controller.signal }
         ),
         fetch(
-          `https://financialmodelingprep.com/api/v3/rating/${cleanSymbol}?apikey=${FMP_KEY}`,
+          `https://www.wallstreetstocks.ai/api/fmp/api/v3/rating/${cleanSymbol}?apikey=${FMP_KEY}`,
           { signal: controller.signal }
         )
       ]);

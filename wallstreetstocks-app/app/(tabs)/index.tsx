@@ -201,9 +201,9 @@ const interpolateData = (data: { value: number; label: string; dataPointText?: s
 };
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const BASE_URL = 'https://www.wallstreetstocks.ai/api/fmp/api/v3';
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL = 'https://api.twelvedata.com';
+const TWELVE_DATA_URL = 'https://www.wallstreetstocks.ai/api/td';
 
 // Format news date to relative time
 const formatNewsDate = (dateString: string) => {

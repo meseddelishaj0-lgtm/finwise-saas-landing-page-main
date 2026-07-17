@@ -180,7 +180,7 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
   
   // Logo URLs
   // For stocks: FMP provides direct image URLs (fallback)
-  const stockLogoUrl = `https://financialmodelingprep.com/image-stock/${normalizedSymbol}.png`;
+  const stockLogoUrl = `https://www.wallstreetstocks.ai/api/fmp/image-stock/${normalizedSymbol}.png`;
   
   // For crypto: Twelve Data has direct logo URLs (primary), CoinCap as fallback
   const twelveDataCryptoLogoUrl = `https://logo.twelvedata.com/crypto/${normalizedSymbol.toLowerCase()}.png`;
@@ -205,7 +205,7 @@ const StockLogo: React.FC<StockLogoProps> = memo(({ symbol, size = 40, style }) 
       try {
         // 24h disk cache — logo URLs are stable, no need to refetch per launch
         const data = await cachedJson(
-          `https://api.twelvedata.com/logo?symbol=${normalizedSymbol}&apikey=${TWELVE_DATA_API_KEY}`,
+          `https://www.wallstreetstocks.ai/api/td/logo?symbol=${normalizedSymbol}&apikey=${TWELVE_DATA_API_KEY}`,
           24 * 60 * 60 * 1000,
           { cacheKey: `tdlogo:${cacheKey}` }
         );

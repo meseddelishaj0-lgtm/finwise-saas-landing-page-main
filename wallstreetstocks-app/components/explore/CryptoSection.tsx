@@ -27,7 +27,7 @@ export default function CryptoSection() {
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const response = await fetch(
-        `https://financialmodelingprep.com/api/v3/quote/BTCUSD,ETHUSD,SOLUSD,ADAUSD,XRPUSD,DOGEUSD?apikey=${FMP_KEY}`,
+        `https://www.wallstreetstocks.ai/api/fmp/api/v3/quote/BTCUSD,ETHUSD,SOLUSD,ADAUSD,XRPUSD,DOGEUSD?apikey=${FMP_KEY}`,
         { signal: controller.signal }
       );
 

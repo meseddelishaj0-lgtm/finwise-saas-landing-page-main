@@ -5,7 +5,7 @@
 import { getFromMemory, setToMemory, CACHE_KEYS } from '../utils/memoryCache';
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL = 'https://api.twelvedata.com';
+const TWELVE_DATA_URL = 'https://www.wallstreetstocks.ai/api/td';
 
 // Cache TTL: 5 minutes for sparklines during extended hours, 10 minutes otherwise
 const SPARKLINE_CACHE_TTL_EXTENDED = 5 * 60 * 1000;

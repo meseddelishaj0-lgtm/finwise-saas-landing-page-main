@@ -118,7 +118,7 @@ export default function NewsTab() {
     setError(null);
 
     try {
-      const url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${cleanSymbol}&limit=20&apikey=${FMP_API_KEY}`;
+      const url = `https://www.wallstreetstocks.ai/api/fmp/api/v3/stock_news?tickers=${cleanSymbol}&limit=20&apikey=${FMP_API_KEY}`;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);

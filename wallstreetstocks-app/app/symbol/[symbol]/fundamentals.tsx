@@ -71,12 +71,12 @@ export default function FundamentalsTab() {
     try {
       // Fetch all data in parallel
       const [profileRes, incomeRes, balanceRes, cashRes, ratiosRes, metricsRes] = await Promise.all([
-        fetch(`https://financialmodelingprep.com/api/v3/profile/${cleanSymbol}?apikey=${FMP_KEY}`),
-        fetch(`https://financialmodelingprep.com/api/v3/income-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`),
-        fetch(`https://financialmodelingprep.com/api/v3/balance-sheet-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`),
-        fetch(`https://financialmodelingprep.com/api/v3/cash-flow-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`),
-        fetch(`https://financialmodelingprep.com/api/v3/ratios/${cleanSymbol}?limit=1&apikey=${FMP_KEY}`),
-        fetch(`https://financialmodelingprep.com/api/v3/key-metrics/${cleanSymbol}?limit=1&apikey=${FMP_KEY}`),
+        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/profile/${cleanSymbol}?apikey=${FMP_KEY}`),
+        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/income-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`),
+        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/balance-sheet-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`),
+        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/cash-flow-statement/${cleanSymbol}?limit=4&apikey=${FMP_KEY}`),
+        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/ratios/${cleanSymbol}?limit=1&apikey=${FMP_KEY}`),
+        fetch(`https://www.wallstreetstocks.ai/api/fmp/api/v3/key-metrics/${cleanSymbol}?limit=1&apikey=${FMP_KEY}`),
       ]);
 
       const [profileData, incomeData, balanceData, cashData, ratiosData, metricsData] = await Promise.all([

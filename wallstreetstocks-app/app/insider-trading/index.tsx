@@ -18,7 +18,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const BASE_URL = 'https://financialmodelingprep.com/api/v4';
+const BASE_URL = 'https://www.wallstreetstocks.ai/api/fmp/api/v4';
 
 interface InsiderTrade {
   symbol: string;

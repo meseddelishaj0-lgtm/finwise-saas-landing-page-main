@@ -177,7 +177,7 @@ interface SavedPreset {
 
 // FMP API Key
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
-const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const FMP_BASE_URL = 'https://www.wallstreetstocks.ai/api/fmp/api/v3';
 
 // ---- Client-side screening ---------------------------------------------------
 // FMP's /stock-screener only honors marketCap/price/beta/volume/dividend +

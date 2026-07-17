@@ -89,7 +89,7 @@ export default function InfoTab() {
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       const response = await fetch(
-        `https://financialmodelingprep.com/api/v3/profile/${cleanSymbol}?apikey=${FMP_KEY}`,
+        `https://www.wallstreetstocks.ai/api/fmp/api/v3/profile/${cleanSymbol}?apikey=${FMP_KEY}`,
         { signal: controller.signal }
       );
 

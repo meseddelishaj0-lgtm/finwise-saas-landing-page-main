@@ -28,7 +28,7 @@ export default function Trending() {
 
   // Your FMP API key (set in app.json or .env)
   const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
-  const API_URL = `https://financialmodelingprep.com/api/v3/stock_market/actives?limit=50&apikey=${FMP_API_KEY}`;
+  const API_URL = `https://www.wallstreetstocks.ai/api/fmp/api/v3/stock_market/actives?limit=50&apikey=${FMP_API_KEY}`;
 
   useEffect(() => {
     let isMounted = true;
