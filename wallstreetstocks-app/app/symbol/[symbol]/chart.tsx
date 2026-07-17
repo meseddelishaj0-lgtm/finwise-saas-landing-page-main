@@ -1,5 +1,6 @@
 // app/symbol/[symbol]/chart.tsx - Stock Chart with WebSocket Real-Time Prices
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { isEasternDST } from '../../../lib/easternTime';
 import {
   View,
   Text,
@@ -141,10 +142,8 @@ function parseTwelveDataTime(datetime: string, isCrypto: boolean = false): Date 
   // US stocks - time is in Eastern Time
   // Format: "2024-01-15 09:30:00" or "2024-01-15"
   const tempDate = new Date(datetime.replace(' ', 'T'));
-  const month = tempDate.getMonth();
-
-  // DST: roughly March-November
-  const isDST = month >= 2 && month <= 10;
+  // DST: 2nd Sunday of March → 1st Sunday of November
+  const isDST = isEasternDST(tempDate);
   const offset = isDST ? '-04:00' : '-05:00';
 
   const isoLocal = isDateOnly ? datetime + 'T12:00:00' : datetime.replace(' ', 'T');

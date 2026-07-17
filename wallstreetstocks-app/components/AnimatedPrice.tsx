@@ -2,6 +2,7 @@
 // Animated price display with smooth transitions and flash effects
 import React, { useEffect, useRef, memo } from 'react';
 import { Text, StyleSheet, Animated, View, TextStyle, ViewStyle, StyleProp } from 'react-native';
+import { isEasternDST } from '../lib/easternTime';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -195,11 +196,7 @@ const getMarketStatus = (): MarketStatus => {
 
   // Convert UTC to Eastern Time
   // EST = UTC - 5 hours, EDT = UTC - 4 hours
-  // Determine if we're in DST (roughly March second Sunday to November first Sunday)
-  const month = now.getUTCMonth(); // 0-11
-
-  // Simple DST check: DST is roughly mid-March to early November
-  const isDST = month > 2 && month < 10; // April through October is definitely DST
+  const isDST = isEasternDST(now);
 
   const etOffset = isDST ? -4 : -5; // EDT or EST
   let etHours = utcHours + etOffset;

@@ -179,6 +179,166 @@ interface SavedPreset {
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
+// ---- Client-side screening ---------------------------------------------------
+// FMP's /stock-screener only honors marketCap/price/beta/volume/dividend +
+// sector/exchange/country/isEtf. Everything else (P/E, margins, ROE, valuation
+// ratios, growth) is filtered here on the client after enriching results with
+// /quote (P/E) and the TTM ratios/key-metrics endpoints — otherwise those
+// filters were silently ignored and returned unfiltered results.
+const num = (v: any): number | undefined => {
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  return Number.isFinite(n) ? n : undefined;
+};
+
+// Filters needing per-symbol TTM fundamentals (ratios-ttm + key-metrics-ttm)
+const FUNDAMENTAL_FILTER_IDS = new Set([
+  'roe', 'roa', 'priceToBook', 'priceToSales', 'evToEbitda',
+  'grossMargin', 'operatingMargin', 'netMargin', 'debtToEquity', 'currentRatio',
+]);
+const GROWTH_FILTER_IDS = new Set(['revenueGrowth', 'epsGrowth']);
+
+const fundamentalsCache = new Map<string, Partial<Stock>>();
+
+async function enrichFundamentals(symbols: string[], needGrowth: boolean): Promise<Map<string, Partial<Stock>>> {
+  const out = new Map<string, Partial<Stock>>();
+  const toFetch: string[] = [];
+  for (const s of symbols) {
+    const cached = fundamentalsCache.get(s);
+    if (cached && (!needGrowth || cached.revenueGrowth !== undefined)) out.set(s, cached);
+    else toFetch.push(s);
+  }
+  const CONCURRENCY = 6;
+  const pct = (x: any) => { const n = num(x); return n === undefined ? undefined : n * 100; };
+  for (let i = 0; i < toFetch.length; i += CONCURRENCY) {
+    const batch = toFetch.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(async (sym) => {
+      try {
+        const reqs: Promise<Response>[] = [
+          fetch(`${FMP_BASE_URL}/ratios-ttm/${sym}?apikey=${FMP_API_KEY}`),
+          fetch(`${FMP_BASE_URL}/key-metrics-ttm/${sym}?apikey=${FMP_API_KEY}`),
+        ];
+        if (needGrowth) reqs.push(fetch(`${FMP_BASE_URL}/financial-growth/${sym}?period=annual&limit=1&apikey=${FMP_API_KEY}`));
+        const jsonArr = await Promise.all((await Promise.all(reqs)).map(r => r.json()));
+        const r = Array.isArray(jsonArr[0]) ? jsonArr[0][0] : jsonArr[0];
+        const k = Array.isArray(jsonArr[1]) ? jsonArr[1][0] : jsonArr[1];
+        const g = needGrowth ? (Array.isArray(jsonArr[2]) ? jsonArr[2][0] : jsonArr[2]) : null;
+        // ratios-ttm returns margins/ROE as fractions → convert to percent
+        const f: Partial<Stock> = {
+          roe: pct(r?.returnOnEquityTTM),
+          roa: pct(r?.returnOnAssetsTTM),
+          grossMargin: pct(r?.grossProfitMarginTTM),
+          operatingMargin: pct(r?.operatingProfitMarginTTM),
+          netMargin: pct(r?.netProfitMarginTTM),
+          priceToBook: num(r?.priceToBookRatioTTM),
+          priceToSales: num(r?.priceToSalesRatioTTM),
+          debtToEquity: num(r?.debtEquityRatioTTM),
+          currentRatio: num(r?.currentRatioTTM),
+          evToEbitda: num(k?.enterpriseValueOverEBITDATTM),
+        };
+        if (needGrowth && g) {
+          f.revenueGrowth = pct(g?.revenueGrowth);
+          f.epsGrowth = pct(g?.epsgrowth ?? g?.epsGrowth);
+        }
+        const merged = { ...(fundamentalsCache.get(sym) || {}), ...f };
+        fundamentalsCache.set(sym, merged);
+        out.set(sym, merged);
+      } catch {}
+    }));
+  }
+  return out;
+}
+
+type Range = [number | undefined, number | undefined]; // [min, max]; inclusive
+const CLIENT_FILTER_RANGES: Record<string, { field: keyof Stock; opts: Record<string, Range> }> = {
+  pe: { field: 'pe', opts: {
+    'Under 10': [0, 10], '10 - 15': [10, 15], '15 - 20': [15, 20], '20 - 30': [20, 30],
+    '30 - 50': [30, 50], 'Over 50': [50, undefined], 'Negative (Loss)': [undefined, 0],
+  }},
+  dividend: { field: 'dividendYield', opts: {
+    'Over 5%': [5, undefined], '3% - 5%': [3, 5], '1% - 3%': [1, 3], 'Under 1%': [0, 1], 'None': [undefined, 0.0001],
+  }},
+  roe: { field: 'roe', opts: {
+    'Over 30%': [30, undefined], '20% - 30%': [20, 30], '15% - 20%': [15, 20], '10% - 15%': [10, 15],
+    '5% - 10%': [5, 10], 'Under 5%': [0, 5], 'Negative': [undefined, 0],
+  }},
+  roa: { field: 'roa', opts: {
+    'Over 15%': [15, undefined], '10% - 15%': [10, 15], '5% - 10%': [5, 10], '0% - 5%': [0, 5], 'Negative': [undefined, 0],
+  }},
+  priceToBook: { field: 'priceToBook', opts: {
+    'Under 1': [undefined, 1], '1 - 2': [1, 2], '2 - 3': [2, 3], '3 - 5': [3, 5], 'Over 5': [5, undefined],
+  }},
+  priceToSales: { field: 'priceToSales', opts: {
+    'Under 1': [undefined, 1], '1 - 2': [1, 2], '2 - 5': [2, 5], '5 - 10': [5, 10], 'Over 10': [10, undefined],
+  }},
+  evToEbitda: { field: 'evToEbitda', opts: {
+    'Under 5': [undefined, 5], '5 - 10': [5, 10], '10 - 15': [10, 15], '15 - 20': [15, 20], 'Over 20': [20, undefined],
+  }},
+  grossMargin: { field: 'grossMargin', opts: {
+    'Over 70%': [70, undefined], '50% - 70%': [50, 70], '30% - 50%': [30, 50], '15% - 30%': [15, 30], 'Under 15%': [undefined, 15],
+  }},
+  operatingMargin: { field: 'operatingMargin', opts: {
+    'Over 30%': [30, undefined], '20% - 30%': [20, 30], '10% - 20%': [10, 20], '0% - 10%': [0, 10], 'Negative': [undefined, 0],
+  }},
+  netMargin: { field: 'netMargin', opts: {
+    'Over 25%': [25, undefined], '15% - 25%': [15, 25], '10% - 15%': [10, 15], '5% - 10%': [5, 10], '0% - 5%': [0, 5], 'Negative': [undefined, 0],
+  }},
+  debtToEquity: { field: 'debtToEquity', opts: {
+    'No Debt': [undefined, 0.01], 'Under 0.5': [undefined, 0.5], '0.5 - 1': [0.5, 1], '1 - 2': [1, 2], 'Over 2': [2, undefined],
+  }},
+  currentRatio: { field: 'currentRatio', opts: {
+    'Over 3': [3, undefined], '2 - 3': [2, 3], '1.5 - 2': [1.5, 2], '1 - 1.5': [1, 1.5], 'Under 1': [undefined, 1],
+  }},
+  revenueGrowth: { field: 'revenueGrowth', opts: {
+    'Over 50%': [50, undefined], '25% - 50%': [25, 50], '15% - 25%': [15, 25], '5% - 15%': [5, 15], '0% - 5%': [0, 5], 'Negative': [undefined, 0],
+  }},
+  epsGrowth: { field: 'epsGrowth', opts: {
+    'Over 50%': [50, undefined], '25% - 50%': [25, 50], '15% - 25%': [15, 25], '5% - 15%': [5, 15], '0% - 5%': [0, 5], 'Negative': [undefined, 0],
+  }},
+};
+
+function passesClientFilters(stock: Stock, filters: Record<string, string>, ids: string[]): boolean {
+  for (const id of ids) {
+    const value = filters[id];
+    if (!value || value === 'Any') continue;
+    const cfg = CLIENT_FILTER_RANGES[id];
+    if (!cfg) continue; // server-side filter (marketCap/price/volume/beta/sector)
+    const range = cfg.opts[value];
+    if (!range) continue;
+    const v = stock[cfg.field] as number | null | undefined;
+    if (v === null || v === undefined || Number.isNaN(v)) return false; // can't confirm → exclude
+    const [min, max] = range;
+    if (min !== undefined && v < min) return false;
+    if (max !== undefined && v > max) return false;
+  }
+  return true;
+}
+
+// Preset strategies. The fundamentals-based ones (undervalued/dividend/quality/
+// growth/cashcow/aipicks) now genuinely screen instead of silently returning the
+// "Most Active" list. momentum/breakout/shortSqueeze are best-effort proxies from
+// the movers lists (true short-interest/insider feeds aren't in FMP's screener).
+interface PresetDef {
+  source: 'screener' | 'gainers' | 'losers' | 'actives';
+  server?: ScreenerParams;
+  needFund?: boolean;
+  needGrowth?: boolean;
+  predicate?: (s: Stock) => boolean;
+  sort?: (a: Stock, b: Stock) => number;
+}
+const byChangeDesc = (a: Stock, b: Stock) => (b.changePercent ?? 0) - (a.changePercent ?? 0);
+const PRESET_DEFS: Record<string, PresetDef> = {
+  undervalued: { source: 'screener', server: { marketCapMoreThan: 1e9 }, predicate: s => s.pe != null && s.pe > 0 && s.pe < 15 },
+  dividend: { source: 'screener', server: { marketCapMoreThan: 1e9 }, predicate: s => (s.dividendYield ?? 0) >= 4, sort: (a, b) => (b.dividendYield ?? 0) - (a.dividendYield ?? 0) },
+  quality: { source: 'screener', server: { marketCapMoreThan: 5e9 }, needFund: true, predicate: s => (s.roe ?? -1) >= 20 && (s.netMargin ?? -1) >= 15 },
+  growth: { source: 'screener', server: { marketCapMoreThan: 1e9 }, needFund: true, needGrowth: true, predicate: s => (s.revenueGrowth ?? -1e9) >= 25 && (s.epsGrowth ?? -1e9) >= 20 },
+  cashcow: { source: 'screener', server: { marketCapMoreThan: 1e9 }, needFund: true, predicate: s => (s.netMargin ?? -1) >= 10 },
+  aipicks: { source: 'screener', server: { marketCapMoreThan: 2e9 }, needFund: true, needGrowth: true, predicate: s => (s.roe ?? -1) >= 15 && (s.revenueGrowth ?? -1e9) >= 15 },
+  momentum: { source: 'gainers', predicate: s => (s.changePercent ?? 0) > 2, sort: byChangeDesc },
+  breakout: { source: 'gainers', predicate: s => (s.changePercent ?? 0) > 3 && (s.volume ?? 0) > 1e6, sort: byChangeDesc },
+  shortSqueeze: { source: 'gainers', predicate: s => (s.changePercent ?? 0) > 5 && (s.volume ?? 0) > 5e6, sort: byChangeDesc },
+  insider: { source: 'actives', sort: byChangeDesc },
+};
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const FILTER_ITEM_WIDTH = (SCREEN_WIDTH - 60) / 2; // 20px padding on each side + 20px gap
 
@@ -194,6 +354,7 @@ interface Stock {
   pe: number | null;
   sector: string;
   roe?: number;
+  roa?: number;
   netIncome?: number;
   freeCashFlow?: number;
   debtToEquity?: number;
@@ -423,40 +584,6 @@ const buildScreenerParams = (filters: Record<string, string>): ScreenerParams =>
   if (filters.exchange && filters.exchange !== 'Any') params.exchange = filters.exchange;
   if (filters.country && filters.country !== 'Any') params.country = filters.country;
 
-  if (filters.pe) {
-    switch (filters.pe) {
-      case 'Under 10': params.peLessThan = 10; params.peMoreThan = 0; break;
-      case '10 - 15': params.peMoreThan = 10; params.peLessThan = 15; break;
-      case '15 - 20': params.peMoreThan = 15; params.peLessThan = 20; break;
-      case '20 - 30': params.peMoreThan = 20; params.peLessThan = 30; break;
-      case '30 - 50': params.peMoreThan = 30; params.peLessThan = 50; break;
-      case 'Over 50': params.peMoreThan = 50; break;
-      case 'Negative (Loss)': params.peLessThan = 0; break;
-    }
-  }
-
-  if (filters.dividend) {
-    switch (filters.dividend) {
-      case 'Over 5%': params.dividendMoreThan = 5; break;
-      case '3% - 5%': params.dividendMoreThan = 3; params.dividendLowerThan = 5; break;
-      case '1% - 3%': params.dividendMoreThan = 1; params.dividendLowerThan = 3; break;
-      case 'Under 1%': params.dividendMoreThan = 0; params.dividendLowerThan = 1; break;
-      case 'None': params.dividendLowerThan = 0.01; break;
-    }
-  }
-
-  if (filters.roe) {
-    switch (filters.roe) {
-      case 'Over 30%': params.returnOnEquityMoreThan = 30; break;
-      case '20% - 30%': params.returnOnEquityMoreThan = 20; params.returnOnEquityLessThan = 30; break;
-      case '15% - 20%': params.returnOnEquityMoreThan = 15; params.returnOnEquityLessThan = 20; break;
-      case '10% - 15%': params.returnOnEquityMoreThan = 10; params.returnOnEquityLessThan = 15; break;
-      case '5% - 10%': params.returnOnEquityMoreThan = 5; params.returnOnEquityLessThan = 10; break;
-      case 'Under 5%': params.returnOnEquityMoreThan = 0; params.returnOnEquityLessThan = 5; break;
-      case 'Negative': params.returnOnEquityLessThan = 0; break;
-    }
-  }
-
   if (filters.beta) {
     switch (filters.beta) {
       case 'Low (<0.8)': params.betaLowerThan = 0.8; break;
@@ -466,129 +593,11 @@ const buildScreenerParams = (filters: Record<string, string>): ScreenerParams =>
     }
   }
 
-  // Price/Book ratio
-  if (filters.priceToBook) {
-    switch (filters.priceToBook) {
-      case 'Under 1': params.priceToBookLessThan = 1; break;
-      case '1 - 2': params.priceToBookMoreThan = 1; params.priceToBookLessThan = 2; break;
-      case '2 - 3': params.priceToBookMoreThan = 2; params.priceToBookLessThan = 3; break;
-      case '3 - 5': params.priceToBookMoreThan = 3; params.priceToBookLessThan = 5; break;
-      case 'Over 5': params.priceToBookMoreThan = 5; break;
-    }
-  }
-
-  // Price/Sales ratio
-  if (filters.priceToSales) {
-    switch (filters.priceToSales) {
-      case 'Under 1': params.priceToSalesLessThan = 1; break;
-      case '1 - 2': params.priceToSalesMoreThan = 1; params.priceToSalesLessThan = 2; break;
-      case '2 - 5': params.priceToSalesMoreThan = 2; params.priceToSalesLessThan = 5; break;
-      case '5 - 10': params.priceToSalesMoreThan = 5; params.priceToSalesLessThan = 10; break;
-      case 'Over 10': params.priceToSalesMoreThan = 10; break;
-    }
-  }
-
-  // EV/EBITDA ratio
-  if (filters.evToEbitda) {
-    switch (filters.evToEbitda) {
-      case 'Under 5': params.evToEbitdaLessThan = 5; break;
-      case '5 - 10': params.evToEbitdaMoreThan = 5; params.evToEbitdaLessThan = 10; break;
-      case '10 - 15': params.evToEbitdaMoreThan = 10; params.evToEbitdaLessThan = 15; break;
-      case '15 - 20': params.evToEbitdaMoreThan = 15; params.evToEbitdaLessThan = 20; break;
-      case 'Over 20': params.evToEbitdaMoreThan = 20; break;
-    }
-  }
-
-  // ROA (Return on Assets)
-  if (filters.roa) {
-    switch (filters.roa) {
-      case 'Over 15%': params.returnOnAssetsMoreThan = 15; break;
-      case '10% - 15%': params.returnOnAssetsMoreThan = 10; params.returnOnAssetsLessThan = 15; break;
-      case '5% - 10%': params.returnOnAssetsMoreThan = 5; params.returnOnAssetsLessThan = 10; break;
-      case '0% - 5%': params.returnOnAssetsMoreThan = 0; params.returnOnAssetsLessThan = 5; break;
-      case 'Negative': params.returnOnAssetsLessThan = 0; break;
-    }
-  }
-
-  // Gross Margin
-  if (filters.grossMargin) {
-    switch (filters.grossMargin) {
-      case 'Over 70%': params.grossMarginMoreThan = 70; break;
-      case '50% - 70%': params.grossMarginMoreThan = 50; params.grossMarginLessThan = 70; break;
-      case '30% - 50%': params.grossMarginMoreThan = 30; params.grossMarginLessThan = 50; break;
-      case '15% - 30%': params.grossMarginMoreThan = 15; params.grossMarginLessThan = 30; break;
-      case 'Under 15%': params.grossMarginLessThan = 15; break;
-    }
-  }
-
-  // Operating Margin
-  if (filters.operatingMargin) {
-    switch (filters.operatingMargin) {
-      case 'Over 30%': params.operatingMarginMoreThan = 30; break;
-      case '20% - 30%': params.operatingMarginMoreThan = 20; params.operatingMarginLessThan = 30; break;
-      case '10% - 20%': params.operatingMarginMoreThan = 10; params.operatingMarginLessThan = 20; break;
-      case '0% - 10%': params.operatingMarginMoreThan = 0; params.operatingMarginLessThan = 10; break;
-      case 'Negative': params.operatingMarginLessThan = 0; break;
-    }
-  }
-
-  // Net Margin
-  if (filters.netMargin) {
-    switch (filters.netMargin) {
-      case 'Over 25%': params.netMarginMoreThan = 25; break;
-      case '15% - 25%': params.netMarginMoreThan = 15; params.netMarginLessThan = 25; break;
-      case '10% - 15%': params.netMarginMoreThan = 10; params.netMarginLessThan = 15; break;
-      case '5% - 10%': params.netMarginMoreThan = 5; params.netMarginLessThan = 10; break;
-      case '0% - 5%': params.netMarginMoreThan = 0; params.netMarginLessThan = 5; break;
-      case 'Negative': params.netMarginLessThan = 0; break;
-    }
-  }
-
-  // Debt/Equity
-  if (filters.debtToEquity) {
-    switch (filters.debtToEquity) {
-      case 'No Debt': params.debtToEquityLessThan = 0.01; break;
-      case 'Under 0.5': params.debtToEquityLessThan = 0.5; break;
-      case '0.5 - 1': params.debtToEquityMoreThan = 0.5; params.debtToEquityLessThan = 1; break;
-      case '1 - 2': params.debtToEquityMoreThan = 1; params.debtToEquityLessThan = 2; break;
-      case 'Over 2': params.debtToEquityMoreThan = 2; break;
-    }
-  }
-
-  // Current Ratio
-  if (filters.currentRatio) {
-    switch (filters.currentRatio) {
-      case 'Over 3': params.currentRatioMoreThan = 3; break;
-      case '2 - 3': params.currentRatioMoreThan = 2; params.currentRatioLessThan = 3; break;
-      case '1.5 - 2': params.currentRatioMoreThan = 1.5; params.currentRatioLessThan = 2; break;
-      case '1 - 1.5': params.currentRatioMoreThan = 1; params.currentRatioLessThan = 1.5; break;
-      case 'Under 1': params.currentRatioLessThan = 1; break;
-    }
-  }
-
-  // Revenue Growth
-  if (filters.revenueGrowth) {
-    switch (filters.revenueGrowth) {
-      case 'Over 50%': params.revenueGrowthMoreThan = 50; break;
-      case '25% - 50%': params.revenueGrowthMoreThan = 25; params.revenueGrowthLessThan = 50; break;
-      case '15% - 25%': params.revenueGrowthMoreThan = 15; params.revenueGrowthLessThan = 25; break;
-      case '5% - 15%': params.revenueGrowthMoreThan = 5; params.revenueGrowthLessThan = 15; break;
-      case '0% - 5%': params.revenueGrowthMoreThan = 0; params.revenueGrowthLessThan = 5; break;
-      case 'Negative': params.revenueGrowthLessThan = 0; break;
-    }
-  }
-
-  // EPS Growth
-  if (filters.epsGrowth) {
-    switch (filters.epsGrowth) {
-      case 'Over 50%': params.epsGrowthMoreThan = 50; break;
-      case '25% - 50%': params.epsGrowthMoreThan = 25; params.epsGrowthLessThan = 50; break;
-      case '15% - 25%': params.epsGrowthMoreThan = 15; params.epsGrowthLessThan = 25; break;
-      case '5% - 15%': params.epsGrowthMoreThan = 5; params.epsGrowthLessThan = 15; break;
-      case '0% - 5%': params.epsGrowthMoreThan = 0; params.epsGrowthLessThan = 5; break;
-      case 'Negative': params.epsGrowthLessThan = 0; break;
-    }
-  }
+  // NOTE: P/E, dividend-yield, margins, ROE/ROA, valuation ratios and growth are
+  // NOT supported by FMP's /stock-screener and are filtered client-side after
+  // enrichment (see passesClientFilters). Only the server-honored params above
+  // are sent. A larger limit gives the client filters a pool to work with.
+  params.limit = 150;
 
   return params;
 };
@@ -941,27 +950,38 @@ export default function Screener() {
     const data = await response.json();
     if (!Array.isArray(data)) throw new Error(data.message || t('Invalid screener response'));
 
-    return data.map((item: any) => ({
-      symbol: item.symbol,
-      name: item.companyName || item.symbol,
-      price: item.price || 0,
-      change: 0,
-      changePercent: 0,
-      marketCap: item.marketCap || 0,
-      volume: item.volume || 0,
-      pe: item.pe || null,
-      sector: item.sector || '',
-    }));
+    return data.map((item: any) => {
+      const price = item.price || 0;
+      const annualDiv = num(item.lastAnnualDividend) ?? 0;
+      return {
+        symbol: item.symbol,
+        name: item.companyName || item.symbol,
+        price,
+        change: 0,
+        changePercent: 0,
+        marketCap: item.marketCap || 0,
+        volume: item.volume || 0,
+        pe: item.pe ?? null,
+        sector: item.sector || '',
+        // Dividend YIELD (%) — FMP's dividendMoreThan filters $/share, not yield,
+        // so we compute and filter yield here instead.
+        dividendYield: price > 0 ? (annualDiv / price) * 100 : 0,
+      };
+    });
   };
 
   const fetchQuotes = async (symbols: string[]): Promise<Record<string, any>> => {
     if (symbols.length === 0) return {};
-    const symbolString = symbols.slice(0, 50).join(',');
-    const response = await fetch(FMP_BASE_URL + '/quote/' + symbolString + '?apikey=' + FMP_API_KEY);
-    const data = await response.json();
     const quoteMap: Record<string, any> = {};
-    if (Array.isArray(data)) {
-      data.forEach((quote: any) => { quoteMap[quote.symbol] = quote; });
+    // /quote batches comma-separated symbols; chunk to keep URLs sane.
+    const capped = symbols.slice(0, 150);
+    for (let i = 0; i < capped.length; i += 50) {
+      const chunk = capped.slice(i, i + 50).join(',');
+      try {
+        const response = await fetch(FMP_BASE_URL + '/quote/' + chunk + '?apikey=' + FMP_API_KEY);
+        const data = await response.json();
+        if (Array.isArray(data)) data.forEach((quote: any) => { quoteMap[quote.symbol] = quote; });
+      } catch {}
     }
     return quoteMap;
   };
@@ -1072,6 +1092,59 @@ export default function Screener() {
     });
   };
 
+  // Enrich a screener result set with fundamentals as needed and apply the
+  // client-side filters FMP's screener can't. Fundamentals filters degrade to
+  // "not applied" (rather than an empty screen) if the data doesn't come back.
+  const enrichAndFilter = async (base: Stock[], filtersToUse: Record<string, string>): Promise<Stock[]> => {
+    let stocks = await enrichStocksWithQuotes(base);
+    const activeIds = Object.keys(filtersToUse).filter(k => filtersToUse[k] && filtersToUse[k] !== 'Any' && CLIENT_FILTER_RANGES[k]);
+    if (activeIds.length === 0) return stocks;
+
+    const cheapIds = activeIds.filter(id => !FUNDAMENTAL_FILTER_IDS.has(id) && !GROWTH_FILTER_IDS.has(id));
+    let candidates = stocks.filter(s => passesClientFilters(s, filtersToUse, cheapIds));
+
+    const fundIds = activeIds.filter(id => FUNDAMENTAL_FILTER_IDS.has(id) || GROWTH_FILTER_IDS.has(id));
+    if (fundIds.length === 0) return candidates;
+
+    const needGrowth = fundIds.some(id => GROWTH_FILTER_IDS.has(id));
+    candidates = candidates.slice(0, 60);
+    const fmap = await enrichFundamentals(candidates.map(s => s.symbol), needGrowth);
+    candidates = candidates.map(s => ({ ...s, ...(fmap.get(s.symbol) || {}) }));
+
+    // Only apply a fundamentals filter if the data actually populated for the set
+    const usableFundIds = fundIds.filter(id => {
+      const field = CLIENT_FILTER_RANGES[id].field;
+      return candidates.some(s => (s[field] as any) != null && !Number.isNaN(s[field] as any));
+    });
+    return candidates.filter(s => passesClientFilters(s, filtersToUse, [...cheapIds, ...usableFundIds]));
+  };
+
+  const runPreset = async (def: PresetDef): Promise<Stock[]> => {
+    let stocks: Stock[];
+    if (def.source === 'gainers') stocks = await fetchGainers();
+    else if (def.source === 'losers') stocks = await fetchLosers();
+    else if (def.source === 'actives') stocks = await fetchMostActive();
+    else stocks = await fetchScreenerResults({ limit: 150, ...(def.server || {}) });
+
+    stocks = await enrichStocksWithQuotes(stocks);
+
+    if (def.needFund || def.needGrowth) {
+      stocks = stocks.slice(0, 60);
+      const fmap = await enrichFundamentals(stocks.map(s => s.symbol), !!def.needGrowth);
+      stocks = stocks.map(s => ({ ...s, ...(fmap.get(s.symbol) || {}) }));
+    }
+
+    let filtered = def.predicate ? stocks.filter(def.predicate) : stocks;
+    // If a fundamentals preset wiped everything because the data never came back,
+    // fall back to the enriched list rather than showing an empty screen.
+    if (filtered.length === 0 && (def.needFund || def.needGrowth)) {
+      const anyFund = stocks.some(s => s.roe != null || s.netMargin != null || s.revenueGrowth != null);
+      if (!anyFund) filtered = stocks;
+    }
+    if (def.sort) filtered = [...filtered].sort(def.sort);
+    return filtered;
+  };
+
   const fetchData = useCallback(async (preset?: string | null, customFilters?: Record<string, string>) => {
     setLoading(true);
     setError(null);
@@ -1080,49 +1153,16 @@ export default function Screener() {
       const filtersToUse = customFilters || filters;
 
       if (preset) {
-        switch (preset) {
-          case 'trending': 
-            stocks = await fetchMostActive(); 
-            stocks = await enrichStocksWithQuotes(stocks);
-            break;
-          case 'gainers': 
-            stocks = await fetchGainers(); 
-            stocks = await enrichStocksWithQuotes(stocks);
-            break;
-          case 'losers': 
-            stocks = await fetchLosers(); 
-            stocks = await enrichStocksWithQuotes(stocks);
-            break;
-          case 'undervalued':
-            stocks = await fetchScreenerResults({ marketCapMoreThan: 1000000000, peLessThan: 15, peMoreThan: 0, limit: 50 });
-            stocks = await enrichStocksWithQuotes(stocks);
-            break;
-          case 'dividend':
-            stocks = await fetchScreenerResults({ dividendMoreThan: 4, marketCapMoreThan: 1000000000, limit: 50 });
-            stocks = await enrichStocksWithQuotes(stocks);
-            break;
-          case 'quality':
-            stocks = await fetchScreenerResults({ returnOnEquityMoreThan: 20, netMarginMoreThan: 15, marketCapMoreThan: 5000000000, limit: 50 });
-            stocks = await enrichStocksWithQuotes(stocks);
-            break;
-          case 'growth':
-            stocks = await fetchScreenerResults({ revenueGrowthMoreThan: 25, epsGrowthMoreThan: 20, marketCapMoreThan: 1000000000, limit: 50 });
-            stocks = await enrichStocksWithQuotes(stocks);
-            break;
-          case 'cashcow':
-            stocks = await fetchScreenerResults({ freeCashFlowMoreThan: 1000000000, netMarginMoreThan: 10, limit: 50 });
-            stocks = await enrichStocksWithQuotes(stocks);
-            break;
-          default: 
-            stocks = await fetchMostActive();
-            stocks = await enrichStocksWithQuotes(stocks);
-        }
+        if (preset === 'trending') stocks = await enrichStocksWithQuotes(await fetchMostActive());
+        else if (preset === 'gainers') stocks = await enrichStocksWithQuotes(await fetchGainers());
+        else if (preset === 'losers') stocks = await enrichStocksWithQuotes(await fetchLosers());
+        else if (PRESET_DEFS[preset]) stocks = await runPreset(PRESET_DEFS[preset]);
+        else stocks = await enrichStocksWithQuotes(await fetchMostActive());
       } else if (Object.keys(filtersToUse).some(k => filtersToUse[k] && filtersToUse[k] !== 'Any')) {
         stocks = await fetchScreenerResults(buildScreenerParams(filtersToUse));
-        stocks = await enrichStocksWithQuotes(stocks);
+        stocks = await enrichAndFilter(stocks, filtersToUse);
       } else {
-        stocks = await fetchMostActive();
-        stocks = await enrichStocksWithQuotes(stocks);
+        stocks = await enrichStocksWithQuotes(await fetchMostActive());
       }
 
       smoothLayout();
