@@ -1,6 +1,7 @@
 // src/app/api/ai/chat/route.ts
 // AI Chat endpoint for the mobile app assistant
 import { NextRequest, NextResponse } from 'next/server';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -38,6 +39,8 @@ async function getStockContext(message: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
+  const _rl = enforceRateLimit(req, 'ai', 15, 60_000);
+  if (_rl) return _rl;
   try {
     const { message, history } = await req.json();
 

@@ -1,5 +1,6 @@
 // app/api/upload/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { enforceRateLimit } from '@/lib/rateLimit';
 import { put } from '@vercel/blob';
 
 // CORS headers
@@ -28,6 +29,8 @@ export async function GET(req: NextRequest) {
 
 // POST endpoint to upload file
 export async function POST(req: NextRequest) {
+  const _rl = enforceRateLimit(req, 'upload', 30, 60_000);
+  if (_rl) return _rl;
   try {
     console.log("📷 Upload request received");
 

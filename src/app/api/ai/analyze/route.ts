@@ -1,6 +1,7 @@
 // src/app/api/ai/analyze/route.ts
 // AI Stock Analysis endpoint
 import { NextRequest, NextResponse } from 'next/server';
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -10,6 +11,8 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 export async function POST(req: NextRequest) {
+  const _rl = enforceRateLimit(req, 'ai', 15, 60_000);
+  if (_rl) return _rl;
   try {
     const { symbol, type } = await req.json();
 

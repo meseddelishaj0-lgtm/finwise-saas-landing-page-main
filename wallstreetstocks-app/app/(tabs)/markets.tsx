@@ -1284,7 +1284,9 @@ export default function Explore() {
                 changePercent: 0,
                 type: "stock" as any,
                 dividend: latest.dividend || latest.adjDividend || 0,
-                dividendYield: (latest.yield || 0) * 100,
+                // FMP's `yield` is already a percentage (e.g. 2.57 = 2.57%),
+                // so do NOT multiply by 100 — that showed KO as "257%".
+                dividendYield: Number(latest.yield) || 0,
                 paymentDate: latest.paymentDate || "N/A",
                 recordDate: latest.recordDate || "N/A",
                 declarationDate: latest.declarationDate || "N/A",

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enforceRateLimit } from '@/lib/rateLimit';
 import prisma from "@/lib/prisma";
 
 // Reward tiers with subscription tier levels
@@ -21,6 +22,8 @@ function calculatePremiumDays(completedReferrals: number): number {
   return totalDays;
 }
 
+const TIER_RANK: Record<string, number> = { free: 0, gold: 1, platinum: 2, diamond: 3 };
+
 function calculateReferralTier(completedReferrals: number): string {
   let tier = 'free';
   for (const rewardTier of REWARD_TIERS) {
@@ -33,6 +36,8 @@ function calculateReferralTier(completedReferrals: number): string {
 
 // POST /api/referrals/complete - Complete a referral (mark as done)
 export async function POST(request: NextRequest) {
+  const _rl = enforceRateLimit(request, 'referral', 10, 60_000);
+  if (_rl) return _rl;
   try {
     const body = await request.json();
     const { referralCode } = body;
@@ -55,6 +60,9 @@ export async function POST(request: NextRequest) {
         username: true,
         referralPremiumDays: true,
         referralPremiumExpiry: true,
+        subscriptionTier: true,
+        subscriptionStatus: true,
+        subscriptionExpiry: true,
       },
     });
 
@@ -87,15 +95,22 @@ export async function POST(request: NextRequest) {
       const newExpiry = new Date(startDate);
       newExpiry.setDate(newExpiry.getDate() + totalDays);
 
-      // Update referrer's premium status with appropriate tier
+      // Never let a referral reward DOWNGRADE or SHORTEN an existing (e.g. paid)
+      // subscription — a paying Diamond user with 5 referrals must not drop to
+      // Gold. Take the higher tier and the later expiry.
+      const curTier = (referrer.subscriptionTier || 'free').toLowerCase();
+      const curExpiry = referrer.subscriptionExpiry ? new Date(referrer.subscriptionExpiry) : null;
+      const curActive = referrer.subscriptionStatus === 'active' && !!curExpiry && curExpiry > now;
+      const bestTier = (TIER_RANK[referralTier] ?? 0) >= (TIER_RANK[curTier] ?? 0) ? referralTier : curTier;
+      const bestExpiry = curActive && curExpiry! > newExpiry ? curExpiry! : newExpiry;
+
       await prisma.user.update({
         where: { id: referrer.id },
         data: {
           referralPremiumDays: totalDays,
           referralPremiumExpiry: newExpiry,
-          // Tier based on referral count: 5-14=Gold, 15-29=Platinum, 30+=Diamond
-          subscriptionTier: referralTier,
-          subscriptionExpiry: newExpiry,
+          subscriptionTier: bestTier,
+          subscriptionExpiry: bestExpiry,
           subscriptionStatus: 'active',
         },
       });

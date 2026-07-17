@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import { enforceRateLimit } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
+  const _rl = enforceRateLimit(req, 'ai', 15, 60_000);
+  if (_rl) return _rl;
   try {
     const { message } = await req.json();
 
