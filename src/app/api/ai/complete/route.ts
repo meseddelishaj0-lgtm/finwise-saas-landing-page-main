@@ -9,7 +9,7 @@ import { enforceRateLimit } from '@/lib/rateLimit';
 
 const ALLOWED_MODELS = new Set(['gpt-4o-mini']);
 const DEFAULT_MODEL = 'gpt-4o-mini';
-const MAX_TOKENS_CAP = 1500;
+const MAX_TOKENS_CAP = 3000;
 const MAX_BODY_CHARS = 20000; // bound prompt size to cap per-call cost
 
 export async function POST(req: NextRequest) {

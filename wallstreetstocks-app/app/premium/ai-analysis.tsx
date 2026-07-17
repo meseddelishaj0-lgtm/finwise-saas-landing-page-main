@@ -83,13 +83,13 @@ export default function AIAnalysisScreen() {
       const ratios = ratiosData?.[0] || {};
 
       // AI Analysis using Claude
-      const aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      const aiResponse = await fetch('https://www.wallstreetstocks.ai/api/ai/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'gpt-4o-mini',
           max_tokens: 1500,
           messages: [
             {
@@ -127,7 +127,7 @@ Return ONLY the JSON, no other text.`
       });
 
       const aiData = await aiResponse.json();
-      const aiText = aiData.content?.[0]?.text || '';
+      const aiText = aiData.choices?.[0]?.message?.content || '';
 
       let parsedAnalysis;
       try {
