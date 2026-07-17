@@ -1,6 +1,7 @@
 // app/messages/[conversationId].tsx
 // Direct Messages - Conversation Chat Screen
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { buildAuthHeaders } from '../../lib/authHeaders';
 import {
   View,
   Text,
@@ -95,7 +96,7 @@ export default function ConversationScreen() {
   const fetchMessages = async (uid: string, silent = false) => {
     try {
       const response = await fetch(`${API_BASE_URL}/messages/${conversationId}`, {
-        headers: { 'x-user-id': uid },
+        headers: await buildAuthHeaders(uid),
       });
 
       if (!response.ok) {
@@ -266,10 +267,7 @@ export default function ConversationScreen() {
     try {
       const response = await fetch(`${API_BASE_URL}/messages/${conversationId}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-        },
+        headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ content, imageUrl }),
       });
 

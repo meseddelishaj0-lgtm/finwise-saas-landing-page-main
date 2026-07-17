@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 import prisma from "@/lib/prisma";
 import { sendPushNotificationToUser, NotificationMessages } from "@/lib/pushNotifications";
 
@@ -8,7 +9,9 @@ export async function GET(
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const _auth = resolveMobileUserId(request, request.headers.get("x-user-id"));
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
+    const userId = String(_auth.userId);
     const { conversationId } = await params;
 
     if (!userId) {
@@ -155,7 +158,9 @@ export async function POST(
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const _auth = resolveMobileUserId(request, request.headers.get("x-user-id"));
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
+    const userId = String(_auth.userId);
     const { conversationId } = await params;
 
     if (!userId) {
@@ -302,7 +307,9 @@ export async function DELETE(
   { params }: { params: Promise<{ conversationId: string }> }
 ) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const _auth = resolveMobileUserId(request, request.headers.get("x-user-id"));
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
+    const userId = String(_auth.userId);
     const { conversationId } = await params;
 
     if (!userId) {

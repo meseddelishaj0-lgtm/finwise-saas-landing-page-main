@@ -1,5 +1,6 @@
 // app/symbol/[symbol]/chart.tsx - Stock Chart with WebSocket Real-Time Prices
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { buildAuthHeaders } from '../../../lib/authHeaders';
 import { isEasternDST } from '../../../lib/easternTime';
 import {
   View,
@@ -705,7 +706,7 @@ export default function ChartTab() {
 
       const res = await fetch(`${API_BASE_URL}/price-alerts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           userId,
           symbol: cleanSymbol,

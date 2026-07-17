@@ -1393,10 +1393,7 @@ export default function CommunityPage() {
                 `https://www.wallstreetstocks.ai/api/posts/${postId}`,
                 {
                   method: 'DELETE',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'x-user-id': userId.toString(),
-                  },
+                  headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
                 }
               );
 

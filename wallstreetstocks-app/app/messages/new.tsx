@@ -1,6 +1,7 @@
 // app/messages/new.tsx
 // New Conversation Screen - Send first message to a user
 import React, { useState, useEffect, useRef } from 'react';
+import { buildAuthHeaders } from '../../lib/authHeaders';
 import {
   View,
   Text,
@@ -168,10 +169,7 @@ export default function NewConversationScreen() {
     try {
       const response = await fetch(`${API_BASE_URL}/messages`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': userId,
-        },
+        headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           recipientId: parseInt(recipientId),
           content,

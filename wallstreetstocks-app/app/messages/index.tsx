@@ -1,6 +1,7 @@
 // app/messages/index.tsx
 // Direct Messages - Conversations List
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { buildAuthHeaders } from '../../lib/authHeaders';
 import {
   View,
   Text,
@@ -100,7 +101,7 @@ export default function MessagesScreen() {
   const fetchConversations = async (uid: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/messages`, {
-        headers: { 'x-user-id': uid },
+        headers: await buildAuthHeaders(uid),
       });
 
       // Check if response is OK

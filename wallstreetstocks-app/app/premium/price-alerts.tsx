@@ -1,6 +1,7 @@
 // app/premium/price-alerts.tsx
 // Platinum Feature - Real-time Price Alerts
 import React, { useState, useEffect } from 'react';
+import { buildAuthHeaders } from '../../lib/authHeaders';
 import {
   View,
   Text,
@@ -96,7 +97,7 @@ export default function PriceAlertsScreen() {
           if (!a?.symbol || !a?.targetPrice) continue;
           await fetch(`${API_BASE_URL}/price-alerts`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
             body: JSON.stringify({
               userId,
               symbol: String(a.symbol).toUpperCase(),
@@ -118,7 +119,7 @@ export default function PriceAlertsScreen() {
         return;
       }
       await migrateLegacyAlerts(userId);
-      const res = await fetch(`${API_BASE_URL}/price-alerts?userId=${userId}`);
+      const res = await fetch(`${API_BASE_URL}/price-alerts?userId=${userId}`, { headers: await buildAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         setAlerts(Array.isArray(data) ? data : []);
@@ -152,7 +153,7 @@ export default function PriceAlertsScreen() {
     try {
       const res = await fetch(`${API_BASE_URL}/price-alerts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ userId, symbol, targetPrice, direction: newCondition }),
       });
       const text = await res.text();
@@ -180,7 +181,7 @@ export default function PriceAlertsScreen() {
       const userId = await AsyncStorage.getItem('userId');
       const res = await fetch(`${API_BASE_URL}/price-alerts`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ alertId: alert.id, userId, isActive: !alert.isActive }),
       });
       if (res.ok) {

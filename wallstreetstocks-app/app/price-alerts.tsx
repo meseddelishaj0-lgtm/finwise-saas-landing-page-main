@@ -1,6 +1,7 @@
 // app/price-alerts.tsx
 // Screen for managing price alerts
 import React, { useState, useEffect, useCallback } from 'react';
+import { buildAuthHeaders } from '../lib/authHeaders';
 import {
   View,
   Text,
@@ -56,7 +57,7 @@ export default function PriceAlerts() {
         return;
       }
 
-      const res = await fetch(`${API_BASE_URL}/price-alerts?userId=${userId}`);
+      const res = await fetch(`${API_BASE_URL}/price-alerts?userId=${userId}`, { headers: await buildAuthHeaders() });
 
       if (res.ok) {
         const data = await res.json();
@@ -98,7 +99,7 @@ export default function PriceAlerts() {
       const userId = await AsyncStorage.getItem('userId');
       const res = await fetch(`${API_BASE_URL}/price-alerts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           userId,
           symbol: symbol.toUpperCase().trim(),
@@ -151,7 +152,7 @@ export default function PriceAlerts() {
               const userId = await AsyncStorage.getItem('userId');
               const res = await fetch(
                 `${API_BASE_URL}/price-alerts?alertId=${alertId}&userId=${userId}`,
-                { method: 'DELETE' }
+                { method: 'DELETE', headers: await buildAuthHeaders() }
               );
 
               if (res.ok) {
@@ -174,7 +175,7 @@ export default function PriceAlerts() {
       const userId = await AsyncStorage.getItem('userId');
       const res = await fetch(`${API_BASE_URL}/price-alerts`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           alertId: alert.id,
           userId,

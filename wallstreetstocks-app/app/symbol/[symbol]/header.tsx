@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, 
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { buildAuthHeaders } from "../../../lib/authHeaders";
 import { useWatchlist } from "../../../context/WatchlistContext";
 import { usePortfolio } from "../../../context/PortfolioContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -101,7 +102,7 @@ export default function SymbolHeader() {
 
       const res = await fetch(`${API_BASE_URL}/price-alerts`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await buildAuthHeaders(undefined, { "Content-Type": "application/json" }),
         body: JSON.stringify({
           userId,
           symbol: currentSymbol,

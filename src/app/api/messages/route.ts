@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 import prisma from "@/lib/prisma";
 import { sendPushNotificationToUser, NotificationMessages } from "@/lib/pushNotifications";
 
 // GET /api/messages - Get all conversations for a user
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const _auth = resolveMobileUserId(request, request.headers.get("x-user-id"));
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
+    const userId = String(_auth.userId);
 
     if (!userId) {
       return NextResponse.json(
@@ -122,7 +125,9 @@ export async function GET(request: NextRequest) {
 // POST /api/messages - Start a new conversation or send a message
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const _auth = resolveMobileUserId(request, request.headers.get("x-user-id"));
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
+    const userId = String(_auth.userId);
 
     if (!userId) {
       return NextResponse.json(
@@ -283,7 +288,9 @@ export async function POST(request: NextRequest) {
 // DELETE /api/messages?conversationId=X - Delete a conversation
 export async function DELETE(request: NextRequest) {
   try {
-    const userId = request.headers.get("x-user-id");
+    const _auth = resolveMobileUserId(request, request.headers.get("x-user-id"));
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
+    const userId = String(_auth.userId);
     const url = new URL(request.url);
     const conversationId = url.searchParams.get("conversationId");
 

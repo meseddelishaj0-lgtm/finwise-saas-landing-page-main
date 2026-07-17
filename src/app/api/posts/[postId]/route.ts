@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -103,12 +104,10 @@ export async function DELETE(
       }
     }
 
-    // Fallback to x-user-id header (mobile app)
+    // Fallback to token-verified identity (mobile app)
     if (!userId) {
-      const headerUserId = req.headers.get('x-user-id');
-      if (headerUserId) {
-        userId = parseInt(headerUserId, 10);
-      }
+      const resolved = resolveMobileUserId(req, req.headers.get('x-user-id'));
+      if (resolved.ok) userId = resolved.userId;
     }
 
     if (!userId) {

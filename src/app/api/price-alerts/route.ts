@@ -1,6 +1,7 @@
 // src/app/api/price-alerts/route.ts
 // CRUD API for managing price alerts
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +10,9 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const _auth = resolveMobileUserId(req, searchParams.get('userId'));
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
+    const userId = String(_auth.userId);
     const activeOnly = searchParams.get('activeOnly') === 'true';
 
     if (!userId) {
@@ -41,7 +44,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, symbol, targetPrice, direction } = body;
+    const { userId: _claimedUserId, symbol, targetPrice, direction } = body;
+    const _auth = resolveMobileUserId(req, _claimedUserId);
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
+    const userId = String(_auth.userId);
 
     if (!userId || !symbol || !targetPrice || !direction) {
       return NextResponse.json(
@@ -116,7 +122,9 @@ export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const alertId = searchParams.get('alertId');
-    const userId = searchParams.get('userId');
+    const _auth = resolveMobileUserId(req, searchParams.get('userId'));
+    if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
+    const userId = String(_auth.userId);
 
     if (!alertId || !userId) {
       return NextResponse.json(
@@ -161,7 +169,10 @@ export async function DELETE(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const { alertId, userId, isActive } = body;
+    const { alertId, userId: _claimedUserId2, isActive } = body;
+    const _auth2 = resolveMobileUserId(req, _claimedUserId2);
+    if (!_auth2.ok) return NextResponse.json({ error: _auth2.error }, { status: _auth2.status });
+    const userId = String(_auth2.userId);
 
     if (!alertId || !userId) {
       return NextResponse.json(
