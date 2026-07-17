@@ -15,9 +15,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from 'expo-router';
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/lib/auth";
+import { getPersonalInfo, mergePersonalInfo } from "@/lib/personalInfoStore";
 import { useUserProfile } from "@/context/UserProfileContext";
 import { SubscriptionBadgeInline } from "@/components/SubscriptionBadge";
 import { useTheme } from "@/context/ThemeContext";
@@ -81,9 +81,9 @@ export default function PersonalInfoScreen() {
       const userId = getUserId();
 
       // Also load local data as fallback
-      const savedLocal = await AsyncStorage.getItem("personalInfo");
+      const savedLocal = await getPersonalInfo(authUser?.id);
       if (savedLocal) {
-        setLocalData(JSON.parse(savedLocal));
+        setLocalData(savedLocal);
       }
 
       if (!userId) {
@@ -158,10 +158,7 @@ export default function PersonalInfoScreen() {
 
     if (!result.canceled && result.assets[0]) {
       // Save locally
-      const saved = await AsyncStorage.getItem("personalInfo");
-      const data = saved ? JSON.parse(saved) : {};
-      data.bannerImage = result.assets[0].uri;
-      await AsyncStorage.setItem("personalInfo", JSON.stringify(data));
+      await mergePersonalInfo(authUser?.id, { bannerImage: result.assets[0].uri });
       setLocalData({ ...localData, bannerImage: result.assets[0].uri });
     }
   };
@@ -179,10 +176,7 @@ export default function PersonalInfoScreen() {
 
     if (!result.canceled && result.assets[0]) {
       // Save locally
-      const saved = await AsyncStorage.getItem("personalInfo");
-      const data = saved ? JSON.parse(saved) : {};
-      data.avatar = result.assets[0].uri;
-      await AsyncStorage.setItem("personalInfo", JSON.stringify(data));
+      await mergePersonalInfo(authUser?.id, { avatar: result.assets[0].uri });
       setLocalData({ ...localData, avatar: result.assets[0].uri });
     }
   };

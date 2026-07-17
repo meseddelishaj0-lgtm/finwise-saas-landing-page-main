@@ -16,8 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/lib/auth';
+import { getPersonalInfo, setPersonalInfo } from '@/lib/personalInfoStore';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function PersonalInfo() {
@@ -37,9 +37,8 @@ export default function PersonalInfo() {
   // Load saved data on mount
   React.useEffect(() => {
     (async () => {
-      const saved = await AsyncStorage.getItem('personalInfo');
-      if (saved) {
-        const data = JSON.parse(saved);
+      const data = await getPersonalInfo(user?.id);
+      if (data) {
         setName(data.name || user?.name || '');
         setUsername(data.username || '');
         setEmail(data.email || user?.email || '');
@@ -78,7 +77,7 @@ export default function PersonalInfo() {
   // Save Button - Actually Works!
   const handleSave = async () => {
     const data = { name, username, email, phone, bio, location, avatar };
-    await AsyncStorage.setItem('personalInfo', JSON.stringify(data));
+    await setPersonalInfo(user?.id, data);
     Alert.alert('Saved!', 'Your personal info has been updated.', [
       { text: 'OK', onPress: () => router.back() }
     ]);

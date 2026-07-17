@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { removePersonalInfo } from '@/lib/personalInfoStore';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -63,8 +64,8 @@ export default function DeleteAccountScreen() {
                 return;
               }
 
+              await removePersonalInfo(user?.id);
               await AsyncStorage.multiRemove([
-                'personalInfo',
                 'watchlist',
                 'portfolioData',
                 'userPreferences',

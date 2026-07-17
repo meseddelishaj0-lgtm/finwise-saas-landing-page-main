@@ -467,14 +467,18 @@ export const getWatchlist = async (userId: number): Promise<any> => {
 export const addToWatchlist = async (userId: number, ticker: string, notes?: string): Promise<any> => {
   const upperTicker = ticker.toUpperCase().trim();
 
-  // Helper to sync to local storage (used by home page)
+  // Helper to sync to the per-user local cache that WatchlistContext reads.
+  // Must match WatchlistContext's scoped key (`user_watchlist:<userId>`) — a
+  // bare `user_watchlist` key here would bleed across accounts on a shared
+  // device AND diverge from the real watchlist.
   const syncToLocalWatchlist = async () => {
     try {
-      const saved = await AsyncStorage.getItem('user_watchlist');
+      const scopedKey = `user_watchlist:${userId}`;
+      const saved = await AsyncStorage.getItem(scopedKey);
       const localWatchlist: string[] = saved ? JSON.parse(saved) : [];
       if (!localWatchlist.includes(upperTicker)) {
         localWatchlist.push(upperTicker);
-        await AsyncStorage.setItem('user_watchlist', JSON.stringify(localWatchlist));
+        await AsyncStorage.setItem(scopedKey, JSON.stringify(localWatchlist));
       }
     } catch (e) {
     }

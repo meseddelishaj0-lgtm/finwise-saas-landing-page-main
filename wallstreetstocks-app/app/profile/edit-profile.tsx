@@ -18,8 +18,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/lib/auth';
+import { getPersonalInfo, setPersonalInfo } from '@/lib/personalInfoStore';
 import { useUserProfile } from '@/context/UserProfileContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -94,9 +94,8 @@ export default function EditProfile() {
 
       if (!userId) {
         // Fall back to local storage if not logged in
-        const saved = await AsyncStorage.getItem('personalInfo');
-        if (saved) {
-          const data = JSON.parse(saved);
+        const data = await getPersonalInfo(authUser?.id);
+        if (data) {
           setName(data.name || '');
           setUsername(data.username || '');
           setEmail(data.email || '');
@@ -337,7 +336,7 @@ export default function EditProfile() {
 
       // Also save to local storage as backup
       const data = { name: name.trim(), username, email, bio, location, website, avatar, bannerImage };
-      await AsyncStorage.setItem('personalInfo', JSON.stringify(data));
+      await setPersonalInfo(authUser?.id, data);
 
       Alert.alert(t('Saved!'), t('Your profile has been updated.'), [
         { text: t('OK'), onPress: () => router.back() }

@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mergePersonalInfo } from '@/lib/personalInfoStore';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -110,10 +111,7 @@ export default function SetupUsername() {
 
       if (res.ok) {
         // Save username locally too
-        const saved = await AsyncStorage.getItem('personalInfo');
-        const data = saved ? JSON.parse(saved) : {};
-        data.username = username.trim().toLowerCase();
-        await AsyncStorage.setItem('personalInfo', JSON.stringify(data));
+        await mergePersonalInfo(userId, { username: username.trim().toLowerCase() });
         
         // Mark setup as complete
         await AsyncStorage.setItem('usernameSetup', 'complete');
