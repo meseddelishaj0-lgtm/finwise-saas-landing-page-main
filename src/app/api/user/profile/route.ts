@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        email: true,
         username: true,
         bio: true,
         location: true,
@@ -150,7 +149,6 @@ export async function PUT(request: NextRequest) {
       select: {
         id: true,
         name: true,
-        email: true,
         username: true,
         bio: true,
         location: true,

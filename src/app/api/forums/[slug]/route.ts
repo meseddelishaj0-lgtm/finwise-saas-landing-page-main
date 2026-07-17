@@ -18,12 +18,12 @@ export async function GET(
       where: { forumId: forum.id },
       include: {
         user: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true },
         },
         comments: {
           include: {
             user: {
-              select: { id: true, name: true, email: true },
+              select: { id: true, name: true },
             },
           },
           orderBy: { createdAt: "desc" },
@@ -85,7 +85,7 @@ export async function POST(
       },
       include: {
         user: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true },
         },
         forum: {
           select: { id: true, title: true, slug: true },
@@ -93,7 +93,7 @@ export async function POST(
         comments: {
           include: {
             user: {
-              select: { id: true, name: true, email: true },
+              select: { id: true, name: true },
             },
           },
         },

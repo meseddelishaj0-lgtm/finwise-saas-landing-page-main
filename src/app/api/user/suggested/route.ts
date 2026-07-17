@@ -63,7 +63,6 @@ export async function GET(req: NextRequest) {
           u.id,
           u.name,
           u.username,
-          u.email,
           u."profileImage",
           u."subscriptionTier",
           (SELECT COUNT(*) FROM "Follow" WHERE "followingId" = u.id) as "followerCount",
@@ -79,7 +78,6 @@ export async function GET(req: NextRequest) {
         id: u.id,
         name: u.name,
         username: u.username,
-        email: u.email,
         profileImage: u.profileImage,
         subscriptionTier: u.subscriptionTier,
         _count: {

@@ -28,7 +28,7 @@ const AVATAR_COLORS = [
 interface BlockedUser {
   id: number;
   name: string | null;
-  email: string;
+  username?: string;
   profileImage: string | null;
   blockedAt: string;
 }
@@ -53,7 +53,7 @@ export default function Blocked() {
   };
 
   const getUserInitials = (user: BlockedUser): string => {
-    const name = user.name || user.email || '';
+    const name = user.name || user.username || '';
     const parts = name.split(/[\s@]+/);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -94,7 +94,7 @@ export default function Blocked() {
 
     Alert.alert(
       t('Unblock User'),
-      `Are you sure you want to unblock ${targetUser.name || targetUser.email?.split('@')[0]}?`,
+      `Are you sure you want to unblock ${targetUser.name || targetUser.username || 'user'}?`,
       [
         { text: t('Cancel'), style: 'cancel' },
         {
@@ -106,7 +106,7 @@ export default function Blocked() {
               if (result.success) {
                 // Remove from local state
                 setBlockedUsers(prev => prev.filter(u => u.id !== targetUser.id));
-                Alert.alert(t('Unblocked'), `${targetUser.name || targetUser.email?.split('@')[0]} has been unblocked`);
+                Alert.alert(t('Unblocked'), `${targetUser.name || targetUser.username || 'user'} has been unblocked`);
               } else {
                 throw new Error('Failed to unblock user');
               }
@@ -145,7 +145,7 @@ export default function Blocked() {
           </View>
         )}
         <View style={styles.userDetails}>
-          <Text style={[styles.userName, { color: colors.text }]}>{item.name || item.email?.split('@')[0]}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{item.name || item.username || 'User'}</Text>
           <Text style={[styles.blockedDate, { color: colors.textTertiary }]}>{t('Blocked')} {formatDate(item.blockedAt)}</Text>
         </View>
       </View>

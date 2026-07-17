@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
     const likes = await freshPrisma.like.findMany({
       where: postId ? { postId } : { commentId },
       include: {
-        user: { select: { id: true, name: true, email: true } }
+        user: { select: { id: true, name: true } }
       },
       orderBy: { createdAt: "desc" }
     });

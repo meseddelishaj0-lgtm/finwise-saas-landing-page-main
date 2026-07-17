@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
       const users = await freshPrisma.$transaction(async (tx) => {
         await tx.$executeRaw`SELECT 1`; // Force primary connection
         return await tx.$queryRaw<any[]>`
-          SELECT id, name, email, username, "profileImage", karma, "isVerified", "subscriptionTier"
+          SELECT id, name, username, "profileImage", karma, "isVerified", "subscriptionTier"
           FROM "User"
           WHERE id IN (${Prisma.join(userIds)})
         `;
@@ -194,7 +194,7 @@ export async function POST(req: NextRequest) {
         mediaUrl: mediaUrl || null,
       },
       include: {
-        user: { select: { id: true, name: true, email: true, username: true, profileImage: true, subscriptionTier: true } },
+        user: { select: { id: true, name: true, username: true, profileImage: true, subscriptionTier: true } },
         forum: { select: { id: true, title: true, slug: true } },
         _count: { select: { comments: true, likes: true } },
       }

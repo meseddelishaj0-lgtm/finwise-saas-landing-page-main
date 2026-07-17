@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
         where: { id: existingReaction.id },
         data: { emoji: type },
         include: {
-          user: { select: { id: true, name: true, email: true } }
+          user: { select: { id: true, name: true } }
         }
       });
 
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
           ...(postId ? { postId } : { commentId })
         },
         include: {
-          user: { select: { id: true, name: true, email: true } }
+          user: { select: { id: true, name: true } }
         }
       });
 
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
     const reactions = await prisma.reaction.findMany({
       where: postId ? { postId } : { commentId },
       include: {
-        user: { select: { id: true, name: true, email: true } }
+        user: { select: { id: true, name: true } }
       },
       orderBy: { createdAt: "desc" }
     });

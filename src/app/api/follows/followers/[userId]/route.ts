@@ -20,7 +20,7 @@ export async function GET(
     const followers = await prisma.follow.findMany({
       where: { followingId: userId },
       include: {
-        follower: { select: { id: true, name: true, email: true } }
+        follower: { select: { id: true, name: true } }
       },
       orderBy: { createdAt: "desc" }
     });

@@ -43,7 +43,7 @@ export async function PUT(
       where: { id: commentId },
       data: { content },
       include: {
-        user: { select: { id: true, name: true, email: true } },
+        user: { select: { id: true, name: true } },
       },
     });
 

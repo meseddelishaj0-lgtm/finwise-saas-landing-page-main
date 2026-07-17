@@ -27,7 +27,7 @@ const AVATAR_COLORS = [
 interface MutedUser {
   id: number;
   name: string | null;
-  email: string;
+  username?: string;
   profileImage: string | null;
   mutedAt: string;
 }
@@ -51,7 +51,7 @@ export default function Muted() {
   };
 
   const getUserInitials = (user: MutedUser): string => {
-    const name = user.name || user.email || '';
+    const name = user.name || user.username || '';
     const parts = name.split(/[\s@]+/);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
@@ -92,7 +92,7 @@ export default function Muted() {
 
     Alert.alert(
       'Unmute User',
-      `Are you sure you want to unmute ${targetUser.name || targetUser.email?.split('@')[0]}?`,
+      `Are you sure you want to unmute ${targetUser.name || targetUser.username || 'user'}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -104,7 +104,7 @@ export default function Muted() {
               if (result.success) {
                 // Remove from local state
                 setMutedUsers(prev => prev.filter(u => u.id !== targetUser.id));
-                Alert.alert('Unmuted', `${targetUser.name || targetUser.email?.split('@')[0]} has been unmuted`);
+                Alert.alert('Unmuted', `${targetUser.name || targetUser.username || 'user'} has been unmuted`);
               } else {
                 throw new Error('Failed to unmute user');
               }
@@ -143,7 +143,7 @@ export default function Muted() {
           </View>
         )}
         <View style={styles.userDetails}>
-          <Text style={[styles.userName, { color: colors.text }]}>{item.name || item.email?.split('@')[0]}</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{item.name || item.username || 'User'}</Text>
           <Text style={[styles.mutedDate, { color: colors.textTertiary }]}>Muted {formatDate(item.mutedAt)}</Text>
         </View>
       </View>

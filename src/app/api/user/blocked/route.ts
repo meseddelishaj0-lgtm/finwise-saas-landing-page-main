@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             name: true,
-            email: true,
+            username: true,
             profileImage: true,
           },
         },
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     const users = blockedUsers.map((block) => ({
       id: block.blocked.id,
       name: block.blocked.name,
-      email: block.blocked.email,
+      username: block.blocked.username,
       profileImage: block.blocked.profileImage,
       blockedAt: block.createdAt,
     }));

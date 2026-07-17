@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            email: true,
+            username: true,
             profileImage: true,
           },
         },
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const result = mutedUsers.map((mute) => ({
       id: mute.muted.id,
       name: mute.muted.name,
-      email: mute.muted.email,
+      username: mute.muted.username,
       profileImage: mute.muted.profileImage,
       mutedAt: mute.createdAt.toISOString(),
     }));

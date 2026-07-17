@@ -49,7 +49,7 @@ export async function GET(
       // Get user data
       const users = await tx.$queryRaw<any[]>`
         SELECT
-          id, name, email, username, bio, location, website,
+          id, name, username, bio, location, website,
           "profileImage", "bannerImage", "profileComplete", "createdAt",
           "subscriptionTier", "subscriptionStatus", karma, "isVerified"
         FROM "User"
@@ -92,7 +92,6 @@ export async function GET(
       return {
         id: user.id,
         name: user.name,
-        email: user.email,
         username: user.username,
         bio: user.bio,
         location: user.location,
@@ -247,7 +246,6 @@ export async function PUT(
         select: {
           id: true,
           name: true,
-          email: true,
           username: true,
           bio: true,
           location: true,

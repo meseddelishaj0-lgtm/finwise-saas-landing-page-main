@@ -38,7 +38,7 @@ export async function POST(
       where: { id: notificationId },
       data: { isRead: true },
       include: {
-        fromUser: { select: { id: true, name: true, email: true } },
+        fromUser: { select: { id: true, name: true } },
         post: { select: { id: true, title: true } }
       }
     });

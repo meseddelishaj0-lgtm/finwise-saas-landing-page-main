@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
         followingId: followingId
       },
       include: {
-        following: { select: { id: true, name: true, email: true } }
+        following: { select: { id: true, name: true } }
       }
     });
 

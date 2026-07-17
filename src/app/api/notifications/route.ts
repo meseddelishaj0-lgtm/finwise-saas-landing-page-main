@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
         ...(unread === "true" ? { isRead: false } : {})
       },
       include: {
-        fromUser: { select: { id: true, name: true, email: true, username: true, profileImage: true } },
+        fromUser: { select: { id: true, name: true, username: true, profileImage: true } },
         post: { select: { id: true, title: true } }
       },
       orderBy: { createdAt: "desc" },

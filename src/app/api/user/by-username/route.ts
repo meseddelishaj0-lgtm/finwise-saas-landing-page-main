@@ -26,7 +26,6 @@ export async function GET(req: NextRequest) {
         select: {
           id: true,
           name: true,
-          email: true,
           username: true,
           bio: true,
           profileImage: true,
@@ -85,7 +84,6 @@ export async function GET(req: NextRequest) {
         select: {
           id: true,
           name: true,
-          email: true,
           username: true,
           profileImage: true,
           isVerified: true,

@@ -11,11 +11,11 @@ export async function GET(
     const post = await prisma.post.findUnique({
       where: { id: parseInt(params.postId) },
       include: {
-        user: { select: { id: true, name: true, email: true, username: true, profileImage: true } },
+        user: { select: { id: true, name: true, username: true, profileImage: true } },
         forum: { select: { id: true, title: true, slug: true } },
         comments: {
           include: {
-            user: { select: { id: true, name: true, email: true, username: true, profileImage: true } },
+            user: { select: { id: true, name: true, username: true, profileImage: true } },
           },
           orderBy: { createdAt: "asc" },
         },
@@ -71,7 +71,7 @@ export async function PUT(
       where: { id: postId },
       data: { title, content },
       include: {
-        user: { select: { id: true, name: true, email: true } },
+        user: { select: { id: true, name: true } },
         forum: { select: { id: true, title: true, slug: true } },
         _count: { select: { comments: true } },
       }
