@@ -38,6 +38,51 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   const authUserId = useAuth((state: any) => (state.user?.id ? String(state.user.id) : null));
   const scopedKey = authUserId ? `${WATCHLIST_KEY}:${authUserId}` : `${WATCHLIST_KEY}:anon`;
   scopedKeyRef.current = scopedKey;
+  const dirtyKey = `watchlist_dirty:${authUserId ?? 'anon'}`;
+  const serverSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Push the full watchlist to the account (fire-and-forget; dirty flag
+  // stays set until a push succeeds so offline edits get retried).
+  const pushToServer = useCallback(async (list: string[]) => {
+    if (!authUserId) return;
+    try {
+      const res = await fetch('https://www.wallstreetstocks.ai/api/watchlist/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-id': authUserId },
+        body: JSON.stringify({ tickers: list }),
+      });
+      if (res.ok) await AsyncStorage.removeItem(dirtyKey);
+    } catch {}
+  }, [authUserId, dirtyKey]);
+
+  // Reconcile the local cache with the account's server copy: unsynced
+  // local edits win (push), otherwise the server copy is adopted — so
+  // watchlists survive reinstalls and follow the account.
+  const reconcileWithServer = useCallback(async (localList: string[]) => {
+    if (!authUserId) return;
+    try {
+      const dirty = await AsyncStorage.getItem(dirtyKey);
+      if (dirty && localList.length > 0) {
+        await pushToServer(localList);
+        return;
+      }
+      const res = await fetch('https://www.wallstreetstocks.ai/api/watchlist/sync', {
+        headers: { 'x-user-id': authUserId },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const serverList: string[] = Array.isArray(data?.tickers) ? data.tickers : [];
+      if (serverList.length > 0) {
+        setWatchlist(serverList);
+        pendingWatchlistRef.current = serverList;
+        await AsyncStorage.setItem(scopedKey, JSON.stringify(serverList));
+        await AsyncStorage.removeItem(dirtyKey);
+      } else if (localList.length > 0) {
+        // First sync for this account: rescue the phone-only watchlist
+        await pushToServer(localList);
+      }
+    } catch {}
+  }, [authUserId, dirtyKey, pushToServer, scopedKey]);
 
   // Load watchlist whenever the signed-in user changes
   const loadWatchlist = useCallback(async () => {
@@ -62,10 +107,12 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         setWatchlist(parsed);
+        pendingWatchlistRef.current = parsed;
       } else {
         // Default watchlist for new users (onboarding replaces/extends it)
         const defaultWatchlist = ['NVDA', 'GOOGL', 'AMZN', 'META'];
         setWatchlist(defaultWatchlist);
+        pendingWatchlistRef.current = defaultWatchlist;
         await AsyncStorage.setItem(scopedKey, JSON.stringify(defaultWatchlist));
       }
     } catch (err) {
@@ -74,7 +121,9 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       setWatchlistLoading(false);
       setInitialized(true);
     }
-  }, [scopedKey, authUserId]);
+    // Background: reconcile with the account's server copy
+    reconcileWithServer(pendingWatchlistRef.current.length > 0 ? pendingWatchlistRef.current : []);
+  }, [scopedKey, authUserId, reconcileWithServer]);
 
   // Load on mount and on account switch
   useEffect(() => {
@@ -97,6 +146,11 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     saveTimeoutRef.current = setTimeout(async () => {
       try {
         await AsyncStorage.setItem(scopedKey, JSON.stringify(pendingWatchlistRef.current));
+        await AsyncStorage.setItem(dirtyKey, '1');
+        if (serverSyncTimer.current) clearTimeout(serverSyncTimer.current);
+        serverSyncTimer.current = setTimeout(() => {
+          pushToServer(pendingWatchlistRef.current);
+        }, 2000);
       } catch (err) {
       }
     }, SAVE_DEBOUNCE_MS);
