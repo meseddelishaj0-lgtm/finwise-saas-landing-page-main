@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v4';
@@ -52,6 +53,15 @@ export default function InsiderTradingScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
+  const { canAccess } = usePremiumFeature();
+
+  // Diamond-only feature — send non-subscribers to the paywall.
+  useEffect(() => {
+    if (!canAccess(FEATURE_TIERS.INSIDER_TRADING)) {
+      router.replace('/(modals)/paywall');
+    }
+  }, [canAccess]);
+
   const [trades, setTrades] = useState<InsiderTrade[]>([]);
   const [filteredTrades, setFilteredTrades] = useState<InsiderTrade[]>([]);
   const [loading, setLoading] = useState(true);

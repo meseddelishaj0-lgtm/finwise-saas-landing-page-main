@@ -44,24 +44,33 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId: _claimedUserId, symbol, targetPrice, direction } = body;
-    const _auth = resolveMobileUserId(req, _claimedUserId);
+    const _auth = resolveMobileUserId(req, body?.userId);
     if (!_auth.ok) return NextResponse.json({ error: _auth.error }, { status: _auth.status });
     const userId = String(_auth.userId);
 
-    if (!userId || !symbol || !targetPrice || !direction) {
-      return NextResponse.json(
-        { error: 'userId, symbol, targetPrice, and direction are required' },
-        { status: 400 }
-      );
-    }
+    // Be tolerant of what older app builds send: direction may arrive as
+    // `condition`/`type`, price as a string, and casing may vary.
+    const symbol = typeof body?.symbol === 'string' ? body.symbol.trim() : '';
+    const priceNum =
+      typeof body?.targetPrice === 'number' ? body.targetPrice : parseFloat(body?.targetPrice);
+    const rawDir = String(body?.direction ?? body?.condition ?? body?.type ?? '').toLowerCase();
+    const direction =
+      rawDir === 'above' || rawDir === 'up' || rawDir === 'over'
+        ? 'above'
+        : rawDir === 'below' || rawDir === 'down' || rawDir === 'under'
+        ? 'below'
+        : '';
 
-    if (!['above', 'below'].includes(direction)) {
-      return NextResponse.json(
-        { error: 'direction must be "above" or "below"' },
-        { status: 400 }
-      );
+    if (!symbol) {
+      return NextResponse.json({ error: 'symbol is required' }, { status: 400 });
     }
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+      return NextResponse.json({ error: 'a valid targetPrice is required' }, { status: 400 });
+    }
+    if (!direction) {
+      return NextResponse.json({ error: 'direction must be "above" or "below"' }, { status: 400 });
+    }
+    const targetPrice = priceNum;
 
     // Check if user exists
     const user = await prisma.user.findUnique({
