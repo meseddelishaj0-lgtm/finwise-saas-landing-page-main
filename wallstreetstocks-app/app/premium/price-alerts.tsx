@@ -22,17 +22,17 @@ import { useWebSocket } from '@/context/WebSocketContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface PriceAlert {
-  id: string;
+  id: number;
   symbol: string;
   targetPrice: number;
-  condition: 'above' | 'below';
-  enabled: boolean;
+  direction: 'above' | 'below';
+  isActive: boolean;
+  isTriggered: boolean;
   createdAt: string;
-  triggered: boolean;
   currentPrice?: number;
 }
 
-// NO API KEY NEEDED - Using WebSocket via priceStore
+const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
 export default function PriceAlertsScreen() {
   const { canAccess } = usePremiumFeature();
@@ -44,7 +44,7 @@ export default function PriceAlertsScreen() {
   const [newPrice, setNewPrice] = useState('');
   const [newCondition, setNewCondition] = useState<'above' | 'below'>('above');
   const [loading, setLoading] = useState(true);
-  const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
+  const [creating, setCreating] = useState(false);
 
   // Redirect to paywall if user doesn't have access
   useEffect(() => {
@@ -53,90 +53,83 @@ export default function PriceAlertsScreen() {
     }
   }, [canAccess]);
 
-  // Load alerts from storage
   useEffect(() => {
     loadAlerts();
   }, []);
 
-  // Subscribe to WebSocket for alert symbols
+  // Subscribe to WebSocket for alert symbols (live "current price" display)
   useEffect(() => {
     if (alerts.length === 0) return;
     const symbols = [...new Set(alerts.map(a => a.symbol))];
     wsSubscribe(symbols);
   }, [alerts, wsSubscribe]);
 
-  // Check prices from WebSocket store (NO API calls)
+  // Enrich cards with live prices from the WebSocket store — display only;
+  // triggering and push delivery happen server-side
   useEffect(() => {
     const interval = setInterval(() => {
-      setPriceUpdateTrigger(prev => prev + 1);
-      updatePricesFromStore();
-    }, 1000); // Check every 1 second (uses WebSocket data, no API)
-
+      setAlerts(prev => {
+        let changed = false;
+        const next = prev.map(alert => {
+          const price = priceStore.getQuote(alert.symbol)?.price;
+          if (price && price > 0 && price !== alert.currentPrice) {
+            changed = true;
+            return { ...alert, currentPrice: price };
+          }
+          return alert;
+        });
+        return changed ? next : prev;
+      });
+    }, 2000);
     return () => clearInterval(interval);
-  }, [alerts]);
+  }, []);
+
+  // One-time: alerts created by the old local-only version of this screen
+  // move into the account so they fire even when the app is closed
+  const migrateLegacyAlerts = async (userId: string) => {
+    try {
+      const stored = await AsyncStorage.getItem('priceAlerts');
+      if (!stored) return;
+      const legacy = JSON.parse(stored);
+      if (Array.isArray(legacy)) {
+        for (const a of legacy) {
+          if (!a?.symbol || !a?.targetPrice) continue;
+          await fetch(`${API_BASE_URL}/price-alerts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              symbol: String(a.symbol).toUpperCase(),
+              targetPrice: Number(a.targetPrice),
+              direction: a.condition === 'below' ? 'below' : 'above',
+            }),
+          }).catch(() => {});
+        }
+      }
+      await AsyncStorage.removeItem('priceAlerts');
+    } catch {}
+  };
 
   const loadAlerts = async () => {
     try {
-      const stored = await AsyncStorage.getItem('priceAlerts');
-      if (stored) {
-        setAlerts(JSON.parse(stored));
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    } catch (err) {
-      setLoading(false);
-    }
-  };
-
-  const saveAlerts = async (newAlerts: PriceAlert[]) => {
-    try {
-      await AsyncStorage.setItem('priceAlerts', JSON.stringify(newAlerts));
-      setAlerts(newAlerts);
-    } catch (err) {
-      // Save error
-    }
-  };
-
-  // Get prices from WebSocket store - NO API CALLS
-  const updatePricesFromStore = () => {
-    if (alerts.length === 0) return;
-
-    const updatedAlerts = alerts.map(alert => {
-      const quote = priceStore.getQuote(alert.symbol);
-      const currentPrice = quote?.price;
-
-      if (currentPrice && currentPrice > 0) {
-        const wasTriggered = alert.triggered;
-        const isNowTriggered = alert.condition === 'above'
-          ? currentPrice >= alert.targetPrice
-          : currentPrice <= alert.targetPrice;
-
-        // Notify if newly triggered
-        if (!wasTriggered && isNowTriggered && alert.enabled) {
-          Alert.alert(
-            t('Price Alert Triggered!'),
-            `${alert.symbol} is now ${alert.condition === 'above' ? 'above' : 'below'} $${alert.targetPrice.toFixed(2)}\nCurrent price: $${currentPrice.toFixed(2)}`
-          );
-        }
-
-        return {
-          ...alert,
-          currentPrice,
-          triggered: isNowTriggered,
-        };
+      await migrateLegacyAlerts(userId);
+      const res = await fetch(`${API_BASE_URL}/price-alerts?userId=${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAlerts(Array.isArray(data) ? data : []);
       }
-      return alert;
-    });
-
-    // Only save if prices actually changed
-    const hasChanges = updatedAlerts.some((alert, i) =>
-      alert.currentPrice !== alerts[i]?.currentPrice || alert.triggered !== alerts[i]?.triggered
-    );
-    if (hasChanges) {
-      saveAlerts(updatedAlerts);
+    } catch (err) {
+    } finally {
+      setLoading(false);
     }
   };
 
-  const createAlert = () => {
+  const createAlert = async () => {
     if (!newSymbol.trim() || !newPrice.trim()) {
       Alert.alert(t('Error'), t('Please enter a symbol and target price'));
       return;
@@ -148,41 +141,62 @@ export default function PriceAlertsScreen() {
       return;
     }
 
-    const symbol = newSymbol.toUpperCase();
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) {
+      Alert.alert(t('Sign in Required'));
+      return;
+    }
 
-    // Get current price from WebSocket store (if available)
-    const quote = priceStore.getQuote(symbol);
-    const currentPrice = quote?.price;
-
-    // Subscribe to WebSocket for this symbol
-    wsSubscribe([symbol]);
-
-    const newAlert: PriceAlert = {
-      id: Date.now().toString(),
-      symbol,
-      targetPrice,
-      condition: newCondition,
-      enabled: true,
-      createdAt: new Date().toISOString(),
-      triggered: false,
-      currentPrice: currentPrice || undefined,
-    };
-
-    saveAlerts([newAlert, ...alerts]);
-    setShowCreateModal(false);
-    setNewSymbol('');
-    setNewPrice('');
-    setNewCondition('above');
+    const symbol = newSymbol.toUpperCase().trim();
+    setCreating(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/price-alerts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, symbol, targetPrice, direction: newCondition }),
+      });
+      const text = await res.text();
+      let data: any = {};
+      try { data = text ? JSON.parse(text) : {}; } catch {}
+      if (res.ok) {
+        if (data.alert) setAlerts(prev => [data.alert, ...prev]);
+        wsSubscribe([symbol]);
+        setShowCreateModal(false);
+        setNewSymbol('');
+        setNewPrice('');
+        setNewCondition('above');
+      } else {
+        Alert.alert(t('Error'), data.error || t('Failed to create alert'));
+      }
+    } catch (err) {
+      Alert.alert(t('Error'), t('Failed to create alert'));
+    } finally {
+      setCreating(false);
+    }
   };
 
-  const toggleAlert = (id: string) => {
-    const updated = alerts.map(alert =>
-      alert.id === id ? { ...alert, enabled: !alert.enabled } : alert
-    );
-    saveAlerts(updated);
+  const toggleAlert = async (alert: PriceAlert) => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      const res = await fetch(`${API_BASE_URL}/price-alerts`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alertId: alert.id, userId, isActive: !alert.isActive }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAlerts(prev =>
+          prev.map(a => (a.id === alert.id ? { ...data.alert, currentPrice: a.currentPrice } : a))
+        );
+      } else {
+        Alert.alert(t('Error'), t('Failed to update alert'));
+      }
+    } catch (err) {
+      Alert.alert(t('Error'), t('Failed to update alert'));
+    }
   };
 
-  const deleteAlert = (id: string) => {
+  const deleteAlert = (id: number) => {
     Alert.alert(
       t('Delete Alert'),
       t('Are you sure you want to delete this alert?'),
@@ -191,9 +205,21 @@ export default function PriceAlertsScreen() {
         {
           text: t('Delete'),
           style: 'destructive',
-          onPress: () => {
-            const updated = alerts.filter(a => a.id !== id);
-            saveAlerts(updated);
+          onPress: async () => {
+            try {
+              const userId = await AsyncStorage.getItem('userId');
+              const res = await fetch(
+                `${API_BASE_URL}/price-alerts?alertId=${id}&userId=${userId}`,
+                { method: 'DELETE' }
+              );
+              if (res.ok) {
+                setAlerts(prev => prev.filter(a => a.id !== id));
+              } else {
+                Alert.alert(t('Error'), t('Failed to delete alert'));
+              }
+            } catch (err) {
+              Alert.alert(t('Error'), t('Failed to delete alert'));
+            }
           },
         },
       ]
@@ -201,8 +227,8 @@ export default function PriceAlertsScreen() {
   };
 
   const getAlertStatus = (alert: PriceAlert) => {
-    if (!alert.enabled) return { text: t('Paused'), color: '#8E8E93' };
-    if (alert.triggered) return { text: t('Triggered'), color: '#34C759' };
+    if (alert.isTriggered) return { text: t('Triggered'), color: '#34C759' };
+    if (!alert.isActive) return { text: t('Paused'), color: '#8E8E93' };
     return { text: t('Active'), color: '#B8860B' };
   };
 
@@ -240,11 +266,11 @@ export default function PriceAlertsScreen() {
         {/* Active Alerts Count */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{alerts.filter(a => a.enabled).length}</Text>
+            <Text style={styles.statValue}>{alerts.filter(a => a.isActive && !a.isTriggered).length}</Text>
             <Text style={styles.statLabel}>{t('Active')}</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{alerts.filter(a => a.triggered).length}</Text>
+            <Text style={styles.statValue}>{alerts.filter(a => a.isTriggered).length}</Text>
             <Text style={styles.statLabel}>{t('Triggered')}</Text>
           </View>
           <View style={styles.statItem}>
@@ -278,7 +304,7 @@ export default function PriceAlertsScreen() {
                 : null;
 
               return (
-                <View key={alert.id} style={[styles.alertCard, !alert.enabled && styles.alertCardDisabled]}>
+                <View key={alert.id} style={[styles.alertCard, !alert.isActive && styles.alertCardDisabled]}>
                   <View style={styles.alertHeader}>
                     <View style={styles.alertSymbol}>
                       <Text style={styles.alertSymbolText}>{alert.symbol}</Text>
@@ -288,10 +314,10 @@ export default function PriceAlertsScreen() {
                       </View>
                     </View>
                     <Switch
-                      value={alert.enabled}
-                      onValueChange={() => toggleAlert(alert.id)}
+                      value={alert.isActive}
+                      onValueChange={() => toggleAlert(alert)}
                       trackColor={{ false: '#E5E5EA', true: '#E5E4E2' }}
-                      thumbColor={alert.enabled ? '#FFF' : '#FFF'}
+                      thumbColor="#FFF"
                     />
                   </View>
 
@@ -305,9 +331,9 @@ export default function PriceAlertsScreen() {
                       </View>
                       <View style={styles.alertArrow}>
                         <Ionicons
-                          name={alert.condition === 'above' ? 'arrow-up' : 'arrow-down'}
+                          name={alert.direction === 'above' ? 'arrow-up' : 'arrow-down'}
                           size={24}
-                          color={alert.condition === 'above' ? '#34C759' : '#FF3B30'}
+                          color={alert.direction === 'above' ? '#34C759' : '#FF3B30'}
                         />
                       </View>
                       <View style={styles.priceItem}>
@@ -329,7 +355,7 @@ export default function PriceAlertsScreen() {
 
                   <View style={styles.alertFooter}>
                     <Text style={styles.alertCondition}>
-                      {t('Alert when price goes')} {alert.condition} ${alert.targetPrice.toFixed(2)}
+                      {t('Alert when price goes')} {t(alert.direction)} ${alert.targetPrice.toFixed(2)}
                     </Text>
                     <TouchableOpacity onPress={() => deleteAlert(alert.id)} style={styles.deleteButton}>
                       <Ionicons name="trash-outline" size={18} color="#FF3B30" />
@@ -424,7 +450,7 @@ export default function PriceAlertsScreen() {
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity style={styles.createAlertButton} onPress={createAlert}>
+              <TouchableOpacity style={[styles.createAlertButton, creating && { opacity: 0.6 }]} onPress={createAlert} disabled={creating}>
                 <Ionicons name="notifications" size={20} color="#000" />
                 <Text style={styles.createAlertButtonText}>{t('Create Alert')}</Text>
               </TouchableOpacity>

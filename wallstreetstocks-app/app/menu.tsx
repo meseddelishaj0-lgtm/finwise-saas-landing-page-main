@@ -135,7 +135,7 @@ export default function MenuPage() {
         },
         {
           label: "Price Alerts",
-          route: "/price-alerts",
+          route: "/premium/price-alerts",
           icon: "trending-up",
           color: "#FFD700",
         },
