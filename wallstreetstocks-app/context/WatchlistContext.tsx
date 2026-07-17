@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildAuthHeaders } from '../lib/authHeaders';
 import { useAuth } from '@/lib/auth';
 
 const WATCHLIST_KEY = 'user_watchlist';
@@ -48,7 +49,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch('https://www.wallstreetstocks.ai/api/watchlist/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': authUserId },
+        headers: await buildAuthHeaders(authUserId, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ tickers: list }),
       });
       if (res.ok) await AsyncStorage.removeItem(dirtyKey);
@@ -67,7 +68,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         return;
       }
       const res = await fetch('https://www.wallstreetstocks.ai/api/watchlist/sync', {
-        headers: { 'x-user-id': authUserId },
+        headers: await buildAuthHeaders(authUserId),
       });
       if (!res.ok) return;
       const data = await res.json();

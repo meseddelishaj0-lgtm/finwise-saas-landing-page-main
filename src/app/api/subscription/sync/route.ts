@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { syncDiamondVerification } from '@/lib/verification';
+import { getVerifiedSubscription } from '@/lib/verifySubscription';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,18 +28,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate tier
+    // SECURE PATH — only when server-side RevenueCat verification is configured
+    // (REVENUECAT_API_KEY present). The client's claimed tier is ignored; we
+    // write only what RevenueCat confirms this user owns. A null result means
+    // "unverified" (no active entitlement, or a transient lookup failure): we
+    // preserve the stored tier rather than downgrade, and an unverified claim
+    // never elevates. This is what closes the free-tier bypass.
+    if (process.env.REVENUECAT_API_KEY) {
+      const verified = await getVerifiedSubscription(userIdNum);
+      if (!verified) {
+        const current = await prisma.user.findUnique({
+          where: { id: userIdNum },
+          select: { id: true, subscriptionTier: true, subscriptionStatus: true, subscriptionExpiry: true },
+        });
+        return NextResponse.json({ success: true, verified: false, user: current });
+      }
+      const updatedUser = await prisma.user.update({
+        where: { id: userIdNum },
+        data: {
+          subscriptionTier: verified.subscriptionTier,
+          subscriptionStatus: verified.subscriptionStatus,
+          subscriptionProductId: verified.subscriptionProductId,
+          subscriptionExpiry: verified.subscriptionExpiry,
+        },
+        select: { id: true, subscriptionTier: true, subscriptionStatus: true, subscriptionExpiry: true },
+      });
+      await syncDiamondVerification(userIdNum, verified.subscriptionTier);
+      return NextResponse.json({ success: true, verified: true, user: updatedUser });
+    }
+
+    // LEGACY PATH — REVENUECAT_API_KEY is not configured, so we cannot verify
+    // server-side. Fall back to the previous client-trusted behavior so paid
+    // users keep syncing (setting the env var flips this to the secure path with
+    // no code change). NOTE: this path is spoofable — set REVENUECAT_API_KEY to
+    // close it.
     const validTiers = ['free', 'gold', 'platinum', 'diamond'];
     const normalizedTier = tier?.toLowerCase() || 'free';
-
     if (!validTiers.includes(normalizedTier)) {
       return NextResponse.json(
         { error: "Invalid tier. Must be: free, gold, platinum, or diamond" },
         { status: 400 }
       );
     }
-
-    // Update user's subscription tier
     const updatedUser = await prisma.user.update({
       where: { id: userIdNum },
       data: {
@@ -47,22 +78,10 @@ export async function POST(request: NextRequest) {
         subscriptionProductId: productId || null,
         subscriptionExpiry: expirationDate ? new Date(expirationDate) : null,
       },
-      select: {
-        id: true,
-        subscriptionTier: true,
-        subscriptionStatus: true,
-        subscriptionExpiry: true,
-      },
+      select: { id: true, subscriptionTier: true, subscriptionStatus: true, subscriptionExpiry: true },
     });
-
     await syncDiamondVerification(userIdNum, normalizedTier);
-
-    console.log(`✅ Subscription synced for user ${userIdNum}: ${normalizedTier}`);
-
-    return NextResponse.json({
-      success: true,
-      user: updatedUser,
-    });
+    return NextResponse.json({ success: true, verified: false, user: updatedUser });
   } catch (error) {
     console.error("Error syncing subscription:", error);
     return NextResponse.json(

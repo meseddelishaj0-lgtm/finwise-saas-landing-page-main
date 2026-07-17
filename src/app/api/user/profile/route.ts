@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getVerifiedSubscription } from '@/lib/verifySubscription';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,13 +114,26 @@ export async function PUT(request: NextRequest) {
     if (profileImage !== undefined) updateData.profileImage = profileImage;
     if (bannerImage !== undefined) updateData.bannerImage = bannerImage;
 
-    // Allow subscription tier updates (for sync from mobile app)
+    // Subscription tier. SECURE path (REVENUECAT_API_KEY set): verify against
+    // RevenueCat and ignore the client's claim. LEGACY path (not configured):
+    // prior client-trusted behavior so tier sync keeps working — spoofable until
+    // the env var is set, at which point it flips to secure with no code change.
     if (body.subscriptionTier !== undefined) {
-      const validTiers = ['free', 'gold', 'platinum', 'diamond'];
-      const tier = body.subscriptionTier.toLowerCase();
-      if (validTiers.includes(tier)) {
-        updateData.subscriptionTier = tier;
-        updateData.subscriptionStatus = tier !== 'free' ? 'active' : null;
+      if (process.env.REVENUECAT_API_KEY) {
+        const verified = await getVerifiedSubscription(numericUserId);
+        if (verified) {
+          updateData.subscriptionTier = verified.subscriptionTier;
+          updateData.subscriptionStatus = verified.subscriptionStatus;
+          updateData.subscriptionProductId = verified.subscriptionProductId;
+          updateData.subscriptionExpiry = verified.subscriptionExpiry;
+        }
+      } else {
+        const validTiers = ['free', 'gold', 'platinum', 'diamond'];
+        const tier = body.subscriptionTier.toLowerCase();
+        if (validTiers.includes(tier)) {
+          updateData.subscriptionTier = tier;
+          updateData.subscriptionStatus = tier !== 'free' ? 'active' : null;
+        }
       }
     }
     

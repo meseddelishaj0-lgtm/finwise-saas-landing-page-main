@@ -10,12 +10,14 @@ import { prisma } from '@/lib/prisma';
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify webhook authenticity (optional but recommended)
+    // Verify webhook authenticity. Set REVENUECAT_WEBHOOK_AUTH in Vercel and the
+    // RevenueCat dashboard to protect this; once set, mismatched requests are
+    // rejected. (Currently unset — unauthenticated until configured.)
     const authHeader = request.headers.get('Authorization');
     const expectedAuth = process.env.REVENUECAT_WEBHOOK_AUTH;
-    
+
     if (expectedAuth && authHeader !== expectedAuth) {
-      console.error('Invalid webhook authorization');
+      console.error('RevenueCat webhook: invalid authorization');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

@@ -7,6 +7,7 @@
 //   POST → replaces the user's portfolios with the payload (last write wins)
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { resolveMobileUserId } from '@/lib/mobileAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,9 +15,10 @@ const MAX_PORTFOLIOS = 20;
 const MAX_HOLDINGS = 200;
 
 function getUserId(req: NextRequest): number | null {
-  const raw = req.headers.get('x-user-id');
-  const id = raw ? parseInt(raw, 10) : NaN;
-  return Number.isFinite(id) ? id : null;
+  // Backward-compatible shim kept for callers below; identity is resolved from
+  // the signed token when present, falling back to x-user-id (see mobileAuth).
+  const resolved = resolveMobileUserId(req, req.headers.get('x-user-id'));
+  return resolved.ok ? resolved.userId : null;
 }
 
 export async function GET(req: NextRequest) {

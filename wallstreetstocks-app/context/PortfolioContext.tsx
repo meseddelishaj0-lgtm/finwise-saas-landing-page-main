@@ -2,6 +2,7 @@
 // Shared portfolio state across the app
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildAuthHeaders } from '../lib/authHeaders';
 import { useAuth } from '@/lib/auth';
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
@@ -259,7 +260,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch('https://www.wallstreetstocks.ai/api/portfolio/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user-id': authUserId },
+        headers: await buildAuthHeaders(authUserId, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           portfolios: list.map((pf) => ({ name: pf.name, holdings: pf.holdings })),
         }),
@@ -281,7 +282,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const res = await fetch('https://www.wallstreetstocks.ai/api/portfolio/sync', {
-        headers: { 'x-user-id': authUserId },
+        headers: await buildAuthHeaders(authUserId),
       });
       if (!res.ok) return;
       const data = await res.json();

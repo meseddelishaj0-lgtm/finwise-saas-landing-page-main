@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@/generated/prisma/client/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { syncDiamondVerification } from '@/lib/verification';
+import { getVerifiedSubscription } from '@/lib/verifySubscription';
 
 export const dynamic = 'force-dynamic';
 
@@ -198,16 +199,32 @@ export async function PUT(
     // subscription is live, so the window keeps sliding; if the user cancels,
     // the sync stops and access lapses within the window.
     if (subscriptionTier !== undefined) {
-      const validTiers = ['free', 'gold', 'platinum', 'diamond'];
-      const tier = subscriptionTier.toLowerCase();
-      if (validTiers.includes(tier)) {
-        updateData.subscriptionTier = tier;
-        if (tier !== 'free') {
-          updateData.subscriptionStatus = 'active';
-          updateData.subscriptionExpiry = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000);
-        } else {
-          updateData.subscriptionStatus = null;
-          updateData.subscriptionExpiry = null;
+      if (process.env.REVENUECAT_API_KEY) {
+        // SECURE: verify with RevenueCat, ignore the client's claim. Unverified
+        // → leave the stored tier untouched (never downgrade here, never elevate
+        // on an unverified claim). This closes the free-tier bypass.
+        const verified = await getVerifiedSubscription(userId);
+        if (verified) {
+          updateData.subscriptionTier = verified.subscriptionTier;
+          updateData.subscriptionStatus = verified.subscriptionStatus;
+          updateData.subscriptionProductId = verified.subscriptionProductId;
+          updateData.subscriptionExpiry = verified.subscriptionExpiry;
+        }
+      } else {
+        // LEGACY (RevenueCat verification not configured): prior client-trusted
+        // behavior so tier sync keeps working. Spoofable — set REVENUECAT_API_KEY
+        // to switch to the secure path with no code change.
+        const validTiers = ['free', 'gold', 'platinum', 'diamond'];
+        const tier = subscriptionTier.toLowerCase();
+        if (validTiers.includes(tier)) {
+          updateData.subscriptionTier = tier;
+          if (tier !== 'free') {
+            updateData.subscriptionStatus = 'active';
+            updateData.subscriptionExpiry = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000);
+          } else {
+            updateData.subscriptionStatus = null;
+            updateData.subscriptionExpiry = null;
+          }
         }
       }
     }

@@ -11,12 +11,16 @@ import { syncDiamondVerification } from '@/lib/verification';
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify webhook authenticity (optional but recommended)
+    // Verify webhook authenticity. This endpoint can activate paid tiers, so it
+    // MUST be protected: set REVENUECAT_WEBHOOK_AUTH in Vercel AND paste the same
+    // value into the RevenueCat dashboard's webhook Authorization header. Once the
+    // secret is set this rejects any request that doesn't present it. (The secret
+    // is currently unset — until it is, this endpoint is unauthenticated.)
     const authHeader = request.headers.get('Authorization');
     const expectedAuth = process.env.REVENUECAT_WEBHOOK_AUTH;
-    
+
     if (expectedAuth && authHeader !== expectedAuth) {
-      console.error('Invalid webhook authorization');
+      console.error('RevenueCat webhook: invalid authorization');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
