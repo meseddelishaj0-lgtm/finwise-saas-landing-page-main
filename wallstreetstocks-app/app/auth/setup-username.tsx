@@ -17,11 +17,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mergePersonalInfo } from '@/lib/personalInfoStore';
+import { useLanguage } from '@/context/LanguageContext';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
 export default function SetupUsername() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -39,7 +41,7 @@ export default function SetupUsername() {
     // Validate format
     const validFormat = /^[a-zA-Z0-9_]+$/.test(username);
     if (!validFormat) {
-      setError('Only letters, numbers, and underscores allowed');
+      setError(t('Only letters, numbers, and underscores allowed'));
       setIsAvailable(false);
       return;
     }
@@ -70,7 +72,7 @@ export default function SetupUsername() {
       if (res.ok) {
         setIsAvailable(data.available);
         if (!data.available) {
-          setError('Username is already taken');
+          setError(t('Username is already taken'));
         }
       } else {
         setIsAvailable(null);
@@ -85,12 +87,12 @@ export default function SetupUsername() {
 
   const handleSubmit = async () => {
     if (!username.trim() || username.length < 3) {
-      Alert.alert('Invalid Username', 'Username must be at least 3 characters');
+      Alert.alert(t('Invalid Username'), t('Username must be at least 3 characters'));
       return;
     }
 
     if (!isAvailable) {
-      Alert.alert('Username Unavailable', 'Please choose a different username');
+      Alert.alert(t('Username Unavailable'), t('Please choose a different username'));
       return;
     }
 
@@ -120,11 +122,11 @@ export default function SetupUsername() {
         router.replace('/(tabs)');
       } else {
         const data = await res.json();
-        Alert.alert('Error', data.error || 'Failed to set username');
+        Alert.alert(t('Error'), data.error || t('Failed to set username'));
       }
     } catch (err) {
-      
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+
+      Alert.alert(t('Error'), t('Something went wrong. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -152,9 +154,9 @@ export default function SetupUsername() {
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>Create your username</Text>
+        <Text style={styles.title}>{t('Create your username')}</Text>
         <Text style={styles.subtitle}>
-          Choose a unique username for your WallStreetStocks profile. This is how other members will find and mention you.
+          {t('Choose a unique username for your WallStreetStocks profile. This is how other members will find and mention you.')}
         </Text>
 
         {/* Username Input */}
@@ -164,7 +166,7 @@ export default function SetupUsername() {
             style={[styles.input, { borderColor: getInputBorderColor() }]}
             value={username}
             onChangeText={(text) => setUsername(text.replace(/\s/g, ''))}
-            placeholder="username"
+            placeholder={t('username')}
             placeholderTextColor="#999"
             autoCapitalize="none"
             autoCorrect={false}
@@ -188,15 +190,15 @@ export default function SetupUsername() {
         ) : (
           <Text style={styles.helperText}>
             {username.length > 0 && username.length < 3
-              ? `${3 - username.length} more characters needed`
-              : 'Letters, numbers, and underscores only'}
+              ? `${3 - username.length} ${t('more characters needed')}`
+              : t('Letters, numbers, and underscores only')}
           </Text>
         )}
 
         {/* Username Preview */}
         {username.length >= 3 && isAvailable && (
           <View style={styles.previewContainer}>
-            <Text style={styles.previewLabel}>Your profile will appear as:</Text>
+            <Text style={styles.previewLabel}>{t('Your profile will appear as:')}</Text>
             <View style={styles.previewCard}>
               <View style={styles.previewAvatar}>
                 <Text style={styles.previewInitial}>{username[0].toUpperCase()}</Text>
@@ -218,24 +220,24 @@ export default function SetupUsername() {
           {loading ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.submitButtonText}>Continue</Text>
+            <Text style={styles.submitButtonText}>{t('Continue')}</Text>
           )}
         </TouchableOpacity>
 
         {/* Rules */}
         <View style={styles.rulesContainer}>
-          <Text style={styles.rulesTitle}>Username guidelines:</Text>
+          <Text style={styles.rulesTitle}>{t('Username guidelines:')}</Text>
           <View style={styles.ruleItem}>
             <Ionicons name="checkmark" size={16} color="#34C759" />
-            <Text style={styles.ruleText}>3-20 characters</Text>
+            <Text style={styles.ruleText}>{t('3-20 characters')}</Text>
           </View>
           <View style={styles.ruleItem}>
             <Ionicons name="checkmark" size={16} color="#34C759" />
-            <Text style={styles.ruleText}>Letters, numbers, underscores only</Text>
+            <Text style={styles.ruleText}>{t('Letters, numbers, underscores only')}</Text>
           </View>
           <View style={styles.ruleItem}>
             <Ionicons name="checkmark" size={16} color="#34C759" />
-            <Text style={styles.ruleText}>No spaces or special characters</Text>
+            <Text style={styles.ruleText}>{t('No spaces or special characters')}</Text>
           </View>
         </View>
       </KeyboardAvoidingView>

@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 type MenuItem = {
   label: string;
@@ -39,22 +40,23 @@ export default function MenuPage() {
   const { user, loading, logout } = useAuth();
   const { currentTier } = useSubscription();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
 
   const handleSignOut = () => {
     Alert.alert(
-      "Sign Out",
-      "Are you sure you want to sign out?",
+      t("Sign Out"),
+      t("Are you sure you want to sign out?"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("Cancel"), style: "cancel" },
         {
-          text: "Sign Out",
+          text: t("Sign Out"),
           style: "destructive",
           onPress: async () => {
             try {
               await logout();
             } catch (error) {
-              
-              Alert.alert("Error", "Failed to sign out");
+
+              Alert.alert(t("Error"), t("Failed to sign out"));
             }
           },
         },
@@ -65,7 +67,7 @@ export default function MenuPage() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: "Check out WallStreetStocks - the best app for stock research and community insights! Download it now: https://apps.apple.com/app/wallstreetstocks",
+        message: t("Check out WallStreetStocks - the best app for stock research and community insights! Download it now: https://apps.apple.com/app/wallstreetstocks"),
       });
     } catch (error) {
       
@@ -81,10 +83,10 @@ export default function MenuPage() {
 
   const getTierBadge = () => {
     switch (currentTier) {
-      case 'diamond': return { text: 'Diamond', color: '#5856D6' }; // Rich purple - visible on white
-      case 'platinum': return { text: 'Platinum', color: '#8E8E93' }; // Darker gray for contrast
-      case 'gold': return { text: 'Gold', color: '#FFD700' };
-      default: return { text: 'Free', color: '#8E8E93' };
+      case 'diamond': return { text: t('Diamond'), color: '#5856D6' }; // Rich purple - visible on white
+      case 'platinum': return { text: t('Platinum'), color: '#8E8E93' }; // Darker gray for contrast
+      case 'gold': return { text: t('Gold'), color: '#FFD700' };
+      default: return { text: t('Free'), color: '#8E8E93' };
     }
   };
 
@@ -100,33 +102,33 @@ export default function MenuPage() {
   const getDisplayName = () => {
     if (user?.name) return user.name;
     if (user?.email) return user.email.split('@')[0];
-    return "User";
+    return t("User");
   };
 
   const menuSections: MenuSection[] = [
     {
-      title: "Account",
+      title: t("Account"),
       items: [
         {
-          label: "My Profile",
+          label: t("My Profile"),
           route: "/profile/my-profile",
           icon: "person-circle-outline",
           color: "#B8860B"
         },
         {
-          label: "Portfolio",
+          label: t("Portfolio"),
           route: "/portfolio",
           icon: "pie-chart-outline",
           color: "#34C759",
         },
         {
-          label: "Messages",
+          label: t("Messages"),
           route: "/messages",
           icon: "chatbubble-outline",
           color: "#5856D6",
         },
         {
-          label: "Subscription",
+          label: t("Subscription"),
           route: "/(modals)/paywall",
           icon: "diamond-outline",
           color: "#5856D6",
@@ -134,38 +136,38 @@ export default function MenuPage() {
           badgeColor: tierBadge.color,
         },
         {
-          label: "Price Alerts",
+          label: t("Price Alerts"),
           route: "/premium/price-alerts",
           icon: "trending-up",
           color: "#FFD700",
         },
         {
-          label: "Insider Trading",
+          label: t("Insider Trading"),
           route: "/insider-trading",
           icon: "briefcase-outline",
           color: "#5856D6",
-          badge: "Diamond",
+          badge: t("Diamond"),
           badgeColor: "#5856D6",
         },
       ],
     },
     {
-      title: "Community",
+      title: t("Community"),
       items: [
         {
-          label: "House Rules",
+          label: t("House Rules"),
           route: "/profile/house-rules",
           icon: "shield-checkmark-outline",
           color: "#34C759",
         },
         {
-          label: "Blocked Users",
+          label: t("Blocked Users"),
           route: "/profile/blocked",
           icon: "ban-outline",
           color: "#FF3B30",
         },
         {
-          label: "Muted Users",
+          label: t("Muted Users"),
           route: "/profile/muted",
           icon: "volume-mute-outline",
           color: "#8E8E93",
@@ -173,24 +175,24 @@ export default function MenuPage() {
       ],
     },
     {
-      title: "Invite Friends",
+      title: t("Invite Friends"),
       items: [
         {
-          label: "Share App",
+          label: t("Share App"),
           icon: "share-outline",
           color: "#B8860B",
           onPress: handleShare,
         },
         {
-          label: "Referral Program",
+          label: t("Referral Program"),
           route: "/profile/referrals",
           icon: "gift-outline",
           color: "#34C759",
-          badge: "Earn $$$",
+          badge: t("Earn $$$"),
           badgeColor: "#34C759",
         },
         {
-          label: "Rate Us",
+          label: t("Rate Us"),
           icon: "star-outline",
           color: "#FF9500",
           onPress: handleRateApp,
@@ -198,22 +200,22 @@ export default function MenuPage() {
       ],
     },
     {
-      title: "Support",
+      title: t("Support"),
       items: [
         {
-          label: "Help Center",
+          label: t("Help Center"),
           route: "/profile/help",
           icon: "help-circle-outline",
           color: "#5856D6",
         },
         {
-          label: "Contact Us",
+          label: t("Contact Us"),
           route: "/profile/contact",
           icon: "mail-outline",
           color: "#B8860B",
         },
         {
-          label: "Report a Bug",
+          label: t("Report a Bug"),
           route: "/profile/bug-report",
           icon: "bug-outline",
           color: "#FF3B30",
@@ -221,28 +223,28 @@ export default function MenuPage() {
       ],
     },
     {
-      title: "Settings & Legal",
+      title: t("Settings & Legal"),
       items: [
         {
-          label: "Settings",
+          label: t("Settings"),
           route: "/profile/settings",
           icon: "settings-outline",
           color: "#8E8E93",
         },
         {
-          label: "Terms of Service",
+          label: t("Terms of Service"),
           route: "/profile/terms",
           icon: "document-text-outline",
           color: "#B8860B",
         },
         {
-          label: "Privacy Policy",
+          label: t("Privacy Policy"),
           route: "/profile/privacy",
           icon: "lock-closed-outline",
           color: "#34C759",
         },
         {
-          label: "About",
+          label: t("About"),
           route: "/profile/about",
           icon: "information-circle-outline",
           color: "#5856D6",
@@ -255,10 +257,15 @@ export default function MenuPage() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel={t("Go back")}
+        >
           <Ionicons name="chevron-back" size={28} color="#B8860B" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Menu</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t("Menu")}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -290,7 +297,7 @@ export default function MenuPage() {
               ) : (
                 <>
                   <Text style={[styles.profileName, { color: colors.text }]}>{getDisplayName()}</Text>
-                  <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user?.email || 'Not signed in'}</Text>
+                  <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user?.email || t('Not signed in')}</Text>
                 </>
               )}
             </View>
@@ -379,7 +386,7 @@ export default function MenuPage() {
                   <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
                 </View>
                 <Text style={[styles.menuLabel, { color: colors.text }, { color: "#FF3B30" }]}>
-                  Sign Out
+                  {t("Sign Out")}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
@@ -390,8 +397,8 @@ export default function MenuPage() {
         {/* Version Footer */}
         <View style={styles.footer}>
           <Text style={[styles.footerTitle, { color: colors.text }]}>WallStreetStocks</Text>
-          <Text style={styles.version}>Version 1.1.5</Text>
-          <Text style={styles.copyright}>Made with in New York</Text>
+          <Text style={styles.version}>{t('Version')} 1.1.5</Text>
+          <Text style={styles.copyright}>{t('Made with in New York')}</Text>
         </View>
       </ScrollView>
     </View>

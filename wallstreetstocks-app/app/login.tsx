@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
+import { useLanguage } from '@/context/LanguageContext';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
@@ -65,6 +66,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const { login, socialLogin } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
 
   // Google OAuth configuration (iOS uses expo-auth-session, Android uses native SDK)
   // Provide both client IDs to prevent hook errors, but Android uses native SDK for actual sign-in
@@ -106,10 +108,10 @@ export default function Login() {
       } else if (error.code === statusCodes.IN_PROGRESS) {
         
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Error', 'Google Play Services is not available');
+        Alert.alert(t('Error'), t('Google Play Services is not available'));
       } else {
-        
-        Alert.alert('Error', error.message || 'Google sign-in failed');
+
+        Alert.alert(t('Error'), error.message || t('Google sign-in failed'));
       }
     } finally {
       setLoading(false);
@@ -127,11 +129,11 @@ export default function Login() {
 
   const handleLogin = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email');
+      Alert.alert(t('Error'), t('Please enter your email'));
       return;
     }
     if (!password) {
-      Alert.alert('Error', 'Please enter your password');
+      Alert.alert(t('Error'), t('Please enter your password'));
       return;
     }
 
@@ -140,7 +142,7 @@ export default function Login() {
       await login(email, password);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to log in');
+      Alert.alert(t('Error'), error.message || t('Failed to log in'));
     } finally {
       setLoading(false);
     }
@@ -167,7 +169,7 @@ export default function Login() {
         router.replace('/(tabs)');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Google sign-in failed');
+      Alert.alert(t('Error'), error.message || t('Google sign-in failed'));
     } finally {
       setLoading(false);
     }
@@ -175,7 +177,7 @@ export default function Login() {
 
   const handleAppleSignIn = async () => {
     if (Platform.OS !== 'ios' || !AppleAuthentication) {
-      Alert.alert('Error', 'Apple Sign In is only available on iOS');
+      Alert.alert(t('Error'), t('Apple Sign In is only available on iOS'));
       return;
     }
 
@@ -195,7 +197,7 @@ export default function Login() {
       }
       
       if (!appleEmail) {
-        Alert.alert('Error', 'Could not retrieve email from Apple');
+        Alert.alert(t('Error'), t('Could not retrieve email from Apple'));
         return;
       }
 
@@ -217,7 +219,7 @@ export default function Login() {
       }
     } catch (error: any) {
       if (error.code !== 'ERR_CANCELED') {
-        Alert.alert('Error', error.message || 'Apple sign-in failed');
+        Alert.alert(t('Error'), error.message || t('Apple sign-in failed'));
       }
     } finally {
       setLoading(false);
@@ -234,11 +236,11 @@ export default function Login() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Log In</Text>
+        <Text style={styles.title}>{t('Log In')}</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder={t('Email')}
         placeholderTextColor="#999"
         value={email}
         onChangeText={setEmail}
@@ -250,16 +252,18 @@ export default function Login() {
       <View style={styles.passwordContainer}>
         <TextInput
           style={styles.passwordInput}
-          placeholder="Password"
+          placeholder={t('Password')}
           placeholderTextColor="#999"
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
           editable={!loading}
         />
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => setShowPassword(!showPassword)}
           style={styles.eyeButton}
+          accessibilityRole="button"
+          accessibilityLabel={showPassword ? t('Hide password') : t('Show password')}
         >
           <Ionicons 
             name={showPassword ? "eye-off" : "eye"} 
@@ -273,7 +277,7 @@ export default function Login() {
         onPress={() => router.push('/forgot-password')}
         disabled={loading}
       >
-        <Text style={styles.forgot}>Forgot your password?</Text>
+        <Text style={styles.forgot}>{t('Forgot your password?')}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity 
@@ -284,11 +288,11 @@ export default function Login() {
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Log In</Text>
+          <Text style={styles.buttonText}>{t('Log In')}</Text>
         )}
       </TouchableOpacity>
 
-      <Text style={styles.or}>or</Text>
+      <Text style={styles.or}>{t('or')}</Text>
 
       <TouchableOpacity
         style={styles.socialButton}
@@ -298,7 +302,7 @@ export default function Login() {
         <View style={styles.socialIcon}>
           <GoogleLogo size={20} />
         </View>
-        <Text style={styles.socialText}>Continue with Google</Text>
+        <Text style={styles.socialText}>{t('Continue with Google')}</Text>
       </TouchableOpacity>
 
       {Platform.OS === 'ios' && AppleAuthentication && (
@@ -312,7 +316,7 @@ export default function Login() {
       )}
 
       <TouchableOpacity onPress={() => router.push('/signup')} disabled={loading}>
-        <Text style={styles.link}>Don&apos;t have an account? Sign Up</Text>
+        <Text style={styles.link}>{t("Don't have an account? Sign Up")}</Text>
       </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

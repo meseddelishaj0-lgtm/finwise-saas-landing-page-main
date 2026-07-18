@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function ForgotPassword() {
   const [step, setStep] = useState<'email' | 'code' | 'newPassword'>('email');
@@ -23,10 +24,11 @@ export default function ForgotPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const { forgotPassword, resetPassword } = useAuth();
   const router = useRouter();
+  const { t } = useLanguage();
 
   const handleSendCode = async () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email');
+      Alert.alert(t('Error'), t('Please enter your email'));
       return;
     }
 
@@ -36,14 +38,14 @@ export default function ForgotPassword() {
       
       // In development, show the code (remove in production)
       if (result.devCode) {
-        Alert.alert('Development', `Your reset code is: ${result.devCode}`);
+        Alert.alert(t('Development'), `${t('Your reset code is:')} ${result.devCode}`);
       } else {
-        Alert.alert('Success', 'If an account exists, a reset code has been sent to your email.');
+        Alert.alert(t('Success'), t('If an account exists, a reset code has been sent to your email.'));
       }
       
       setStep('code');
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send reset code');
+      Alert.alert(t('Error'), error.message || t('Failed to send reset code'));
     } finally {
       setLoading(false);
     }
@@ -51,7 +53,7 @@ export default function ForgotPassword() {
 
   const handleVerifyCode = () => {
     if (!code || code.length !== 6) {
-      Alert.alert('Error', 'Please enter the 6-digit code');
+      Alert.alert(t('Error'), t('Please enter the 6-digit code'));
       return;
     }
     setStep('newPassword');
@@ -59,26 +61,26 @@ export default function ForgotPassword() {
 
   const handleResetPassword = async () => {
     if (!newPassword) {
-      Alert.alert('Error', 'Please enter a new password');
+      Alert.alert(t('Error'), t('Please enter a new password'));
       return;
     }
     if (newPassword.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert(t('Error'), t('Password must be at least 6 characters'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('Error'), t('Passwords do not match'));
       return;
     }
 
     setLoading(true);
     try {
       await resetPassword(email, code, newPassword);
-      Alert.alert('Success', 'Your password has been reset!', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') }
+      Alert.alert(t('Success'), t('Your password has been reset!'), [
+        { text: t('OK'), onPress: () => router.replace('/(tabs)') }
       ]);
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to reset password');
+      Alert.alert(t('Error'), error.message || t('Failed to reset password'));
     } finally {
       setLoading(false);
     }
@@ -86,27 +88,32 @@ export default function ForgotPassword() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={styles.backButton}
+        accessibilityRole="button"
+        accessibilityLabel={t('Go back')}
+      >
         <Ionicons name="arrow-back" size={24} color="#000" />
       </TouchableOpacity>
 
       <Text style={styles.title}>
-        {step === 'email' && 'Forgot Password'}
-        {step === 'code' && 'Enter Code'}
-        {step === 'newPassword' && 'New Password'}
+        {step === 'email' && t('Forgot Password')}
+        {step === 'code' && t('Enter Code')}
+        {step === 'newPassword' && t('New Password')}
       </Text>
 
       <Text style={styles.subtitle}>
-        {step === 'email' && 'Enter your email address and we\'ll send you a code to reset your password.'}
-        {step === 'code' && 'Enter the 6-digit code sent to your email.'}
-        {step === 'newPassword' && 'Enter your new password.'}
+        {step === 'email' && t("Enter your email address and we'll send you a code to reset your password.")}
+        {step === 'code' && t('Enter the 6-digit code sent to your email.')}
+        {step === 'newPassword' && t('Enter your new password.')}
       </Text>
 
       {step === 'email' && (
         <>
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder={t('Email')}
             placeholderTextColor="#999"
             value={email}
             onChangeText={setEmail}
@@ -122,7 +129,7 @@ export default function ForgotPassword() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Send Reset Code</Text>
+              <Text style={styles.buttonText}>{t('Send Reset Code')}</Text>
             )}
           </TouchableOpacity>
         </>
@@ -132,7 +139,7 @@ export default function ForgotPassword() {
         <>
           <TextInput
             style={styles.input}
-            placeholder="6-digit code"
+            placeholder={t('6-digit code')}
             placeholderTextColor="#999"
             value={code}
             onChangeText={setCode}
@@ -144,10 +151,10 @@ export default function ForgotPassword() {
             style={styles.button} 
             onPress={handleVerifyCode}
           >
-            <Text style={styles.buttonText}>Verify Code</Text>
+            <Text style={styles.buttonText}>{t('Verify Code')}</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleSendCode} disabled={loading}>
-            <Text style={styles.resend}>Didn&apos;t receive code? Resend</Text>
+            <Text style={styles.resend}>{t("Didn't receive code? Resend")}</Text>
           </TouchableOpacity>
         </>
       )}
@@ -157,16 +164,18 @@ export default function ForgotPassword() {
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
-              placeholder="New Password"
+              placeholder={t('New Password')}
               placeholderTextColor="#999"
               value={newPassword}
               onChangeText={setNewPassword}
               secureTextEntry={!showPassword}
               editable={!loading}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
               style={styles.eyeButton}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? t('Hide password') : t('Show password')}
             >
               <Ionicons 
                 name={showPassword ? "eye-off" : "eye"} 
@@ -177,7 +186,7 @@ export default function ForgotPassword() {
           </View>
           <TextInput
             style={styles.input}
-            placeholder="Confirm New Password"
+            placeholder={t('Confirm New Password')}
             placeholderTextColor="#999"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -192,7 +201,7 @@ export default function ForgotPassword() {
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.buttonText}>Reset Password</Text>
+              <Text style={styles.buttonText}>{t('Reset Password')}</Text>
             )}
           </TouchableOpacity>
         </>

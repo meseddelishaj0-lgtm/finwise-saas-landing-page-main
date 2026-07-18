@@ -11,6 +11,7 @@ import {
   Image
 } from "react-native";
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-router";
+import { useLanguage } from "@/context/LanguageContext";
 
 const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
 
@@ -37,6 +38,7 @@ interface CompanyProfile {
 }
 
 export default function InfoTab() {
+  const { t } = useLanguage();
   const localParams = useLocalSearchParams();
   const globalParams = useGlobalSearchParams();
   const segments = useSegments();
@@ -76,7 +78,7 @@ export default function InfoTab() {
     if (!cleanSymbol) {
       if (isCancelled()) return;
       setLoading(false);
-      setError('No symbol provided');
+      setError(t('No symbol provided'));
       return;
     }
 
@@ -116,10 +118,10 @@ export default function InfoTab() {
       if (isCancelled()) return;
 
       const errorMessage = err.name === 'AbortError'
-        ? 'Request timeout. Please try again.'
+        ? t('Request timeout. Please try again.')
         : err.message?.includes('Network')
-        ? 'Network error. Check your connection.'
-        : `Unable to load company information for ${cleanSymbol}`;
+        ? t('Network error. Check your connection.')
+        : `${t('Unable to load company information for')} ${cleanSymbol}`;
 
       setError(errorMessage);
     } finally {
@@ -159,7 +161,7 @@ export default function InfoTab() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#00C853" />
-        <Text style={styles.loading}>Loading company info...</Text>
+        <Text style={styles.loading}>{t('Loading company info...')}</Text>
       </View>
     );
   }
@@ -169,7 +171,7 @@ export default function InfoTab() {
       <View style={styles.center}>
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
-          <Text style={styles.retryText}>Retry</Text>
+          <Text style={styles.retryText}>{t('Retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -178,7 +180,7 @@ export default function InfoTab() {
   if (!profile) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>No information available</Text>
+        <Text style={styles.errorText}>{t('No information available')}</Text>
       </View>
     );
   }
@@ -188,10 +190,11 @@ export default function InfoTab() {
       {/* Company Header */}
       <View style={styles.headerSection}>
         {profile.image && (
-          <Image 
-            source={{ uri: profile.image }} 
+          <Image
+            source={{ uri: profile.image }}
             style={styles.logo}
             resizeMode="contain"
+            accessibilityLabel={`${profile.companyName} ${t('logo')}`}
           />
         )}
         <Text style={styles.companyName}>{profile.companyName}</Text>
@@ -206,32 +209,32 @@ export default function InfoTab() {
       {/* Description */}
       {profile.description && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={styles.sectionTitle}>{t('About')}</Text>
           <Text style={styles.description}>{profile.description}</Text>
         </View>
       )}
 
       {/* Leadership & Organization */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Leadership & Organization</Text>
+        <Text style={styles.sectionTitle}>{t('Leadership & Organization')}</Text>
         {profile.ceo && (
-          <InfoRow label="CEO" value={profile.ceo} />
+          <InfoRow label={t('CEO')} value={profile.ceo} />
         )}
         {profile.fullTimeEmployees && (
-          <InfoRow 
-            label="Employees" 
-            value={profile.fullTimeEmployees.toLocaleString()} 
+          <InfoRow
+            label={t('Employees')}
+            value={profile.fullTimeEmployees.toLocaleString()}
           />
         )}
         {profile.sector && (
-          <InfoRow label="Sector" value={profile.sector} />
+          <InfoRow label={t('Sector')} value={profile.sector} />
         )}
         {profile.industry && (
-          <InfoRow label="Industry" value={profile.industry} />
+          <InfoRow label={t('Industry')} value={profile.industry} />
         )}
         {profile.ipoDate && (
-          <InfoRow 
-            label="IPO Date" 
+          <InfoRow
+            label={t('IPO Date')}
             value={(() => {
               // Parse YYYY-MM-DD as local; new Date(str) is UTC midnight and
               // renders the previous day in US timezones.
@@ -245,11 +248,11 @@ export default function InfoTab() {
 
       {/* Contact Information */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Contact Information</Text>
-        
+        <Text style={styles.sectionTitle}>{t('Contact Information')}</Text>
+
         {profile.website && (
           <TouchableOpacity onPress={handleWebsitePress} style={styles.linkRow}>
-            <Text style={styles.label}>Website</Text>
+            <Text style={styles.label}>{t('Website')}</Text>
             <Text style={styles.link}>
               {profile.website.replace(/^https?:\/\//, '')}
             </Text>
@@ -257,12 +260,12 @@ export default function InfoTab() {
         )}
         
         {profile.phone && (
-          <InfoRow label="Phone" value={profile.phone} />
+          <InfoRow label={t('Phone')} value={profile.phone} />
         )}
-        
+
         {(profile.address || profile.city || profile.state) && (
           <View style={styles.addressRow}>
-            <Text style={styles.label}>Address</Text>
+            <Text style={styles.label}>{t('Address')}</Text>
             <View style={styles.addressContent}>
               {profile.address && (
                 <Text style={styles.value}>{profile.address}</Text>

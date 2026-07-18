@@ -12,6 +12,7 @@ import {
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLanguage } from "@/context/LanguageContext";
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const NEWS_CACHE_PREFIX = 'news_cache_';
@@ -28,6 +29,7 @@ interface NewsItem {
 }
 
 export default function NewsTab() {
+  const { t } = useLanguage();
   const localParams = useLocalSearchParams();
   const globalParams = useGlobalSearchParams();
   const segments = useSegments();
@@ -88,7 +90,7 @@ export default function NewsTab() {
     if (!cleanSymbol) {
       if (isCancelled()) return;
       setLoading(false);
-      setError('No symbol provided. Please navigate from a stock page.');
+      setError(t('No symbol provided. Please navigate from a stock page.'));
       return;
     }
 
@@ -148,7 +150,7 @@ export default function NewsTab() {
         await AsyncStorage.setItem(cacheKey, JSON.stringify({ data, timestamp: Date.now() }));
       } else if (Array.isArray(data) && data.length === 0) {
         if (news.length === 0) {
-          setError(`No recent news for ${cleanSymbol}`);
+          setError(`${t('No recent news for')} ${cleanSymbol}`);
         }
       }
     } catch (err: any) {
@@ -156,11 +158,11 @@ export default function NewsTab() {
       // Only show error if we don't have cached data
       if (news.length === 0) {
         if (err.name === 'AbortError') {
-          setError('Request timeout. Please try again.');
+          setError(t('Request timeout. Please try again.'));
         } else if (err.message?.includes('Network')) {
-          setError('Network error. Please check your connection.');
+          setError(t('Network error. Please check your connection.'));
         } else {
-          setError(`Error loading news: ${err.message}`);
+          setError(`${t('Error loading news:')} ${err.message}`);
         }
       }
     } finally {
@@ -169,7 +171,7 @@ export default function NewsTab() {
         setRefreshing(false);
       }
     }
-  }, [cleanSymbol, news.length]);
+  }, [cleanSymbol, news.length, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -177,7 +179,7 @@ export default function NewsTab() {
       fetchNews(false, () => cancelled);
     } else {
       setLoading(false);
-      setError('No symbol provided. Please navigate from a stock page.');
+      setError(t('No symbol provided. Please navigate from a stock page.'));
     }
     return () => { cancelled = true; };
   }, [cleanSymbol]);
@@ -227,7 +229,7 @@ export default function NewsTab() {
       return (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#00C853" />
-          <Text style={styles.loadingText}>Loading news...</Text>
+          <Text style={styles.loadingText}>{t('Loading news...')}</Text>
         </View>
       );
     }
@@ -240,7 +242,7 @@ export default function NewsTab() {
             style={styles.retryButton} 
             onPress={() => fetchNews()}
           >
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('Retry')}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -248,7 +250,7 @@ export default function NewsTab() {
 
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>No news available for {symbol}</Text>
+        <Text style={styles.emptyText}>{t('No news available for')} {symbol}</Text>
       </View>
     );
   };
@@ -290,7 +292,7 @@ export default function NewsTab() {
               
               <View style={styles.metaContainer}>
                 <Text style={styles.source}>
-                  {item.site || 'Unknown Source'}
+                  {item.site || t('Unknown Source')}
                 </Text>
                 <Text style={styles.dot}>•</Text>
                 <Text style={styles.date}>

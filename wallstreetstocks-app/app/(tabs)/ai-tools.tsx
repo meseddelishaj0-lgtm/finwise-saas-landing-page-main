@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
+import { buildAuthHeaders } from '@/lib/authHeaders';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import FadeSlideIn from '@/components/FadeSlideIn';
@@ -299,7 +300,7 @@ export default function AITools() {
       // Use OpenAI for AI analysis
       const aiResponse = await fetch(AI_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
@@ -488,7 +489,7 @@ Return ONLY a JSON object:
       // AI Analysis for comparison
       const aiResponse = await fetch(AI_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           max_tokens: 800,
@@ -604,7 +605,7 @@ Return JSON only:
       // Use OpenAI for forecast analysis
       const aiResponse = await fetch(AI_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
@@ -736,7 +737,7 @@ Always remind users that this is educational information, not financial advice.`
 
       const response = await fetch(AI_API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: conversationHistory,
@@ -895,7 +896,7 @@ Always remind users that this is educational information, not financial advice.`
                 <Ionicons name="search" size={20} color={colors.textTertiary} />
                 <TextInput
                   style={[styles.searchInput, { color: colors.text }]}
-                  placeholder="Enter ticker symbol (e.g., AAPL)"
+                  placeholder={t('Enter ticker symbol (e.g., AAPL)')}
                   placeholderTextColor={colors.textTertiary}
                   value={analyzerTicker}
                   onChangeText={setAnalyzerTicker}
@@ -1541,7 +1542,7 @@ Always remind users that this is educational information, not financial advice.`
                 <Ionicons name="telescope" size={20} color={colors.textTertiary} />
                 <TextInput
                   style={[styles.searchInput, { color: colors.text }]}
-                  placeholder="Enter ticker symbol (e.g., TSLA)"
+                  placeholder={t('Enter ticker symbol (e.g., TSLA)')}
                   placeholderTextColor={colors.textTertiary}
                   value={forecastTicker}
                   onChangeText={setForecastTicker}

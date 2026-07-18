@@ -133,8 +133,8 @@ export default function SymbolHeader() {
       Alert.alert(
         t("Alert Created ✓"),
         alertType === "auto"
-          ? `You'll be notified when ${currentSymbol} reaches $${alertPrice}`
-          : `You'll be notified when ${currentSymbol} moves ${alertType} $${alertPrice}`,
+          ? `${t("You'll be notified when")} ${currentSymbol} ${t("reaches")} $${alertPrice}`
+          : `${t("You'll be notified when")} ${currentSymbol} ${t("moves")} ${t(alertType)} $${alertPrice}`,
         [
           {
             text: t("OK"),
@@ -156,7 +156,7 @@ export default function SymbolHeader() {
   const handleRemoveAlert = () => {
     Alert.alert(
       t("Remove Alert?"),
-      `Remove price alert for ${currentSymbol}?`,
+      `${t("Remove price alert for")} ${currentSymbol}?`,
       [
         {
           text: t("Cancel"),
@@ -179,8 +179,8 @@ export default function SymbolHeader() {
     if (hasActiveAlert) {
       // Show options to view or remove alert
       Alert.alert(
-        `${currentSymbol} Alert Active`,
-        `Price moves ${activeAlertType} $${activeAlertPrice}`,
+        `${currentSymbol} ${t("Alert Active")}`,
+        `${t("Price moves")} ${activeAlertType ? t(activeAlertType) : ""} $${activeAlertPrice}`,
         [
           {
             text: t("Edit"),
@@ -214,7 +214,12 @@ export default function SymbolHeader() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={styles.iconButton}
+        accessibilityRole="button"
+        accessibilityLabel={t("Go back")}
+      >
         <Ionicons name="chevron-back" size={24} color="#fff" />
       </TouchableOpacity>
 
@@ -229,6 +234,8 @@ export default function SymbolHeader() {
             (isInWatchlist(currentSymbol) || isInPortfolio(currentSymbol)) && styles.addButtonActive
           ]}
           onPress={() => setShowAddMenu(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t("Add to watchlist or portfolio")}
         >
           <Ionicons
             name={(isInWatchlist(currentSymbol) || isInPortfolio(currentSymbol)) ? "checkmark" : "add"}
@@ -296,7 +303,11 @@ export default function SymbolHeader() {
           <Pressable style={styles.portfolioModalContent} onPress={e => e.stopPropagation()}>
             <View style={styles.portfolioModalHeader}>
               <Text style={styles.portfolioModalTitle}>{t("Add")} {currentSymbol} {t("to Portfolio")}</Text>
-              <TouchableOpacity onPress={() => setShowPortfolioModal(false)}>
+              <TouchableOpacity
+                onPress={() => setShowPortfolioModal(false)}
+                accessibilityRole="button"
+                accessibilityLabel={t("Close")}
+              >
                 <Ionicons name="close-circle" size={28} color="#999" />
               </TouchableOpacity>
             </View>
@@ -357,7 +368,11 @@ export default function SymbolHeader() {
           <View style={styles.alertModalContent}>
             {/* Header */}
             <View style={styles.alertHeader}>
-              <TouchableOpacity onPress={closeAlertModal}>
+              <TouchableOpacity
+                onPress={closeAlertModal}
+                accessibilityRole="button"
+                accessibilityLabel={t("Close")}
+              >
                 <Ionicons name="close" size={24} color="#fff" />
               </TouchableOpacity>
               <Text style={styles.alertTitle}>{currentSymbol} {t("Custom alerts")}</Text>

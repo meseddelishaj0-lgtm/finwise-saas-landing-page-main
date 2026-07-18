@@ -23,6 +23,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -45,6 +46,7 @@ interface Message {
 
 export default function NewConversationScreen() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const { recipientId } = useLocalSearchParams<{ recipientId: string }>();
   const [recipient, setRecipient] = useState<RecipientUser | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -87,7 +89,7 @@ export default function NewConversationScreen() {
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      Alert.alert('Permission Required', 'Please allow access to your photo library.');
+      Alert.alert(t('Permission Required'), t('Please allow access to your photo library.'));
       return;
     }
 
@@ -147,7 +149,7 @@ export default function NewConversationScreen() {
     if (selectedImage) {
       imageUrl = await uploadImage(selectedImage);
       if (!imageUrl && !content) {
-        Alert.alert('Error', 'Failed to upload image');
+        Alert.alert(t('Error'), t('Failed to upload image'));
         return;
       }
     }
@@ -186,13 +188,13 @@ export default function NewConversationScreen() {
         setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
         setMessage(content);
         setSelectedImage(selectedImage);
-        Alert.alert('Message not sent', 'Your message could not be delivered. Please try again.');
+        Alert.alert(t('Message not sent'), t('Your message could not be delivered. Please try again.'));
       }
     } catch (error) {
       setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
       setMessage(content);
       setSelectedImage(selectedImage);
-      Alert.alert('Message not sent', 'Your message could not be delivered. Please try again.');
+      Alert.alert(t('Message not sent'), t('Your message could not be delivered. Please try again.'));
     } finally {
       setSending(false);
     }
@@ -237,14 +239,19 @@ export default function NewConversationScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel={t('Go back')}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>New Message</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('New Message')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Please sign in to send messages</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t('Please sign in to send messages')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -253,7 +260,12 @@ export default function NewConversationScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.background : '#F2F2F7' }]} edges={['top']}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel={t('Go back')}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         {loading ? (
@@ -278,7 +290,7 @@ export default function NewConversationScreen() {
             </View>
           </View>
         ) : (
-          <Text style={[styles.headerTitle, { color: colors.text }]}>New Message</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('New Message')}</Text>
         )}
         <View style={{ width: 40 }} />
       </View>
@@ -306,7 +318,7 @@ export default function NewConversationScreen() {
                   <Text style={[styles.recipientHandle, { color: colors.textSecondary }]}>@{getHandle(recipient)}</Text>
                 </View>
                 <Text style={[styles.newConversationHint, { color: colors.textSecondary }]}>
-                  Send a message to start the conversation
+                  {t('Send a message to start the conversation')}
                 </Text>
               </>
             )}
@@ -329,6 +341,8 @@ export default function NewConversationScreen() {
             <TouchableOpacity
               style={styles.removeImageButton}
               onPress={() => setSelectedImage(null)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Remove image')}
             >
               <Ionicons name="close-circle" size={24} color="#FF3B30" />
             </TouchableOpacity>
@@ -336,12 +350,17 @@ export default function NewConversationScreen() {
         )}
 
         <View style={[styles.inputContainer, { backgroundColor: colors.background, borderTopColor: isDark ? colors.border : '#E5E5EA' }]}>
-          <TouchableOpacity style={styles.attachButton} onPress={pickImage}>
+          <TouchableOpacity
+            style={styles.attachButton}
+            onPress={pickImage}
+            accessibilityRole="button"
+            accessibilityLabel={t('Attach image')}
+          >
             <Ionicons name="image-outline" size={24} color={colors.primary} />
           </TouchableOpacity>
           <TextInput
             style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
-            placeholder="Type a message..."
+            placeholder={t('Type a message...')}
             placeholderTextColor={colors.textSecondary}
             value={message}
             onChangeText={setMessage}
@@ -356,6 +375,8 @@ export default function NewConversationScreen() {
             ]}
             onPress={sendMessage}
             disabled={(!message.trim() && !selectedImage) || sending || uploadingImage}
+            accessibilityRole="button"
+            accessibilityLabel={t('Send message')}
           >
             {sending || uploadingImage ? (
               <ActivityIndicator size="small" color="#fff" />

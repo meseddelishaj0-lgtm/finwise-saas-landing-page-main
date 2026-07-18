@@ -269,12 +269,16 @@ const ScalePress = ({
   onLongPress,
   style,
   activeScale = 0.96,
+  accessibilityRole,
+  accessibilityLabel,
 }: {
   children: React.ReactNode;
   onPress: () => void;
   onLongPress?: () => void;
   style?: any;
   activeScale?: number;
+  accessibilityRole?: "button";
+  accessibilityLabel?: string;
 }) => {
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -290,7 +294,15 @@ const ScalePress = ({
     Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 24, bounciness: 9 }).start();
 
   return (
-    <TouchableOpacity activeOpacity={1} onPress={onPress} onLongPress={onLongPress} onPressIn={pressIn} onPressOut={pressOut}>
+    <TouchableOpacity
+      activeOpacity={1}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
+    >
       <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
     </TouchableOpacity>
   );
@@ -786,7 +798,9 @@ export default function Dashboard() {
   useEffect(() => {
     priceRefreshIntervalRef.current = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 250); // 250ms = 4 updates/sec - fast updates while reducing CPU load
+    }, 1000); // 1s re-render sample. The WebSocket store still receives every
+    // tick; this only controls how often the (non-virtualized, whole-screen)
+    // tree re-renders to show it — 4x/sec was a constant frame/battery drain.
 
     return () => {
       if (priceRefreshIntervalRef.current) {
@@ -2176,7 +2190,13 @@ export default function Dashboard() {
 
       {/* Floating + Button */}
       <View style={styles.fabWrapper} pointerEvents="box-none">
-        <ScalePress style={styles.fab} activeScale={0.88} onPress={() => setAddStockModal(true)}>
+        <ScalePress
+          style={styles.fab}
+          activeScale={0.88}
+          onPress={() => setAddStockModal(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('Add Stock')}
+        >
           <Ionicons name="add" size={32} color="#fff" />
         </ScalePress>
       </View>
@@ -2199,6 +2219,8 @@ export default function Dashboard() {
             style={[styles.avatarButton, { backgroundColor: colors.surface, borderColor: isDark ? 'rgba(255,214,10,0.35)' : 'rgba(184,134,11,0.3)' }]}
             activeScale={0.9}
             onPress={() => router.push('/menu')}
+            accessibilityRole="button"
+            accessibilityLabel={t('Menu')}
           >
             <Ionicons name="person" size={19} color={colors.primary} />
           </ScalePress>
@@ -2225,12 +2247,14 @@ export default function Dashboard() {
                 returnKeyType="search"
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => {
                     setSearchQuery('');
                     setSearchResults([]);
                     setShowSearchDropdown(false);
                   }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Clear search')}
                 >
                   <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
@@ -2270,7 +2294,12 @@ export default function Dashboard() {
             )}
           </View>
 
-          <TouchableOpacity onPress={() => router.push('/notifications' as any)} style={styles.messagesIconContainer}>
+          <TouchableOpacity
+            onPress={() => router.push('/notifications' as any)}
+            style={styles.messagesIconContainer}
+            accessibilityRole="button"
+            accessibilityLabel={t('Notifications')}
+          >
             <Ionicons name="notifications-outline" size={26} color={colors.primary} />
             {unreadMessagesCount > 0 && (
               <View style={styles.unreadBadge}>
@@ -2375,12 +2404,16 @@ export default function Dashboard() {
                   setEditingPortfolioName(currentPortfolio?.name || '');
                   setShowPortfolioOptionsModal(true);
                 }}
+                accessibilityRole="button"
+                accessibilityLabel={t('More options')}
               >
                 <Ionicons name="ellipsis-horizontal" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.addIconButton}
                 onPress={() => setAddStockModal(true)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Add Stock')}
               >
                 <Ionicons name="add" size={24} color={colors.primary} />
               </TouchableOpacity>
@@ -2514,6 +2547,8 @@ export default function Dashboard() {
                 <TouchableOpacity
                   style={styles.addHoldingButton}
                   onPress={() => setAddStockModal(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Add Stock')}
                 >
                   <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
                 </TouchableOpacity>
@@ -2685,6 +2720,8 @@ export default function Dashboard() {
                 <TouchableOpacity
                   style={styles.addWatchlistButtonHeader}
                   onPress={() => setWatchlistModal(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Add to Watchlist')}
                 >
                   <Ionicons name="add-circle-outline" size={24} color={colors.textTertiary} />
                 </TouchableOpacity>
@@ -3332,7 +3369,10 @@ export default function Dashboard() {
                 <Text style={[styles.modalTitle, { color: colors.text }]}>{t('Add Stock')}</Text>
                 <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>{t('Add to your portfolio')}</Text>
               </View>
-              <TouchableOpacity onPress={() => {
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={t('Close')}
+                onPress={() => {
                 setAddStockModal(false);
                 setStockSearchResults([]);
                 setShowStockSearchDropdown(false);
@@ -3361,7 +3401,10 @@ export default function Dashboard() {
                     editable={!addingStock}
                   />
                   {newStockSymbol.length > 0 && (
-                    <TouchableOpacity onPress={() => {
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel={t('Clear search')}
+                      onPress={() => {
                       setNewStockSymbol('');
                       setShowStockSearchDropdown(false);
                     }}>
@@ -3473,7 +3516,10 @@ export default function Dashboard() {
                 <Text style={[styles.modalTitle, { color: colors.text }]}>{t('Add to Watchlist')}</Text>
                 <Text style={[styles.modalSubtitle, { color: colors.textTertiary }]}>{t("Track stocks you're interested in")}</Text>
               </View>
-              <TouchableOpacity onPress={() => {
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={t('Close')}
+                onPress={() => {
                 setWatchlistModal(false);
                 setWatchlistSymbol('');
                 setShowWatchlistSearchDropdown(false);
@@ -3502,7 +3548,10 @@ export default function Dashboard() {
                     editable={!addingToWatchlist}
                   />
                   {watchlistSymbol.length > 0 && (
-                    <TouchableOpacity onPress={() => {
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel={t('Clear search')}
+                      onPress={() => {
                       setWatchlistSymbol('');
                       setShowWatchlistSearchDropdown(false);
                     }}>
@@ -3721,7 +3770,11 @@ export default function Dashboard() {
                   {editingHolding ? `Update ${editingHolding.symbol} position` : ''}
                 </Text>
               </View>
-              <TouchableOpacity onPress={handleCloseEditModal}>
+              <TouchableOpacity
+                onPress={handleCloseEditModal}
+                accessibilityRole="button"
+                accessibilityLabel={t('Close')}
+              >
                 <Ionicons name="close-circle" size={32} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
@@ -3803,7 +3856,7 @@ export default function Dashboard() {
                 <Text style={[styles.createPortfolioTitle, { color: colors.text }]}>Create New Portfolio</Text>
                 <TextInput
                   style={[styles.createPortfolioInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
-                  placeholder="Portfolio name"
+                  placeholder={t('Portfolio name')}
                   placeholderTextColor={colors.textTertiary}
                   value={newPortfolioName}
                   onChangeText={setNewPortfolioName}
@@ -3844,7 +3897,11 @@ export default function Dashboard() {
           <View style={[styles.portfolioOptionsContent, { backgroundColor: colors.card }]}>
             <View style={styles.portfolioOptionsHeader}>
               <Text style={[styles.portfolioOptionsTitle, { color: colors.text }]}>Portfolio Settings</Text>
-              <TouchableOpacity onPress={() => setShowPortfolioOptionsModal(false)}>
+              <TouchableOpacity
+                onPress={() => setShowPortfolioOptionsModal(false)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Close')}
+              >
                 <Ionicons name="close" size={24} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
@@ -3855,7 +3912,7 @@ export default function Dashboard() {
                 style={[styles.portfolioOptionsInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
                 value={editingPortfolioName}
                 onChangeText={setEditingPortfolioName}
-                placeholder="Enter name"
+                placeholder={t('Enter name')}
                 placeholderTextColor={colors.textTertiary}
               />
             </View>

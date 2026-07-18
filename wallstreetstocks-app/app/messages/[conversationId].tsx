@@ -24,6 +24,7 @@ import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -55,6 +56,7 @@ interface OtherUser {
 
 export default function ConversationScreen() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
@@ -140,7 +142,7 @@ export default function ConversationScreen() {
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      Alert.alert('Permission Required', 'Please allow access to your photo library.');
+      Alert.alert(t('Permission Required'), t('Please allow access to your photo library.'));
       return;
     }
 
@@ -194,12 +196,12 @@ export default function ConversationScreen() {
     if (!userId || !conversationId) return;
 
     Alert.alert(
-      'Delete Message',
-      'Are you sure you want to delete this message?',
+      t('Delete Message'),
+      t('Are you sure you want to delete this message?'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('Delete'),
           style: 'destructive',
           onPress: async () => {
             // Optimistic update
@@ -222,7 +224,7 @@ export default function ConversationScreen() {
                     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
                   ));
                 }
-                Alert.alert('Error', 'Failed to delete message');
+                Alert.alert(t('Error'), t('Failed to delete message'));
               }
             } catch (error) {
               
@@ -248,7 +250,7 @@ export default function ConversationScreen() {
     if (selectedImage) {
       imageUrl = await uploadImage(selectedImage);
       if (!imageUrl && !content) {
-        Alert.alert('Error', 'Failed to upload image');
+        Alert.alert(t('Error'), t('Failed to upload image'));
         return;
       }
     }
@@ -292,13 +294,13 @@ export default function ConversationScreen() {
         setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
         setMessage(content);
         setSelectedImage(selectedImage);
-        Alert.alert('Message not sent', 'Your message could not be delivered. Please try again.');
+        Alert.alert(t('Message not sent'), t('Your message could not be delivered. Please try again.'));
       }
     } catch (error) {
       setMessages((prev) => prev.filter((m) => m.id !== tempMessage.id));
       setMessage(content);
       setSelectedImage(selectedImage);
-      Alert.alert('Message not sent', 'Your message could not be delivered. Please try again.');
+      Alert.alert(t('Message not sent'), t('Your message could not be delivered. Please try again.'));
     } finally {
       setSending(false);
     }
@@ -316,9 +318,9 @@ export default function ConversationScreen() {
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
     if (days === 0) {
-      return 'Today';
+      return t('Today');
     } else if (days === 1) {
-      return 'Yesterday';
+      return t('Yesterday');
     } else {
       return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
     }
@@ -354,6 +356,8 @@ export default function ConversationScreen() {
                   setImageViewerVisible(true);
                 }}
                 activeOpacity={0.9}
+                accessibilityRole="button"
+                accessibilityLabel={t('View image')}
               >
                 <Image
                   source={{ uri: item.imageUrl }}
@@ -380,14 +384,19 @@ export default function ConversationScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel={t('Go back')}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Messages')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyState}>
-          <Text style={{ color: colors.text }}>Please sign in to view messages</Text>
+          <Text style={{ color: colors.text }}>{t('Please sign in to view messages')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -396,7 +405,12 @@ export default function ConversationScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? colors.background : '#F2F2F7' }]} edges={['top']}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel={t('Go back')}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
         {otherUser && (
@@ -455,6 +469,8 @@ export default function ConversationScreen() {
             <TouchableOpacity
               style={styles.removeImageButton}
               onPress={() => setSelectedImage(null)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Remove image')}
             >
               <Ionicons name="close-circle" size={24} color="#FF3B30" />
             </TouchableOpacity>
@@ -462,12 +478,17 @@ export default function ConversationScreen() {
         )}
 
         <View style={[styles.inputContainer, { backgroundColor: colors.background, borderTopColor: isDark ? colors.border : '#E5E5EA' }]}>
-          <TouchableOpacity style={styles.attachButton} onPress={pickImage}>
+          <TouchableOpacity
+            style={styles.attachButton}
+            onPress={pickImage}
+            accessibilityRole="button"
+            accessibilityLabel={t('Attach image')}
+          >
             <Ionicons name="image-outline" size={24} color={colors.primary} />
           </TouchableOpacity>
           <TextInput
             style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
-            placeholder="Type a message..."
+            placeholder={t('Type a message...')}
             placeholderTextColor={colors.textSecondary}
             value={message}
             onChangeText={setMessage}
@@ -481,6 +502,8 @@ export default function ConversationScreen() {
             ]}
             onPress={sendMessage}
             disabled={(!message.trim() && !selectedImage) || sending || uploadingImage}
+            accessibilityRole="button"
+            accessibilityLabel={t('Send message')}
           >
             {sending || uploadingImage ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -502,6 +525,8 @@ export default function ConversationScreen() {
           <TouchableOpacity
             style={styles.imageViewerClose}
             onPress={() => setImageViewerVisible(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t('Close')}
           >
             <Ionicons name="close" size={28} color="#FFF" />
           </TouchableOpacity>

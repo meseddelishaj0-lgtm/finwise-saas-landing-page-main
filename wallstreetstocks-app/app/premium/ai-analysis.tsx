@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
+import { buildAuthHeaders } from '@/lib/authHeaders';
 import { useLanguage } from '@/context/LanguageContext';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
@@ -85,9 +86,7 @@ export default function AIAnalysisScreen() {
       // AI Analysis using Claude
       const aiResponse = await fetch('https://www.wallstreetstocks.ai/api/ai/complete', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           max_tokens: 1500,

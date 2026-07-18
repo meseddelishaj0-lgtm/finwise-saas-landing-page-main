@@ -1492,10 +1492,10 @@ export default function CommunityPage() {
 
     try {
       await addToWatchlist(userId, ticker);
-      Alert.alert(t('Success'), `$${ticker} added to your watchlist!`);
+      Alert.alert(t('Success'), `$${ticker} ${t('added to your watchlist!')}`);
     } catch (error: any) {
       if (error?.message?.includes('already')) {
-        Alert.alert(t('Info'), `$${ticker} is already in your watchlist`);
+        Alert.alert(t('Info'), `$${ticker} ${t('is already in your watchlist')}`);
       } else {
         Alert.alert(t('Error'), t('Failed to add to watchlist'));
       }
@@ -1530,7 +1530,7 @@ export default function CommunityPage() {
         const user = await response.json();
         handleOpenProfile(user);
       } else {
-        Alert.alert(t('User not found'), `@${username} doesn't exist`);
+        Alert.alert(t('User not found'), `@${username} ${t("doesn't exist")}`);
       }
     } catch {
     }
@@ -1719,7 +1719,7 @@ export default function CommunityPage() {
       );
 
       if (response.ok) {
-        Alert.alert(t('Success'), `You are now following ${getDisplayName(selectedPostForOptions.user)}`);
+        Alert.alert(t('Success'), `${t('You are now following')} ${getDisplayName(selectedPostForOptions.user)}`);
       } else {
         throw new Error('Failed to follow user');
       }
@@ -1745,7 +1745,7 @@ export default function CommunityPage() {
 
     Alert.alert(
       t('Block User'),
-      `Are you sure you want to block ${targetUserName}? You won't see their posts or comments anymore.`,
+      `${t('Are you sure you want to block')} ${targetUserName}? ${t("You won't see their posts or comments anymore.")}`,
       [
         { text: t('Cancel'), style: 'cancel' },
         {
@@ -1757,7 +1757,7 @@ export default function CommunityPage() {
               if (result.success) {
                 // Remove blocked user's posts from the feed
                 setPosts(prev => prev.filter(p => p.user?.id !== targetUserId));
-                Alert.alert(t('Blocked'), `${targetUserName} has been blocked`);
+                Alert.alert(t('Blocked'), `${targetUserName} ${t('has been blocked')}`);
               }
             } catch {
               Alert.alert(t('Error'), t('Failed to block user. Please try again.'));
@@ -1785,7 +1785,7 @@ export default function CommunityPage() {
     try {
       const result = await muteUser(userId, targetUserId);
       if (result.success) {
-        Alert.alert(t('Muted'), `${targetUserName} has been muted. You won't receive notifications from them.`);
+        Alert.alert(t('Muted'), `${targetUserName} ${t("has been muted. You won't receive notifications from them.")}`);
       }
     } catch {
       Alert.alert(t('Error'), t('Failed to mute user. Please try again.'));
@@ -1803,7 +1803,7 @@ export default function CommunityPage() {
     
     Alert.alert(
       t('Report User'),
-      `Why are you reporting ${targetUserName}?`,
+      `${t('Why are you reporting')} ${targetUserName}?`,
       [
         { text: t('Cancel'), style: 'cancel' },
         {
@@ -1855,7 +1855,7 @@ export default function CommunityPage() {
 
     try {
       await Share.share({
-        message: `${shareContent}\n\nCheck out this post on WallStreetStocks: ${postUrl}`,
+        message: `${shareContent}\n\n${t('Check out this post on WallStreetStocks:')} ${postUrl}`,
         url: postUrl,
       });
     } catch {
@@ -1924,7 +1924,7 @@ export default function CommunityPage() {
 
     Alert.alert(
       t('Block User'),
-      `Are you sure you want to block ${targetUserName}? You won't see their posts or comments anymore.`,
+      `${t('Are you sure you want to block')} ${targetUserName}? ${t("You won't see their posts or comments anymore.")}`,
       [
         { text: t('Cancel'), style: 'cancel' },
         {
@@ -1938,7 +1938,7 @@ export default function CommunityPage() {
                 setComments(prev => prev.filter(c => c.user?.id !== targetUserId));
                 // Remove blocked user's posts from the feed
                 setPosts(prev => prev.filter(p => p.user?.id !== targetUserId));
-                Alert.alert(t('Blocked'), `${targetUserName} has been blocked`);
+                Alert.alert(t('Blocked'), `${targetUserName} ${t('has been blocked')}`);
               }
             } catch {
               Alert.alert(t('Error'), t('Failed to block user. Please try again.'));
@@ -1966,7 +1966,7 @@ export default function CommunityPage() {
     try {
       const result = await muteUser(userId, targetUserId);
       if (result.success) {
-        Alert.alert(t('Muted'), `${targetUserName} has been muted. You won't receive notifications from them.`);
+        Alert.alert(t('Muted'), `${targetUserName} ${t("has been muted. You won't receive notifications from them.")}`);
       }
     } catch {
       Alert.alert(t('Error'), t('Failed to mute user. Please try again.'));
@@ -1984,7 +1984,7 @@ export default function CommunityPage() {
 
     Alert.alert(
       t('Report Comment'),
-      `Why are you reporting this comment by ${targetUserName}?`,
+      `${t('Why are you reporting this comment by')} ${targetUserName}?`,
       [
         { text: t('Cancel'), style: 'cancel' },
         { text: t('Spam'), onPress: () => submitCommentReport('spam') },
@@ -2029,12 +2029,12 @@ export default function CommunityPage() {
     }
 
     Alert.alert(
-      'Block User',
-      `Are you sure you want to block ${targetUserName}?`,
+      t('Block User'),
+      `${t('Are you sure you want to block')} ${targetUserName}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Block',
+          text: t('Block'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -2042,7 +2042,7 @@ export default function CommunityPage() {
               if (result.success) {
                 setPosts(prev => prev.filter(p => p.user?.id !== targetUserId));
                 setProfileModal(false);
-                Alert.alert('Blocked', `${targetUserName} has been blocked`);
+                Alert.alert(t('Blocked'), `${targetUserName} ${t('has been blocked')}`);
               }
             } catch {
               Alert.alert(t('Error'), t('Failed to block user. Please try again.'));
@@ -2068,7 +2068,7 @@ export default function CommunityPage() {
     try {
       const result = await muteUser(userId, targetUserId);
       if (result.success) {
-        Alert.alert('Muted', `${targetUserName} has been muted.`);
+        Alert.alert(t('Muted'), `${targetUserName} ${t('has been muted.')}`);
       }
     } catch {
       Alert.alert(t('Error'), t('Failed to mute user. Please try again.'));
@@ -2081,14 +2081,14 @@ export default function CommunityPage() {
     const targetUserName = getDisplayName(selectedProfile);
 
     Alert.alert(
-      'Report User',
-      `Why are you reporting ${targetUserName}?`,
+      t('Report User'),
+      `${t('Why are you reporting')} ${targetUserName}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Spam', onPress: () => submitProfileReport('spam') },
-        { text: 'Harassment', onPress: () => submitProfileReport('harassment') },
-        { text: 'Impersonation', onPress: () => submitProfileReport('impersonation') },
-        { text: 'Other', onPress: () => submitProfileReport('other') },
+        { text: t('Cancel'), style: 'cancel' },
+        { text: t('Spam'), onPress: () => submitProfileReport('spam') },
+        { text: t('Harassment'), onPress: () => submitProfileReport('harassment') },
+        { text: t('Impersonation'), onPress: () => submitProfileReport('impersonation') },
+        { text: t('Other'), onPress: () => submitProfileReport('other') },
       ]
     );
   };
@@ -2324,9 +2324,11 @@ export default function CommunityPage() {
           <Text style={[styles.headerTitle, { color: colors.text }]}>Community</Text>
         </FadeSlideIn>
         <View style={styles.headerActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.headerButton, { backgroundColor: colors.surface }]}
             onPress={() => setSearchModal(true)}
+            accessibilityRole="button"
+            accessibilityLabel={t('Search')}
           >
             <Ionicons name="search" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -2338,6 +2340,8 @@ export default function CommunityPage() {
               setNotificationsModal(true);
               handleMarkNotificationsRead();
             }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Notifications')}
           >
             <Ionicons name="notifications-outline" size={24} color={colors.text} />
             {unreadCount > 0 && (
@@ -2348,16 +2352,18 @@ export default function CommunityPage() {
           </TouchableOpacity>
 
           {/* My Profile Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.headerButton, { backgroundColor: colors.surface }]}
             onPress={() => {
               const userId = getUserId();
               if (userId) {
                 handleOpenProfile({ id: userId, name: null, email: '' });
               } else {
-                Alert.alert('Not Logged In', 'Please log in to view your profile');
+                Alert.alert(t('Not Logged In'), t('Please log in to view your profile'));
               }
             }}
+            accessibilityRole="button"
+            accessibilityLabel={t('Profile')}
           >
             <Ionicons name="person-circle-outline" size={26} color={colors.text} />
           </TouchableOpacity>
@@ -2424,6 +2430,8 @@ export default function CommunityPage() {
                     style={[styles.dismissButton, { backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "#E5E5EA" }]}
                     onPress={() => handleDismissSuggested(user.id)}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('Dismiss')}
                   >
                     <Ionicons name="close" size={14} color={colors.textTertiary} />
                   </TouchableOpacity>
@@ -2604,10 +2612,12 @@ export default function CommunityPage() {
               </TouchableOpacity>
               
               {/* Three Dot Menu */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.postOptionsButton}
                 onPress={() => handleOpenPostOptions(post)}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel={t('More options')}
               >
                 <Ionicons name="ellipsis-horizontal" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
@@ -2666,6 +2676,8 @@ export default function CommunityPage() {
                     post.sentiment.userVote === 'bullish' && styles.sentimentButtonBullishActive
                   ]}
                   onPress={() => handleVoteSentiment(post.id, 'bullish')}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Bullish')}
                 >
                   <Ionicons 
                     name="trending-up" 
@@ -2686,6 +2698,8 @@ export default function CommunityPage() {
                     post.sentiment.userVote === 'bearish' && styles.sentimentButtonBearishActive
                   ]}
                   onPress={() => handleVoteSentiment(post.id, 'bearish')}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Bearish')}
                 >
                   <Ionicons 
                     name="trending-down" 
@@ -2716,6 +2730,8 @@ export default function CommunityPage() {
               <TouchableOpacity
                 style={[styles.actionButton]}
                 onPress={() => handleLikePost(post.id)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Like')}
               >
                 <Ionicons
                   name={post.isLiked ? "heart" : "heart-outline"}
@@ -2730,6 +2746,8 @@ export default function CommunityPage() {
               <TouchableOpacity
                 style={[styles.actionButton]}
                 onPress={() => handleOpenComments(post)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Comments')}
               >
                 <Ionicons name="chatbubble-outline" size={20} color={colors.textTertiary} />
                 <Text style={[styles.actionText, { color: colors.textSecondary }]}>{post._count?.comments || 0}</Text>
@@ -2738,6 +2756,8 @@ export default function CommunityPage() {
               <TouchableOpacity
                 style={[styles.actionButton]}
                 onPress={() => handleSharePost(post)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Share')}
               >
                 <Ionicons name="share-outline" size={22} color={colors.textTertiary} />
               </TouchableOpacity>
@@ -2747,6 +2767,8 @@ export default function CommunityPage() {
                 <TouchableOpacity
                   style={[styles.actionButton]}
                   onPress={() => handleDeletePost(post.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Delete')}
                 >
                   <Ionicons name="trash-outline" size={20} color="#FF3B30" />
                 </TouchableOpacity>
@@ -2788,6 +2810,8 @@ export default function CommunityPage() {
         style={styles.fab}
         onPress={openCreatePostModal}
         activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel={t('Create Post')}
       >
         <Ionicons name="add" size={32} color={colors.text} />
       </TouchableOpacity>
@@ -2801,9 +2825,11 @@ export default function CommunityPage() {
       >
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]} key={`profile-${selectedProfile?.id}-${selectedProfile?.username}`}>
           <View style={[styles.profileHeader, { backgroundColor: colors.background, borderBottomColor: isDark ? "transparent" : "#E5E5EA" }]}>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => setProfileModal(false)}
               style={styles.profileCloseButton}
+              accessibilityRole="button"
+              accessibilityLabel={t('Close')}
             >
               <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
@@ -2926,23 +2952,25 @@ export default function CommunityPage() {
                   {/* More Options Button */}
                   <TouchableOpacity
                     style={[styles.profileMoreButton, { backgroundColor: colors.surface }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('More options')}
                     onPress={() => {
                       Alert.alert(
                         getDisplayName(selectedProfile),
-                        'Choose an action',
+                        t('Choose an action'),
                         [
-                          { text: 'Cancel', style: 'cancel' },
+                          { text: t('Cancel'), style: 'cancel' },
                           {
-                            text: 'Mute',
+                            text: t('Mute'),
                             onPress: handleMuteFromProfile,
                           },
                           {
-                            text: 'Block',
+                            text: t('Block'),
                             style: 'destructive',
                             onPress: handleBlockFromProfile,
                           },
                           {
-                            text: 'Report',
+                            text: t('Report'),
                             style: 'destructive',
                             onPress: handleReportFromProfile,
                           },
@@ -3040,6 +3068,8 @@ export default function CommunityPage() {
                           <TouchableOpacity
                             style={styles.profilePostStat}
                             onPress={() => handleDeletePost(post.id)}
+                            accessibilityRole="button"
+                            accessibilityLabel={t('Delete')}
                           >
                             <Ionicons name="trash-outline" size={16} color="#FF3B30" />
                           </TouchableOpacity>
@@ -3104,7 +3134,7 @@ export default function CommunityPage() {
             {/* Title Input */}
             <TextInput
               style={[styles.titleInput, { color: colors.text }]}
-              placeholder="Title (optional)"
+              placeholder={t('Title (optional)')}
               placeholderTextColor={colors.textTertiary}
               value={newPostTitle}
               onChangeText={setNewPostTitle}
@@ -3114,7 +3144,7 @@ export default function CommunityPage() {
             {/* Content Input */}
             <TextInput
               style={[styles.contentInput, { color: colors.text }]}
-              placeholder="What's happening in the markets?"
+              placeholder={t("What's happening in the markets?")}
               placeholderTextColor={colors.textTertiary}
               multiline
               value={newPostContent}
@@ -3126,7 +3156,7 @@ export default function CommunityPage() {
               <Ionicons name="pricetag-outline" size={20} color={colors.textTertiary} />
               <TextInput
                 style={styles.tickerInput}
-                placeholder="Add ticker (e.g., AAPL)"
+                placeholder={t('Add ticker (e.g., AAPL)')}
                 placeholderTextColor={colors.textTertiary}
                 value={newPostTicker}
                 onChangeText={(text) => setNewPostTicker(text.toUpperCase())}
@@ -3142,6 +3172,8 @@ export default function CommunityPage() {
                 <TouchableOpacity
                   style={styles.removeImageButton}
                   onPress={() => setNewPostImage(null)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Remove image')}
                 >
                   <Ionicons name="close-circle" size={28} color="#FF3B30" />
                 </TouchableOpacity>
@@ -3155,11 +3187,21 @@ export default function CommunityPage() {
             )}
 
             <View style={styles.mediaButtonsRow}>
-              <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
+              <TouchableOpacity
+                style={styles.addImageButton}
+                onPress={pickImage}
+                accessibilityRole="button"
+                accessibilityLabel={t('Add image')}
+              >
                 <Ionicons name="image-outline" size={24} color="#B8860B" />
-                <Text style={styles.addImageText}>Image</Text>
+                <Text style={styles.addImageText}>{t('Image')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.addImageButton} onPress={openGiphyPicker}>
+              <TouchableOpacity
+                style={styles.addImageButton}
+                onPress={openGiphyPicker}
+                accessibilityRole="button"
+                accessibilityLabel={t('Add GIF')}
+              >
                 <Text style={styles.gifButtonText}>GIF</Text>
               </TouchableOpacity>
             </View>
@@ -3176,21 +3218,29 @@ export default function CommunityPage() {
       >
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.searchHeader, { backgroundColor: colors.background, borderBottomColor: isDark ? "transparent" : "#E5E5EA" }]}>
-            <TouchableOpacity onPress={() => setSearchModal(false)}>
+            <TouchableOpacity
+              onPress={() => setSearchModal(false)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Back')}
+            >
               <Ionicons name="arrow-back" size={26} color={colors.text} />
             </TouchableOpacity>
             <View style={styles.searchInputContainer}>
               <Ionicons name="search" size={18} color={colors.textTertiary} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search posts, tickers..."
+                placeholder={t('Search posts, tickers...')}
                 placeholderTextColor={colors.textTertiary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoFocus
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <TouchableOpacity
+                  onPress={() => setSearchQuery('')}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('Clear search')}
+                >
                   <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
                 </TouchableOpacity>
               )}
@@ -3245,7 +3295,11 @@ export default function CommunityPage() {
       >
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { backgroundColor: colors.background, borderBottomColor: isDark ? "transparent" : "#E5E5EA" }]}>
-            <TouchableOpacity onPress={() => setNotificationsModal(false)}>
+            <TouchableOpacity
+              onPress={() => setNotificationsModal(false)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Close')}
+            >
               <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Notifications</Text>
@@ -3304,7 +3358,11 @@ export default function CommunityPage() {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
         >
           <View style={[styles.modalHeader, { backgroundColor: colors.background, borderBottomColor: isDark ? "transparent" : "#E5E5EA" }]}>
-            <TouchableOpacity onPress={() => setCommentsModal(false)}>
+            <TouchableOpacity
+              onPress={() => setCommentsModal(false)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Close')}
+            >
               <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Comments</Text>
@@ -3413,6 +3471,8 @@ export default function CommunityPage() {
                       <TouchableOpacity
                         style={styles.commentLikeButton}
                         onPress={() => handleLikeComment(comment.id)}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('Like')}
                       >
                         <Ionicons
                           name={comment.isLiked ? "heart" : "heart-outline"}
@@ -3425,6 +3485,8 @@ export default function CommunityPage() {
                         style={styles.commentOptionsButton}
                         onPress={() => handleOpenCommentOptions(comment)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('More options')}
                       >
                         <Ionicons name="ellipsis-horizontal" size={16} color={colors.textTertiary} />
                       </TouchableOpacity>
@@ -3444,7 +3506,7 @@ export default function CommunityPage() {
             <View style={[styles.commentInputWrapper, { backgroundColor: colors.surface }]}>
               <TextInput
                 style={[styles.commentInput, { color: colors.text }]}
-                placeholder="Add a comment..."
+                placeholder={t('Add a comment...')}
                 placeholderTextColor={colors.textTertiary}
                 value={newComment}
                 onChangeText={setNewComment}
@@ -3458,6 +3520,8 @@ export default function CommunityPage() {
               ]}
               onPress={handleAddComment}
               disabled={commenting || !newComment.trim()}
+              accessibilityRole="button"
+              accessibilityLabel={t('Send')}
             >
               {commenting ? (
                 <ActivityIndicator size="small" color="#FFF" />
@@ -3686,7 +3750,11 @@ export default function CommunityPage() {
       >
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={styles.giphyHeader}>
-            <TouchableOpacity onPress={() => setGiphyModal(false)}>
+            <TouchableOpacity
+              onPress={() => setGiphyModal(false)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Close')}
+            >
               <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.giphyTitle}>Choose a GIF</Text>
@@ -3697,7 +3765,7 @@ export default function CommunityPage() {
             <Ionicons name="search" size={18} color={colors.textTertiary} />
             <TextInput
               style={styles.giphySearchInput}
-              placeholder="Search GIFs..."
+              placeholder={t('Search GIFs...')}
               placeholderTextColor={colors.textTertiary}
               value={giphySearch}
               onChangeText={(text) => {
@@ -3707,7 +3775,10 @@ export default function CommunityPage() {
               autoCorrect={false}
             />
             {giphySearch.length > 0 && (
-              <TouchableOpacity onPress={() => {
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={t('Clear search')}
+                onPress={() => {
                 setGiphySearch('');
                 searchGiphy('');
               }}>
@@ -3752,20 +3823,24 @@ export default function CommunityPage() {
         <View style={styles.imageViewerContainer}>
           {/* Header */}
           <View style={styles.imageViewerHeader}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.imageViewerCloseButton}
               onPress={() => setImageViewerModal(false)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Close')}
             >
               <Ionicons name="close" size={28} color="#FFF" />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.imageViewerActionButton}
+              accessibilityRole="button"
+              accessibilityLabel={t('Share')}
               onPress={async () => {
                 if (selectedImage) {
                   try {
                     await Share.share({
                       url: selectedImage,
-                      message: 'Check out this image from WallStreetStocks',
+                      message: t('Check out this image from WallStreetStocks'),
                     });
                   } catch {
                   }

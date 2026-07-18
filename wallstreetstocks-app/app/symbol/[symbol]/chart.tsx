@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFromMemory, setToMemory, clearFromMemory, CACHE_KEYS } from '../../../utils/memoryCache';
 import { priceStore, useQuote } from '../../../stores/priceStore';
 import { useWebSocket } from '../../../context/WebSocketContext';
+import { useLanguage } from '@/context/LanguageContext';
 import TechnicalIndicators from '../../../components/TechnicalIndicators';
 
 // ============================================================================
@@ -280,6 +281,7 @@ async function clearChartCache(symbol: string): Promise<void> {
 // ============================================================================
 
 export default function ChartTab() {
+  const { t } = useLanguage();
   // Extract symbol from route params
   const localParams = useLocalSearchParams();
   const globalParams = useGlobalSearchParams();
@@ -358,11 +360,13 @@ export default function ChartTab() {
     }
   }, [cleanSymbol, apiSymbol, isConnected, subscribe]);
 
-  // Fast re-render for WebSocket price updates
+  // Re-render sample for WebSocket price updates. 1s instead of 100ms — this
+  // 1,200-line non-virtualized screen re-rendered 10x/sec; the price store
+  // still receives every tick, we just repaint once a second.
   useEffect(() => {
     priceRefreshIntervalRef.current = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 100);
+    }, 1000);
 
     return () => {
       if (priceRefreshIntervalRef.current) {
@@ -629,16 +633,16 @@ export default function ChartTab() {
         setToMemory(memCacheKey, finalData);
         await setAsyncCache(cacheKey, finalData);
       } else if (rawChartDataRef.current.length === 0) {
-        setError('No data available');
+        setError(t('No data available'));
       }
     } catch (err) {
       if (isCurrent() && rawChartDataRef.current.length === 0) {
-        setError('Unable to load chart');
+        setError(t('Unable to load chart'));
       }
     } finally {
       if (isCurrent()) setLoading(false);
     }
-  }, [cleanSymbol, apiSymbol, timeframe, isCrypto]);
+  }, [cleanSymbol, apiSymbol, timeframe, isCrypto, t]);
 
   // ============================================================================
   // EFFECTS
@@ -664,7 +668,7 @@ export default function ChartTab() {
   useEffect(() => {
     if (!cleanSymbol) {
       setLoading(false);
-      setError('No symbol provided');
+      setError(t('No symbol provided'));
       return;
     }
 
@@ -709,13 +713,13 @@ export default function ChartTab() {
 
   const createPriceAlert = async () => {
     if (!alertPrice.trim() || !cleanSymbol) {
-      Alert.alert('Error', 'Please enter a target price');
+      Alert.alert(t('Error'), t('Please enter a target price'));
       return;
     }
 
     const price = parseLocaleNumber(alertPrice);
     if (isNaN(price) || price <= 0) {
-      Alert.alert('Error', 'Please enter a valid price');
+      Alert.alert(t('Error'), t('Please enter a valid price'));
       return;
     }
 
@@ -723,7 +727,7 @@ export default function ChartTab() {
     try {
       const userId = await AsyncStorage.getItem('userId');
       if (!userId) {
-        Alert.alert('Error', 'Please log in to create price alerts');
+        Alert.alert(t('Error'), t('Please log in to create price alerts'));
         setCreatingAlert(false);
         return;
       }
@@ -744,18 +748,18 @@ export default function ChartTab() {
       try {
         data = text ? JSON.parse(text) : {};
       } catch {
-        data = { error: 'Server returned invalid response' };
+        data = { error: t('Server returned invalid response') };
       }
 
       if (res.ok) {
         setShowAlertModal(false);
         setAlertPrice('');
-        Alert.alert('Alert Created', `You'll be notified when ${cleanSymbol} goes ${alertDirection} $${price.toFixed(2)}`);
+        Alert.alert(t('Alert Created'), `${t("You'll be notified when")} ${cleanSymbol} ${t('goes')} ${t(alertDirection)} $${price.toFixed(2)}`);
       } else {
-        Alert.alert('Error', data.error || `Failed to create alert (${res.status})`);
+        Alert.alert(t('Error'), data.error || `${t('Failed to create alert')} (${res.status})`);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to create alert');
+      Alert.alert(t('Error'), t('Failed to create alert'));
     } finally {
       setCreatingAlert(false);
     }
@@ -864,9 +868,9 @@ export default function ChartTab() {
                   marketStatus === 'pre-market' && { color: '#FF9500' },
                   marketStatus === 'after-hours' && { color: '#AF52DE' },
                 ]}>
-                  {marketStatus === 'open' ? 'Market Open' :
-                   marketStatus === 'pre-market' ? 'Pre-Market' :
-                   marketStatus === 'after-hours' ? 'After Hours' : 'Closed'}
+                  {marketStatus === 'open' ? t('Market Open') :
+                   marketStatus === 'pre-market' ? t('Pre-Market') :
+                   marketStatus === 'after-hours' ? t('After Hours') : t('Closed')}
                 </Text>
               </View>
               <Text style={styles.lastUpdated}>
@@ -884,7 +888,7 @@ export default function ChartTab() {
               <Ionicons name="alert-circle" size={48} color="#8E8E93" />
               <Text style={styles.errorText}>{error}</Text>
               <TouchableOpacity style={styles.retryButton} onPress={() => fetchChartData(true)}>
-                <Text style={styles.retryText}>Retry</Text>
+                <Text style={styles.retryText}>{t('Retry')}</Text>
               </TouchableOpacity>
             </View>
           ) : loading && liveChartData.length <= 1 ? (
@@ -1004,7 +1008,7 @@ export default function ChartTab() {
             </View>
           ) : (
             <View style={styles.noDataContainer}>
-              <Text style={styles.noDataText}>No chart data available</Text>
+              <Text style={styles.noDataText}>{t('No chart data available')}</Text>
             </View>
           )}
         </View>
@@ -1035,7 +1039,7 @@ export default function ChartTab() {
           activeOpacity={0.7}
         >
           <Ionicons name={showIndicators ? 'analytics' : 'analytics-outline'} size={18} color={showIndicators ? priceColor : '#8E8E93'} />
-          <Text style={[styles.indicatorToggleText, showIndicators && { color: priceColor }]}>Technical Indicators</Text>
+          <Text style={[styles.indicatorToggleText, showIndicators && { color: priceColor }]}>{t('Technical Indicators')}</Text>
           <Ionicons name={showIndicators ? 'chevron-up' : 'chevron-down'} size={16} color={showIndicators ? priceColor : '#8E8E93'} />
         </TouchableOpacity>
 
@@ -1048,7 +1052,7 @@ export default function ChartTab() {
         {!showIndicators && (
           <TouchableOpacity style={styles.alertButton} onPress={openAlertModal} activeOpacity={0.7}>
             <Ionicons name="notifications-outline" size={18} color="#FFD700" />
-            <Text style={styles.alertButtonText}>Set Price Alert</Text>
+            <Text style={styles.alertButtonText}>{t('Set Price Alert')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -1058,37 +1062,41 @@ export default function ChartTab() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Set Price Alert</Text>
-              <TouchableOpacity onPress={() => setShowAlertModal(false)}>
+              <Text style={styles.modalTitle}>{t('Set Price Alert')}</Text>
+              <TouchableOpacity
+                onPress={() => setShowAlertModal(false)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Close')}
+              >
                 <Ionicons name="close" size={24} color="#FFF" />
               </TouchableOpacity>
             </View>
 
             <Text style={styles.modalSymbol}>{cleanSymbol}</Text>
-            {currentPrice && <Text style={styles.modalCurrentPrice}>Current: ${currentPrice.toFixed(2)}</Text>}
+            {currentPrice && <Text style={styles.modalCurrentPrice}>{t('Current:')} ${currentPrice.toFixed(2)}</Text>}
 
-            <Text style={styles.inputLabel}>Alert when price goes</Text>
+            <Text style={styles.inputLabel}>{t('Alert when price goes')}</Text>
             <View style={styles.directionContainer}>
               <TouchableOpacity
                 style={[styles.directionButton, alertDirection === 'above' && styles.selectedDirectionAbove]}
                 onPress={() => setAlertDirection('above')}
               >
                 <Ionicons name="trending-up" size={20} color={alertDirection === 'above' ? '#000' : '#34C759'} />
-                <Text style={[styles.directionText, alertDirection === 'above' && styles.selectedDirectionText]}>Above</Text>
+                <Text style={[styles.directionText, alertDirection === 'above' && styles.selectedDirectionText]}>{t('Above')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.directionButton, alertDirection === 'below' && styles.selectedDirectionBelow]}
                 onPress={() => setAlertDirection('below')}
               >
                 <Ionicons name="trending-down" size={20} color={alertDirection === 'below' ? '#FFF' : '#FF3B30'} />
-                <Text style={[styles.directionText, alertDirection === 'below' && styles.selectedDirectionTextBelow]}>Below</Text>
+                <Text style={[styles.directionText, alertDirection === 'below' && styles.selectedDirectionTextBelow]}>{t('Below')}</Text>
               </TouchableOpacity>
             </View>
             <Text style={{ color: '#8E8E93', fontSize: 12, marginTop: -14, marginBottom: 16 }}>
-              Set automatically from your target price — tap to override.
+              {t('Set automatically from your target price — tap to override.')}
             </Text>
 
-            <Text style={styles.inputLabel}>Target Price</Text>
+            <Text style={styles.inputLabel}>{t('Target Price')}</Text>
             <TextInput
               style={styles.priceInput}
               placeholder="0.00"
@@ -1103,7 +1111,7 @@ export default function ChartTab() {
               onPress={createPriceAlert}
               disabled={creatingAlert}
             >
-              {creatingAlert ? <ActivityIndicator color="#000" /> : <Text style={styles.createAlertButtonText}>Create Alert</Text>}
+              {creatingAlert ? <ActivityIndicator color="#000" /> : <Text style={styles.createAlertButtonText}>{t('Create Alert')}</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>

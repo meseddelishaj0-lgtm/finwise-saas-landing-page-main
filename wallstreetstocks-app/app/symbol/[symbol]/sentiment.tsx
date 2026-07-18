@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useLanguage } from "@/context/LanguageContext";
 
 const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
 // v2: cache now stores daily-aggregated rows (old caches held raw hourly rows)
@@ -84,6 +85,7 @@ interface AnalystRating {
 }
 
 export default function SentimentTab() {
+  const { t } = useLanguage();
   const localParams = useLocalSearchParams();
   const globalParams = useGlobalSearchParams();
   const segments = useSegments();
@@ -124,7 +126,7 @@ export default function SentimentTab() {
     if (!cleanSymbol) {
       if (isCancelled()) return;
       setLoading(false);
-      setError('No symbol provided');
+      setError(t('No symbol provided'));
       return;
     }
 
@@ -220,16 +222,16 @@ export default function SentimentTab() {
       // Only show error if we don't have cached data
       if (sentiment.length === 0 && !ratings) {
         const errorMessage = err.name === 'AbortError'
-          ? 'Request timeout. Please try again.'
+          ? t('Request timeout. Please try again.')
           : err.message?.includes('Network')
-          ? 'Network error. Check your connection.'
-          : `Limited sentiment data for ${cleanSymbol}`;
+          ? t('Network error. Check your connection.')
+          : `${t('Limited sentiment data for')} ${cleanSymbol}`;
         setError(errorMessage);
       }
     } finally {
       if (!isCancelled()) setLoading(false);
     }
-  }, [cleanSymbol, sentiment.length, ratings]);
+  }, [cleanSymbol, sentiment.length, ratings, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -273,7 +275,7 @@ export default function SentimentTab() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#00C853" />
-        <Text style={styles.loading}>Loading sentiment data...</Text>
+        <Text style={styles.loading}>{t('Loading sentiment data...')}</Text>
       </View>
     );
   }
@@ -288,13 +290,13 @@ export default function SentimentTab() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>Market Sentiment • {cleanSymbol}</Text>
+      <Text style={styles.title}>{t('Market Sentiment')} • {cleanSymbol}</Text>
 
       {error && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorBannerText}>{error}</Text>
           <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={styles.retryText}>{t('Retry')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -302,7 +304,7 @@ export default function SentimentTab() {
       {/* Analyst Ratings */}
       {ratings && totalRatings > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Analyst Ratings</Text>
+          <Text style={styles.sectionTitle}>{t('Analyst Ratings')}</Text>
           <View style={styles.ratingsCard}>
             <View style={styles.ratingRow}>
               <View style={styles.ratingBar}>
@@ -317,7 +319,7 @@ export default function SentimentTab() {
                 />
               </View>
               <Text style={styles.ratingLabel}>
-                Strong Buy ({ratings.analystRatingsStrongBuy || 0})
+                {t('Strong Buy')} ({ratings.analystRatingsStrongBuy || 0})
               </Text>
             </View>
 
@@ -334,7 +336,7 @@ export default function SentimentTab() {
                 />
               </View>
               <Text style={styles.ratingLabel}>
-                Buy ({ratings.analystRatingsbuy || 0})
+                {t('Buy')} ({ratings.analystRatingsbuy || 0})
               </Text>
             </View>
 
@@ -351,7 +353,7 @@ export default function SentimentTab() {
                 />
               </View>
               <Text style={styles.ratingLabel}>
-                Hold ({ratings.analystRatingsHold || 0})
+                {t('Hold')} ({ratings.analystRatingsHold || 0})
               </Text>
             </View>
 
@@ -368,7 +370,7 @@ export default function SentimentTab() {
                 />
               </View>
               <Text style={styles.ratingLabel}>
-                Sell ({ratings.analystRatingsSell || 0})
+                {t('Sell')} ({ratings.analystRatingsSell || 0})
               </Text>
             </View>
 
@@ -385,12 +387,12 @@ export default function SentimentTab() {
                 />
               </View>
               <Text style={styles.ratingLabel}>
-                Strong Sell ({ratings.analystRatingsStrongSell || 0})
+                {t('Strong Sell')} ({ratings.analystRatingsStrongSell || 0})
               </Text>
             </View>
 
             <Text style={styles.totalRatings}>
-              Total: {totalRatings} analyst{totalRatings !== 1 ? 's' : ''}
+              {t('Total:')} {totalRatings} {totalRatings !== 1 ? t('analysts') : t('analyst')}
             </Text>
           </View>
         </View>
@@ -399,7 +401,7 @@ export default function SentimentTab() {
       {/* Social Sentiment History */}
       {sentiment.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Social Sentiment History</Text>
+          <Text style={styles.sectionTitle}>{t('Social Sentiment History')}</Text>
           {sentiment.map((item, index) => (
             <View key={`${item.date}-${index}`} style={styles.sentimentCard}>
               <View style={styles.sentimentHeader}>
@@ -407,7 +409,7 @@ export default function SentimentTab() {
                   <Text style={styles.sentimentDate}>{formatDate(item.date)}</Text>
                   {item.mentions > 0 && (
                     <Text style={styles.sentimentMentions}>
-                      {item.mentions.toLocaleString()} mentions
+                      {item.mentions.toLocaleString()} {t('mentions')}
                     </Text>
                   )}
                 </View>
@@ -419,13 +421,13 @@ export default function SentimentTab() {
                     styles.sentimentBadgeText,
                     { color: getSentimentColor(item.score) }
                   ]}>
-                    {getSentimentLabel(item.score)}
+                    {t(getSentimentLabel(item.score))}
                   </Text>
                 </View>
               </View>
               
               <View style={styles.scoreRow}>
-                <Text style={styles.scoreLabel}>Sentiment Score</Text>
+                <Text style={styles.scoreLabel}>{t('Sentiment Score')}</Text>
                 <Text style={[
                   styles.scoreValue,
                   { color: getSentimentColor(item.score) }
@@ -453,7 +455,7 @@ export default function SentimentTab() {
       {sentiment.length === 0 && !ratings && (
         <View style={styles.center}>
           <Text style={styles.noDataText}>
-            No sentiment data available for {cleanSymbol}
+            {t('No sentiment data available for')} {cleanSymbol}
           </Text>
         </View>
       )}

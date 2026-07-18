@@ -105,7 +105,7 @@ export default function EarningsTab() {
         setError(null);
       } else {
         setEarnings([]);
-        setError(`No earnings data available for ${cleanSymbol}`);
+        setError(`${t('No earnings data available for')} ${cleanSymbol}`);
       }
     } catch (err: any) {
       if (isCancelled()) return;
@@ -114,7 +114,7 @@ export default function EarningsTab() {
         ? t('Request timeout. Please try again.')
         : err.message?.includes('Network')
         ? t('Network error. Check your connection.')
-        : `Unable to load earnings data for ${cleanSymbol}`;
+        : `${t('Unable to load earnings data for')} ${cleanSymbol}`;
 
       setError(errorMessage);
       setEarnings([]);

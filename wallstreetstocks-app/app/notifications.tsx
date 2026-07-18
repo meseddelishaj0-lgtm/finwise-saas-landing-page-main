@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { buildAuthHeaders } from '../lib/authHeaders';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -40,6 +41,7 @@ interface Notification {
 export default function Notifications() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -223,7 +225,7 @@ export default function Notifications() {
                   item.message
                 ) : (
                   <>
-                    <Text style={[styles.username, { color: colors.text }]}>{item.fromUser?.name || 'Someone'}</Text>
+                    <Text style={[styles.username, { color: colors.text }]}>{item.fromUser?.name || t('Someone')}</Text>
                     {' '}{item.message}
                   </>
                 )}
@@ -254,13 +256,18 @@ export default function Notifications() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel={t('Go back')}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Notifications')}</Text>
         {unreadCount > 0 && (
           <TouchableOpacity onPress={markAllAsRead} style={styles.markAllButton}>
-            <Text style={[styles.markAllText, { color: colors.primary }]}>Mark all read</Text>
+            <Text style={[styles.markAllText, { color: colors.primary }]}>{t('Mark all read')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -270,23 +277,23 @@ export default function Notifications() {
       ) : feedError && notifications.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="cloud-offline-outline" size={64} color={colors.textTertiary} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Couldn&apos;t load notifications</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("Couldn't load notifications")}</Text>
           <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            Check your connection and try again.
+            {t('Check your connection and try again.')}
           </Text>
           <TouchableOpacity
             onPress={() => { setLoading(true); fetchNotifications(); }}
             style={{ marginTop: 20, backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 }}
           >
-            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>Retry</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600' }}>{t('Retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="notifications-outline" size={64} color={colors.textTertiary} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>No notifications yet</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('No notifications yet')}</Text>
           <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            When someone likes, comments, or mentions you, you&apos;ll see it here
+            {t("When someone likes, comments, or mentions you, you'll see it here")}
           </Text>
         </View>
       ) : (

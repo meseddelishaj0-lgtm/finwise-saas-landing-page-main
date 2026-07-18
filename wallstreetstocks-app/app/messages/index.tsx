@@ -24,6 +24,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Swipeable } from 'react-native-gesture-handler';
 import { FLATLIST_PERFORMANCE_PROPS, ITEM_HEIGHTS } from '@/components/OptimizedListItems';
 import { useTheme } from '@/context/ThemeContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 const DELETE_BUTTON_WIDTH = 80;
 const CONVERSATION_ITEM_HEIGHT = 89; // Fixed height for getItemLayout optimization
@@ -71,6 +72,7 @@ interface SearchUser {
 
 export default function MessagesScreen() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -233,12 +235,12 @@ export default function MessagesScreen() {
     if (!userId) return;
 
     Alert.alert(
-      'Delete Conversation',
-      'Are you sure you want to delete this conversation? All messages will be permanently deleted.',
+      t('Delete Conversation'),
+      t('Are you sure you want to delete this conversation? All messages will be permanently deleted.'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('Cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('Delete'),
           style: 'destructive',
           onPress: async () => {
             // Optimistic update
@@ -259,14 +261,14 @@ export default function MessagesScreen() {
                 if (deletedConversation) {
                   setConversations((prev) => [deletedConversation, ...prev]);
                 }
-                Alert.alert('Error', 'Failed to delete conversation');
+                Alert.alert(t('Error'), t('Failed to delete conversation'));
               }
             } catch (error) {
-              
+
               if (deletedConversation) {
                 setConversations((prev) => [deletedConversation, ...prev]);
               }
-              Alert.alert('Error', 'Failed to delete conversation');
+              Alert.alert(t('Error'), t('Failed to delete conversation'));
             }
           },
         },
@@ -297,7 +299,7 @@ export default function MessagesScreen() {
     if (days === 0) {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else if (days === 1) {
-      return 'Yesterday';
+      return t('Yesterday');
     } else if (days < 7) {
       return date.toLocaleDateString([], { weekday: 'short' });
     } else {
@@ -323,7 +325,7 @@ export default function MessagesScreen() {
       >
         <Animated.View style={{ transform: [{ scale }], alignItems: 'center' }}>
           <Ionicons name="trash-outline" size={24} color="#FFF" />
-          <Text style={styles.deleteButtonText}>Delete</Text>
+          <Text style={styles.deleteButtonText}>{t('Delete')}</Text>
         </Animated.View>
       </TouchableOpacity>
     );
@@ -373,11 +375,11 @@ export default function MessagesScreen() {
                 style={[styles.lastMessage, { color: colors.textSecondary }, item.unreadCount > 0 && { color: colors.text, fontWeight: '500' }]}
                 numberOfLines={1}
               >
-                {item.lastMessage.isFromMe && 'You: '}
-                {item.lastMessage.content || '[Image]'}
+                {item.lastMessage.isFromMe && t('You:') + ' '}
+                {item.lastMessage.content || t('[Image]')}
               </Text>
             ) : (
-              <Text style={[styles.noMessage, { color: colors.textSecondary }]}>Start a conversation</Text>
+              <Text style={[styles.noMessage, { color: colors.textSecondary }]}>{t('Start a conversation')}</Text>
             )}
           </View>
 
@@ -391,16 +393,21 @@ export default function MessagesScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel={t('Go back')}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Messages')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.emptyState}>
           <Ionicons name="log-in-outline" size={64} color={colors.textSecondary} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Sign in Required</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>Please sign in to access messages</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('Sign in Required')}</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>{t('Please sign in to access messages')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -409,11 +416,21 @@ export default function MessagesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel={t('Go back')}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
-        <TouchableOpacity onPress={openNewMessageModal} style={styles.newMessageButton}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Messages')}</Text>
+        <TouchableOpacity
+          onPress={openNewMessageModal}
+          style={styles.newMessageButton}
+          accessibilityRole="button"
+          accessibilityLabel={t('New message')}
+        >
           <Ionicons name="create-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
@@ -425,9 +442,9 @@ export default function MessagesScreen() {
       ) : loadError && conversations.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="cloud-offline-outline" size={64} color={colors.textSecondary} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Couldn't Load Messages</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{t("Couldn't Load Messages")}</Text>
           <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            Something went wrong. Please try again.
+            {t('Something went wrong. Please try again.')}
           </Text>
           <TouchableOpacity
             style={styles.startMessageButton}
@@ -439,19 +456,19 @@ export default function MessagesScreen() {
             }}
           >
             <Ionicons name="refresh" size={20} color="#FFF" />
-            <Text style={styles.startMessageButtonText}>Retry</Text>
+            <Text style={styles.startMessageButtonText}>{t('Retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : conversations.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="chatbubbles-outline" size={64} color={colors.textSecondary} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>No Messages Yet</Text>
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('No Messages Yet')}</Text>
           <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            Tap the compose button to start a conversation
+            {t('Tap the compose button to start a conversation')}
           </Text>
           <TouchableOpacity style={styles.startMessageButton} onPress={openNewMessageModal}>
             <Ionicons name="add" size={20} color="#FFF" />
-            <Text style={styles.startMessageButtonText}>New Message</Text>
+            <Text style={styles.startMessageButtonText}>{t('New Message')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -477,9 +494,9 @@ export default function MessagesScreen() {
         <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { borderBottomColor: isDark ? colors.border : '#E5E5EA' }]}>
             <TouchableOpacity onPress={() => setNewMessageModal(false)}>
-              <Text style={[styles.cancelText, { color: colors.primary }]}>Cancel</Text>
+              <Text style={[styles.cancelText, { color: colors.primary }]}>{t('Cancel')}</Text>
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>New Message</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('New Message')}</Text>
             <View style={{ width: 60 }} />
           </View>
 
@@ -487,14 +504,18 @@ export default function MessagesScreen() {
             <Ionicons name="search" size={20} color={colors.textSecondary} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
-              placeholder="Search by name or username..."
+              placeholder={t('Search by name or username...')}
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                accessibilityRole="button"
+                accessibilityLabel={t('Clear search')}
+              >
                 <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             )}
@@ -507,7 +528,7 @@ export default function MessagesScreen() {
           ) : searchQuery.length > 0 && searchResults.length === 0 ? (
             <View style={styles.noResultsContainer}>
               <Ionicons name="person-outline" size={48} color={colors.textTertiary || colors.textSecondary} />
-              <Text style={[styles.noResultsText, { color: colors.textSecondary }]}>No users found</Text>
+              <Text style={[styles.noResultsText, { color: colors.textSecondary }]}>{t('No users found')}</Text>
             </View>
           ) : (
             <FlatList
@@ -515,7 +536,7 @@ export default function MessagesScreen() {
               keyExtractor={(item) => item.id.toString()}
               ListHeaderComponent={
                 searchQuery.length === 0 && suggestedUsers.length > 0 ? (
-                  <Text style={[styles.sectionHeader, { color: colors.textSecondary, backgroundColor: colors.surface }]}>Suggested</Text>
+                  <Text style={[styles.sectionHeader, { color: colors.textSecondary, backgroundColor: colors.surface }]}>{t('Suggested')}</Text>
                 ) : null
               }
               renderItem={({ item }) => (

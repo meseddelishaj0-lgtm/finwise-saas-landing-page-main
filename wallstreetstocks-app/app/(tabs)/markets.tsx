@@ -598,7 +598,8 @@ export default function Explore() {
     const startupDelay = setTimeout(() => {
       priceRefreshIntervalRef.current = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 100); // 100ms = 10 updates/sec for ultra-fast prices
+      }, 1000); // 1s re-render sample (WebSocket data still flows at full rate;
+      // 10x/sec screen-level state bumps reconciled the whole tree each tick)
     }, 300); // 300ms initial delay
 
     return () => {

@@ -28,6 +28,7 @@ import { useWebSocket } from "@/context/WebSocketContext";
 import { marketDataService } from "@/services/marketDataService";
 import StockLogo from "@/components/StockLogo";
 import { useTheme } from "@/context/ThemeContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -41,11 +42,15 @@ const ScalePress = ({
   onPress,
   style,
   activeScale = 0.96,
+  accessibilityRole,
+  accessibilityLabel,
 }: {
   children: React.ReactNode;
   onPress: () => void;
   style?: any;
   activeScale?: number;
+  accessibilityRole?: "button";
+  accessibilityLabel?: string;
 }) => {
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -61,7 +66,14 @@ const ScalePress = ({
     Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 24, bounciness: 9 }).start();
 
   return (
-    <TouchableOpacity activeOpacity={1} onPress={onPress} onPressIn={pressIn} onPressOut={pressOut}>
+    <TouchableOpacity
+      activeOpacity={1}
+      onPress={onPress}
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
+    >
       <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
     </TouchableOpacity>
   );
@@ -274,6 +286,7 @@ HeaderCard.displayName = 'HeaderCard';
 
 export default function Trending() {
   const { colors, isDark } = useTheme();
+  const { t } = useLanguage();
   const { initialTab } = useLocalSearchParams<{ initialTab?: string }>();
   const [activeTab, setActiveTab] = useState<TabType>((initialTab as TabType) || "trending");
   const [data, setData] = useState<StockItem[]>([]);
@@ -540,11 +553,11 @@ export default function Trending() {
 
       setData(cleaned);
     } catch (err: any) {
-      setError(err.message || "Failed to load data.");
+      setError(err.message || t("Failed to load data."));
     } finally {
       setLoading(false);
     }
-  }, [activeTab, getMoversFromStore]);
+  }, [activeTab, getMoversFromStore, t]);
 
   // Update cache when data changes successfully
   useEffect(() => {
@@ -683,7 +696,7 @@ export default function Trending() {
     const startupDelay = setTimeout(() => {
       priceIntervalRef.current = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 100); // 100ms = 10 updates/sec for ultra-fast prices
+      }, 1000); // 1s re-render sample (WebSocket data still flows at full rate)
     }, 200); // 200ms initial delay
 
     return () => {
@@ -820,9 +833,15 @@ export default function Trending() {
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
         {/* Header Top Row */}
         <View style={styles.headerTopRow}>
-          <Text style={[styles.title, { color: colors.text }]}>Trending</Text>
+          <Text style={[styles.title, { color: colors.text }]}>{t("Trending")}</Text>
           <View style={styles.headerRight}>
-            <ScalePress style={[styles.refreshBtn, { backgroundColor: colors.surface }]} onPress={fetchLiveData} activeScale={0.88}>
+            <ScalePress
+              style={[styles.refreshBtn, { backgroundColor: colors.surface }]}
+              onPress={fetchLiveData}
+              activeScale={0.88}
+              accessibilityRole="button"
+              accessibilityLabel={t("Refresh")}
+            >
               <Ionicons name="refresh" size={20} color={isDark ? '#FFD60A' : '#B8860B'} />
             </ScalePress>
           </View>
@@ -830,7 +849,7 @@ export default function Trending() {
 
         {/* Subtitle */}
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Real-time market movers & top performers
+          {t("Real-time market movers & top performers")}
         </Text>
 
         {/* Static Header Cards */}
@@ -876,12 +895,12 @@ export default function Trending() {
                     style={[styles.tabPill, styles.tabPillActive]}
                   >
                     <Ionicons name={tab.icon as any} size={16} color={activeInk} />
-                    <Text style={[styles.tabText, styles.tabTextActive, { color: activeInk }]}>{tab.label}</Text>
+                    <Text style={[styles.tabText, styles.tabTextActive, { color: activeInk }]}>{t(tab.label)}</Text>
                   </ExpoLinearGradient>
                 ) : (
                   <View style={[styles.tabPill, { backgroundColor: colors.surface }]}>
                     <Ionicons name={tab.icon as any} size={16} color={colors.textTertiary} />
-                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>{tab.label}</Text>
+                    <Text style={[styles.tabText, { color: colors.textSecondary }]}>{t(tab.label)}</Text>
                   </View>
                 )}
               </ScalePress>
@@ -895,8 +914,8 @@ export default function Trending() {
           <View style={styles.errorBanner}>
             <Ionicons name="cloud-offline-outline" size={18} color="#FF1744" />
             <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity onPress={fetchLiveData} style={styles.retryBtn}>
-              <Text style={styles.retryText}>Retry</Text>
+            <TouchableOpacity onPress={fetchLiveData} style={styles.retryBtn} accessibilityRole="button">
+              <Text style={styles.retryText}>{t("Retry")}</Text>
             </TouchableOpacity>
           </View>
         </FadeSlideIn>
@@ -929,7 +948,7 @@ export default function Trending() {
                   <View style={[styles.emptyIconCircle, { backgroundColor: colors.surface }]}>
                     <Ionicons name="trending-up" size={30} color={colors.textTertiary} />
                   </View>
-                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No data available</Text>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>{t("No data available")}</Text>
                 </View>
               </FadeSlideIn>
             )

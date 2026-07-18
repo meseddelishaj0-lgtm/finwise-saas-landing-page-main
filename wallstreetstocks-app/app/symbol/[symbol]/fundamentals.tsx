@@ -1210,7 +1210,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
             <View style={cashFlowStyles.metricIcon}>
               <Ionicons name="arrow-up-circle" size={24} color="#00C853" />
             </View>
-            <Text style={cashFlowStyles.metricLabel}>Operating CF</Text>
+            <Text style={cashFlowStyles.metricLabel}>{t('Operating CF')}</Text>
             <Text style={[cashFlowStyles.metricValue, { color: operatingCF >= 0 ? '#00C853' : '#FF3B30' }]}>
               {fmtNum(operatingCF)}
             </Text>
@@ -1219,7 +1219,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
             <View style={cashFlowStyles.metricIcon}>
               <Ionicons name="diamond" size={24} color="#B8860B" />
             </View>
-            <Text style={cashFlowStyles.metricLabel}>Free Cash Flow</Text>
+            <Text style={cashFlowStyles.metricLabel}>{t('Free Cash Flow')}</Text>
             <Text style={[cashFlowStyles.metricValue, { color: freeCashFlow >= 0 ? '#00C853' : '#FF3B30' }]}>
               {fmtNum(freeCashFlow)}
             </Text>
@@ -1228,14 +1228,14 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
 
         {/* Cash Flow Bars */}
         <View style={cashFlowStyles.cfBarsCard}>
-          <Text style={cashFlowStyles.cfBarsTitle}>Cash Flow Summary</Text>
+          <Text style={cashFlowStyles.cfBarsTitle}>{t('Cash Flow Summary')}</Text>
           <CashFlowBar label="Operating" value={operatingCF} color="#00C853" icon="business" />
           <CashFlowBar label="Investing" value={investingCF} color="#FF9500" icon="trending-down" />
           <CashFlowBar label="Financing" value={financingCF} color="#AF52DE" icon="card" />
           <View style={cashFlowStyles.cfNetChange}>
             <View style={cashFlowStyles.cfNetChangeLeft}>
               <Ionicons name="swap-horizontal" size={18} color="#B8860B" />
-              <Text style={cashFlowStyles.cfNetChangeLabel}>Net Change in Cash</Text>
+              <Text style={cashFlowStyles.cfNetChangeLabel}>{t('Net Change in Cash')}</Text>
             </View>
             <Text style={[cashFlowStyles.cfNetChangeValue, { color: netChange >= 0 ? '#00C853' : '#FF3B30' }]}>
               {fmtNum(netChange)}
@@ -1251,8 +1251,8 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
             <Ionicons name="business" size={18} color="#00C853" />
           </View>
           <View style={cashFlowStyles.activityHeaderText}>
-            <Text style={cashFlowStyles.activityTitle}>Operating Activities</Text>
-            <Text style={cashFlowStyles.activitySubtitle}>Cash from core business operations</Text>
+            <Text style={cashFlowStyles.activityTitle}>{t('Operating Activities')}</Text>
+            <Text style={cashFlowStyles.activitySubtitle}>{t('Cash from core business operations')}</Text>
           </View>
           <Text style={[cashFlowStyles.activityTotal, { color: operatingCF >= 0 ? '#00C853' : '#FF3B30' }]}>
             {fmtNum(operatingCF)}
@@ -1277,8 +1277,8 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
             <Ionicons name="trending-down" size={18} color="#FF9500" />
           </View>
           <View style={cashFlowStyles.activityHeaderText}>
-            <Text style={cashFlowStyles.activityTitle}>Investing Activities</Text>
-            <Text style={cashFlowStyles.activitySubtitle}>Capital expenditure & investments</Text>
+            <Text style={cashFlowStyles.activityTitle}>{t('Investing Activities')}</Text>
+            <Text style={cashFlowStyles.activitySubtitle}>{t('Capital expenditure & investments')}</Text>
           </View>
           <Text style={[cashFlowStyles.activityTotal, { color: investingCF >= 0 ? '#00C853' : '#FF9500' }]}>
             {fmtNum(investingCF)}
@@ -1300,8 +1300,8 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
             <Ionicons name="card" size={18} color="#AF52DE" />
           </View>
           <View style={cashFlowStyles.activityHeaderText}>
-            <Text style={cashFlowStyles.activityTitle}>Financing Activities</Text>
-            <Text style={cashFlowStyles.activitySubtitle}>Debt, dividends & buybacks</Text>
+            <Text style={cashFlowStyles.activityTitle}>{t('Financing Activities')}</Text>
+            <Text style={cashFlowStyles.activitySubtitle}>{t('Debt, dividends & buybacks')}</Text>
           </View>
           <Text style={[cashFlowStyles.activityTotal, { color: financingCF >= 0 ? '#00C853' : '#AF52DE' }]}>
             {fmtNum(financingCF)}
@@ -1319,12 +1319,12 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
       {/* Cash Position */}
       <View style={cashFlowStyles.cashPositionSection}>
         <Text style={cashFlowStyles.sectionHeader}>
-          <Ionicons name="wallet" size={16} color="#B8860B" /> Cash Position
+          <Ionicons name="wallet" size={16} color="#B8860B" /> {t('Cash Position')}
         </Text>
         <View style={cashFlowStyles.cashPositionCard}>
           <View style={cashFlowStyles.cashPositionRow}>
             <View style={cashFlowStyles.cashPositionItem}>
-              <Text style={cashFlowStyles.cashPositionLabel}>Beginning</Text>
+              <Text style={cashFlowStyles.cashPositionLabel}>{t('Beginning')}</Text>
               <Text style={cashFlowStyles.cashPositionValue}>{fmtNum(latest?.cashAtBeginningOfPeriod)}</Text>
             </View>
             <View style={cashFlowStyles.cashPositionArrow}>
@@ -1334,7 +1334,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
               </Text>
             </View>
             <View style={cashFlowStyles.cashPositionItem}>
-              <Text style={cashFlowStyles.cashPositionLabel}>Ending</Text>
+              <Text style={cashFlowStyles.cashPositionLabel}>{t('Ending')}</Text>
               <Text style={[cashFlowStyles.cashPositionValue, { color: '#B8860B' }]}>{fmtNum(latest?.cashAtEndOfPeriod)}</Text>
             </View>
           </View>
@@ -1344,7 +1344,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
       {/* Historical FCF */}
       <View style={cashFlowStyles.historicalSection}>
         <Text style={cashFlowStyles.sectionHeader}>
-          <Ionicons name="time" size={16} color="#8E8E93" /> 4-Year Free Cash Flow
+          <Ionicons name="time" size={16} color="#8E8E93" /> {t('4-Year Free Cash Flow')}
         </Text>
 
         <View style={cashFlowStyles.fcfTrendCard}>
@@ -1375,7 +1375,7 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
         {/* Operating vs FCF Comparison */}
         <View style={cashFlowStyles.comparisonCard}>
           <View style={cashFlowStyles.comparisonHeader}>
-            <Text style={cashFlowStyles.comparisonTitle}>Operating CF vs Free CF</Text>
+            <Text style={cashFlowStyles.comparisonTitle}>{t('Operating CF vs Free CF')}</Text>
           </View>
           {data.slice(0, 4).map((item: any, idx: number) => (
             <View key={idx} style={cashFlowStyles.comparisonRow}>
@@ -1407,11 +1407,11 @@ const CashFlowTab = ({ data, fmtNum }: any) => {
           <View style={cashFlowStyles.comparisonLegend}>
             <View style={cashFlowStyles.legendItem}>
               <View style={[cashFlowStyles.legendDot, { backgroundColor: '#B8860B' }]} />
-              <Text style={cashFlowStyles.legendText}>Operating CF</Text>
+              <Text style={cashFlowStyles.legendText}>{t('Operating CF')}</Text>
             </View>
             <View style={cashFlowStyles.legendItem}>
               <View style={[cashFlowStyles.legendDot, { backgroundColor: '#00C853' }]} />
-              <Text style={cashFlowStyles.legendText}>Free CF</Text>
+              <Text style={cashFlowStyles.legendText}>{t('Free CF')}</Text>
             </View>
           </View>
         </View>
@@ -1427,6 +1427,7 @@ const CashFlowRow = ({ icon, label, value, type }: {
   value: string;
   type: 'inflow' | 'outflow' | 'adjustment';
 }) => {
+  const { t } = useLanguage();
   const getTypeColor = () => {
     switch (type) {
       case 'inflow': return '#00C853';
@@ -1440,7 +1441,7 @@ const CashFlowRow = ({ icon, label, value, type }: {
       <View style={[cashFlowStyles.cfRowIcon, { backgroundColor: `${getTypeColor()}15` }]}>
         <Ionicons name={icon as any} size={14} color={getTypeColor()} />
       </View>
-      <Text style={cashFlowStyles.cfRowLabel}>{label}</Text>
+      <Text style={cashFlowStyles.cfRowLabel}>{t(label)}</Text>
       <Text style={[cashFlowStyles.cfRowValue, { color: type === 'inflow' ? '#00C853' : type === 'outflow' ? '#FF3B30' : '#FFF' }]}>
         {value}
       </Text>
@@ -1818,12 +1819,15 @@ const RatiosTab = ({ ratios, keyMetrics, fmtPct, fmtRatio }: any) => {
 };
 
 // Reusable Components
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <View style={styles.section}>
-    <Text style={styles.sectionTitle}>{title}</Text>
-    <View style={styles.sectionContent}>{children}</View>
-  </View>
-);
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => {
+  const { t } = useLanguage();
+  return (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>{t(title)}</Text>
+      <View style={styles.sectionContent}>{children}</View>
+    </View>
+  );
+};
 
 const DataRow = ({
   label,
@@ -1837,24 +1841,30 @@ const DataRow = ({
   change?: React.ReactNode;
   highlight?: boolean;
   negative?: boolean;
-}) => (
-  <View style={[styles.row, highlight && styles.rowHighlight]}>
-    <Text style={[styles.label, highlight && styles.labelHighlight]}>{label}</Text>
-    <View style={styles.valueContainer}>
-      {change}
-      <Text style={[styles.value, highlight && styles.valueHighlight, negative && styles.valueNegative]}>
-        {value}
-      </Text>
+}) => {
+  const { t } = useLanguage();
+  return (
+    <View style={[styles.row, highlight && styles.rowHighlight]}>
+      <Text style={[styles.label, highlight && styles.labelHighlight]}>{t(label)}</Text>
+      <View style={styles.valueContainer}>
+        {change}
+        <Text style={[styles.value, highlight && styles.valueHighlight, negative && styles.valueNegative]}>
+          {value}
+        </Text>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
-const EmptyState = ({ message }: { message: string }) => (
-  <View style={styles.emptyState}>
-    <Ionicons name="document-text-outline" size={48} color="#636366" />
-    <Text style={styles.emptyText}>{message}</Text>
-  </View>
-);
+const EmptyState = ({ message }: { message: string }) => {
+  const { t } = useLanguage();
+  return (
+    <View style={styles.emptyState}>
+      <Ionicons name="document-text-outline" size={48} color="#636366" />
+      <Text style={styles.emptyText}>{t(message)}</Text>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
