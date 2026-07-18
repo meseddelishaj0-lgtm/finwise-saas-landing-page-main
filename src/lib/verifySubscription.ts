@@ -16,6 +16,10 @@ export function mapProductToTier(productId: string | null | undefined): Tier {
   if (p.includes('diamond') || p.includes('premium_plus') || p.includes('29.99')) return 'diamond';
   if (p.includes('platinum') || p.includes('premium') || p.includes('19.99')) return 'platinum';
   if (p.includes('gold') || p.includes('basic') || p.includes('9.99')) return 'gold';
+  // `wallstreetstocks_lifetime` (or any lifetime SKU without a tier keyword)
+  // grants top-tier (Diamond) access and never expires — previously it fell
+  // through to 'gold', silently downgrading the buyer.
+  if (p.includes('lifetime') || p.includes('forever')) return 'diamond';
   return 'gold'; // any confirmed-but-unrecognized paid product → lowest paid tier
 }
 

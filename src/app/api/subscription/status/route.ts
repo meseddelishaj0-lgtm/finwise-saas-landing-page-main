@@ -44,10 +44,12 @@ export async function GET(request: NextRequest) {
 
     const now = new Date();
 
-    // Check if subscription from RevenueCat is still active
-    const hasRevenueCatSubscription = user.subscriptionExpiry
-      ? new Date(user.subscriptionExpiry) > now && user.subscriptionStatus === 'active'
-      : false;
+    // Check if subscription from RevenueCat is still active. A null expiry with
+    // an active status is a LIFETIME purchase (never expires) — previously null
+    // was treated as "not subscribed", so lifetime buyers read back as free.
+    const hasRevenueCatSubscription =
+      user.subscriptionStatus === 'active' &&
+      (user.subscriptionExpiry ? new Date(user.subscriptionExpiry) > now : true);
 
     // Check if referral premium is still active
     const hasReferralPremium = user.referralPremiumExpiry

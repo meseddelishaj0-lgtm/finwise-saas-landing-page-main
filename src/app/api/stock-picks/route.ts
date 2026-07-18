@@ -127,9 +127,11 @@ async function resolveTier(userId: number): Promise<string> {
   if (!user) return "free";
 
   const now = new Date();
-  const hasRevenueCatSubscription = user.subscriptionExpiry
-    ? new Date(user.subscriptionExpiry) > now && user.subscriptionStatus === "active"
-    : false;
+  // Null expiry + active status = LIFETIME (never expires). Was treated as
+  // "not subscribed", so lifetime buyers got zero picks.
+  const hasRevenueCatSubscription =
+    user.subscriptionStatus === "active" &&
+    (user.subscriptionExpiry ? new Date(user.subscriptionExpiry) > now : true);
   const hasReferralPremium = user.referralPremiumExpiry
     ? new Date(user.referralPremiumExpiry) > now
     : false;

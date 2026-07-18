@@ -34,6 +34,8 @@ export async function resolveUserTier(userId: number): Promise<Tier> {
   if ((hasPaidSubscription || hasReferralPremium) && user.subscriptionTier) {
     const t = user.subscriptionTier.toLowerCase();
     if (t === "gold" || t === "platinum" || t === "diamond") return t;
+    // A stored "lifetime" tier is Diamond-level access.
+    if (t === "lifetime") return "diamond";
   }
   return "free";
 }

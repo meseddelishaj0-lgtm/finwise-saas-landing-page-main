@@ -67,6 +67,10 @@ export async function POST(request: NextRequest) {
       if (productIdLower.includes('gold') || productIdLower.includes('9.99') || productIdLower.includes('basic')) {
         return 'gold';
       }
+      // Lifetime (a one-time / non-renewing purchase) grants Diamond-level access.
+      if (productIdLower.includes('lifetime') || productIdLower.includes('forever')) {
+        return 'diamond';
+      }
       // Default to gold for any subscription
       return 'gold';
     };
@@ -76,6 +80,11 @@ export async function POST(request: NextRequest) {
       case 'INITIAL_PURCHASE':
       case 'RENEWAL':
       case 'PRODUCT_CHANGE':
+      // A lifetime / one-time purchase arrives as NON_RENEWING_PURCHASE — it was
+      // hitting `default` and writing nothing, so lifetime buyers stayed free.
+      // expirationDate is null for these (never expires), which the read side now
+      // treats as active.
+      case 'NON_RENEWING_PURCHASE':
         // User purchased or renewed subscription
         const tier = getSubscriptionTier(productId);
         await prisma.user.update({
