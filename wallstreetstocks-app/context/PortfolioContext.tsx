@@ -512,8 +512,14 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addHolding = async (symbol: string, shares: number, avgCost: number) => {
-    const updated = portfolios.map(p => {
-      if (p.id === selectedPortfolioId) {
+    // Read from the ref, NOT the `portfolios` closure. Onboarding adds several
+    // holdings in one awaited loop from a single captured closure, so reading
+    // `portfolios` sees the same stale (empty) state each call and each add
+    // overwrites the last — only one holding survived. The ref is kept current
+    // synchronously below, so sequential adds accumulate correctly.
+    const selId = selectedPortfolioIdRef.current;
+    const updated = portfoliosRef.current.map(p => {
+      if (p.id === selId) {
         const existing = p.holdings.find(h => h.symbol.toUpperCase() === symbol.toUpperCase());
         if (existing) {
           // Update existing holding (average the cost)
@@ -539,15 +545,17 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       return p;
     });
 
+    portfoliosRef.current = updated; // sync BEFORE the await so the next call sees it
     setPortfolios(updated);
-    portfoliosRef.current = updated;
 
     // Refresh prices after adding
-    const portfolio = updated.find(p => p.id === selectedPortfolioId);
+    const portfolio = updated.find(p => p.id === selId);
     if (portfolio) {
       const portfolioWithPrices = await fetchPricesForPortfolio(portfolio);
-      setCurrentPortfolio(portfolioWithPrices);
-      setLastUpdated(new Date());
+      if (selectedPortfolioIdRef.current === selId) {
+        setCurrentPortfolio(portfolioWithPrices);
+        setLastUpdated(new Date());
+      }
     }
   };
 

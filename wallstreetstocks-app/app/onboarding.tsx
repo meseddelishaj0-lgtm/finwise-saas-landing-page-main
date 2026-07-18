@@ -201,10 +201,29 @@ export default function Onboarding() {
       return;
     }
     setSaving(true);
+
+    // Make sure we have a price for every picked symbol before adding. The
+    // mount-time quote fetch can miss some (or return 0), and a missing price
+    // was silently dropping that pick — so fetch the gaps here first.
+    const priceMap: Record<string, number> = {};
+    for (const [symbol] of entries) {
+      const p = quotes[symbol]?.price || 0;
+      if (p > 0) priceMap[symbol] = p;
+    }
+    const missing = entries.map(([s]) => s).filter((s) => !priceMap[s]);
+    if (missing.length > 0) {
+      try {
+        const fresh = await fetchQuotesWithCache(missing, { timeout: 8000 });
+        if (Array.isArray(fresh)) {
+          for (const q of fresh) if (q?.price > 0) priceMap[q.symbol] = q.price;
+        }
+      } catch {}
+    }
+
     let ok = 0;
     for (const [symbol, shares] of entries) {
-      const price = quotes[symbol]?.price || 0;
-      if (price <= 0) continue;
+      const price = priceMap[symbol] || 0;
+      if (price <= 0) continue; // genuinely unpriced (delisted/invalid) — skip
       try {
         await addHolding(symbol, shares, price);
         ok++;
