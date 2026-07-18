@@ -14,6 +14,10 @@ import sq_strings from "./strings.sq";
 import tr_strings from "./strings.tr";
 import el_strings from "./strings.el";
 import zh_strings from "./strings.zh";
+import hi_strings from "./strings.hi";
+import ar_strings from "./strings.ar";
+import ja_strings from "./strings.ja";
+import ko_strings from "./strings.ko";
 
 export interface Language {
   code: string;
@@ -33,6 +37,10 @@ export const LANGUAGES: Language[] = [
   { code: "tr", name: "Turkish", native: "Türkçe", flag: "🇹🇷" },
   { code: "el", name: "Greek", native: "Ελληνικά", flag: "🇬🇷" },
   { code: "zh", name: "Chinese", native: "中文", flag: "🇨🇳" },
+  { code: "hi", name: "Hindi", native: "हिन्दी", flag: "🇮🇳" },
+  { code: "ar", name: "Arabic", native: "العربية", flag: "🇸🇦" },
+  { code: "ja", name: "Japanese", native: "日本語", flag: "🇯🇵" },
+  { code: "ko", name: "Korean", native: "한국어", flag: "🇰🇷" },
 ];
 
 type Dict = Record<string, string>;
@@ -163,6 +171,62 @@ const zh: Dict = {
   "Close": "关闭", "Back": "返回",
 };
 
+const hi: Dict = {
+  "Home": "होम", "Markets": "बाज़ार", "Trending": "ट्रेंडिंग", "AI": "AI",
+  "Social": "सोशल", "Screen": "फ़िल्टर",
+  "Settings": "सेटिंग्स", "Personal Info": "व्यक्तिगत जानकारी", "Display": "डिस्प्ले",
+  "Experience": "अनुभव", "Notifications": "सूचनाएं", "Password": "पासवर्ड",
+  "Muted": "म्यूट किए गए", "Blocked": "ब्लॉक किए गए", "Language": "भाषा",
+  "Danger Zone": "खतरे का क्षेत्र", "Delete Account": "खाता हटाएं",
+  "Choose your preferred language": "अपनी पसंदीदा भाषा चुनें",
+  "Changes apply instantly across the app.": "बदलाव पूरे ऐप में तुरंत लागू होते हैं।",
+  "Save": "सहेजें", "Cancel": "रद्द करें", "Done": "हो गया", "Retry": "पुनः प्रयास करें",
+  "Loading…": "लोड हो रहा है…", "Search": "खोजें", "Error": "त्रुटि", "See All": "सभी देखें",
+  "Close": "बंद करें", "Back": "वापस",
+};
+
+const ar: Dict = {
+  "Home": "الرئيسية", "Markets": "الأسواق", "Trending": "الرائج", "AI": "AI",
+  "Social": "المجتمع", "Screen": "الفلتر",
+  "Settings": "الإعدادات", "Personal Info": "المعلومات الشخصية", "Display": "العرض",
+  "Experience": "التجربة", "Notifications": "الإشعارات", "Password": "كلمة المرور",
+  "Muted": "المكتومون", "Blocked": "المحظورون", "Language": "اللغة",
+  "Danger Zone": "منطقة الخطر", "Delete Account": "حذف الحساب",
+  "Choose your preferred language": "اختر لغتك المفضلة",
+  "Changes apply instantly across the app.": "تُطبَّق التغييرات فورًا في جميع أنحاء التطبيق.",
+  "Save": "حفظ", "Cancel": "إلغاء", "Done": "تم", "Retry": "إعادة المحاولة",
+  "Loading…": "جارٍ التحميل…", "Search": "بحث", "Error": "خطأ", "See All": "عرض الكل",
+  "Close": "إغلاق", "Back": "رجوع",
+};
+
+const ja: Dict = {
+  "Home": "ホーム", "Markets": "マーケット", "Trending": "トレンド", "AI": "AI",
+  "Social": "ソーシャル", "Screen": "フィルター",
+  "Settings": "設定", "Personal Info": "個人情報", "Display": "表示",
+  "Experience": "体験", "Notifications": "通知", "Password": "パスワード",
+  "Muted": "ミュート中", "Blocked": "ブロック中", "Language": "言語",
+  "Danger Zone": "危険ゾーン", "Delete Account": "アカウント削除",
+  "Choose your preferred language": "言語を選択してください",
+  "Changes apply instantly across the app.": "変更はアプリ全体に即時反映されます。",
+  "Save": "保存", "Cancel": "キャンセル", "Done": "完了", "Retry": "再試行",
+  "Loading…": "読み込み中…", "Search": "検索", "Error": "エラー", "See All": "すべて表示",
+  "Close": "閉じる", "Back": "戻る",
+};
+
+const ko: Dict = {
+  "Home": "홈", "Markets": "마켓", "Trending": "트렌딩", "AI": "AI",
+  "Social": "소셜", "Screen": "필터",
+  "Settings": "설정", "Personal Info": "개인 정보", "Display": "화면",
+  "Experience": "경험", "Notifications": "알림", "Password": "비밀번호",
+  "Muted": "음소거됨", "Blocked": "차단됨", "Language": "언어",
+  "Danger Zone": "위험 구역", "Delete Account": "계정 삭제",
+  "Choose your preferred language": "선호하는 언어를 선택하세요",
+  "Changes apply instantly across the app.": "변경 사항은 앱 전체에 즉시 적용됩니다.",
+  "Save": "저장", "Cancel": "취소", "Done": "완료", "Retry": "다시 시도",
+  "Loading…": "로딩 중…", "Search": "검색", "Error": "오류", "See All": "모두 보기",
+  "Close": "닫기", "Back": "뒤로",
+};
+
 // English needs no dictionary — t() returns the key itself.
 export const TRANSLATIONS: Record<string, Dict> = {
   en: {},
@@ -175,4 +239,8 @@ export const TRANSLATIONS: Record<string, Dict> = {
   tr: { ...tr, ...tr_strings },
   el: { ...el, ...el_strings },
   zh: { ...zh, ...zh_strings },
+  hi: { ...hi, ...hi_strings },
+  ar: { ...ar, ...ar_strings },
+  ja: { ...ja, ...ja_strings },
+  ko: { ...ko, ...ko_strings },
 };
