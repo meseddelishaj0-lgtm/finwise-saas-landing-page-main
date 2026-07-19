@@ -284,24 +284,37 @@ export default function Referrals() {
               const isNext = !isUnlocked &&
                 (index === 0 || stats.completedReferrals >= REWARD_TIERS[index - 1].referrals);
 
+              // Theme-aware card colors — the static styles were hardcoded light
+              // (white/cream) so dark mode rendered white cards with white text.
+              const cardBg = isUnlocked
+                ? (isDark ? 'rgba(184,134,11,0.16)' : '#FBF6E8')
+                : isNext
+                ? (isDark ? 'rgba(255,149,0,0.14)' : '#FFF8E1')
+                : (isDark ? colors.surface : '#f9f9f9');
+              const cardBorder = isUnlocked
+                ? '#B8860B40'
+                : isNext
+                ? '#FF950040'
+                : (isDark ? colors.border : 'transparent');
+              const iconCircleBg = isUnlocked
+                ? '#B8860B22'
+                : isNext
+                ? '#FF950022'
+                : (isDark ? '#2C2C2E' : '#f0f0f0');
+
               return (
                 <View
                   key={index}
                   style={[
                     styles.rewardItem,
-                    isUnlocked && styles.rewardUnlocked,
-                    isNext && styles.rewardNext,
-                    !isUnlocked && !isNext && styles.rewardLocked
+                    { backgroundColor: cardBg, borderWidth: 1, borderColor: cardBorder },
                   ]}
                 >
-                  <View style={[
-                    styles.rewardIcon,
-                    { backgroundColor: isUnlocked ? '#B8860B15' : isNext ? '#FF950015' : isDark ? colors.surface : '#f0f0f0' }
-                  ]}>
+                  <View style={[styles.rewardIcon, { backgroundColor: iconCircleBg }]}>
                     <Ionicons
                       name={tier.icon as any}
                       size={24}
-                      color={isUnlocked ? '#B8860B' : isNext ? '#FF9500' : '#ccc'}
+                      color={isUnlocked ? '#B8860B' : isNext ? '#FF9500' : (isDark ? colors.textTertiary : '#ccc')}
                     />
                   </View>
                   <View style={styles.rewardContent}>
@@ -325,7 +338,7 @@ export default function Referrals() {
                       <Text style={styles.nextBadgeText}>{t('NEXT')}</Text>
                     </View>
                   ) : (
-                    <View style={styles.lockedBadge}>
+                    <View style={[styles.lockedBadge, { backgroundColor: isDark ? '#2C2C2E' : '#f0f0f0' }]}>
                       <Ionicons name="lock-closed" size={18} color={isDark ? colors.textTertiary : '#ccc'} />
                     </View>
                   )}
