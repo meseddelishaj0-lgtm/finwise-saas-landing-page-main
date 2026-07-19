@@ -798,9 +798,7 @@ export default function Dashboard() {
   useEffect(() => {
     priceRefreshIntervalRef.current = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 1000); // 1s re-render sample. The WebSocket store still receives every
-    // tick; this only controls how often the (non-virtualized, whole-screen)
-    // tree re-renders to show it — 4x/sec was a constant frame/battery drain.
+    }, 250); // 250ms = 4 updates/sec - fast updates while reducing CPU load
 
     return () => {
       if (priceRefreshIntervalRef.current) {

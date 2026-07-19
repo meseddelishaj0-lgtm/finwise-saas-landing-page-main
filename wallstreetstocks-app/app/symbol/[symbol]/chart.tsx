@@ -360,13 +360,11 @@ export default function ChartTab() {
     }
   }, [cleanSymbol, apiSymbol, isConnected, subscribe]);
 
-  // Re-render sample for WebSocket price updates. 1s instead of 100ms — this
-  // 1,200-line non-virtualized screen re-rendered 10x/sec; the price store
-  // still receives every tick, we just repaint once a second.
+  // Re-render sample for WebSocket price updates — 100ms = 10 updates/sec.
   useEffect(() => {
     priceRefreshIntervalRef.current = setInterval(() => {
       setPriceUpdateTrigger(prev => prev + 1);
-    }, 1000);
+    }, 100);
 
     return () => {
       if (priceRefreshIntervalRef.current) {

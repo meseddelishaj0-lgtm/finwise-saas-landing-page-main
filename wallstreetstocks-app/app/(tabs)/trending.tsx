@@ -696,7 +696,7 @@ export default function Trending() {
     const startupDelay = setTimeout(() => {
       priceIntervalRef.current = setInterval(() => {
         setPriceUpdateTrigger(prev => prev + 1);
-      }, 1000); // 1s re-render sample (WebSocket data still flows at full rate)
+      }, 100); // 100ms = 10 updates/sec for ultra-fast prices
     }, 200); // 200ms initial delay
 
     return () => {
