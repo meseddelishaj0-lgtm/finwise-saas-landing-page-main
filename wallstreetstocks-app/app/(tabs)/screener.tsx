@@ -1809,7 +1809,7 @@ export default function Screener() {
                           onPress={() => {
                             Alert.alert(
                               t('Delete Preset'),
-                              `Are you sure you want to delete "${preset.name}"?`,
+                              `${t('Are you sure you want to delete')} "${preset.name}"?`,
                               [
                                 { text: t('Cancel'), style: 'cancel' },
                                 { text: t('Delete'), style: 'destructive', onPress: () => deletePreset(preset.id) },
