@@ -246,7 +246,7 @@ export default function AITools() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Hi! I'm your AI Trading Assistant. I can help you with market analysis, trading strategies, stock research, and portfolio advice. What would you like to know?"
+      content: t("Hi! I'm your AI Trading Assistant. I can help you with market analysis, trading strategies, stock research, and portfolio advice. What would you like to know?")
     }
   ]);
   const [userInput, setUserInput] = useState('');
@@ -279,7 +279,7 @@ export default function AITools() {
       ]);
 
       if (!quoteData || quoteData.length === 0) {
-        setAnalyzerError(`No data found for ${symbol}`);
+        setAnalyzerError(`${t('No data found for')} ${symbol}`);
         return;
       }
 
@@ -344,9 +344,9 @@ Return ONLY a JSON object:
         aiAnalysis = JSON.parse(content.replace(/```json\n?|\n?```/g, ''));
       } catch {
         aiAnalysis = {
-          aiSummary: `${quote.name} is currently trading at $${quote.price}. ${isUndervalued ? 'The stock appears undervalued based on our valuation analysis.' : 'Conduct further research before investing.'}`,
-          strengths: ['Market presence', 'Trading volume', 'Industry position'],
-          risks: ['Market volatility', 'Economic conditions', 'Competition'],
+          aiSummary: `${quote.name} is currently trading at $${quote.price}. ${isUndervalued ? t('The stock appears undervalued based on our valuation analysis.') : t('Conduct further research before investing.')}`,
+          strengths: [t('Market presence'), t('Trading volume'), t('Industry position')],
+          risks: [t('Market volatility'), t('Economic conditions'), t('Competition')],
           sentiment: 'neutral',
           confidence: 60,
           recommendation: 'Hold',
@@ -389,7 +389,7 @@ Return ONLY a JSON object:
         priceTarget: aiAnalysis?.priceTarget ?? null,
       });
     } catch {
-      setAnalyzerError('Analysis failed. Please try again.');
+      setAnalyzerError(t('Analysis failed. Please try again.'));
     } finally {
       setAnalyzerLoading(false);
     }
@@ -403,7 +403,7 @@ Return ONLY a JSON object:
     const ticker2 = compareTicker2.toUpperCase().trim();
 
     if (ticker1 === ticker2) {
-      setCompareError('Please enter two different tickers to compare.');
+      setCompareError(t('Please enter two different tickers to compare.'));
       return;
     }
 
@@ -442,7 +442,7 @@ Return ONLY a JSON object:
       ]);
 
       if (!quote1Data?.[0] || !quote2Data?.[0]) {
-        setCompareError('Could not find data for one or both tickers.');
+        setCompareError(t('Could not find data for one or both tickers.'));
         setCompareLoading(false);
         return;
       }
@@ -521,7 +521,7 @@ Return JSON only:
       } catch {
         parsedAI = {
           winner: 'TIE',
-          verdict: 'Both stocks have their merits. Review the metrics below to make your decision.',
+          verdict: t('Both stocks have their merits. Review the metrics below to make your decision.'),
           growth: stock1.revenueGrowth && stock2.revenueGrowth ? (stock1.revenueGrowth > stock2.revenueGrowth ? ticker1 : ticker2) : ticker1,
           value: stock1.pe && stock2.pe ? (stock1.pe < stock2.pe ? ticker1 : ticker2) : ticker1,
           safety: stock1.debtToEquity && stock2.debtToEquity ? (stock1.debtToEquity < stock2.debtToEquity ? ticker1 : ticker2) : ticker1,
@@ -533,7 +533,7 @@ Return JSON only:
         stock1,
         stock2,
         winner: parsedAI.winner || 'TIE',
-        aiVerdict: parsedAI.verdict || 'Review the comparison below.',
+        aiVerdict: parsedAI.verdict || t('Review the comparison below.'),
         categories: {
           growth: parsedAI.growth || ticker1,
           value: parsedAI.value || ticker1,
@@ -542,7 +542,7 @@ Return JSON only:
         }
       });
     } catch {
-      setCompareError('Comparison failed. Please try again.');
+      setCompareError(t('Comparison failed. Please try again.'));
     } finally {
       setCompareLoading(false);
     }
@@ -569,7 +569,7 @@ Return JSON only:
       // A non-OK status returns an error body, not data — surface it rather
       // than parsing it as a quote/history payload.
       if (!quoteRes.ok || !historyRes.ok) {
-        setForecastError('Forecast failed. Please try again.');
+        setForecastError(t('Forecast failed. Please try again.'));
         return;
       }
 
@@ -581,7 +581,7 @@ Return JSON only:
       // Array-guard: an FMP error body is a truthy object with no `.length`,
       // which would slip past a plain falsy check and crash on quoteData[0].
       if (!Array.isArray(quoteData) || quoteData.length === 0) {
-        setForecastError(`No data found for ${symbol}`);
+        setForecastError(`${t('No data found for')} ${symbol}`);
         return;
       }
 
@@ -593,7 +593,7 @@ Return JSON only:
       // Without price history the stats below become NaN/±Infinity (rendered as
       // literal "Infinity" in support/resistance), so bail cleanly instead.
       if (prices.length === 0) {
-        setForecastError(`Not enough price history for ${symbol}`);
+        setForecastError(`${t('Not enough price history for')} ${symbol}`);
         return;
       }
       const avgPrice = prices.reduce((a: number, b: number) => a + b, 0) / prices.length;
@@ -649,10 +649,10 @@ Return ONLY a JSON object with this exact structure:
           recommendation: 'Hold',
           priceTargets: { conservative: quote.price * 0.95, base: quote.price * 1.05, bullish: quote.price * 1.15 },
           probabilities: { upside: 55, downside: 45 },
-          catalysts: ['Earnings report', 'Market conditions', 'Sector trends'],
-          risks: ['Market volatility', 'Economic factors', 'Competition'],
+          catalysts: [t('Earnings report'), t('Market conditions'), t('Sector trends')],
+          risks: [t('Market volatility'), t('Economic factors'), t('Competition')],
           technicalSignals: { trend: 'sideways', support: low52w, resistance: high52w },
-          summary: `${symbol} shows mixed signals. Monitor closely for breakout opportunities.`
+          summary: `${symbol} ${t('shows mixed signals. Monitor closely for breakout opportunities.')}`
         };
       }
 
@@ -691,10 +691,10 @@ Return ONLY a JSON object with this exact structure:
           support: numOr(aiAnalysis?.technicalSignals?.support, low52w),
           resistance: numOr(aiAnalysis?.technicalSignals?.resistance, high52w),
         },
-        summary: aiAnalysis?.summary || `Analysis for ${symbol}`,
+        summary: aiAnalysis?.summary || `${t('Analysis for')} ${symbol}`,
       });
     } catch {
-      setForecastError('Forecast failed. Please try again.');
+      setForecastError(t('Forecast failed. Please try again.'));
     } finally {
       setForecastLoading(false);
     }
@@ -752,12 +752,12 @@ Always remind users that this is educational information, not financial advice.`
         throw new Error(data.error?.message || 'Failed to get response');
       }
 
-      const assistantReply = data.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+      const assistantReply = data.choices[0]?.message?.content || t("I couldn't generate a response. Please try again.");
       setMessages(prev => [...prev, { role: 'assistant', content: assistantReply }]);
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: "I'm having trouble connecting right now. Please check your connection and try again."
+        content: t("I'm having trouble connecting right now. Please check your connection and try again.")
       }]);
     } finally {
       setAssistantLoading(false);
@@ -805,8 +805,8 @@ Always remind users that this is educational information, not financial advice.`
                 <Ionicons name="sparkles" size={28} color="#B8860B" />
               </View>
               <View style={styles.headerText}>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>AI Tools</Text>
-                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Powered by Advanced Analytics</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>{t('AI Tools')}</Text>
+                <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{t('Powered by Advanced Analytics')}</Text>
               </View>
             </View>
           </FadeSlideIn>
@@ -816,13 +816,13 @@ Always remind users that this is educational information, not financial advice.`
         <View style={[styles.tabContainer, { backgroundColor: colors.background, borderBottomColor: isDark ? 'transparent' : '#E5E5EA' }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {[
-              { key: 'analyzer', icon: 'analytics', label: 'Analyzer', isDiamond: true },
-              { key: 'compare', icon: 'git-compare', label: 'Compare', isDiamond: true },
-              { key: 'forecast', icon: 'trending-up', label: 'Forecast', isDiamond: true },
-              { key: 'insider', icon: 'briefcase', label: 'Insider', isDiamond: true },
-              { key: 'calculator', icon: 'calculator', label: 'Calculator', isDiamond: false },
-              { key: 'assistant', icon: 'chatbubbles', label: 'Assistant', isDiamond: true },
-              { key: 'resources', icon: 'library', label: 'Resources', isDiamond: false },
+              { key: 'analyzer', icon: 'analytics', label: t('Analyzer'), isDiamond: true },
+              { key: 'compare', icon: 'git-compare', label: t('Compare'), isDiamond: true },
+              { key: 'forecast', icon: 'trending-up', label: t('Forecast'), isDiamond: true },
+              { key: 'insider', icon: 'briefcase', label: t('Insider'), isDiamond: true },
+              { key: 'calculator', icon: 'calculator', label: t('Calculator'), isDiamond: false },
+              { key: 'assistant', icon: 'chatbubbles', label: t('Assistant'), isDiamond: true },
+              { key: 'resources', icon: 'library', label: t('Resources'), isDiamond: false },
             ].map((tab) => {
               const isLocked = tab.isDiamond && !hasDiamondAccess;
               return (
@@ -859,8 +859,8 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={styles.premiumLockedIcon}>
                     <Ionicons name="diamond" size={48} color="#B9F2FF" />
                   </View>
-                  <Text style={styles.premiumLockedTitle}>AI Stock Analyzer</Text>
-                  <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
+                  <Text style={styles.premiumLockedTitle}>{t('AI Stock Analyzer')}</Text>
+                  <Text style={styles.premiumLockedSubtitle}>{t('Diamond Feature')}</Text>
                   <Text style={styles.premiumLockedDescription}>
                     {t('Get stock valuations, AI-powered analysis, strengths & risks assessment, and professional recommendations for any stock.')}
                   </Text>
@@ -879,17 +879,17 @@ Always remind users that this is educational information, not financial advice.`
                     onPress={() => router.push('/(modals)/paywall' as any)}
                   >
                     <Ionicons name="diamond" size={20} color="#000" />
-                    <Text style={styles.premiumUpgradeText}>Upgrade to Diamond</Text>
+                    <Text style={styles.premiumUpgradeText}>{t('Upgrade to Diamond')}</Text>
                   </TouchableOpacity>
 
-                  <Text style={styles.premiumPriceHint}>Unlock all AI tools</Text>
+                  <Text style={styles.premiumPriceHint}>{t('Unlock all AI tools')}</Text>
                 </LinearGradient>
               </View>
             ) : (
             <>
             {/* Search Card */}
             <View style={[styles.searchCard, { backgroundColor: isDark ? colors.card : colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3 }]}>
-              <Text style={[styles.searchTitle, { color: colors.text }]}>Stock Analyzer</Text>
+              <Text style={[styles.searchTitle, { color: colors.text }]}>{t('Stock Analyzer')}</Text>
               <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>{t('Stock Valuation & AI-Powered Analysis')}</Text>
 
               <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : colors.border }]}>
@@ -920,14 +920,14 @@ Always remind users that this is educational information, not financial advice.`
                 ) : (
                   <>
                     <Ionicons name="flash" size={20} color="#FFF" />
-                    <Text style={styles.analyzeButtonText}>Analyze Stock</Text>
+                    <Text style={styles.analyzeButtonText}>{t('Analyze Stock')}</Text>
                   </>
                 )}
               </TouchableOpacity>
 
               {/* Quick Picks */}
               <View style={styles.quickPicksContainer}>
-                <Text style={[styles.quickPicksLabel, { color: colors.textSecondary }]}>Quick Analysis:</Text>
+                <Text style={[styles.quickPicksLabel, { color: colors.textSecondary }]}>{t('Quick Analysis:')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {QUICK_PICKS.map((symbol) => (
                     <TouchableOpacity
@@ -954,7 +954,7 @@ Always remind users that this is educational information, not financial advice.`
             {analyzerLoading && (
               <View style={[styles.loadingCard, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color="#B8860B" />
-                <Text style={[styles.loadingText, { color: colors.text }]}>Analyzing {analyzerTicker}...</Text>
+                <Text style={[styles.loadingText, { color: colors.text }]}>{t('Analyzing')} {analyzerTicker}...</Text>
                 <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>{t('Fetching stock valuation & running AI analysis')}</Text>
               </View>
             )}
@@ -984,7 +984,7 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={[styles.recommendationBadge, { backgroundColor: getRecommendationColor(analysisResult.recommendation) }]}>
                     <Ionicons name="checkmark-circle" size={18} color="#FFF" />
                     <Text style={styles.recommendationText}>{analysisResult.recommendation}</Text>
-                    <Text style={styles.confidenceText}>{analysisResult.confidence}% Confidence</Text>
+                    <Text style={styles.confidenceText}>{analysisResult.confidence}% {t('Confidence')}</Text>
                   </View>
                 </View>
 
@@ -999,14 +999,14 @@ Always remind users that this is educational information, not financial advice.`
                     <View style={styles.dcfContent}>
                       <View style={styles.dcfValueRow}>
                         <View style={styles.dcfValueItem}>
-                          <Text style={[styles.dcfLabel, { color: colors.textSecondary }]}>Current Price</Text>
+                          <Text style={[styles.dcfLabel, { color: colors.textSecondary }]}>{t('Current Price')}</Text>
                           <Text style={[styles.dcfValue, { color: colors.text }]}>${analysisResult.price.toFixed(2)}</Text>
                         </View>
                         <View style={styles.dcfArrow}>
                           <Ionicons name="arrow-forward" size={24} color={colors.textTertiary} />
                         </View>
                         <View style={styles.dcfValueItem}>
-                          <Text style={[styles.dcfLabel, { color: colors.textSecondary }]}>Intrinsic Value</Text>
+                          <Text style={[styles.dcfLabel, { color: colors.textSecondary }]}>{t('Intrinsic Value')}</Text>
                           <Text style={[styles.dcfValue, { color: '#B8860B' }]}>${analysisResult.dcfValue.toFixed(2)}</Text>
                         </View>
                       </View>
@@ -1019,10 +1019,10 @@ Always remind users that this is educational information, not financial advice.`
                         />
                         <View>
                           <Text style={[styles.valuationStatus, { color: analysisResult.isUndervalued ? '#00C853' : '#FF3B30' }]}>
-                            {analysisResult.isUndervalued ? 'Undervalued' : 'Overvalued'}
+                            {analysisResult.isUndervalued ? t('Undervalued') : t('Overvalued')}
                           </Text>
                           <Text style={[styles.valuationPercent, { color: colors.textSecondary }]}>
-                            by ${Math.abs(analysisResult.dcfDiff || 0).toFixed(2)} ({Math.abs(analysisResult.dcfDiffPercent || 0).toFixed(1)}%)
+                            {t('by')} ${Math.abs(analysisResult.dcfDiff || 0).toFixed(2)} ({Math.abs(analysisResult.dcfDiffPercent || 0).toFixed(1)}%)
                           </Text>
                         </View>
                       </View>
@@ -1042,9 +1042,9 @@ Always remind users that this is educational information, not financial advice.`
                           <View style={[styles.gaugeMarker, { left: '50%' }]} />
                         </View>
                         <View style={styles.gaugeLabels}>
-                          <Text style={[styles.gaugeLabel, { color: colors.textSecondary }]}>Cheap</Text>
-                          <Text style={[styles.gaugeLabel, { color: colors.textSecondary }]}>Fair Value</Text>
-                          <Text style={[styles.gaugeLabel, { color: colors.textSecondary }]}>Expensive</Text>
+                          <Text style={[styles.gaugeLabel, { color: colors.textSecondary }]}>{t('Cheap')}</Text>
+                          <Text style={[styles.gaugeLabel, { color: colors.textSecondary }]}>{t('Fair Value')}</Text>
+                          <Text style={[styles.gaugeLabel, { color: colors.textSecondary }]}>{t('Expensive')}</Text>
                         </View>
                       </View>
                     </View>
@@ -1068,42 +1068,42 @@ Always remind users that this is educational information, not financial advice.`
 
                 {/* Key Metrics Grid */}
                 <View style={[styles.metricsCard, { backgroundColor: colors.background }]}>
-                  <Text style={[styles.metricsTitle, { color: colors.text }]}>Key Metrics</Text>
+                  <Text style={[styles.metricsTitle, { color: colors.text }]}>{t('Key Metrics')}</Text>
                   <View style={styles.metricsGrid}>
                     <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Market Cap</Text>
+                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('Market Cap')}</Text>
                       <Text style={[styles.metricValue, { color: colors.text }]}>{formatNumber(analysisResult.marketCap)}</Text>
                     </View>
                     <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>P/E Ratio</Text>
+                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('P/E Ratio')}</Text>
                       <Text style={[styles.metricValue, { color: colors.text }]}>{analysisResult.pe?.toFixed(2) || '—'}</Text>
                     </View>
                     <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>EPS</Text>
+                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('EPS')}</Text>
                       <Text style={[styles.metricValue, { color: colors.text }]}>${analysisResult.eps?.toFixed(2) || '—'}</Text>
                     </View>
                     <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>52W High</Text>
+                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('52W High')}</Text>
                       <Text style={[styles.metricValue, { color: colors.text }]}>${analysisResult.yearHigh?.toFixed(2) || '—'}</Text>
                     </View>
                     <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>52W Low</Text>
+                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('52W Low')}</Text>
                       <Text style={[styles.metricValue, { color: colors.text }]}>${analysisResult.yearLow?.toFixed(2) || '—'}</Text>
                     </View>
                     <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>ROE</Text>
+                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('ROE')}</Text>
                       <Text style={[styles.metricValue, { color: (analysisResult.roe || 0) > 15 ? '#00C853' : '#000' }]}>
                         {analysisResult.roe?.toFixed(1) || '—'}%
                       </Text>
                     </View>
                     <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Debt/Equity</Text>
+                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('Debt/Equity')}</Text>
                       <Text style={[styles.metricValue, { color: (analysisResult.debtToEquity || 0) < 1 ? '#00C853' : '#FF9500' }]}>
                         {analysisResult.debtToEquity?.toFixed(2) || '—'}
                       </Text>
                     </View>
                     <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
-                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Revenue Growth</Text>
+                      <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('Revenue Growth')}</Text>
                       <Text style={[styles.metricValue, { color: (analysisResult.revenueGrowth || 0) > 0 ? '#00C853' : '#FF3B30' }]}>
                         {analysisResult.revenueGrowth?.toFixed(1) || '—'}%
                       </Text>
@@ -1116,7 +1116,7 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={[styles.strengthsCard, { backgroundColor: colors.background }]}>
                     <View style={styles.listHeader}>
                       <Ionicons name="checkmark-circle" size={20} color="#00C853" />
-                      <Text style={[styles.listTitle, { color: colors.text }]}>Key Strengths</Text>
+                      <Text style={[styles.listTitle, { color: colors.text }]}>{t('Key Strengths')}</Text>
                     </View>
                     {analysisResult.strengths.map((item, idx) => (
                       <View key={idx} style={styles.listItem}>
@@ -1129,7 +1129,7 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={[styles.risksCard, { backgroundColor: colors.background }]}>
                     <View style={styles.listHeader}>
                       <Ionicons name="warning" size={20} color="#FF3B30" />
-                      <Text style={[styles.listTitle, { color: colors.text }]}>Key Risks</Text>
+                      <Text style={[styles.listTitle, { color: colors.text }]}>{t('Key Risks')}</Text>
                     </View>
                     {analysisResult.risks.map((item, idx) => (
                       <View key={idx} style={styles.listItem}>
@@ -1145,19 +1145,19 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={[styles.priceTargetCard, { backgroundColor: colors.background }]}>
                     <View style={styles.priceTargetHeader}>
                       <Ionicons name="flag" size={20} color="#B8860B" />
-                      <Text style={[styles.priceTargetTitle, { color: colors.text }]}>12-Month Price Targets</Text>
+                      <Text style={[styles.priceTargetTitle, { color: colors.text }]}>{t('12-Month Price Targets')}</Text>
                     </View>
                     <View style={styles.priceTargetRow}>
                       <View style={styles.priceTargetItem}>
-                        <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>Bear Case</Text>
+                        <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>{t('Bear Case')}</Text>
                         <Text style={[styles.priceTargetValue, { color: '#FF3B30' }]}>${Math.round(analysisResult.priceTarget.low).toLocaleString()}</Text>
                       </View>
                       <View style={styles.priceTargetItem}>
-                        <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>Base Case</Text>
+                        <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>{t('Base Case')}</Text>
                         <Text style={[styles.priceTargetValue, { color: '#B8860B' }]}>${Math.round(analysisResult.priceTarget.mid).toLocaleString()}</Text>
                       </View>
                       <View style={styles.priceTargetItem}>
-                        <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>Bull Case</Text>
+                        <Text style={[styles.priceTargetLabel, { color: colors.textSecondary }]}>{t('Bull Case')}</Text>
                         <Text style={[styles.priceTargetValue, { color: '#00C853' }]}>${Math.round(analysisResult.priceTarget.high).toLocaleString()}</Text>
                       </View>
                     </View>
@@ -1170,14 +1170,14 @@ Always remind users that this is educational information, not financial advice.`
                   onPress={() => router.push(`/symbol/${analysisResult.symbol}/chart`)}
                 >
                   <Ionicons name="stats-chart" size={20} color="#B8860B" />
-                  <Text style={styles.viewChartText}>View Full Chart & Fundamentals</Text>
+                  <Text style={styles.viewChartText}>{t('View Full Chart & Fundamentals')}</Text>
                   <Ionicons name="chevron-forward" size={20} color="#B8860B" />
                 </TouchableOpacity>
 
                 {/* Disclaimer */}
                 <View style={styles.disclaimer}>
                   <Ionicons name="information-circle" size={16} color={colors.textTertiary} />
-                  <Text style={[styles.disclaimerText, { color: colors.textTertiary }]}>AI analysis is for informational purposes only. Not financial advice.</Text>
+                  <Text style={[styles.disclaimerText, { color: colors.textTertiary }]}>{t('AI analysis is for informational purposes only. Not financial advice.')}</Text>
                 </View>
               </>
             )}
@@ -1195,8 +1195,8 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={styles.premiumLockedIcon}>
                     <Ionicons name="git-compare" size={48} color="#B9F2FF" />
                   </View>
-                  <Text style={styles.premiumLockedTitle}>Stock Comparison</Text>
-                  <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
+                  <Text style={styles.premiumLockedTitle}>{t('Stock Comparison')}</Text>
+                  <Text style={styles.premiumLockedSubtitle}>{t('Diamond Feature')}</Text>
                   <Text style={styles.premiumLockedDescription}>
                     {t('Compare two stocks side-by-side with stock valuations, financial metrics, and AI-powered winner analysis.')}
                   </Text>
@@ -1210,16 +1210,16 @@ Always remind users that this is educational information, not financial advice.`
                   </View>
                   <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
                     <Ionicons name="diamond" size={20} color="#000" />
-                    <Text style={styles.premiumUpgradeText}>Upgrade to Diamond</Text>
+                    <Text style={styles.premiumUpgradeText}>{t('Upgrade to Diamond')}</Text>
                   </TouchableOpacity>
-                  <Text style={styles.premiumPriceHint}>Unlock all AI tools</Text>
+                  <Text style={styles.premiumPriceHint}>{t('Unlock all AI tools')}</Text>
                 </LinearGradient>
               </View>
             ) : (
             <>
             {/* Search Card */}
             <View style={[styles.searchCard, { backgroundColor: isDark ? colors.card : colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3 }]}>
-              <Text style={[styles.searchTitle, { color: colors.text }]}>Stock Comparison</Text>
+              <Text style={[styles.searchTitle, { color: colors.text }]}>{t('Stock Comparison')}</Text>
               <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>{t('Side-by-side analysis with stock valuation')}</Text>
 
               <View style={styles.compareInputRow}>
@@ -1236,11 +1236,11 @@ Always remind users that this is educational information, not financial advice.`
                       maxLength={5}
                     />
                   </View>
-                  <Text style={[styles.compareInputLabel, { color: colors.textSecondary }]}>Stock 1</Text>
+                  <Text style={[styles.compareInputLabel, { color: colors.textSecondary }]}>{t('Stock 1')}</Text>
                 </View>
 
                 <View style={styles.vsCircle}>
-                  <Text style={styles.vsCircleText}>VS</Text>
+                  <Text style={styles.vsCircleText}>{t('VS')}</Text>
                 </View>
 
                 <View style={styles.compareInputWrapper}>
@@ -1256,7 +1256,7 @@ Always remind users that this is educational information, not financial advice.`
                       maxLength={5}
                     />
                   </View>
-                  <Text style={[styles.compareInputLabel, { color: colors.textSecondary }]}>Stock 2</Text>
+                  <Text style={[styles.compareInputLabel, { color: colors.textSecondary }]}>{t('Stock 2')}</Text>
                 </View>
               </View>
 
@@ -1270,14 +1270,14 @@ Always remind users that this is educational information, not financial advice.`
                 ) : (
                   <>
                     <Ionicons name="git-compare" size={20} color="#FFF" />
-                    <Text style={styles.analyzeButtonText}>Compare Stocks</Text>
+                    <Text style={styles.analyzeButtonText}>{t('Compare Stocks')}</Text>
                   </>
                 )}
               </TouchableOpacity>
 
               {/* Quick Compare Suggestions */}
               <View style={styles.quickCompareSuggestions}>
-                <Text style={[styles.quickPicksLabel, { color: colors.textSecondary }]}>Popular Comparisons:</Text>
+                <Text style={[styles.quickPicksLabel, { color: colors.textSecondary }]}>{t('Popular Comparisons:')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {[
                     ['AAPL', 'MSFT'], ['NVDA', 'AMD'], ['GOOGL', 'META'], ['TSLA', 'RIVN'], ['JPM', 'BAC']
@@ -1287,7 +1287,7 @@ Always remind users that this is educational information, not financial advice.`
                       style={[styles.quickCompareChip, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : colors.border }]}
                       onPress={() => { setCompareTicker1(t1); setCompareTicker2(t2); }}
                     >
-                      <Text style={styles.quickCompareText}>{t1} vs {t2}</Text>
+                      <Text style={styles.quickCompareText}>{t1} {t('vs')} {t2}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -1306,8 +1306,8 @@ Always remind users that this is educational information, not financial advice.`
             {compareLoading && (
               <View style={[styles.loadingCard, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color="#B8860B" />
-                <Text style={[styles.loadingText, { color: colors.text }]}>Comparing {compareTicker1} vs {compareTicker2}...</Text>
-                <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>Fetching valuations & running AI analysis</Text>
+                <Text style={[styles.loadingText, { color: colors.text }]}>{t('Comparing')} {compareTicker1} {t('vs')} {compareTicker2}...</Text>
+                <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>{t('Fetching valuations & running AI analysis')}</Text>
               </View>
             )}
 
@@ -1318,20 +1318,20 @@ Always remind users that this is educational information, not financial advice.`
                 <View style={[styles.winnerCard, { backgroundColor: colors.background }]}>
                   <View style={styles.winnerHeader}>
                     <Ionicons name="trophy" size={24} color="#FFD700" />
-                    <Text style={[styles.winnerHeaderText, { color: colors.text }]}>AI Recommendation</Text>
+                    <Text style={[styles.winnerHeaderText, { color: colors.text }]}>{t('AI Recommendation')}</Text>
                   </View>
                   <View style={styles.winnerContent}>
                     {comparisonResult.winner === 'TIE' ? (
                       <View style={styles.tieContainer}>
-                        <Text style={styles.tieText}>It&apos;s a Tie!</Text>
-                        <Text style={styles.tieSubtext}>Both stocks have comparable merits</Text>
+                        <Text style={styles.tieText}>{t("It's a Tie!")}</Text>
+                        <Text style={styles.tieSubtext}>{t('Both stocks have comparable merits')}</Text>
                       </View>
                     ) : (
                       <View style={styles.winnerBadge}>
                         <Text style={[styles.winnerSymbol, { color: colors.text }]}>{comparisonResult.winner}</Text>
                         <View style={styles.winnerCrown}>
                           <Ionicons name="ribbon" size={16} color="#FFD700" />
-                          <Text style={styles.winnerLabel}>WINNER</Text>
+                          <Text style={styles.winnerLabel}>{t('WINNER')}</Text>
                         </View>
                       </View>
                     )}
@@ -1341,13 +1341,13 @@ Always remind users that this is educational information, not financial advice.`
 
                 {/* Category Winners */}
                 <View style={[styles.categoryWinnersCard, { backgroundColor: colors.background }]}>
-                  <Text style={[styles.categoryWinnersTitle, { color: colors.text }]}>Best For Each Category</Text>
+                  <Text style={[styles.categoryWinnersTitle, { color: colors.text }]}>{t('Best For Each Category')}</Text>
                   <View style={styles.categoryGrid}>
                     {[
-                      { key: 'growth', label: 'Growth', icon: 'trending-up', color: '#00C853' },
-                      { key: 'value', label: 'Value', icon: 'pricetag', color: '#B8860B' },
-                      { key: 'safety', label: 'Safety', icon: 'shield-checkmark', color: '#5856D6' },
-                      { key: 'momentum', label: 'Momentum', icon: 'flash', color: '#FF9500' },
+                      { key: 'growth', label: t('Growth'), icon: 'trending-up', color: '#00C853' },
+                      { key: 'value', label: t('Value'), icon: 'pricetag', color: '#B8860B' },
+                      { key: 'safety', label: t('Safety'), icon: 'shield-checkmark', color: '#5856D6' },
+                      { key: 'momentum', label: t('Momentum'), icon: 'flash', color: '#FF9500' },
                     ].map((cat) => (
                       <View key={cat.key} style={styles.categoryItem}>
                         <View style={[styles.categoryIconBg, { backgroundColor: `${cat.color}15` }]}>
@@ -1367,7 +1367,7 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={[styles.stockHeaderBadge, { backgroundColor: '#B8860B' }]}>
                     <Text style={styles.stockHeaderSymbol}>{comparisonResult.stock1.symbol}</Text>
                   </View>
-                  <Text style={styles.sideBySideVs}>VS</Text>
+                  <Text style={styles.sideBySideVs}>{t('VS')}</Text>
                   <View style={[styles.stockHeaderBadge, { backgroundColor: '#FF9500' }]}>
                     <Text style={styles.stockHeaderSymbol}>{comparisonResult.stock2.symbol}</Text>
                   </View>
@@ -1375,14 +1375,14 @@ Always remind users that this is educational information, not financial advice.`
 
                 {/* Price Comparison */}
                 <View style={[styles.comparisonCard, { backgroundColor: colors.background }]}>
-                  <Text style={[styles.comparisonSectionTitle, { color: colors.text }]}>Price & Performance</Text>
+                  <Text style={[styles.comparisonSectionTitle, { color: colors.text }]}>{t('Price & Performance')}</Text>
                   <CompareRow
-                    label="Price"
+                    label={t('Price')}
                     value1={`$${comparisonResult.stock1.price.toFixed(2)}`}
                     value2={`$${comparisonResult.stock2.price.toFixed(2)}`}
                   />
                   <CompareRow
-                    label="Daily Change"
+                    label={t('Daily Change')}
                     value1={`${comparisonResult.stock1.changePercent >= 0 ? '+' : ''}${comparisonResult.stock1.changePercent.toFixed(2)}%`}
                     value2={`${comparisonResult.stock2.changePercent >= 0 ? '+' : ''}${comparisonResult.stock2.changePercent.toFixed(2)}%`}
                     color1={comparisonResult.stock1.changePercent >= 0 ? '#00C853' : '#FF3B30'}
@@ -1390,7 +1390,7 @@ Always remind users that this is educational information, not financial advice.`
                     winner={comparisonResult.stock1.changePercent > comparisonResult.stock2.changePercent ? 1 : comparisonResult.stock2.changePercent > comparisonResult.stock1.changePercent ? 2 : 0}
                   />
                   <CompareRow
-                    label="Market Cap"
+                    label={t('Market Cap')}
                     value1={formatNumber(comparisonResult.stock1.marketCap)}
                     value2={formatNumber(comparisonResult.stock2.marketCap)}
                     winner={comparisonResult.stock1.marketCap > comparisonResult.stock2.marketCap ? 1 : 2}
@@ -1399,15 +1399,15 @@ Always remind users that this is educational information, not financial advice.`
 
                 {/* Valuation Comparison */}
                 <View style={[styles.comparisonCard, { backgroundColor: colors.background }]}>
-                  <Text style={[styles.comparisonSectionTitle, { color: colors.text }]}>Valuation</Text>
+                  <Text style={[styles.comparisonSectionTitle, { color: colors.text }]}>{t('Valuation')}</Text>
                   <CompareRow
-                    label="P/E Ratio"
+                    label={t('P/E Ratio')}
                     value1={comparisonResult.stock1.pe?.toFixed(2) || '—'}
                     value2={comparisonResult.stock2.pe?.toFixed(2) || '—'}
                     winner={comparisonResult.stock1.pe && comparisonResult.stock2.pe ? (comparisonResult.stock1.pe < comparisonResult.stock2.pe ? 1 : 2) : 0}
                   />
                   <CompareRow
-                    label="EPS"
+                    label={t('EPS')}
                     value1={comparisonResult.stock1.eps ? `$${comparisonResult.stock1.eps.toFixed(2)}` : '—'}
                     value2={comparisonResult.stock2.eps ? `$${comparisonResult.stock2.eps.toFixed(2)}` : '—'}
                     winner={comparisonResult.stock1.eps && comparisonResult.stock2.eps ? (comparisonResult.stock1.eps > comparisonResult.stock2.eps ? 1 : 2) : 0}
@@ -1424,9 +1424,9 @@ Always remind users that this is educational information, not financial advice.`
 
                 {/* Growth Comparison */}
                 <View style={[styles.comparisonCard, { backgroundColor: colors.background }]}>
-                  <Text style={[styles.comparisonSectionTitle, { color: colors.text }]}>Growth & Profitability</Text>
+                  <Text style={[styles.comparisonSectionTitle, { color: colors.text }]}>{t('Growth & Profitability')}</Text>
                   <CompareRow
-                    label="Revenue Growth"
+                    label={t('Revenue Growth')}
                     value1={comparisonResult.stock1.revenueGrowth ? `${comparisonResult.stock1.revenueGrowth.toFixed(1)}%` : '—'}
                     value2={comparisonResult.stock2.revenueGrowth ? `${comparisonResult.stock2.revenueGrowth.toFixed(1)}%` : '—'}
                     color1={(comparisonResult.stock1.revenueGrowth || 0) > 0 ? '#00C853' : '#FF3B30'}
@@ -1434,7 +1434,7 @@ Always remind users that this is educational information, not financial advice.`
                     winner={comparisonResult.stock1.revenueGrowth && comparisonResult.stock2.revenueGrowth ? (comparisonResult.stock1.revenueGrowth > comparisonResult.stock2.revenueGrowth ? 1 : 2) : 0}
                   />
                   <CompareRow
-                    label="Net Income Growth"
+                    label={t('Net Income Growth')}
                     value1={comparisonResult.stock1.netIncomeGrowth ? `${comparisonResult.stock1.netIncomeGrowth.toFixed(1)}%` : '—'}
                     value2={comparisonResult.stock2.netIncomeGrowth ? `${comparisonResult.stock2.netIncomeGrowth.toFixed(1)}%` : '—'}
                     color1={(comparisonResult.stock1.netIncomeGrowth || 0) > 0 ? '#00C853' : '#FF3B30'}
@@ -1442,7 +1442,7 @@ Always remind users that this is educational information, not financial advice.`
                     winner={comparisonResult.stock1.netIncomeGrowth && comparisonResult.stock2.netIncomeGrowth ? (comparisonResult.stock1.netIncomeGrowth > comparisonResult.stock2.netIncomeGrowth ? 1 : 2) : 0}
                   />
                   <CompareRow
-                    label="ROE"
+                    label={t('ROE')}
                     value1={comparisonResult.stock1.roe ? `${comparisonResult.stock1.roe.toFixed(1)}%` : '—'}
                     value2={comparisonResult.stock2.roe ? `${comparisonResult.stock2.roe.toFixed(1)}%` : '—'}
                     winner={comparisonResult.stock1.roe && comparisonResult.stock2.roe ? (comparisonResult.stock1.roe > comparisonResult.stock2.roe ? 1 : 2) : 0}
@@ -1451,21 +1451,21 @@ Always remind users that this is educational information, not financial advice.`
 
                 {/* Financial Health */}
                 <View style={[styles.comparisonCard, { backgroundColor: colors.background }]}>
-                  <Text style={[styles.comparisonSectionTitle, { color: colors.text }]}>Financial Health</Text>
+                  <Text style={[styles.comparisonSectionTitle, { color: colors.text }]}>{t('Financial Health')}</Text>
                   <CompareRow
-                    label="Debt/Equity"
+                    label={t('Debt/Equity')}
                     value1={comparisonResult.stock1.debtToEquity?.toFixed(2) || '—'}
                     value2={comparisonResult.stock2.debtToEquity?.toFixed(2) || '—'}
                     winner={comparisonResult.stock1.debtToEquity && comparisonResult.stock2.debtToEquity ? (comparisonResult.stock1.debtToEquity < comparisonResult.stock2.debtToEquity ? 1 : 2) : 0}
                   />
                   <CompareRow
-                    label="Current Ratio"
+                    label={t('Current Ratio')}
                     value1={comparisonResult.stock1.currentRatio?.toFixed(2) || '—'}
                     value2={comparisonResult.stock2.currentRatio?.toFixed(2) || '—'}
                     winner={comparisonResult.stock1.currentRatio && comparisonResult.stock2.currentRatio ? (comparisonResult.stock1.currentRatio > comparisonResult.stock2.currentRatio ? 1 : 2) : 0}
                   />
                   <CompareRow
-                    label="52W High"
+                    label={t('52W High')}
                     value1={`$${comparisonResult.stock1.yearHigh?.toFixed(2) || '—'}`}
                     value2={`$${comparisonResult.stock2.yearHigh?.toFixed(2) || '—'}`}
                   />
@@ -1478,21 +1478,21 @@ Always remind users that this is educational information, not financial advice.`
                     onPress={() => router.push(`/symbol/${comparisonResult.stock1.symbol}/chart`)}
                   >
                     <Ionicons name="stats-chart" size={18} color="#B8860B" />
-                    <Text style={[styles.viewStockText, { color: '#B8860B' }]}>View {comparisonResult.stock1.symbol}</Text>
+                    <Text style={[styles.viewStockText, { color: '#B8860B' }]}>{t('View')} {comparisonResult.stock1.symbol}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.viewStockButton, { borderColor: '#FF9500' }]}
                     onPress={() => router.push(`/symbol/${comparisonResult.stock2.symbol}/chart`)}
                   >
                     <Ionicons name="stats-chart" size={18} color="#FF9500" />
-                    <Text style={[styles.viewStockText, { color: '#FF9500' }]}>View {comparisonResult.stock2.symbol}</Text>
+                    <Text style={[styles.viewStockText, { color: '#FF9500' }]}>{t('View')} {comparisonResult.stock2.symbol}</Text>
                   </TouchableOpacity>
                 </View>
 
                 {/* Disclaimer */}
                 <View style={styles.disclaimer}>
                   <Ionicons name="information-circle" size={16} color={colors.textTertiary} />
-                  <Text style={[styles.disclaimerText, { color: colors.textTertiary }]}>Comparison is for informational purposes only. Not financial advice.</Text>
+                  <Text style={[styles.disclaimerText, { color: colors.textTertiary }]}>{t('Comparison is for informational purposes only. Not financial advice.')}</Text>
                 </View>
               </>
             )}
@@ -1510,11 +1510,10 @@ Always remind users that this is educational information, not financial advice.`
                   <View style={styles.premiumLockedIcon}>
                     <Ionicons name="trending-up" size={48} color="#B9F2FF" />
                   </View>
-                  <Text style={styles.premiumLockedTitle}>AI Price Forecast</Text>
-                  <Text style={styles.premiumLockedSubtitle}>Diamond Feature</Text>
+                  <Text style={styles.premiumLockedTitle}>{t('AI Price Forecast')}</Text>
+                  <Text style={styles.premiumLockedSubtitle}>{t('Diamond Feature')}</Text>
                   <Text style={styles.premiumLockedDescription}>
-                    Get AI-powered 3-6 month price targets, probability analysis,
-                    technical signals, and actionable catalysts.
+                    {t('Get AI-powered 3-6 month price targets, probability analysis, technical signals, and actionable catalysts.')}
                   </Text>
                   <View style={styles.premiumFeaturesList}>
                     {['Price Target Forecasts', 'Probability Analysis', 'Technical Signals', 'Risk & Catalyst Alerts'].map((feature, idx) => (
@@ -1526,17 +1525,17 @@ Always remind users that this is educational information, not financial advice.`
                   </View>
                   <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
                     <Ionicons name="diamond" size={20} color="#000" />
-                    <Text style={styles.premiumUpgradeText}>Upgrade to Diamond</Text>
+                    <Text style={styles.premiumUpgradeText}>{t('Upgrade to Diamond')}</Text>
                   </TouchableOpacity>
-                  <Text style={styles.premiumPriceHint}>Unlock all AI tools</Text>
+                  <Text style={styles.premiumPriceHint}>{t('Unlock all AI tools')}</Text>
                 </LinearGradient>
               </View>
             ) : (
             <>
             {/* Search Card */}
             <View style={[styles.searchCard, { backgroundColor: isDark ? colors.card : colors.background, shadowOpacity: isDark ? 0 : 0.06, elevation: isDark ? 0 : 3 }]}>
-              <Text style={[styles.searchTitle, { color: colors.text }]}>AI Price Forecast</Text>
-              <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>3-6 month price targets & probability analysis</Text>
+              <Text style={[styles.searchTitle, { color: colors.text }]}>{t('AI Price Forecast')}</Text>
+              <Text style={[styles.searchSubtitle, { color: colors.textSecondary }]}>{t('3-6 month price targets & probability analysis')}</Text>
 
               <View style={[styles.searchInputContainer, { backgroundColor: colors.surface, borderColor: isDark ? '#444' : colors.border }]}>
                 <Ionicons name="telescope" size={20} color={colors.textTertiary} />
@@ -1566,14 +1565,14 @@ Always remind users that this is educational information, not financial advice.`
                 ) : (
                   <>
                     <Ionicons name="sparkles" size={20} color="#FFF" />
-                    <Text style={styles.analyzeButtonText}>Generate Forecast</Text>
+                    <Text style={styles.analyzeButtonText}>{t('Generate Forecast')}</Text>
                   </>
                 )}
               </TouchableOpacity>
 
               {/* Quick Forecast */}
               <View style={styles.quickPicksContainer}>
-                <Text style={[styles.quickPicksLabel, { color: colors.textSecondary }]}>Quick Forecast:</Text>
+                <Text style={[styles.quickPicksLabel, { color: colors.textSecondary }]}>{t('Quick Forecast:')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {['TSLA', 'NVDA', 'AAPL', 'META', 'AMD', 'AMZN'].map((sym) => (
                     <TouchableOpacity
@@ -1600,8 +1599,8 @@ Always remind users that this is educational information, not financial advice.`
             {forecastLoading && (
               <View style={[styles.loadingCard, { backgroundColor: colors.background }]}>
                 <ActivityIndicator size="large" color="#5856D6" />
-                <Text style={[styles.loadingText, { color: colors.text }]}>Forecasting {forecastTicker}...</Text>
-                <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>Analyzing technicals & generating predictions</Text>
+                <Text style={[styles.loadingText, { color: colors.text }]}>{t('Forecasting')} {forecastTicker}...</Text>
+                <Text style={[styles.loadingSubtext, { color: colors.textSecondary }]}>{t('Analyzing technicals & generating predictions')}</Text>
               </View>
             )}
 
@@ -1629,9 +1628,9 @@ Always remind users that this is educational information, not financial advice.`
                   {/* Timeframe Badge */}
                   <View style={styles.timeframeBadge}>
                     <Ionicons name="calendar" size={16} color="#5856D6" />
-                    <Text style={styles.timeframeText}>{forecastResult.timeframe} Forecast</Text>
+                    <Text style={styles.timeframeText}>{forecastResult.timeframe} {t('Forecast')}</Text>
                     <View style={styles.confidencePill}>
-                      <Text style={styles.confidenceText}>{forecastResult.confidence}% Confidence</Text>
+                      <Text style={styles.confidenceText}>{forecastResult.confidence}% {t('Confidence')}</Text>
                     </View>
                   </View>
                 </View>
@@ -1640,7 +1639,7 @@ Always remind users that this is educational information, not financial advice.`
                 <View style={[styles.priceTargetsCard, { backgroundColor: colors.background }]}>
                   <View style={styles.priceTargetsHeader}>
                     <Ionicons name="flag" size={20} color="#5856D6" />
-                    <Text style={[styles.priceTargetsTitle, { color: colors.text }]}>Price Targets</Text>
+                    <Text style={[styles.priceTargetsTitle, { color: colors.text }]}>{t('Price Targets')}</Text>
                   </View>
 
                   <View style={styles.targetsVisual}>
@@ -1650,15 +1649,15 @@ Always remind users that this is educational information, not financial advice.`
                       <View style={styles.targetLabelsRow}>
                         <View style={styles.targetLabelItem}>
                           <Text style={[styles.targetLabelPrice, { color: '#FF3B30' }]}>${forecastResult.priceTargets.conservative.toFixed(0)}</Text>
-                          <Text style={[styles.targetLabelName, { color: colors.textSecondary }]}>Bear</Text>
+                          <Text style={[styles.targetLabelName, { color: colors.textSecondary }]}>{t('Bear')}</Text>
                         </View>
                         <View style={[styles.targetLabelItem, { alignItems: 'center' }]}>
                           <Text style={[styles.targetLabelPrice, { color: isDark ? '#9D9BFF' : '#5856D6' }]}>${forecastResult.priceTargets.base.toFixed(0)}</Text>
-                          <Text style={[styles.targetLabelName, { color: colors.textSecondary }]}>Base</Text>
+                          <Text style={[styles.targetLabelName, { color: colors.textSecondary }]}>{t('Base')}</Text>
                         </View>
                         <View style={[styles.targetLabelItem, { alignItems: 'flex-end' }]}>
                           <Text style={[styles.targetLabelPrice, { color: '#00C853' }]}>${forecastResult.priceTargets.bullish.toFixed(0)}</Text>
-                          <Text style={[styles.targetLabelName, { color: colors.textSecondary }]}>Bull</Text>
+                          <Text style={[styles.targetLabelName, { color: colors.textSecondary }]}>{t('Bull')}</Text>
                         </View>
                       </View>
                       {/* Gradient Bar */}
@@ -1674,7 +1673,7 @@ Always remind users that this is educational information, not financial advice.`
                           <Text style={[styles.currentPriceLabel, {
                             color: isDark ? '#FFF' : '#1C1C1E',
                             backgroundColor: isDark ? '#2C2C2E' : '#FFF',
-                          }]}>Current: ${forecastResult.currentPrice.toFixed(0)}</Text>
+                          }]}>{t('Current:')} ${forecastResult.currentPrice.toFixed(0)}</Text>
                         </View>
                       </View>
                     </View>
@@ -2408,7 +2407,7 @@ Always remind users that this is educational information, not financial advice.`
                   <Text style={[styles.calcInputLabel, { color: colors.textSecondary }]}>{t('Payments per Year')}</Text>
                   <View style={[styles.calcInputWrapper, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <TextInput style={[styles.calcInput, { color: colors.text }]} value={bondPaymentFrequency} onChangeText={setBondPaymentFrequency} keyboardType="numeric" placeholder="2" placeholderTextColor={colors.textTertiary} />
-                    <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>/yr</Text>
+                    <Text style={[styles.calcInputSuffix, { color: colors.textTertiary }]}>{t('/yr')}</Text>
                   </View>
                 </View>
                 <TouchableOpacity style={[styles.calcButton, { backgroundColor: '#5856D6' }]} onPress={() => {
@@ -2509,7 +2508,7 @@ Always remind users that this is educational information, not financial advice.`
                   setCalcResult({ type: 'retirement', retirementSavings: Math.round(balance), neededForRetirement: Math.round(neededForRetirement), yearsOfRetirement: Math.round(yearsOfRetirement * 10) / 10, monthlyIncome: Math.round(monthlyIncome), totalContributions: Math.round(currentSavings + (monthlyContrib * monthsToRetire)), isOnTrack: balance >= neededForRetirement, gap: Math.round(neededForRetirement - balance) });
                 }}>
                   <Ionicons name="sunny" size={20} color="#FFF" />
-                  <Text style={styles.calcButtonText}>Calculate Retirement</Text>
+                  <Text style={styles.calcButtonText}>{t('Calculate Retirement')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -2517,20 +2516,20 @@ Always remind users that this is educational information, not financial advice.`
             {/* Results Display */}
             {calcResult && calcResult.type === 'investment' && (
               <View style={[styles.calcResultCard, { backgroundColor: colors.background }]}>
-                <Text style={[styles.calcResultTitle, { color: colors.text }]}>Investment Growth Results</Text>
+                <Text style={[styles.calcResultTitle, { color: colors.text }]}>{t('Investment Growth Results')}</Text>
                 <View style={styles.calcResultMain}>
-                  <Text style={styles.calcResultLabel}>Future Value</Text>
+                  <Text style={styles.calcResultLabel}>{t('Future Value')}</Text>
                   <Text style={[styles.calcResultValue, { color: '#34C759' }]}>${calcResult.futureValue.toLocaleString()}</Text>
                 </View>
                 <View style={styles.calcResultGrid}>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
                     <Ionicons name="wallet-outline" size={20} color="#B8860B" />
-                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Total Invested</Text>
+                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>{t('Total Invested')}</Text>
                     <Text style={[styles.calcResultItemValue, { color: colors.text }]}>${calcResult.totalContributions.toLocaleString()}</Text>
                   </View>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
                     <Ionicons name="trending-up" size={20} color="#34C759" />
-                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Interest Earned</Text>
+                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>{t('Interest Earned')}</Text>
                     <Text style={[styles.calcResultItemValue, { color: '#34C759' }]}>+${calcResult.totalInterest.toLocaleString()}</Text>
                   </View>
                 </View>
@@ -2539,29 +2538,29 @@ Always remind users that this is educational information, not financial advice.`
 
             {calcResult && calcResult.type === 'mortgage' && (
               <View style={[styles.calcResultCard, { backgroundColor: colors.background }]}>
-                <Text style={[styles.calcResultTitle, { color: colors.text }]}>Mortgage Payment Breakdown</Text>
+                <Text style={[styles.calcResultTitle, { color: colors.text }]}>{t('Mortgage Payment Breakdown')}</Text>
                 <View style={styles.calcResultMain}>
-                  <Text style={styles.calcResultLabel}>Monthly Payment</Text>
+                  <Text style={styles.calcResultLabel}>{t('Monthly Payment')}</Text>
                   <Text style={[styles.calcResultValue, { color: '#B8860B' }]}>${calcResult.monthlyPayment.toLocaleString()}</Text>
                 </View>
                 <View style={styles.calcResultGrid}>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
                     <Ionicons name="home-outline" size={20} color="#B8860B" />
-                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Principal & Interest</Text>
+                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>{t('Principal & Interest')}</Text>
                     <Text style={[styles.calcResultItemValue, { color: colors.text }]}>${calcResult.principalInterest.toLocaleString()}</Text>
                   </View>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
                     <Ionicons name="document-text-outline" size={20} color="#FF9500" />
-                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Tax & Insurance</Text>
+                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>{t('Tax & Insurance')}</Text>
                     <Text style={[styles.calcResultItemValue, { color: colors.text }]}>${(calcResult.propertyTax + calcResult.insurance).toLocaleString()}</Text>
                   </View>
                 </View>
                 <View style={[styles.calcInflationBox, { backgroundColor: '#B8860B15' }]}>
                   <Ionicons name="information-circle" size={18} color="#B8860B" />
                   <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={[styles.calcInflationLabel, { color: colors.text }]}>Loan Details</Text>
-                    <Text style={[styles.calcInflationValue, { color: '#B8860B' }]}>Loan: ${calcResult.loanAmount.toLocaleString()}</Text>
-                    <Text style={styles.calcInflationNote}>Down Payment: {calcResult.downPaymentPercent}% | Total Interest: ${calcResult.totalInterest.toLocaleString()}</Text>
+                    <Text style={[styles.calcInflationLabel, { color: colors.text }]}>{t('Loan Details')}</Text>
+                    <Text style={[styles.calcInflationValue, { color: '#B8860B' }]}>{t('Loan:')} ${calcResult.loanAmount.toLocaleString()}</Text>
+                    <Text style={styles.calcInflationNote}>{t('Down Payment:')} {calcResult.downPaymentPercent}% | {t('Total Interest:')} ${calcResult.totalInterest.toLocaleString()}</Text>
                   </View>
                 </View>
               </View>
@@ -2569,20 +2568,20 @@ Always remind users that this is educational information, not financial advice.`
 
             {calcResult && calcResult.type === 'loan' && (
               <View style={[styles.calcResultCard, { backgroundColor: colors.background }]}>
-                <Text style={[styles.calcResultTitle, { color: colors.text }]}>Loan Payment Summary</Text>
+                <Text style={[styles.calcResultTitle, { color: colors.text }]}>{t('Loan Payment Summary')}</Text>
                 <View style={styles.calcResultMain}>
-                  <Text style={styles.calcResultLabel}>Monthly Payment</Text>
+                  <Text style={styles.calcResultLabel}>{t('Monthly Payment')}</Text>
                   <Text style={[styles.calcResultValue, { color: '#FF9500' }]}>${calcResult.monthlyPayment.toLocaleString()}</Text>
                 </View>
                 <View style={styles.calcResultGrid}>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
                     <Ionicons name="cash-outline" size={20} color="#B8860B" />
-                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Total Payments</Text>
+                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>{t('Total Payments')}</Text>
                     <Text style={[styles.calcResultItemValue, { color: colors.text }]}>${calcResult.totalPayments.toLocaleString()}</Text>
                   </View>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
                     <Ionicons name="trending-up" size={20} color="#FF3B30" />
-                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Total Interest</Text>
+                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>{t('Total Interest')}</Text>
                     <Text style={[styles.calcResultItemValue, { color: '#FF3B30' }]}>${calcResult.totalInterest.toLocaleString()}</Text>
                   </View>
                 </View>
@@ -2591,32 +2590,32 @@ Always remind users that this is educational information, not financial advice.`
 
             {calcResult && calcResult.type === 'bond' && (
               <View style={[styles.calcResultCard, { backgroundColor: colors.background }]}>
-                <Text style={[styles.calcResultTitle, { color: colors.text }]}>Bond Valuation Results</Text>
+                <Text style={[styles.calcResultTitle, { color: colors.text }]}>{t('Bond Valuation Results')}</Text>
                 <View style={styles.calcResultMain}>
-                  <Text style={styles.calcResultLabel}>Bond Price</Text>
+                  <Text style={styles.calcResultLabel}>{t('Bond Price')}</Text>
                   <Text style={[styles.calcResultValue, { color: '#5856D6' }]}>${calcResult.bondPrice.toLocaleString()}</Text>
                 </View>
                 <View style={[styles.calcInflationBox, { backgroundColor: calcResult.isPremium ? '#34C75915' : '#FF3B3015' }]}>
                   <Ionicons name={calcResult.isPremium ? 'arrow-up-circle' : 'arrow-down-circle'} size={18} color={calcResult.isPremium ? '#34C759' : '#FF3B30'} />
                   <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={[styles.calcInflationLabel, { color: colors.text }]}>Bond Status</Text>
+                    <Text style={[styles.calcInflationLabel, { color: colors.text }]}>{t('Bond Status')}</Text>
                     <Text style={[styles.calcInflationValue, { color: calcResult.isPremium ? '#34C759' : '#FF3B30' }]}>
-                      Trading at {calcResult.isPremium ? 'Premium' : 'Discount'}
+                      {t('Trading at')} {calcResult.isPremium ? t('Premium') : t('Discount')}
                     </Text>
                     <Text style={styles.calcInflationNote}>
-                      {calcResult.isPremium ? 'Above' : 'Below'} face value of ${calcResult.faceValue.toLocaleString()}
+                      {calcResult.isPremium ? t('Above') : t('Below')} {t('face value of')} ${calcResult.faceValue.toLocaleString()}
                     </Text>
                   </View>
                 </View>
                 <View style={styles.calcResultGrid}>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
                     <Ionicons name="cash-outline" size={20} color="#5856D6" />
-                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Annual Income</Text>
+                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>{t('Annual Income')}</Text>
                     <Text style={[styles.calcResultItemValue, { color: colors.text }]}>${calcResult.annualIncome.toLocaleString()}</Text>
                   </View>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
                     <Ionicons name="trending-up" size={20} color="#34C759" />
-                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Current Yield</Text>
+                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>{t('Current Yield')}</Text>
                     <Text style={[styles.calcResultItemValue, { color: '#34C759' }]}>{calcResult.currentYield}%</Text>
                   </View>
                 </View>
@@ -2625,32 +2624,32 @@ Always remind users that this is educational information, not financial advice.`
 
             {calcResult && calcResult.type === 'retirement' && (
               <View style={[styles.calcResultCard, { backgroundColor: colors.background }]}>
-                <Text style={[styles.calcResultTitle, { color: colors.text }]}>Retirement Projection</Text>
+                <Text style={[styles.calcResultTitle, { color: colors.text }]}>{t('Retirement Projection')}</Text>
                 <View style={styles.calcResultMain}>
-                  <Text style={styles.calcResultLabel}>Projected Savings at Retirement</Text>
+                  <Text style={styles.calcResultLabel}>{t('Projected Savings at Retirement')}</Text>
                   <Text style={[styles.calcResultValue, { color: '#FF3B30' }]}>${calcResult.retirementSavings.toLocaleString()}</Text>
                 </View>
                 <View style={[styles.calcInflationBox, { backgroundColor: calcResult.isOnTrack ? '#34C75915' : '#FF950015' }]}>
                   <Ionicons name={calcResult.isOnTrack ? 'checkmark-circle' : 'alert-circle'} size={18} color={calcResult.isOnTrack ? '#34C759' : '#FF9500'} />
                   <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={[styles.calcInflationLabel, { color: colors.text }]}>Retirement Status</Text>
+                    <Text style={[styles.calcInflationLabel, { color: colors.text }]}>{t('Retirement Status')}</Text>
                     <Text style={[styles.calcInflationValue, { color: calcResult.isOnTrack ? '#34C759' : '#FF9500' }]}>
-                      {calcResult.isOnTrack ? 'On Track!' : 'Gap: $' + Math.abs(calcResult.gap).toLocaleString()}
+                      {calcResult.isOnTrack ? t('On Track!') : `${t('Gap: $')}${Math.abs(calcResult.gap).toLocaleString()}`}
                     </Text>
                     <Text style={styles.calcInflationNote}>
-                      Target: ${calcResult.neededForRetirement.toLocaleString()} (4% withdrawal rule)
+                      {t('Target:')} ${calcResult.neededForRetirement.toLocaleString()} {t('(4% withdrawal rule)')}
                     </Text>
                   </View>
                 </View>
                 <View style={styles.calcResultGrid}>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
                     <Ionicons name="time-outline" size={20} color="#B8860B" />
-                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Years in Retirement</Text>
-                    <Text style={[styles.calcResultItemValue, { color: colors.text }]}>{calcResult.yearsOfRetirement} yrs</Text>
+                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>{t('Years in Retirement')}</Text>
+                    <Text style={[styles.calcResultItemValue, { color: colors.text }]}>{calcResult.yearsOfRetirement} {t('yrs')}</Text>
                   </View>
                   <View style={[styles.calcResultItem, { backgroundColor: colors.surface }]}>
                     <Ionicons name="cash-outline" size={20} color="#34C759" />
-                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>Monthly Income</Text>
+                    <Text style={[styles.calcResultItemLabel, { color: colors.textSecondary }]}>{t('Monthly Income')}</Text>
                     <Text style={[styles.calcResultItemValue, { color: '#34C759' }]}>${calcResult.monthlyIncome.toLocaleString()}</Text>
                   </View>
                 </View>

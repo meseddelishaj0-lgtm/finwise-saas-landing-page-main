@@ -641,10 +641,10 @@ export default function CommunityPage() {
       const date = new Date(dateString);
       const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
       
-      if (seconds < 60) return 'Just now';
-      if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-      if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-      if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+      if (seconds < 60) return t('Just now');
+      if (seconds < 3600) return `${Math.floor(seconds / 60)}${t('m ago')}`;
+      if (seconds < 86400) return `${Math.floor(seconds / 3600)}${t('h ago')}`;
+      if (seconds < 604800) return `${Math.floor(seconds / 86400)}${t('d ago')}`;
       return date.toLocaleDateString();
     } catch {
       return '';
@@ -1111,7 +1111,7 @@ export default function CommunityPage() {
   };
 
   // State for create post modal user display
-  const [modalUserName, setModalUserName] = useState<string>('You');
+  const [modalUserName, setModalUserName] = useState<string>(t('You'));
   const [modalUserProfile, setModalUserProfile] = useState<any>(null);
 
   // Open create post modal with profile from context (no API call needed)
@@ -1125,7 +1125,7 @@ export default function CommunityPage() {
       const displayName = getContextDisplayName();
       setModalUserName(displayName);
     } else {
-      setModalUserName('You');
+      setModalUserName(t('You'));
     }
 
     // Show modal
@@ -1574,7 +1574,7 @@ export default function CommunityPage() {
   const handleSharePost = async (post: Post) => {
     try {
       await Share.share({
-        message: `${post.title || ''}\n\n${post.content}\n\nShared from WallStreetStocks`,
+        message: `${post.title || ''}\n\n${post.content}\n\n${t('Shared from WallStreetStocks')}`,
       });
     } catch {
     }
@@ -2311,7 +2311,7 @@ export default function CommunityPage() {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color="#B8860B" />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading community...</Text>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>{t('Loading community...')}</Text>
       </View>
     );
   }
@@ -2321,7 +2321,7 @@ export default function CommunityPage() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: isDark ? 'transparent' : colors.borderLight }]}>
         <FadeSlideIn distance={10}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Community</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Community')}</Text>
         </FadeSlideIn>
         <View style={styles.headerActions}>
           <TouchableOpacity
@@ -2407,14 +2407,14 @@ export default function CommunityPage() {
                 <View style={[styles.sectionTitleIcon, { backgroundColor: isDark ? 'rgba(255,214,10,0.14)' : 'rgba(184,134,11,0.12)' }]}>
                   <Ionicons name="person-add" size={13} color={isDark ? '#FFD60A' : '#B8860B'} />
                 </View>
-                <Text style={[styles.suggestedTitle, { color: colors.text }]}>Accounts to Follow</Text>
+                <Text style={[styles.suggestedTitle, { color: colors.text }]}>{t('Accounts to Follow')}</Text>
               </View>
               <TouchableOpacity
                 style={[styles.sectionActionPill, { backgroundColor: colors.surface }]}
                 onPress={() => setDismissedUsers([])}
               >
                 <Ionicons name="refresh" size={13} color={isDark ? '#FFD60A' : '#B8860B'} />
-                <Text style={[styles.sectionActionText, { color: isDark ? '#FFD60A' : '#B8860B' }]}>Refresh</Text>
+                <Text style={[styles.sectionActionText, { color: isDark ? '#FFD60A' : '#B8860B' }]}>{t('Refresh')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -2457,7 +2457,7 @@ export default function CommunityPage() {
                     <View style={styles.suggestedFollowersRow}>
                       <Ionicons name="people" size={11} color={colors.textTertiary} />
                       <Text style={[styles.suggestedFollowers, { color: colors.textSecondary }]}>
-                        {formatFollowerCount(user._count.followers)} followers
+                        {formatFollowerCount(user._count.followers)} {t('followers')}
                       </Text>
                     </View>
                   )}
@@ -2472,7 +2472,7 @@ export default function CommunityPage() {
                       onPress={() => handleQuickFollow(user.id)}
                     >
                       <Text style={[styles.suggestedFollowText, { color: isDark ? '#FFD60A' : '#B8860B' }]}>
-                        Following
+                        {t('Following')}
                       </Text>
                     </ScalePress>
                   ) : (
@@ -2484,7 +2484,7 @@ export default function CommunityPage() {
                         style={styles.suggestedFollowBtn}
                       >
                         <Text style={[styles.suggestedFollowText, { color: isDark ? '#000' : '#FFF' }]}>
-                          Follow
+                          {t('Follow')}
                         </Text>
                       </ExpoLinearGradient>
                     </ScalePress>
@@ -2510,14 +2510,14 @@ export default function CommunityPage() {
               <View style={[styles.sectionTitleIcon, { backgroundColor: isDark ? 'rgba(255,214,10,0.14)' : 'rgba(184,134,11,0.12)' }]}>
                 <Ionicons name="diamond" size={13} color={isDark ? '#FFD60A' : '#B8860B'} />
               </View>
-              <Text style={[styles.premiumTitle, { color: colors.text }]}>Premium Tools</Text>
+              <Text style={[styles.premiumTitle, { color: colors.text }]}>{t('Premium Tools')}</Text>
             </View>
             <TouchableOpacity
               style={[styles.sectionActionPill, { backgroundColor: colors.surface }]}
               onPress={() => navRouter.push('/(modals)/paywall' as any)}
             >
               <Ionicons name="sparkles" size={13} color={isDark ? '#FFD60A' : '#B8860B'} />
-              <Text style={[styles.sectionActionText, { color: isDark ? '#FFD60A' : '#B8860B' }]}>See Plans</Text>
+              <Text style={[styles.sectionActionText, { color: isDark ? '#FFD60A' : '#B8860B' }]}>{t('See Plans')}</Text>
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -2536,7 +2536,7 @@ export default function CommunityPage() {
                       withPremiumAccess(
                         tool.tier,
                         () => navRouter.push(tool.route as any),
-                        { alertTitle: tool.alertTitle, alertMessage: tool.alertMessage }
+                        { alertTitle: t(tool.alertTitle), alertMessage: t(tool.alertMessage) }
                       );
                     }}
                   >
@@ -2549,19 +2549,19 @@ export default function CommunityPage() {
                       <View style={[styles.premiumIconContainer, { backgroundColor: tool.color }]}>
                         <Ionicons name={tool.icon} size={22} color="#1a1a1a" />
                       </View>
-                      <Text style={[styles.premiumCardTitle, { color: colors.text }]}>{tool.title}</Text>
+                      <Text style={[styles.premiumCardTitle, { color: colors.text }]}>{t(tool.title)}</Text>
                       <Text style={[styles.premiumCardDesc, { color: colors.textSecondary }]} numberOfLines={2}>
-                        {tool.desc}
+                        {t(tool.desc)}
                       </Text>
                       {unlocked ? (
                         <View style={[styles.premiumStatusChip, { backgroundColor: 'rgba(0,200,83,0.14)' }]}>
                           <Ionicons name="checkmark-circle" size={11} color="#00C853" />
-                          <Text style={[styles.premiumStatusText, { color: '#00C853' }]}>Unlocked</Text>
+                          <Text style={[styles.premiumStatusText, { color: '#00C853' }]}>{t('Unlocked')}</Text>
                         </View>
                       ) : (
                         <View style={[styles.premiumStatusChip, { backgroundColor: `rgba(${tool.tint},${isDark ? 0.22 : 0.45})` }]}>
                           <Ionicons name="lock-closed" size={10} color={colors.text} />
-                          <Text style={[styles.premiumStatusText, { color: colors.text }]}>{tool.tierLabel}</Text>
+                          <Text style={[styles.premiumStatusText, { color: colors.text }]}>{t(tool.tierLabel)}</Text>
                         </View>
                       )}
                     </ExpoLinearGradient>
@@ -2605,7 +2605,7 @@ export default function CommunityPage() {
                   {post.forum && (
                     <>
                       <Text style={[styles.metaDot, { color: colors.textTertiary }]}>•</Text>
-                      <Text style={[styles.forumText, { color: colors.textSecondary }]}>{post.forum.title}</Text>
+                      <Text style={[styles.forumText, { color: colors.textSecondary }]}>{t(post.forum.title)}</Text>
                     </>
                   )}
                 </View>
@@ -2946,7 +2946,7 @@ export default function CommunityPage() {
                     }}
                   >
                     <Ionicons name="chatbubble-outline" size={18} color="#B8860B" />
-                    <Text style={[styles.messageButtonText, { color: colors.primary }]}>Message</Text>
+                    <Text style={[styles.messageButtonText, { color: colors.primary }]}>{t('Message')}</Text>
                   </TouchableOpacity>
 
                   {/* More Options Button */}
@@ -2993,14 +2993,14 @@ export default function CommunityPage() {
                   }}
                 >
                   <Ionicons name="create-outline" size={18} color="#B8860B" />
-                  <Text style={[styles.editProfileButtonText, { color: colors.primary }]}>Edit Profile</Text>
+                  <Text style={[styles.editProfileButtonText, { color: colors.primary }]}>{t('Edit Profile')}</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             {/* User's Posts */}
             <View style={[styles.profilePostsSection, { backgroundColor: colors.background }]}>
-              <Text style={[styles.profilePostsTitle, { color: colors.text }]}>Posts</Text>
+              <Text style={[styles.profilePostsTitle, { color: colors.text }]}>{t('Posts')}</Text>
               
               {profileLoading ? (
                 <ActivityIndicator size="large" color="#B8860B" style={{ marginTop: 40 }} />
@@ -3081,7 +3081,7 @@ export default function CommunityPage() {
               ) : (
                 <View style={styles.noProfilePosts}>
                   <Ionicons name="document-text-outline" size={48} color={colors.textTertiary} />
-                  <Text style={[styles.noProfilePostsText, { color: colors.textSecondary }]}>No posts yet</Text>
+                  <Text style={[styles.noProfilePostsText, { color: colors.textSecondary }]}>{t('No posts yet')}</Text>
                 </View>
               )}
             </View>
@@ -3103,9 +3103,9 @@ export default function CommunityPage() {
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <View style={[styles.modalHeader, { backgroundColor: colors.background, borderBottomColor: isDark ? "transparent" : "#E5E5EA" }]}>
             <TouchableOpacity onPress={() => setCreatePostModal(false)}>
-              <Text style={styles.cancelButton}>Cancel</Text>
+              <Text style={styles.cancelButton}>{t('Cancel')}</Text>
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>New Post</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('New Post')}</Text>
             <TouchableOpacity
               onPress={handleCreatePost}
               disabled={posting || !newPostContent.trim()}
@@ -3117,7 +3117,7 @@ export default function CommunityPage() {
               {posting ? (
                 <ActivityIndicator size="small" color="#FFF" />
               ) : (
-                <Text style={styles.postButtonText}>Post</Text>
+                <Text style={styles.postButtonText}>{t('Post')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -3180,7 +3180,7 @@ export default function CommunityPage() {
                 {uploadingImage && (
                   <View style={styles.uploadingOverlay}>
                     <ActivityIndicator size="large" color="#FFF" />
-                    <Text style={styles.uploadingText}>Uploading...</Text>
+                    <Text style={styles.uploadingText}>{t('Uploading...')}</Text>
                   </View>
                 )}
               </View>
@@ -3202,7 +3202,7 @@ export default function CommunityPage() {
                 accessibilityRole="button"
                 accessibilityLabel={t('Add GIF')}
               >
-                <Text style={styles.gifButtonText}>GIF</Text>
+                <Text style={styles.gifButtonText}>{t('GIF')}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -3279,7 +3279,7 @@ export default function CommunityPage() {
             ) : searchQuery.length > 0 ? (
               <View style={styles.noResults}>
                 <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
-                <Text style={styles.noResultsText}>No results found</Text>
+                <Text style={styles.noResultsText}>{t('No results found')}</Text>
               </View>
             ) : null}
           </ScrollView>
@@ -3302,7 +3302,7 @@ export default function CommunityPage() {
             >
               <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Notifications</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('Notifications')}</Text>
             <View style={{ width: 28 }} />
           </View>
 
@@ -3310,7 +3310,7 @@ export default function CommunityPage() {
             {notificationsLoading ? (
               <View style={styles.emptyNotifications}>
                 <ActivityIndicator size="large" color="#B8860B" />
-                <Text style={[styles.emptyTitle, { marginTop: 12 }]}>Loading...</Text>
+                <Text style={[styles.emptyTitle, { marginTop: 12 }]}>{t('Loading...')}</Text>
               </View>
             ) : notifications.length > 0 ? (
               notifications.map((notif) => (
@@ -3326,10 +3326,10 @@ export default function CommunityPage() {
                       <Text style={styles.notificationUsername}>
                         {getDisplayName(notif.fromUser)}
                       </Text>
-                      {notif.type === 'like' && ' liked your post'}
-                      {notif.type === 'comment' && ' commented on your post'}
-                      {notif.type === 'follow' && ' started following you'}
-                      {notif.type === 'mention' && ' mentioned you'}
+                      {notif.type === 'like' && ' ' + t('liked your post')}
+                      {notif.type === 'comment' && ' ' + t('commented on your post')}
+                      {notif.type === 'follow' && ' ' + t('started following you')}
+                      {notif.type === 'mention' && ' ' + t('mentioned you')}
                     </Text>
                     <Text style={[styles.notificationTime, { color: colors.textTertiary }]}>{formatTimeAgo(notif.createdAt)}</Text>
                   </View>
@@ -3338,7 +3338,7 @@ export default function CommunityPage() {
             ) : (
               <View style={styles.emptyNotifications}>
                 <Ionicons name="notifications-outline" size={48} color={colors.textTertiary} />
-                <Text style={styles.emptyTitle}>No notifications</Text>
+                <Text style={styles.emptyTitle}>{t('No notifications')}</Text>
               </View>
             )}
           </ScrollView>
@@ -3365,7 +3365,7 @@ export default function CommunityPage() {
             >
               <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Comments</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{t('Comments')}</Text>
             <View style={{ width: 28 }} />
           </View>
 
@@ -3418,14 +3418,14 @@ export default function CommunityPage() {
                     <View style={styles.insightItem}>
                       <Ionicons name="eye-outline" size={16} color={colors.textSecondary} />
                       <Text style={[styles.insightText, { color: colors.textSecondary }]}>
-                        {postInsights.totalViews} {postInsights.totalViews === 1 ? 'view' : 'views'}
+                        {postInsights.totalViews} {postInsights.totalViews === 1 ? t('view') : t('views')}
                       </Text>
                     </View>
                     {postInsights.uniqueViewers > 0 && (
                       <View style={styles.insightItem}>
                         <Ionicons name="people-outline" size={16} color={colors.textSecondary} />
                         <Text style={[styles.insightText, { color: colors.textSecondary }]}>
-                          {postInsights.uniqueViewers} {postInsights.uniqueViewers === 1 ? 'viewer' : 'viewers'}
+                          {postInsights.uniqueViewers} {postInsights.uniqueViewers === 1 ? t('viewer') : t('viewers')}
                         </Text>
                       </View>
                     )}
@@ -3496,7 +3496,7 @@ export default function CommunityPage() {
               ))
             ) : (
               <View style={styles.noComments}>
-                <Text style={[styles.noCommentsText, { color: colors.textTertiary }]}>No comments yet. Be the first!</Text>
+                <Text style={[styles.noCommentsText, { color: colors.textTertiary }]}>{t('No comments yet. Be the first!')}</Text>
               </View>
             )}
           </ScrollView>
@@ -3572,7 +3572,7 @@ export default function CommunityPage() {
                 <View style={[styles.optionIconContainer, { backgroundColor: '#F6EEDA' }]}>
                   <Ionicons name="share-outline" size={20} color="#B8860B" />
                 </View>
-                <Text style={[styles.optionText, { color: colors.text }]}>Share Post</Text>
+                <Text style={[styles.optionText, { color: colors.text }]}>{t('Share Post')}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
@@ -3584,7 +3584,7 @@ export default function CommunityPage() {
                 <View style={[styles.optionIconContainer, { backgroundColor: '#E8EAF6' }]}>
                   <Ionicons name="link-outline" size={20} color="#5C6BC0" />
                 </View>
-                <Text style={[styles.optionText, { color: colors.text }]}>Copy Link</Text>
+                <Text style={[styles.optionText, { color: colors.text }]}>{t('Copy Link')}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
@@ -3596,7 +3596,7 @@ export default function CommunityPage() {
                 <View style={[styles.optionIconContainer, { backgroundColor: '#F5F5F5' }]}>
                   <Ionicons name="eye-off-outline" size={20} color="#757575" />
                 </View>
-                <Text style={[styles.optionText, { color: colors.text }]}>Not Interested</Text>
+                <Text style={[styles.optionText, { color: colors.text }]}>{t('Not Interested')}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
@@ -3611,7 +3611,7 @@ export default function CommunityPage() {
                 <View style={[styles.optionIconContainer, { backgroundColor: '#E8F5E9' }]}>
                   <Ionicons name="person-add-outline" size={20} color="#4CAF50" />
                 </View>
-                <Text style={[styles.optionText, { color: colors.text }]}>Follow @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
+                <Text style={[styles.optionText, { color: colors.text }]}>{t('Follow')} @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
@@ -3623,7 +3623,7 @@ export default function CommunityPage() {
                 <View style={[styles.optionIconContainer, { backgroundColor: '#FFF3E0' }]}>
                   <Ionicons name="volume-mute-outline" size={20} color="#FF9800" />
                 </View>
-                <Text style={[styles.optionText, { color: colors.text }]}>Mute @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
+                <Text style={[styles.optionText, { color: colors.text }]}>{t('Mute')} @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
@@ -3635,7 +3635,7 @@ export default function CommunityPage() {
                 <View style={[styles.optionIconContainer, { backgroundColor: '#FFEBEE' }]}>
                   <Ionicons name="ban-outline" size={20} color="#F44336" />
                 </View>
-                <Text style={[styles.optionText, { color: colors.text }]}>Block @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
+                <Text style={[styles.optionText, { color: colors.text }]}>{t('Block')} @{selectedPostForOptions?.user ? getUserHandle(selectedPostForOptions.user) : ''}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
@@ -3647,7 +3647,7 @@ export default function CommunityPage() {
                 <View style={[styles.optionIconContainer, { backgroundColor: '#FCE4EC' }]}>
                   <Ionicons name="flag-outline" size={20} color="#E91E63" />
                 </View>
-                <Text style={[styles.optionText, { color: '#E91E63' }]}>Report Post</Text>
+                <Text style={[styles.optionText, { color: '#E91E63' }]}>{t('Report Post')}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
@@ -3657,7 +3657,7 @@ export default function CommunityPage() {
               style={[styles.optionsCancelButton, { backgroundColor: colors.surface }]}
               onPress={() => setPostOptionsModal(false)}
             >
-              <Text style={[styles.optionsCancelText, { color: colors.primary }]}>Cancel</Text>
+              <Text style={[styles.optionsCancelText, { color: colors.primary }]}>{t('Cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -3701,7 +3701,7 @@ export default function CommunityPage() {
                 <View style={[styles.optionIconContainer, { backgroundColor: '#FFF3E0' }]}>
                   <Ionicons name="volume-mute-outline" size={20} color="#FF9800" />
                 </View>
-                <Text style={[styles.optionText, { color: colors.text }]}>Mute @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
+                <Text style={[styles.optionText, { color: colors.text }]}>{t('Mute')} @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
@@ -3713,7 +3713,7 @@ export default function CommunityPage() {
                 <View style={[styles.optionIconContainer, { backgroundColor: '#FFEBEE' }]}>
                   <Ionicons name="ban-outline" size={20} color="#F44336" />
                 </View>
-                <Text style={[styles.optionText, { color: colors.text }]}>Block @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
+                <Text style={[styles.optionText, { color: colors.text }]}>{t('Block')} @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
@@ -3725,7 +3725,7 @@ export default function CommunityPage() {
                 <View style={[styles.optionIconContainer, { backgroundColor: '#FCE4EC' }]}>
                   <Ionicons name="flag-outline" size={20} color="#E91E63" />
                 </View>
-                <Text style={[styles.optionText, { color: '#E91E63' }]}>Report Comment</Text>
+                <Text style={[styles.optionText, { color: '#E91E63' }]}>{t('Report Comment')}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
@@ -3735,7 +3735,7 @@ export default function CommunityPage() {
               style={[styles.optionsCancelButton, { backgroundColor: colors.surface }]}
               onPress={() => setCommentOptionsModal(false)}
             >
-              <Text style={[styles.optionsCancelText, { color: colors.primary }]}>Cancel</Text>
+              <Text style={[styles.optionsCancelText, { color: colors.primary }]}>{t('Cancel')}</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -3757,7 +3757,7 @@ export default function CommunityPage() {
             >
               <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
-            <Text style={styles.giphyTitle}>Choose a GIF</Text>
+            <Text style={styles.giphyTitle}>{t('Choose a GIF')}</Text>
             <View style={{ width: 28 }} />
           </View>
 
@@ -3807,7 +3807,7 @@ export default function CommunityPage() {
           )}
 
           <View style={styles.giphyAttribution}>
-            <Text style={styles.giphyAttributionText}>Powered by GIPHY</Text>
+            <Text style={styles.giphyAttributionText}>{t('Powered by GIPHY')}</Text>
           </View>
         </View>
       </Modal>
