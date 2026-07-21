@@ -2,7 +2,7 @@
   "expo": {
     "name": "wallstreetstocksapp",
     "slug": "wallstreetstocks-app",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "orientation": "portrait",
     "icon": "./assets/images/wallstreetstocks.png",
     "scheme": "wallstreetstocksapp",
@@ -132,9 +132,9 @@
           "image": "./assets/images/wallstreetstocks.png",
           "imageWidth": 250,
           "resizeMode": "contain",
-          "backgroundColor": "#EFEFEF",
+          "backgroundColor": "#0B1A2E",
           "dark": {
-            "backgroundColor": "#1a1a1a"
+            "backgroundColor": "#0B1A2E"
           }
         }
       ],
