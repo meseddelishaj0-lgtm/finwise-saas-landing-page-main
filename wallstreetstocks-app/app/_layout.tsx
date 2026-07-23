@@ -10,7 +10,12 @@ import Constants from "expo-constants";
 // OneSignal for push notifications
 let OneSignal: any = null;
 try {
-  OneSignal = require("react-native-onesignal").default;
+  // v5 SDK exports { OneSignal } as a NAMED export — there is no default.
+  // (".default" was v4; after the v5 upgrade it resolved to undefined, which
+  // silently disabled ALL JS-side OneSignal calls: login/external_id binding,
+  // tags, and the click listener — killing every per-user push app-wide.)
+  const osModule = require("react-native-onesignal");
+  OneSignal = osModule?.OneSignal ?? osModule?.default ?? null;
 } catch {
   // Module not available in Expo Go - will work in production builds
 }
@@ -62,20 +67,26 @@ let _pendingNotificationClick: any = null;
 let _notificationProcessor: ((event: any) => Promise<void>) | null = null;
 
 if (OneSignal && ONESIGNAL_APP_ID) {
-  OneSignal.initialize(ONESIGNAL_APP_ID);
+  try {
+    OneSignal.initialize(ONESIGNAL_APP_ID);
 
-  // Register click handler at module level so cold-start taps are never missed.
-  // preventDefault() stops OneSignal from opening any launchURL in Safari (legacy notifications).
-  OneSignal.Notifications.addEventListener('click', (event: any) => {
-    try { event.preventDefault(); } catch (_) {}
+    // Register click handler at module level so cold-start taps are never missed.
+    // preventDefault() stops OneSignal from opening any launchURL in Safari (legacy notifications).
+    OneSignal.Notifications.addEventListener('click', (event: any) => {
+      try { event.preventDefault(); } catch (_) {}
 
-    if (_notificationProcessor) {
-      _notificationProcessor(event);
-    } else {
-      // Router not ready yet (cold start) — queue for processing after mount
-      _pendingNotificationClick = event;
-    }
-  });
+      if (_notificationProcessor) {
+        _notificationProcessor(event);
+      } else {
+        // Router not ready yet (cold start) — queue for processing after mount
+        _pendingNotificationClick = event;
+      }
+    });
+  } catch (e) {
+    // Native module absent (Expo Go) — JS bridge stays inert; native init in
+    // AppDelegate still handles subscription in production builds.
+    console.warn('[OneSignal] JS bridge init failed:', e);
+  }
 }
 
 // Default symbols to stream - 24/7 crypto for always-live prices + popular stocks
@@ -223,11 +234,18 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!OneSignal) return;
     if (user?.id) {
-      OneSignal.login(user.id.toString());
-      OneSignal.User.addTags({
-        subscription_tier: currentTier || 'free',
-        user_id: user.id.toString(),
-      });
+      try {
+        // Binds this device to the user for per-user push targeting
+        // (external_id) — price alerts, DMs, social. Server sends via
+        // include_aliases { external_id } (src/lib/onesignal.ts).
+        OneSignal.login(user.id.toString());
+        OneSignal.User.addTags({
+          subscription_tier: currentTier || 'free',
+          user_id: user.id.toString(),
+        });
+      } catch (e) {
+        console.warn('[OneSignal] login/tags failed:', e);
+      }
     } else {
       // Signed out — unbind this device from the previous user's external_id so
       // it stops receiving their personal push (DMs, mentions, price alerts).

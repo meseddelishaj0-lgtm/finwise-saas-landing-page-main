@@ -12,7 +12,9 @@ import { useLanguage } from '@/context/LanguageContext';
 // OneSignal is a native module — absent in Expo Go, present in production builds
 let OneSignal: any = null;
 try {
-  OneSignal = require('react-native-onesignal').default;
+  // v5 SDK: named export { OneSignal }, no default (".default" broke on the v5 upgrade)
+  const osModule = require('react-native-onesignal');
+  OneSignal = osModule?.OneSignal ?? osModule?.default ?? null;
 } catch {}
 
 const PREFS_KEY = 'notifPrefs';

@@ -35,7 +35,9 @@ import StockLogo from '@/components/StockLogo';
 
 let OneSignal: any = null;
 try {
-  OneSignal = require('react-native-onesignal').default;
+  // v5 SDK: named export { OneSignal }, no default (".default" broke on the v5 upgrade)
+  const osModule = require('react-native-onesignal');
+  OneSignal = osModule?.OneSignal ?? osModule?.default ?? null;
 } catch {}
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
