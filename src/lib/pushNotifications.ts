@@ -29,6 +29,35 @@ export function categoryForType(type?: string): NotificationCategory | undefined
 }
 
 /**
+ * Drop user ids whose stored prefs mute the category — reads
+ * User.notificationPrefs, the SOURCE OF TRUTH (the app mirrors it to
+ * OneSignal tags, but tags lag until a device relaunches; the DB is instant
+ * and one query covers every recipient). Fails OPEN: a DB hiccup or missing
+ * prefs must never eat a notification.
+ */
+async function filterUserIdsByDbPrefs(
+  userIds: number[],
+  category: NotificationCategory
+): Promise<number[]> {
+  try {
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, notificationPrefs: true },
+    });
+    const muted = new Set<number>();
+    for (const u of users) {
+      const p = u.notificationPrefs as { master?: boolean; categories?: Record<string, boolean> } | null;
+      if (!p || typeof p !== 'object') continue; // never saved prefs → enabled
+      if (p.master === false || p.categories?.[category] === false) muted.add(u.id);
+    }
+    return userIds.filter((id) => !muted.has(id));
+  } catch (e) {
+    console.error('filterUserIdsByDbPrefs failed (failing open):', e);
+    return userIds;
+  }
+}
+
+/**
  * Send push notification to a single user (all their devices).
  */
 export async function sendPushNotificationToUser(
@@ -44,7 +73,14 @@ export async function sendPushNotificationToUser(
 ): Promise<void> {
   try {
     const category = options?.category ?? categoryForType(data?.type);
-    await sendToExternalUserIds([userId], title, body, data, { category });
+    if (category) {
+      // Mute check against the DB (source of truth) — one query, instant.
+      // Don't ALSO pass category to sendToExternalUserIds: that would redo
+      // the check via per-recipient OneSignal tag lookups (slower, staler).
+      const allowed = await filterUserIdsByDbPrefs([userId], category);
+      if (allowed.length === 0) return;
+    }
+    await sendToExternalUserIds([userId], title, body, data);
   } catch (error) {
     console.error('Error sending push notification to user:', error);
   }
@@ -118,10 +154,17 @@ export async function sendPushNotificationToWatchlistUsers(
       select: { userId: true },
     });
 
-    const userIds = [...new Set(watchlistEntries.map((w: { userId: number }) => w.userId))];
+    const allIds = [...new Set(watchlistEntries.map((w: { userId: number }) => w.userId))];
 
-    if (userIds.length === 0) {
+    if (allIds.length === 0) {
       console.log(`No users have ${ticker} in their watchlist`);
+      return { sent: 0, failed: 0, usersNotified: 0 };
+    }
+
+    // Mute check against the DB (source of truth) — one query for the whole
+    // audience instead of per-recipient OneSignal tag lookups.
+    const userIds = await filterUserIdsByDbPrefs(allIds, 'watchlist');
+    if (userIds.length === 0) {
       return { sent: 0, failed: 0, usersNotified: 0 };
     }
 
@@ -130,7 +173,7 @@ export async function sendPushNotificationToWatchlistUsers(
       title,
       body,
       { ...data, type: 'watchlist_alert', ticker },
-      { category: 'watchlist', ttl: options?.ttl, image: options?.image }
+      { ttl: options?.ttl, image: options?.image }
     );
 
     return { sent: result?.recipients ?? 0, failed: 0, usersNotified: userIds.length };
