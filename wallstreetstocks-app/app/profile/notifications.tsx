@@ -5,9 +5,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAuth } from '@/lib/auth';
+import { loadNotifPrefs, saveNotifPrefs } from '@/lib/notificationPrefs';
 
 // OneSignal is a native module — absent in Expo Go, present in production builds
 let OneSignal: any = null;
@@ -17,8 +18,9 @@ try {
   OneSignal = osModule?.OneSignal ?? osModule?.default ?? null;
 } catch {}
 
-const PREFS_KEY = 'notifPrefs';
-
+// Prefs are stored on the SERVER (User.notificationPrefs via
+// /api/user/notification-prefs) — survives reinstall/new device. AsyncStorage
+// is only a per-user cache; see lib/notificationPrefs.ts.
 // Tag keys must match the server (src/lib/onesignal.ts NotificationCategory):
 // tag `pref_<category>` = "off" mutes; removing the tag re-enables.
 interface CategoryDef {
@@ -48,6 +50,7 @@ export default function Notifications() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
+  const { user } = useAuth();
 
   const accent = isDark ? '#FFD60A' : '#B8860B';
   const [masterOn, setMasterOn] = useState(true);
@@ -55,28 +58,29 @@ export default function Notifications() {
     Object.fromEntries(ALL_KEYS.map((k) => [k, true]))
   );
 
-  // Load saved prefs + real OneSignal opt-in state
+  // Load prefs (server-first, per-user cache fallback) + real OneSignal opt-in
   useEffect(() => {
-    AsyncStorage.getItem(PREFS_KEY)
-      .then((raw) => {
-        if (!raw) return;
-        try {
-          const saved = JSON.parse(raw);
+    if (user?.id) {
+      loadNotifPrefs(user.id)
+        .then((saved) => {
+          if (!saved) return;
           if (saved.categories) setPrefs((prev) => ({ ...prev, ...saved.categories }));
           if (typeof saved.master === 'boolean') setMasterOn(saved.master);
-        } catch {}
-      })
-      .catch(() => {});
+        })
+        .catch(() => {});
+    }
     try {
       OneSignal?.User?.pushSubscription
         ?.getOptedInAsync?.()
         .then((opted: boolean) => setMasterOn(opted))
         .catch(() => {});
     } catch {}
-  }, []);
+  }, [user?.id]);
 
   const persist = (master: boolean, categories: Record<string, boolean>) => {
-    AsyncStorage.setItem(PREFS_KEY, JSON.stringify({ master, categories })).catch(() => {});
+    if (!user?.id) return;
+    // Per-user cache + server (User.notificationPrefs) — fire-and-forget.
+    saveNotifPrefs(user.id, { master, categories }).catch(() => {});
   };
 
   const toggleMaster = (value: boolean) => {

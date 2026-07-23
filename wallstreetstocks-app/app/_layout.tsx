@@ -6,7 +6,7 @@ import { View, StatusBar, Platform, AppState, LogBox } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants from "expo-constants";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { loadNotifPrefs, applyPrefsToOneSignal } from "@/lib/notificationPrefs";
 
 // OneSignal for push notifications
 let OneSignal: any = null;
@@ -245,25 +245,13 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
           user_id: user.id.toString(),
         });
 
-        // Re-sync saved notification prefs → OneSignal on every launch.
-        // Historically the JS bridge was dead (v5 default-export bug), so
-        // Settings toggles saved to AsyncStorage without ever reaching
-        // OneSignal — this heals those users' mutes/master switch. Key +
-        // shape must match app/profile/notifications.tsx (PREFS_KEY).
-        AsyncStorage.getItem('notifPrefs')
-          .then((raw) => {
-            if (!raw) return;
-            try {
-              const saved = JSON.parse(raw);
-              const categories: Record<string, boolean> = saved?.categories || {};
-              for (const [key, on] of Object.entries(categories)) {
-                if (on) OneSignal.User.removeTag(`pref_${key}`);
-                else OneSignal.User.addTag(`pref_${key}`, 'off');
-              }
-              if (saved?.master === false) {
-                OneSignal.User.pushSubscription?.optOut?.();
-              }
-            } catch {}
+        // Re-sync notification prefs → OneSignal on every launch, SERVER-first
+        // (User.notificationPrefs is the source of truth; AsyncStorage is only
+        // a per-user cache — survives reinstall/new device). Also seeds the
+        // server from the device for users whose prefs predate server storage.
+        loadNotifPrefs(user.id)
+          .then((prefs) => {
+            if (prefs) applyPrefsToOneSignal(OneSignal, prefs);
           })
           .catch(() => {});
       } catch (e) {

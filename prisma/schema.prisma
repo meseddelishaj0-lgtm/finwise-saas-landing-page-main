@@ -38,6 +38,10 @@ model User {
   referredBy            Int?           // ID of the user who referred this user
   referralPremiumDays   Int            @default(0) // Total premium days earned from referrals
   referralPremiumExpiry DateTime?      // When referral premium expires
+  // Notification preferences — SOURCE OF TRUTH for Settings → Notifications.
+  // Shape: { master: boolean, categories: { <category>: boolean } }.
+  // Device AsyncStorage is only a cache; OneSignal tags are derived from this.
+  notificationPrefs     Json?
   posts                 Post[]
   comments              Comment[]
   commentLikes          CommentLike[]  @relation("UserCommentLikes")
