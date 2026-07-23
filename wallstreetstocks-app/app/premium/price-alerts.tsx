@@ -37,6 +37,16 @@ interface PriceAlert {
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
+// Ticker autocomplete (same source as the screener's search)
+const FMP_BASE_URL = 'https://financialmodelingprep.com/api/v3';
+const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
+
+interface SymbolSuggestion {
+  symbol: string;
+  name: string;
+  exchangeShortName: string;
+}
+
 export default function PriceAlertsScreen() {
   const { subscribe: wsSubscribe } = useWebSocket();
   const { t } = useLanguage();
@@ -47,6 +57,49 @@ export default function PriceAlertsScreen() {
   const [newCondition, setNewCondition] = useState<'auto' | 'above' | 'below'>('auto');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [symbolResults, setSymbolResults] = useState<SymbolSuggestion[]>([]);
+  const [showSymbolResults, setShowSymbolResults] = useState(false);
+  const symbolSearchTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced ticker search for the Stock Symbol field
+  const searchSymbols = async (query: string) => {
+    try {
+      const res = await fetch(
+        `${FMP_BASE_URL}/search?query=${encodeURIComponent(query)}&limit=6&exchange=NYSE,NASDAQ,AMEX&apikey=${FMP_API_KEY}`
+      );
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setSymbolResults(
+          data.map((item: any) => ({
+            symbol: item.symbol,
+            name: item.name || item.symbol,
+            exchangeShortName: item.exchangeShortName || '',
+          }))
+        );
+        setShowSymbolResults(true);
+      }
+    } catch {
+      // Keep whatever was showing — never break typing on a network error
+    }
+  };
+
+  const handleSymbolChange = (text: string) => {
+    const upper = text.toUpperCase();
+    setNewSymbol(upper);
+    if (symbolSearchTimeout.current) clearTimeout(symbolSearchTimeout.current);
+    if (!upper.trim()) {
+      setSymbolResults([]);
+      setShowSymbolResults(false);
+      return;
+    }
+    symbolSearchTimeout.current = setTimeout(() => searchSymbols(upper.trim()), 300);
+  };
+
+  const handleSymbolSelect = (symbol: string) => {
+    setNewSymbol(symbol);
+    setSymbolResults([]);
+    setShowSymbolResults(false);
+  };
 
   // Price alerts are a free feature — no paywall gate.
 
@@ -396,10 +449,36 @@ export default function PriceAlertsScreen() {
                   placeholder={t('e.g., AAPL')}
                   placeholderTextColor="#8E8E93"
                   value={newSymbol}
-                  onChangeText={setNewSymbol}
+                  onChangeText={handleSymbolChange}
                   autoCapitalize="characters"
+                  autoCorrect={false}
                 />
               </View>
+
+              {/* Live ticker suggestions while typing */}
+              {showSymbolResults && symbolResults.length > 0 && (
+                <View style={styles.suggestionBox}>
+                  <ScrollView
+                    style={{ maxHeight: 150 }}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {symbolResults.map((item) => (
+                      <TouchableOpacity
+                        key={item.symbol}
+                        style={styles.suggestionRow}
+                        onPress={() => handleSymbolSelect(item.symbol)}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionSymbol}>{item.symbol}</Text>
+                          <Text style={styles.suggestionName} numberOfLines={1}>{item.name}</Text>
+                        </View>
+                        <Text style={styles.suggestionExchange}>{item.exchangeShortName}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
 
               <Text style={styles.inputLabel}>{t('Target Price')}</Text>
               <View style={styles.inputContainer}>
@@ -756,6 +835,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 20,
     gap: 8,
+  },
+  suggestionBox: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    marginTop: -12,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E5EA',
+    gap: 8,
+  },
+  suggestionSymbol: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#000',
+  },
+  suggestionName: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 1,
+  },
+  suggestionExchange: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#B8860B',
   },
   currencySymbol: {
     fontSize: 18,
