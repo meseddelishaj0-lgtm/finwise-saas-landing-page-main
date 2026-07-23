@@ -14,6 +14,8 @@ import {
   Alert,
   SafeAreaView,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -371,7 +373,12 @@ export default function PriceAlertsScreen() {
 
       {/* Create Alert Modal */}
       <Modal visible={showCreateModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        {/* Lift the bottom sheet above the keyboard — without this the
+            keyboard buried Target Price + the Create button. */}
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{t('Create Price Alert')}</Text>
@@ -477,7 +484,7 @@ export default function PriceAlertsScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
