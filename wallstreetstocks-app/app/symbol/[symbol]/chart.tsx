@@ -448,19 +448,25 @@ export default function ChartTab() {
   // ============================================================================
 
   const priceChange = useMemo(() => {
-    // Use chart's first data point as primary reference for 1D timeframe
-    // This matches the dashed baseline and is the correct regular session close
-    // API's previousClose may include after-hours which gives wrong results
+    // 1D: daily change vs the PREVIOUS REGULAR-SESSION CLOSE (the /quote
+    // previous_close — verified to match the provider's daily candles; it is
+    // NOT after-hours contaminated). Same convention as Yahoo/Robinhood and
+    // the home/watchlist rows. Deriving it from the chart's first bar hid
+    // overnight gaps: on an earnings gap-down the header showed only the
+    // intraday move (e.g. -7.9% while the stock was really -12.3% on the day).
+    // Other timeframes: change across the visible period (first bar).
     const price = livePrice ?? currentPrice;
     if (price === null) return { amount: 0, percent: 0 };
 
     const chartFirstPoint = liveChartData.length > 0 ? liveChartData[0]?.value : null;
-    const refPrice = chartFirstPoint || previousClose || price;
+    const refPrice = timeframe === '1D'
+      ? (previousClose || chartFirstPoint || price)
+      : (chartFirstPoint || previousClose || price);
     const amount = price - refPrice;
     const percent = refPrice > 0 ? (amount / refPrice) * 100 : 0;
 
     return { amount, percent };
-  }, [liveChartData, livePrice, currentPrice, previousClose]);
+  }, [liveChartData, livePrice, currentPrice, previousClose, timeframe]);
 
   const isPositive = priceChange.amount >= 0;
   const priceColor = isPositive ? '#00C853' : '#FF3B30';
@@ -469,12 +475,24 @@ export default function ChartTab() {
   // Y-AXIS BOUNDS
   // ============================================================================
 
+  // On 1D the dashed baseline sits at the previous close — keep it in view
+  // even when a gap day puts it outside the session's trading range.
+  const baselineValue = useMemo(() => {
+    const first = liveChartData.length > 0 ? liveChartData[0]?.value : 0;
+    if (timeframe === '1D' && previousClose && previousClose > 0) return previousClose;
+    return first || 0;
+  }, [liveChartData, timeframe, previousClose]);
+
   const yAxisBounds = useMemo(() => {
     if (liveChartData.length === 0) return { min: 0, max: 100 };
 
     const values = liveChartData.map(d => d.value);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
+    let min = Math.min(...values);
+    let max = Math.max(...values);
+    if (baselineValue > 0) {
+      min = Math.min(min, baselineValue);
+      max = Math.max(max, baselineValue);
+    }
     const range = max - min;
     const padding = range * 0.1 || max * 0.05;
 
@@ -482,7 +500,7 @@ export default function ChartTab() {
       min: Math.max(0, min - padding),
       max: max + padding,
     };
-  }, [liveChartData]);
+  }, [liveChartData, baselineValue]);
 
   const chartSpacing = useMemo(() => {
     if (liveChartData.length <= 1) return 10;
@@ -508,10 +526,13 @@ export default function ChartTab() {
       }
 
       if (price > 0) {
-        // Use chart first data point as the best reference (regular session close)
-        // Twelve Data's previous_close may include after-hours for some stocks
+        // Daily change vs the API's previous_close — the official prior
+        // regular-session close. The chart's first bar is only a FALLBACK:
+        // using it as primary hid overnight gaps and published a wrong
+        // previousClose into the shared priceStore, which made the
+        // home/watchlist %s flip after visiting this screen.
         const chartFirstPoint = rawChartDataRef.current.length > 0 ? rawChartDataRef.current[0]?.value : 0;
-        const refPrice = chartFirstPoint > 0 ? chartFirstPoint : (prevClose > 0 ? prevClose : price);
+        const refPrice = prevClose > 0 ? prevClose : (chartFirstPoint > 0 ? chartFirstPoint : price);
         const change = price - refPrice;
         const changePercent = refPrice > 0 ? (change / refPrice) * 100 : 0;
 
@@ -895,10 +916,10 @@ export default function ChartTab() {
             </View>
           ) : liveChartData.length > 1 ? (
             <View style={styles.chartInner}>
-              {/* Baseline - First price of the period */}
+              {/* Baseline — previous close on 1D, first price of the period otherwise */}
               <View style={[
                 styles.baselineLine,
-                { top: CHART_HEIGHT * (1 - (liveChartData[0].value - yAxisBounds.min) / (yAxisBounds.max - yAxisBounds.min)) },
+                { top: CHART_HEIGHT * (1 - (baselineValue - yAxisBounds.min) / (yAxisBounds.max - yAxisBounds.min)) },
               ]}>
                 <View style={styles.dottedLineContainer}>
                   {Array.from({ length: Math.floor((SCREEN_WIDTH - 60) / 8) }).map((_, i) => (
@@ -906,7 +927,7 @@ export default function ChartTab() {
                   ))}
                 </View>
                 <View style={styles.baselineLabel}>
-                  <Text style={styles.baselineLabelText}>${liveChartData[0].value.toFixed(2)}</Text>
+                  <Text style={styles.baselineLabelText}>${baselineValue.toFixed(2)}</Text>
                 </View>
               </View>
 
