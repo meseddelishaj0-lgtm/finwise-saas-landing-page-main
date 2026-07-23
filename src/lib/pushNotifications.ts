@@ -108,7 +108,8 @@ export async function sendPushNotificationToWatchlistUsers(
   ticker: string,
   title: string,
   body: string,
-  data?: Record<string, any>
+  data?: Record<string, any>,
+  options?: { ttl?: number; image?: string }
 ): Promise<{ sent: number; failed: number; usersNotified: number }> {
   try {
     // Find users who have this ticker in their watchlist
@@ -129,7 +130,7 @@ export async function sendPushNotificationToWatchlistUsers(
       title,
       body,
       { ...data, type: 'watchlist_alert', ticker },
-      { category: 'watchlist' }
+      { category: 'watchlist', ttl: options?.ttl, image: options?.image }
     );
 
     return { sent: result?.recipients ?? 0, failed: 0, usersNotified: userIds.length };

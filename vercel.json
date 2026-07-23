@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/daily-recap",
       "schedule": "30 21 * * 1-5"
+    },
+    {
+      "path": "/api/cron/watchlist-news",
+      "schedule": "45 13,15,17,19,21 * * 1-5"
     }
   ]
 }

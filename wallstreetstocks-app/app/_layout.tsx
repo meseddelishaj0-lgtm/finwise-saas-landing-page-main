@@ -6,6 +6,7 @@ import { View, StatusBar, Platform, AppState, LogBox } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // OneSignal for push notifications
 let OneSignal: any = null;
@@ -243,6 +244,28 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
           subscription_tier: currentTier || 'free',
           user_id: user.id.toString(),
         });
+
+        // Re-sync saved notification prefs → OneSignal on every launch.
+        // Historically the JS bridge was dead (v5 default-export bug), so
+        // Settings toggles saved to AsyncStorage without ever reaching
+        // OneSignal — this heals those users' mutes/master switch. Key +
+        // shape must match app/profile/notifications.tsx (PREFS_KEY).
+        AsyncStorage.getItem('notifPrefs')
+          .then((raw) => {
+            if (!raw) return;
+            try {
+              const saved = JSON.parse(raw);
+              const categories: Record<string, boolean> = saved?.categories || {};
+              for (const [key, on] of Object.entries(categories)) {
+                if (on) OneSignal.User.removeTag(`pref_${key}`);
+                else OneSignal.User.addTag(`pref_${key}`, 'off');
+              }
+              if (saved?.master === false) {
+                OneSignal.User.pushSubscription?.optOut?.();
+              }
+            } catch {}
+          })
+          .catch(() => {});
       } catch (e) {
         console.warn('[OneSignal] login/tags failed:', e);
       }
