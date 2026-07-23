@@ -3225,7 +3225,7 @@ export default function CommunityPage() {
             >
               <Ionicons name="arrow-back" size={26} color={colors.text} />
             </TouchableOpacity>
-            <View style={styles.searchInputContainer}>
+            <View style={[styles.searchInputContainer, { backgroundColor: isDark ? colors.surface : '#F2F2F7' }]}>
               <Ionicons name="search" size={18} color={colors.textTertiary} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
@@ -3757,14 +3757,14 @@ export default function CommunityPage() {
             >
               <Ionicons name="close" size={28} color={colors.text} />
             </TouchableOpacity>
-            <Text style={styles.giphyTitle}>{t('Choose a GIF')}</Text>
+            <Text style={[styles.giphyTitle, { color: colors.text }]}>{t('Choose a GIF')}</Text>
             <View style={{ width: 28 }} />
           </View>
 
-          <View style={styles.giphySearchContainer}>
+          <View style={[styles.giphySearchContainer, { backgroundColor: isDark ? colors.surface : '#F2F2F7' }]}>
             <Ionicons name="search" size={18} color={colors.textTertiary} />
             <TextInput
-              style={styles.giphySearchInput}
+              style={[styles.giphySearchInput, { color: colors.text }]}
               placeholder={t('Search GIFs...')}
               placeholderTextColor={colors.textTertiary}
               value={giphySearch}
