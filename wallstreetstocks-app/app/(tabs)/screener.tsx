@@ -1428,11 +1428,11 @@ export default function Screener() {
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.headerButton} onPress={() => setShowAllFilters(true)}>
             <Ionicons name="options" size={24} color={colors.text} />
-            {activeFilterCount > 0 && <View style={[styles.headerBadge, { backgroundColor: colors.primary }]}><Text style={styles.headerBadgeText}>{activeFilterCount}</Text></View>}
+            {activeFilterCount > 0 && <View style={[styles.headerBadge, { backgroundColor: colors.primary }]}><Text style={[styles.headerBadgeText, { color: isDark ? '#000' : '#FFF' }]}>{activeFilterCount}</Text></View>}
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={handleBookmarkPress}>
             <Ionicons name={savedPresets.length > 0 ? "bookmark" : "bookmark-outline"} size={24} color={savedPresets.length > 0 ? colors.primary : colors.text} />
-            {savedPresets.length > 0 && <View style={[styles.headerBadge, { backgroundColor: colors.primary }]}><Text style={styles.headerBadgeText}>{savedPresets.length}</Text></View>}
+            {savedPresets.length > 0 && <View style={[styles.headerBadge, { backgroundColor: colors.primary }]}><Text style={[styles.headerBadgeText, { color: isDark ? '#000' : '#FFF' }]}>{savedPresets.length}</Text></View>}
           </TouchableOpacity>
         </View>
       </View>
