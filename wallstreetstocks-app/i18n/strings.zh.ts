@@ -2223,5 +2223,7 @@ const strings: Record<string, string> = {
   "Failed to delete comment": "删除评论失败",
   "Repost": "转发",
   "Please log in to repost": "登录后即可转发",
+  "Reposts": "转发",
+  "No reposts yet": "还没有转发",
 };
 export default strings;

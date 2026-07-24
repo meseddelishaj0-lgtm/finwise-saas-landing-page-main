@@ -9,6 +9,46 @@ import { sendPushNotificationToUser, NotificationMessages } from "@/lib/pushNoti
 
 export const dynamic = "force-dynamic";
 
+// GET /api/reposts?userId=123 — the posts this user has reposted (newest
+// repost first), shaped like feed posts for the profile "Reposts" tab.
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const userIdParam = searchParams.get("userId");
+    if (!userIdParam) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
+    }
+
+    const reposts = await prisma.repost.findMany({
+      where: { userId: parseInt(userIdParam, 10) },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        post: {
+          include: {
+            user: { select: { id: true, name: true, username: true, profileImage: true, subscriptionTier: true, isVerified: true } },
+            tickerMentions: { select: { ticker: true } },
+            _count: { select: { likes: true, comments: true, reposts: true } },
+          },
+        },
+      },
+    });
+
+    const posts = reposts
+      .filter((r) => r.post)
+      .map((r) => ({
+        ...r.post,
+        ticker: r.post.tickerMentions?.[0]?.ticker ?? null,
+        repostedAt: r.createdAt,
+      }));
+
+    return NextResponse.json({ posts });
+  } catch (err) {
+    console.error("❌ Error listing reposts:", err);
+    return NextResponse.json({ error: "Failed to load reposts" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { postId, userId } = await req.json();

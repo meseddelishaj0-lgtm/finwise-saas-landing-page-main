@@ -2223,5 +2223,7 @@ const strings: Record<string, string> = {
   "Failed to delete comment": "Αποτυχία διαγραφής σχολίου",
   "Repost": "Αναδημοσίευση",
   "Please log in to repost": "Συνδεθείτε για αναδημοσίευση",
+  "Reposts": "Αναδημοσιεύσεις",
+  "No reposts yet": "Καμία αναδημοσίευση ακόμα",
 };
 export default strings;

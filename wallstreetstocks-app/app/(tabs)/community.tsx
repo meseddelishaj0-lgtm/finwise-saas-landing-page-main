@@ -576,6 +576,8 @@ export default function CommunityPage() {
   // Profile State
   const [selectedProfile, setSelectedProfile] = useState<UserProfile | null>(null);
   const [profilePosts, setProfilePosts] = useState<Post[]>([]);
+  const [profileReposts, setProfileReposts] = useState<Post[]>([]);
+  const [profileTab, setProfileTab] = useState<'posts' | 'reposts'>('posts');
   const [profileLoading, setProfileLoading] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   
@@ -819,6 +821,14 @@ export default function CommunityPage() {
   // Profile functions
   const handleOpenProfile = async (user: User) => {
     if (!user?.id) return;
+
+    // Reposts tab: reset + fetch in parallel for any profile
+    setProfileTab('posts');
+    setProfileReposts([]);
+    fetch(`https://www.wallstreetstocks.ai/api/reposts?userId=${user.id}`)
+      .then(r => (r.ok ? r.json() : { posts: [] }))
+      .then(d => setProfileReposts(d?.posts || []))
+      .catch(() => {});
 
     const currentUserId = getUserId();
     const isOwnProfile = user.id === currentUserId;
@@ -3135,12 +3145,38 @@ export default function CommunityPage() {
 
             {/* User's Posts */}
             <View style={[styles.profilePostsSection, { backgroundColor: colors.background }]}>
-              <Text style={[styles.profilePostsTitle, { color: colors.text }]}>{t('Posts')}</Text>
-              
+              <View style={styles.profileTabsRow}>
+                {(['posts', 'reposts'] as const).map((tab) => (
+                  <TouchableOpacity
+                    key={tab}
+                    onPress={() => setProfileTab(tab)}
+                    style={[
+                      styles.profileTabPill,
+                      { backgroundColor: colors.surface },
+                      profileTab === tab && { backgroundColor: isDark ? 'rgba(255, 214, 10,0.15)' : '#F6EEDA' },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t(tab === 'posts' ? 'Posts' : 'Reposts')}
+                  >
+                    {tab === 'reposts' && (
+                      <Ionicons name="repeat" size={15} color={profileTab === tab ? (isDark ? '#FFD60A' : '#B8860B') : colors.textTertiary} />
+                    )}
+                    <Text
+                      style={[
+                        styles.profileTabPillText,
+                        { color: profileTab === tab ? (isDark ? '#FFD60A' : '#B8860B') : colors.textSecondary },
+                      ]}
+                    >
+                      {t(tab === 'posts' ? 'Posts' : 'Reposts')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               {profileLoading ? (
                 <ActivityIndicator size="large" color="#B8860B" style={{ marginTop: 40 }} />
-              ) : profilePosts.length > 0 ? (
-                profilePosts.map((post) => (
+              ) : (profileTab === 'posts' ? profilePosts : profileReposts).length > 0 ? (
+                (profileTab === 'posts' ? profilePosts : profileReposts).map((post) => (
                   <TouchableOpacity 
                     key={post.id} 
                     style={styles.profilePostCard}
@@ -3150,6 +3186,12 @@ export default function CommunityPage() {
                     }}
                     activeOpacity={0.7}
                   >
+                    {profileTab === 'reposts' && post.user && (
+                      <View style={styles.repostByline}>
+                        <Ionicons name="repeat" size={13} color="#00C853" />
+                        <Text style={[styles.repostBylineText, { color: colors.textTertiary }]}>@{getUserHandle(post.user)}</Text>
+                      </View>
+                    )}
                     {post.ticker && (
                       <View style={styles.profilePostTicker}>
                         <Text style={styles.tickerText}>${post.ticker}</Text>
@@ -3215,8 +3257,10 @@ export default function CommunityPage() {
                 ))
               ) : (
                 <View style={styles.noProfilePosts}>
-                  <Ionicons name="document-text-outline" size={48} color={colors.textTertiary} />
-                  <Text style={[styles.noProfilePostsText, { color: colors.textSecondary }]}>{t('No posts yet')}</Text>
+                  <Ionicons name={profileTab === 'posts' ? 'document-text-outline' : 'repeat'} size={48} color={colors.textTertiary} />
+                  <Text style={[styles.noProfilePostsText, { color: colors.textSecondary }]}>
+                    {t(profileTab === 'posts' ? 'No posts yet' : 'No reposts yet')}
+                  </Text>
                 </View>
               )}
             </View>
@@ -4732,6 +4776,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#B8860B',
+  },
+  profileTabsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  profileTabPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
+  },
+  profileTabPillText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  repostByline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 4,
+  },
+  repostBylineText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   profilePostsSection: {
     backgroundColor: '#FFF',

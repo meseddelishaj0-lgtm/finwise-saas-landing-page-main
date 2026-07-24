@@ -2223,5 +2223,7 @@ const strings: Record<string, string> = {
   "Failed to delete comment": "Échec de la suppression du commentaire",
   "Repost": "Republier",
   "Please log in to repost": "Connectez-vous pour republier",
+  "Reposts": "Republications",
+  "No reposts yet": "Aucune republication pour le moment",
 };
 export default strings;

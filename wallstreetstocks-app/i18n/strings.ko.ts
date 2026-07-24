@@ -2221,5 +2221,7 @@ const strings: Record<string, string> = {
   "Failed to delete comment": "댓글 삭제에 실패했습니다",
   "Repost": "리포스트",
   "Please log in to repost": "리포스트하려면 로그인하세요",
+  "Reposts": "리포스트",
+  "No reposts yet": "아직 리포스트가 없습니다",
 };
 export default strings;

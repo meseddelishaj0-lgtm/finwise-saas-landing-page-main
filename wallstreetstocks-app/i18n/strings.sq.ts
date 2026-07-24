@@ -2223,5 +2223,7 @@ const strings: Record<string, string> = {
   "Failed to delete comment": "Fshirja e komentit dështoi",
   "Repost": "Riposto",
   "Please log in to repost": "Hyr për të ripostuar",
+  "Reposts": "Ripostime",
+  "No reposts yet": "Ende pa ripostime",
 };
 export default strings;

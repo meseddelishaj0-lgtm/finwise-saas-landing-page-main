@@ -2221,5 +2221,7 @@ const strings: Record<string, string> = {
   "Failed to delete comment": "فشل حذف التعليق",
   "Repost": "إعادة نشر",
   "Please log in to repost": "سجّل الدخول لإعادة النشر",
+  "Reposts": "إعادات النشر",
+  "No reposts yet": "لا توجد إعادات نشر بعد",
 };
 export default strings;

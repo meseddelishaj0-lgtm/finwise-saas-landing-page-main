@@ -2223,5 +2223,7 @@ const strings: Record<string, string> = {
   "Failed to delete comment": "Yorum silinemedi",
   "Repost": "Yeniden Paylaş",
   "Please log in to repost": "Yeniden paylaşmak için giriş yapın",
+  "Reposts": "Yeniden Paylaşımlar",
+  "No reposts yet": "Henüz yeniden paylaşım yok",
 };
 export default strings;

@@ -2221,5 +2221,7 @@ const strings: Record<string, string> = {
   "Failed to delete comment": "コメントを削除できませんでした",
   "Repost": "リポスト",
   "Please log in to repost": "リポストするにはログインしてください",
+  "Reposts": "リポスト",
+  "No reposts yet": "リポストはまだありません",
 };
 export default strings;
