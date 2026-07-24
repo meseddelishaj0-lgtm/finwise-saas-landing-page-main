@@ -2214,5 +2214,7 @@ const strings: Record<string, string> = {
   "📊 Basic": "📊 基础",
   "🔍 All": "🔍 全部",
   "🚀 Growth": "🚀 成长",
+  "Saved Filters": "已保存的筛选器",
+  "No Saved Filters": "没有已保存的筛选器",
 };
 export default strings;

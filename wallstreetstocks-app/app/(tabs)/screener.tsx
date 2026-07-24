@@ -1772,7 +1772,7 @@ export default function Screener() {
         <View style={styles.savedPresetsOverlay}>
           <View style={[styles.savedPresetsContainer, { backgroundColor: colors.background }]}>
             <View style={styles.savedPresetsHeader}>
-              <Text style={[styles.savedPresetsTitle, { color: colors.text }]}>{t('Saved Presets')}</Text>
+              <Text style={[styles.savedPresetsTitle, { color: colors.text }]}>{t('Saved Filters')}</Text>
               <TouchableOpacity onPress={() => setShowSavedPresetsModal(false)}>
                 <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
@@ -1807,7 +1807,7 @@ export default function Screener() {
             ) : savedPresets.length === 0 ? (
               <View style={styles.noPresetsContainer}>
                 <Ionicons name="bookmark-outline" size={64} color="#CCC" />
-                <Text style={styles.noPresetsTitle}>{t('No Saved Presets')}</Text>
+                <Text style={styles.noPresetsTitle}>{t('No Saved Filters')}</Text>
                 <Text style={styles.noPresetsText}>
                   {activeFilterCount > 0
                     ? t('Tap "Save Current Filters" to save your first preset')

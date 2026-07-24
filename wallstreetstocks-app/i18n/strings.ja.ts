@@ -2212,5 +2212,7 @@ const strings: Record<string, string> = {
   "📊 Basic": "📊 基本",
   "🔍 All": "🔍 すべて",
   "🚀 Growth": "🚀 成長",
+  "Saved Filters": "保存済みフィルター",
+  "No Saved Filters": "保存済みフィルターはありません",
 };
 export default strings;

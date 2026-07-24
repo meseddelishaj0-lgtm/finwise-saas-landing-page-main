@@ -2212,5 +2212,7 @@ const strings: Record<string, string> = {
   "📊 Basic": "📊 기본",
   "🔍 All": "🔍 전체",
   "🚀 Growth": "🚀 성장",
+  "Saved Filters": "저장된 필터",
+  "No Saved Filters": "저장된 필터 없음",
 };
 export default strings;

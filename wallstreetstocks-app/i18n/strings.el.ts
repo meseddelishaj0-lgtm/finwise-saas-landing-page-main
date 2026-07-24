@@ -2214,5 +2214,7 @@ const strings: Record<string, string> = {
   "📊 Basic": "📊 Βασικά",
   "🔍 All": "🔍 Όλα",
   "🚀 Growth": "🚀 Ανάπτυξη",
+  "Saved Filters": "Αποθηκευμένα Φίλτρα",
+  "No Saved Filters": "Δεν υπάρχουν αποθηκευμένα φίλτρα",
 };
 export default strings;

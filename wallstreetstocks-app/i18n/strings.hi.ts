@@ -2212,5 +2212,7 @@ const strings: Record<string, string> = {
   "📊 Basic": "📊 बुनियादी",
   "🔍 All": "🔍 सभी",
   "🚀 Growth": "🚀 वृद्धि",
+  "Saved Filters": "सहेजे गए फ़िल्टर",
+  "No Saved Filters": "कोई सहेजा गया फ़िल्टर नहीं",
 };
 export default strings;
