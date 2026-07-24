@@ -194,6 +194,16 @@ const createComment = async (postId: string | number, content: string, userId: n
   return response.json();
 };
 
+const repostPost = async (postId: string | number, userId: number): Promise<{ reposted: boolean; repostsCount?: number }> => {
+  const response = await fetch(`${API_BASE}/api/reposts`, {
+    method: 'POST',
+    headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ postId: Number(postId), userId }),
+  });
+  if (!response.ok) throw new Error('Failed to repost');
+  return response.json();
+};
+
 const likePost = async (postId: string, userId: number): Promise<{ liked: boolean; likesCount?: number }> => {
   try {
     const response = await fetch(`${API_BASE}/api/likes`, {
@@ -486,7 +496,9 @@ interface Post {
     slug: string;
   };
   forumId?: number;
+  isReposted?: boolean;
   _count?: {
+    reposts?: number;
     comments: number;
     likes: number;
   };
@@ -1575,6 +1587,57 @@ export default function CommunityPage() {
       Alert.alert(t('Error'), error?.message || t('Failed to add comment'));
     } finally {
       setCommenting(false);
+    }
+  };
+
+  // Repost toggle — optimistic, mirrors handleLikePost
+  const handleRepostPost = async (postId: number) => {
+    const userId = getUserId();
+    if (!userId) {
+      Alert.alert(t('Error'), t('Please log in to repost'));
+      return;
+    }
+    const current = posts.find(p => p.id === postId);
+    if (!current) return;
+    const newState = !current.isReposted;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setPosts(prev =>
+      prev.map(p =>
+        p.id === postId
+          ? {
+              ...p,
+              isReposted: newState,
+              _count: {
+                ...(p._count || { comments: 0, likes: 0 }),
+                reposts: Math.max(0, (p._count?.reposts ?? 0) + (newState ? 1 : -1)),
+              },
+            }
+          : p
+      )
+    );
+
+    try {
+      const result = await repostPost(postId, userId);
+      // Reconcile with the server's authoritative count
+      setPosts(prev =>
+        prev.map(p =>
+          p.id === postId
+            ? {
+                ...p,
+                isReposted: result.reposted,
+                _count: { ...(p._count || { comments: 0, likes: 0 }), reposts: result.repostsCount ?? p._count?.reposts ?? 0 },
+              }
+            : p
+        )
+      );
+    } catch {
+      // Roll back on failure
+      setPosts(prev =>
+        prev.map(p =>
+          p.id === postId ? { ...p, isReposted: current.isReposted, _count: current._count } : p
+        )
+      );
     }
   };
 
@@ -2807,6 +2870,22 @@ export default function CommunityPage() {
               >
                 <Ionicons name="chatbubble-outline" size={20} color={colors.textTertiary} />
                 <Text style={[styles.actionText, { color: colors.textSecondary }]}>{post._count?.comments || 0}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.actionButton]}
+                onPress={() => handleRepostPost(post.id)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Repost')}
+              >
+                <Ionicons
+                  name="repeat"
+                  size={22}
+                  color={post.isReposted ? "#00C853" : "#8E8E93"}
+                />
+                <Text style={[styles.actionText, post.isReposted && { color: '#00C853', fontWeight: '600' }]}>
+                  {post._count?.reposts || 0}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity

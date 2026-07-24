@@ -2219,5 +2219,7 @@ const strings: Record<string, string> = {
   "Delete Comment": "댓글 삭제",
   "Are you sure you want to delete this comment?": "이 댓글을 삭제하시겠습니까?",
   "Failed to delete comment": "댓글 삭제에 실패했습니다",
+  "Repost": "리포스트",
+  "Please log in to repost": "리포스트하려면 로그인하세요",
 };
 export default strings;

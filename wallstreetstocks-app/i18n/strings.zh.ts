@@ -2221,5 +2221,7 @@ const strings: Record<string, string> = {
   "Delete Comment": "删除评论",
   "Are you sure you want to delete this comment?": "确定要删除这条评论吗？",
   "Failed to delete comment": "删除评论失败",
+  "Repost": "转发",
+  "Please log in to repost": "登录后即可转发",
 };
 export default strings;

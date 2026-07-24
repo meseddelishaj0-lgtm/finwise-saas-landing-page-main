@@ -2219,5 +2219,7 @@ const strings: Record<string, string> = {
   "Delete Comment": "コメントを削除",
   "Are you sure you want to delete this comment?": "このコメントを削除してもよろしいですか？",
   "Failed to delete comment": "コメントを削除できませんでした",
+  "Repost": "リポスト",
+  "Please log in to repost": "リポストするにはログインしてください",
 };
 export default strings;

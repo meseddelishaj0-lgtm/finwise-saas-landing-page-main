@@ -17,6 +17,7 @@ const CATEGORY_BY_TYPE: Record<string, NotificationCategory> = {
   reply: 'social',
   follow: 'social',
   mention: 'social',
+  repost: 'social',
   message: 'messages',
   price_alert: 'price_alerts',
   watchlist_alert: 'watchlist',
@@ -109,6 +110,10 @@ export const NotificationMessages = {
   mention: (actorName: string) => ({
     title: 'You were mentioned',
     body: `${actorName} mentioned you in a post`,
+  }),
+  repost: (actorName: string) => ({
+    title: 'New Repost',
+    body: `${actorName} reposted your post`,
   }),
   message: (senderName: string, preview?: string) => ({
     title: senderName,

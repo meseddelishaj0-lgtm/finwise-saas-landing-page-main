@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
       where,
       include: {
         forum: { select: { id: true, title: true, slug: true } },
-        _count: { select: { comments: true, likes: true, sentiments: true } },
+        _count: { select: { comments: true, likes: true, sentiments: true, reposts: true } },
         tickerMentions: { select: { ticker: true } },
         sentiments: currentUserId ? {
           where: { userId: parseInt(currentUserId, 10) },
@@ -110,6 +110,19 @@ export async function GET(req: NextRequest) {
       userLikes.forEach(l => l.postId && userLikedPostIds.add(l.postId));
     }
 
+    // Viewer's reposts (same pattern as likes)
+    const userRepostedPostIds = new Set<number>();
+    if (currentUserId) {
+      const userReposts = await freshPrisma.repost.findMany({
+        where: {
+          userId: parseInt(currentUserId, 10),
+          postId: { in: postsWithUsers.map(p => p.id) },
+        },
+        select: { postId: true },
+      });
+      userReposts.forEach(r => userRepostedPostIds.add(r.postId));
+    }
+
     // Sentiment split (bullish/bearish) for ALL posts in ONE grouped query,
     // rather than a per-post groupBy (was an N+1 over an unbounded post set).
     const pageIds = postsWithUsers.map(p => p.id);
@@ -135,6 +148,7 @@ export async function GET(req: NextRequest) {
         ...post,
         tickers: post.tickerMentions.map(tm => tm.ticker),
         isLiked: userLikedPostIds.has(post.id),
+        isReposted: userRepostedPostIds.has(post.id),
         sentiment: {
           bullish: s.bullish,
           bearish: s.bearish,

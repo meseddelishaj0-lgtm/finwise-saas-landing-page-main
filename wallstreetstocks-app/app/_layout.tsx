@@ -169,6 +169,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
         case 'comment':
         case 'mention':
         case 'reply':
+        case 'repost':
           if (data.postId != null) {
             router.push({
               pathname: '/(tabs)/community',

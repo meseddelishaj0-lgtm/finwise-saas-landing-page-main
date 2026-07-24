@@ -2221,5 +2221,7 @@ const strings: Record<string, string> = {
   "Delete Comment": "Διαγραφή σχολίου",
   "Are you sure you want to delete this comment?": "Σίγουρα θέλετε να διαγράψετε αυτό το σχόλιο;",
   "Failed to delete comment": "Αποτυχία διαγραφής σχολίου",
+  "Repost": "Αναδημοσίευση",
+  "Please log in to repost": "Συνδεθείτε για αναδημοσίευση",
 };
 export default strings;

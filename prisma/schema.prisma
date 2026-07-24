@@ -60,6 +60,7 @@ model User {
   blockedBy             Block[]        @relation("BlockedRelation")
   blockedUsers          Block[]        @relation("BlockerRelation")
   sentiments            Sentiment[]
+  reposts               Repost[]
   mentionedIn           Mention[]      @relation("MentionedUser")
   watchlist             WatchlistItem[]
   deviceTokens          DeviceToken[]
@@ -102,6 +103,7 @@ model Post {
   notifications Notification[]
   reports       Report[]
   sentiments    Sentiment[]
+  reposts       Repost[]
   tickerMentions TickerMention[]
   mentions      Mention[]
   views         PostView[]
@@ -275,6 +277,20 @@ model Block {
   blocked    User     @relation("BlockedRelation", fields: [blockedId], references: [id])
 
   @@unique([blockerId, blockedId], name: "blockerId_blockedId")
+}
+
+// Reposts — retweet-style signal boost on a post
+model Repost {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
 }
 
 // Sentiment voting (Bullish/Bearish like StockTwits)

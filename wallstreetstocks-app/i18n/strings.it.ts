@@ -2221,5 +2221,7 @@ const strings: Record<string, string> = {
   "Delete Comment": "Elimina commento",
   "Are you sure you want to delete this comment?": "Vuoi davvero eliminare questo commento?",
   "Failed to delete comment": "Impossibile eliminare il commento",
+  "Repost": "Repost",
+  "Please log in to repost": "Accedi per fare un repost",
 };
 export default strings;

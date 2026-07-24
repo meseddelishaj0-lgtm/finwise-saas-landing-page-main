@@ -2219,5 +2219,7 @@ const strings: Record<string, string> = {
   "Delete Comment": "टिप्पणी हटाएं",
   "Are you sure you want to delete this comment?": "क्या आप वाकई यह टिप्पणी हटाना चाहते हैं?",
   "Failed to delete comment": "टिप्पणी हटाने में विफल",
+  "Repost": "रीपोस्ट",
+  "Please log in to repost": "रीपोस्ट करने के लिए लॉग इन करें",
 };
 export default strings;
