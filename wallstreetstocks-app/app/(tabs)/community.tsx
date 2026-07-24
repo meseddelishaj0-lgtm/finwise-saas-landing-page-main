@@ -1107,7 +1107,8 @@ export default function CommunityPage() {
   const loadComments = async (postId: number) => {
     setCommentsLoading(true);
     try {
-      const fetchedComments = await fetchComments(postId.toString());
+      // Pass the viewer id so the server returns isLiked (persisted hearts)
+      const fetchedComments = await fetchComments(postId.toString(), getUserId() ?? undefined);
       setComments(fetchedComments || []);
     } catch {
       setComments([]);

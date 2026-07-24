@@ -16,16 +16,37 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Optional viewer id → also return per-user isLiked state
+    const viewerParam = searchParams.get("userId");
+    const viewerId = viewerParam ? parseInt(viewerParam, 10) : null;
+
     const comments = await prisma.comment.findMany({
       where: { postId: parseInt(postId, 10), isDeleted: false },
       include: {
         user: { select: { id: true, name: true, username: true, profileImage: true, subscriptionTier: true, isVerified: true } },
-        _count: { select: { likes: true } },
+        // Comment likes are written to the Like table (via /api/likes with a
+        // commentId) — NOT the legacy CommentLike table. `_count.likes`
+        // previously counted CommentLike, so hearts always read back as 0
+        // and never persisted across app restarts.
+        _count: { select: { likesViaLikeModel: true } },
+        ...(viewerId
+          ? { likesViaLikeModel: { where: { userId: viewerId }, select: { id: true } } }
+          : {}),
       },
       orderBy: { createdAt: "asc" },
     });
 
-    return NextResponse.json(comments, { status: 200 });
+    // Keep the response shape the clients already expect (_count.likes + isLiked)
+    const result = comments.map((c: any) => {
+      const { likesViaLikeModel, _count, ...rest } = c;
+      return {
+        ...rest,
+        isLiked: viewerId ? (likesViaLikeModel?.length ?? 0) > 0 : false,
+        _count: { likes: _count?.likesViaLikeModel ?? 0 },
+      };
+    });
+
+    return NextResponse.json(result, { status: 200 });
   } catch (err) {
     console.error("❌ Error fetching comments:", err);
     return NextResponse.json({ error: "Failed to load comments" }, { status: 500 });
