@@ -68,11 +68,37 @@ let _pendingNotificationClick: any = null;
 let _notificationProcessor: ((event: any) => Promise<void>) | null = null;
 
 if (OneSignal && ONESIGNAL_APP_ID) {
+  // PRIMER — must run BEFORE the SDK registers its native click listener.
+  // On a cold start (app launched by tapping a notification) the iOS SDK
+  // replays the launch click the moment the native click listener is added,
+  // but RCTOneSignalEventEmitter DROPS events until RN's startObserving has
+  // flipped its _hasListeners gate (there is NO caching). The SDK's own
+  // addEventListener('click') calls the native registration FIRST and only
+  // then attaches the JS subscription — so the replayed click landed in the
+  // closed gate and cold-start taps just opened the app on the home tab.
+  // Attaching any listener for the event here opens the gate first.
+  try {
+    const { NativeEventEmitter, NativeModules } = require('react-native');
+    if (NativeModules.OneSignal) {
+      new NativeEventEmitter(NativeModules.OneSignal).addListener(
+        'OneSignal-notificationClicked',
+        () => {}
+      );
+    }
+  } catch {}
+
   try {
     OneSignal.initialize(ONESIGNAL_APP_ID);
+  } catch (e) {
+    // Native module absent (Expo Go) — JS bridge stays inert; native init in
+    // AppDelegate still handles subscription in production builds.
+    console.warn('[OneSignal] JS bridge init failed:', e);
+  }
 
-    // Register click handler at module level so cold-start taps are never missed.
-    // preventDefault() stops OneSignal from opening any launchURL in Safari (legacy notifications).
+  // Register click handler at module level so cold-start taps are never missed.
+  // Own try-block: a failed initialize must never skip click registration.
+  // preventDefault() stops OneSignal from opening any launchURL in Safari (legacy notifications).
+  try {
     OneSignal.Notifications.addEventListener('click', (event: any) => {
       try { event.preventDefault(); } catch (_) {}
 
@@ -84,9 +110,7 @@ if (OneSignal && ONESIGNAL_APP_ID) {
       }
     });
   } catch (e) {
-    // Native module absent (Expo Go) — JS bridge stays inert; native init in
-    // AppDelegate still handles subscription in production builds.
-    console.warn('[OneSignal] JS bridge init failed:', e);
+    console.warn('[OneSignal] click listener registration failed:', e);
   }
 }
 
