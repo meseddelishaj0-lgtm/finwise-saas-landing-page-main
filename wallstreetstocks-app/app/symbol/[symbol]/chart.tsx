@@ -277,6 +277,59 @@ async function clearChartCache(symbol: string): Promise<void> {
 }
 
 // ============================================================================
+// LIVE PRICE DOT
+// ============================================================================
+
+// Robinhood-style pulsing dot pinned to the last point of the line — always
+// visible (not only while scrubbing). Native-driver transform/opacity only.
+function PulsingDot({ x, y, color }: { x: number; y: number; color: string }) {
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  const ringScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 2.6] });
+  const ringOpacity = pulse.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.6, 0.2, 0] });
+
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: x - 11,
+        top: y - 11,
+        width: 22,
+        height: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 3,
+      }}
+    >
+      <Animated.View
+        style={{
+          position: 'absolute',
+          width: 22,
+          height: 22,
+          borderRadius: 11,
+          backgroundColor: color,
+          opacity: ringOpacity,
+          transform: [{ scale: ringScale }],
+        }}
+      />
+      <View style={{ width: 9, height: 9, borderRadius: 4.5, backgroundColor: color, borderWidth: 1.5, borderColor: '#FFFFFF' }} />
+    </View>
+  );
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -1024,6 +1077,19 @@ export default function ChartTab() {
                   },
                 }}
               />
+
+              {/* Live pulsing dot at the newest price — hidden while scrubbing
+                  (the pointer draws its own dot). x = empty y-axis gutter (10)
+                  + initialSpacing (5) + spacing × lastIndex; y mirrors the
+                  baseline's value→pixel mapping. */}
+              {!pointerData && liveChartData.length > 1 && (() => {
+                const lastIdx = liveChartData.length - 1;
+                const lastVal = liveChartData[lastIdx]?.value ?? 0;
+                const range = (yAxisBounds.max - yAxisBounds.min) || 1;
+                const dotX = Math.min(15 + chartSpacing * lastIdx, SCREEN_WIDTH - 12);
+                const dotY = Math.max(0, Math.min(CHART_HEIGHT, CHART_HEIGHT * (1 - (lastVal - yAxisBounds.min) / range)));
+                return <PulsingDot x={dotX} y={dotY} color={priceColor} />;
+              })()}
             </View>
           ) : (
             <View style={styles.noDataContainer}>
