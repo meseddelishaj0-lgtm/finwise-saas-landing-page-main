@@ -16,8 +16,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
+    // Resolve identity from the signed token (falls back to the param until
+    // strict mode) — previously this endpoint trusted ?userId= with no auth,
+    // letting anyone read any user's presets.
+    const auth = resolveMobileUserId(req, userId);
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const presets = await prisma.screenerPreset.findMany({
-      where: { userId: parseInt(userId, 10) },
+      where: { userId: auth.userId },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
@@ -59,10 +67,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Filters are required" }, { status: 400 });
     }
 
-    // Check if user already has a preset with this name
+    // Check if user already has a preset with this name — all DB ops use the
+    // token-resolved id, never the raw client-supplied one.
     const existing = await prisma.screenerPreset.findFirst({
       where: {
-        userId: parseInt(userId, 10),
+        userId: _auth.userId,
         name: name.trim(),
       },
     });
@@ -76,7 +85,7 @@ export async function POST(req: NextRequest) {
 
     // Limit to 20 presets per user
     const count = await prisma.screenerPreset.count({
-      where: { userId: parseInt(userId, 10) },
+      where: { userId: _auth.userId },
     });
 
     if (count >= 20) {
@@ -88,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     const preset = await prisma.screenerPreset.create({
       data: {
-        userId: parseInt(userId, 10),
+        userId: _auth.userId,
         name: name.trim(),
         filters: filters,
       },

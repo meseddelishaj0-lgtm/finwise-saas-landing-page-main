@@ -25,6 +25,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildAuthHeaders } from '@/lib/authHeaders';
 import { Alert } from 'react-native';
 import StockLogo from '@/components/StockLogo';
 import { useTheme } from '@/context/ThemeContext';
@@ -718,7 +719,9 @@ export default function Screener() {
     return filterCategories.filter(f => f.category === category);
   };
 
-  // Fetch saved presets from API
+  // Fetch saved presets — DB is the source of truth (same model as
+  // watchlist/portfolio): per-user AsyncStorage cache hydrates the modal
+  // instantly / offline, then the server response overwrites and re-caches.
   const fetchSavedPresets = useCallback(async () => {
     setLoadingPresets(true);
     try {
@@ -728,10 +731,21 @@ export default function Screener() {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/screener-presets?userId=${userId}`);
+      // 1) Instant hydrate from the per-user cache
+      try {
+        const cached = await AsyncStorage.getItem(`screenerPresets:${userId}`);
+        if (cached) setSavedPresets(JSON.parse(cached));
+      } catch {}
+
+      // 2) Server refresh (source of truth) + re-cache
+      const response = await fetch(`${API_BASE_URL}/screener-presets?userId=${userId}`, {
+        headers: await buildAuthHeaders(userId),
+      });
       if (response.ok) {
         const data = await response.json();
-        setSavedPresets(data.presets || []);
+        const presets = data.presets || [];
+        setSavedPresets(presets);
+        AsyncStorage.setItem(`screenerPresets:${userId}`, JSON.stringify(presets)).catch(() => {});
       }
     } catch (err) {
     } finally {
@@ -762,7 +776,7 @@ export default function Screener() {
 
       const response = await fetch(`${API_BASE_URL}/screener-presets`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           userId,
           name: newPresetName.trim(),
@@ -772,7 +786,11 @@ export default function Screener() {
 
       if (response.ok) {
         const data = await response.json();
-        setSavedPresets(prev => [data.preset, ...prev]);
+        setSavedPresets(prev => {
+          const next = [data.preset, ...prev];
+          AsyncStorage.setItem(`screenerPresets:${userId}`, JSON.stringify(next)).catch(() => {});
+          return next;
+        });
         setShowSavePresetModal(false);
         setNewPresetName('');
         Alert.alert(t('Success'), t('Preset saved successfully!'));
@@ -796,10 +814,15 @@ export default function Screener() {
 
       const response = await fetch(`${API_BASE_URL}/screener-presets/${presetId}?userId=${userId}`, {
         method: 'DELETE',
+        headers: await buildAuthHeaders(userId),
       });
 
       if (response.ok) {
-        setSavedPresets(prev => prev.filter(p => p.id !== presetId));
+        setSavedPresets(prev => {
+          const next = prev.filter(p => p.id !== presetId);
+          AsyncStorage.setItem(`screenerPresets:${userId}`, JSON.stringify(next)).catch(() => {});
+          return next;
+        });
       } else {
         Alert.alert(t('Error'), t('Failed to delete preset'));
       }
