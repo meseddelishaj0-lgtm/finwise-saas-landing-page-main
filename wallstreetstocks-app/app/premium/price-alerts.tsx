@@ -370,8 +370,10 @@ export default function PriceAlertsScreen() {
                     <Switch
                       value={alert.isActive}
                       onValueChange={() => toggleAlert(alert)}
-                      trackColor={{ false: '#E5E5EA', true: '#E5E4E2' }}
+                      // Active = gold, paused = gray (both were near-identical grays)
+                      trackColor={{ false: '#E5E5EA', true: '#B8860B' }}
                       thumbColor="#FFF"
+                      ios_backgroundColor="#E5E5EA"
                     />
                   </View>
 
