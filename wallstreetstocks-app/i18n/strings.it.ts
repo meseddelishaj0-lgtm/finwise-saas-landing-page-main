@@ -2218,5 +2218,8 @@ const strings: Record<string, string> = {
   "No Saved Filters": "Nessun filtro salvato",
   "Reply": "Rispondi",
   "Replying to": "In risposta a",
+  "Delete Comment": "Elimina commento",
+  "Are you sure you want to delete this comment?": "Vuoi davvero eliminare questo commento?",
+  "Failed to delete comment": "Impossibile eliminare il commento",
 };
 export default strings;

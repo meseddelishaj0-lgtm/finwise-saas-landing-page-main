@@ -2216,5 +2216,8 @@ const strings: Record<string, string> = {
   "No Saved Filters": "لا توجد فلاتر محفوظة",
   "Reply": "رد",
   "Replying to": "الرد على",
+  "Delete Comment": "حذف التعليق",
+  "Are you sure you want to delete this comment?": "هل أنت متأكد أنك تريد حذف هذا التعليق؟",
+  "Failed to delete comment": "فشل حذف التعليق",
 };
 export default strings;

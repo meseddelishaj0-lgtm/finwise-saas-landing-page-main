@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { resolveMobileUserId } from "@/lib/mobileAuth";
 
 // 🟡 UPDATE COMMENT
 export async function PUT(
@@ -60,20 +61,29 @@ export async function DELETE(
   { params }: { params: { commentId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const commentId = Number(params.commentId);
 
-    // Find the user by email
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    // Auth: website session OR mobile signed-token (resolveMobileUserId) —
+    // previously this was session-only, so the app could never delete.
+    let authedUserId: number | null = null;
+    const session = await getServerSession(authOptions);
+    if (session?.user?.email) {
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true },
+      });
+      authedUserId = user?.id ?? null;
+    } else {
+      const { searchParams } = new URL(req.url);
+      const auth = resolveMobileUserId(req, searchParams.get("userId"));
+      if (!auth.ok) {
+        return NextResponse.json({ error: auth.error }, { status: auth.status });
+      }
+      authedUserId = auth.userId;
+    }
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!authedUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const existing = await prisma.comment.findUnique({ where: { id: commentId } });
@@ -81,12 +91,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Comment not found" }, { status: 404 });
     }
 
-    if (existing.userId !== user.id) {
+    if (existing.userId !== authedUserId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    await prisma.comment.delete({
+    // Soft delete — a hard delete violates FK constraints once the comment has
+    // replies (self-relation) or CommentLike rows, and soft-deleting keeps
+    // thread integrity. GET /api/comments filters isDeleted out.
+    await prisma.comment.update({
       where: { id: commentId },
+      data: { isDeleted: true },
     });
 
     return NextResponse.json({ message: "Comment deleted successfully" }, { status: 200 });

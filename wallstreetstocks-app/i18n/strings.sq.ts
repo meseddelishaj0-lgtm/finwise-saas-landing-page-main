@@ -2218,5 +2218,8 @@ const strings: Record<string, string> = {
   "No Saved Filters": "Asnjë filtër i ruajtur",
   "Reply": "Përgjigju",
   "Replying to": "Duke iu përgjigjur",
+  "Delete Comment": "Fshi komentin",
+  "Are you sure you want to delete this comment?": "Je i sigurt që do ta fshish këtë koment?",
+  "Failed to delete comment": "Fshirja e komentit dështoi",
 };
 export default strings;

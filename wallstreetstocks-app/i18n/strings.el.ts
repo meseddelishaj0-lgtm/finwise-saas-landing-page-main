@@ -2218,5 +2218,8 @@ const strings: Record<string, string> = {
   "No Saved Filters": "Δεν υπάρχουν αποθηκευμένα φίλτρα",
   "Reply": "Απάντηση",
   "Replying to": "Απάντηση σε",
+  "Delete Comment": "Διαγραφή σχολίου",
+  "Are you sure you want to delete this comment?": "Σίγουρα θέλετε να διαγράψετε αυτό το σχόλιο;",
+  "Failed to delete comment": "Αποτυχία διαγραφής σχολίου",
 };
 export default strings;

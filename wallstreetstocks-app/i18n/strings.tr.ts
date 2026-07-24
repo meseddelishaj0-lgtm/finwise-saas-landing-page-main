@@ -2218,5 +2218,8 @@ const strings: Record<string, string> = {
   "No Saved Filters": "Kayıtlı filtre yok",
   "Reply": "Yanıtla",
   "Replying to": "Yanıtlanıyor:",
+  "Delete Comment": "Yorumu Sil",
+  "Are you sure you want to delete this comment?": "Bu yorumu silmek istediğinizden emin misiniz?",
+  "Failed to delete comment": "Yorum silinemedi",
 };
 export default strings;

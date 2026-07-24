@@ -2216,5 +2216,8 @@ const strings: Record<string, string> = {
   "No Saved Filters": "कोई सहेजा गया फ़िल्टर नहीं",
   "Reply": "जवाब दें",
   "Replying to": "जवाब दे रहे हैं:",
+  "Delete Comment": "टिप्पणी हटाएं",
+  "Are you sure you want to delete this comment?": "क्या आप वाकई यह टिप्पणी हटाना चाहते हैं?",
+  "Failed to delete comment": "टिप्पणी हटाने में विफल",
 };
 export default strings;

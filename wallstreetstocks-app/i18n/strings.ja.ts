@@ -2216,5 +2216,8 @@ const strings: Record<string, string> = {
   "No Saved Filters": "保存済みフィルターはありません",
   "Reply": "返信",
   "Replying to": "返信先:",
+  "Delete Comment": "コメントを削除",
+  "Are you sure you want to delete this comment?": "このコメントを削除してもよろしいですか？",
+  "Failed to delete comment": "コメントを削除できませんでした",
 };
 export default strings;

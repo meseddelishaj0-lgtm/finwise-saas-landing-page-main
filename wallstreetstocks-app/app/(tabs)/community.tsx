@@ -1916,6 +1916,54 @@ export default function CommunityPage() {
     setCommentOptionsModal(true);
   };
 
+  // Delete own comment/reply (soft delete server-side; replies of a deleted
+  // parent disappear with it)
+  const handleDeleteComment = () => {
+    const comment = selectedCommentForOptions;
+    const userId = getUserId();
+    if (!comment || !userId) return;
+
+    Alert.alert(
+      t('Delete Comment'),
+      t('Are you sure you want to delete this comment?'),
+      [
+        { text: t('Cancel'), style: 'cancel' },
+        {
+          text: t('Delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await fetch(`${API_BASE}/api/comments/${comment.id}?userId=${userId}`, {
+                method: 'DELETE',
+                headers: await buildAuthHeaders(userId),
+              });
+              if (!res.ok) throw new Error();
+              // Remove the comment and (if it was a parent) its replies
+              let removed = 0;
+              setComments(prev => {
+                const next = prev.filter(c => c.id !== comment.id && c.parentId !== comment.id);
+                removed = prev.length - next.length;
+                return next;
+              });
+              if (selectedPost) {
+                setPosts(prev =>
+                  prev.map(post =>
+                    post.id === selectedPost.id
+                      ? { ...post, _count: { ...post._count!, comments: Math.max(0, (post._count?.comments || 0) - Math.max(1, removed)) } }
+                      : post
+                  )
+                );
+              }
+              setCommentOptionsModal(false);
+            } catch {
+              Alert.alert(t('Error'), t('Failed to delete comment'));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleBlockCommentUser = async () => {
     if (!selectedCommentForOptions?.user) return;
 
@@ -3739,6 +3787,20 @@ export default function CommunityPage() {
 
             {/* Options List */}
             <View style={styles.optionsList}>
+              {selectedCommentForOptions?.user?.id === getUserId() ? (
+                /* Own comment/reply -> Delete */
+                <TouchableOpacity
+                  style={[styles.optionItem, styles.optionItemLast]}
+                  onPress={handleDeleteComment}
+                >
+                  <View style={[styles.optionIconContainer, { backgroundColor: '#FFEBEE' }]}>
+                    <Ionicons name="trash-outline" size={20} color="#F44336" />
+                  </View>
+                  <Text style={[styles.optionText, { color: '#F44336' }]}>{t('Delete Comment')}</Text>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                </TouchableOpacity>
+              ) : (
+              <>
               {/* Mute Option */}
               <TouchableOpacity
                 style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
@@ -3774,6 +3836,8 @@ export default function CommunityPage() {
                 <Text style={[styles.optionText, { color: '#E91E63' }]}>{t('Report Comment')}</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
+              </>
+              )}
             </View>
 
             {/* Cancel Button */}

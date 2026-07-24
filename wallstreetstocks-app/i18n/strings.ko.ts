@@ -2216,5 +2216,8 @@ const strings: Record<string, string> = {
   "No Saved Filters": "저장된 필터 없음",
   "Reply": "답글",
   "Replying to": "답글 대상:",
+  "Delete Comment": "댓글 삭제",
+  "Are you sure you want to delete this comment?": "이 댓글을 삭제하시겠습니까?",
+  "Failed to delete comment": "댓글 삭제에 실패했습니다",
 };
 export default strings;

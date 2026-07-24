@@ -2218,5 +2218,8 @@ const strings: Record<string, string> = {
   "No Saved Filters": "没有已保存的筛选器",
   "Reply": "回复",
   "Replying to": "回复给",
+  "Delete Comment": "删除评论",
+  "Are you sure you want to delete this comment?": "确定要删除这条评论吗？",
+  "Failed to delete comment": "删除评论失败",
 };
 export default strings;
