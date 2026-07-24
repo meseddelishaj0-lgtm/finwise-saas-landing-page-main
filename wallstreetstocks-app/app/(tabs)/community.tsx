@@ -4317,7 +4317,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 90,
+    bottom: 135, // clear of the floating glass tab-bar pill (was 90 — half-hidden behind it)
     width: 64,
     height: 64,
     borderRadius: 32,
