@@ -2057,7 +2057,8 @@ const styles = StyleSheet.create({
   },
   applyButtonDisabled: { backgroundColor: '#B0B0B0' },
   applyButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  fab: { position: 'absolute', bottom: 100, left: 20, right: 20, borderRadius: 16, overflow: 'hidden', shadowColor: '#B8860B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
+  // bottom 135 clears the floating glass tab-bar pill (100 sat behind it)
+  fab: { position: 'absolute', bottom: 135, left: 20, right: 20, borderRadius: 16, overflow: 'hidden', shadowColor: '#B8860B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
   fabGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 8 },
   fabText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   // Heat Map Styles
