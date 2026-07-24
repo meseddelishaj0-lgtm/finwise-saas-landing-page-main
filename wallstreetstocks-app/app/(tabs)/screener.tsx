@@ -753,6 +753,13 @@ export default function Screener() {
     }
   }, []);
 
+  // Load presets on mount so the bookmark badge shows the saved count as soon
+  // as the screen opens (cache hydrates instantly, server refresh follows) —
+  // previously they only loaded when the presets modal was opened.
+  useEffect(() => {
+    fetchSavedPresets();
+  }, [fetchSavedPresets]);
+
   // Save new preset to API
   const savePreset = async () => {
     if (!newPresetName.trim()) {
@@ -1425,6 +1432,7 @@ export default function Screener() {
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerButton} onPress={handleBookmarkPress}>
             <Ionicons name={savedPresets.length > 0 ? "bookmark" : "bookmark-outline"} size={24} color={savedPresets.length > 0 ? colors.primary : colors.text} />
+            {savedPresets.length > 0 && <View style={[styles.headerBadge, { backgroundColor: colors.primary }]}><Text style={styles.headerBadgeText}>{savedPresets.length}</Text></View>}
           </TouchableOpacity>
         </View>
       </View>
