@@ -2225,5 +2225,7 @@ const strings: Record<string, string> = {
   "Please log in to repost": "Melde dich an, um zu reposten",
   "Reposts": "Reposts",
   "No reposts yet": "Noch keine Reposts",
+  "Reposted by": "Repostet von",
+  "Reposted by you": "Von dir repostet",
 };
 export default strings;

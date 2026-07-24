@@ -2223,5 +2223,7 @@ const strings: Record<string, string> = {
   "Please log in to repost": "リポストするにはログインしてください",
   "Reposts": "リポスト",
   "No reposts yet": "リポストはまだありません",
+  "Reposted by": "リポスト:",
+  "Reposted by you": "リポスト済み",
 };
 export default strings;

@@ -2223,5 +2223,7 @@ const strings: Record<string, string> = {
   "Please log in to repost": "리포스트하려면 로그인하세요",
   "Reposts": "리포스트",
   "No reposts yet": "아직 리포스트가 없습니다",
+  "Reposted by": "리포스트:",
+  "Reposted by you": "내가 리포스트함",
 };
 export default strings;

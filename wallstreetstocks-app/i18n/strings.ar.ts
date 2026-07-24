@@ -2223,5 +2223,7 @@ const strings: Record<string, string> = {
   "Please log in to repost": "سجّل الدخول لإعادة النشر",
   "Reposts": "إعادات النشر",
   "No reposts yet": "لا توجد إعادات نشر بعد",
+  "Reposted by": "أعاد نشره",
+  "Reposted by you": "أعدت نشره",
 };
 export default strings;

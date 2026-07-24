@@ -2225,5 +2225,7 @@ const strings: Record<string, string> = {
   "Please log in to repost": "Yeniden paylaşmak için giriş yapın",
   "Reposts": "Yeniden Paylaşımlar",
   "No reposts yet": "Henüz yeniden paylaşım yok",
+  "Reposted by": "Yeniden paylaşan:",
+  "Reposted by you": "Siz yeniden paylaştınız",
 };
 export default strings;

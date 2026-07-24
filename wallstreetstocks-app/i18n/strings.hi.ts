@@ -2223,5 +2223,7 @@ const strings: Record<string, string> = {
   "Please log in to repost": "रीपोस्ट करने के लिए लॉग इन करें",
   "Reposts": "रीपोस्ट",
   "No reposts yet": "अभी कोई रीपोस्ट नहीं",
+  "Reposted by": "रीपोस्ट किया:",
+  "Reposted by you": "आपने रीपोस्ट किया",
 };
 export default strings;

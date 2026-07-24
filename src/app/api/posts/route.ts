@@ -110,6 +110,19 @@ export async function GET(req: NextRequest) {
       userLikes.forEach(l => l.postId && userLikedPostIds.add(l.postId));
     }
 
+    // Latest reposter per post (for the "Reposted by" banner)
+    const latestReposterByPost = new Map<number, { id: number; username: string | null; name: string | null }>();
+    {
+      const pageRepostRows = await freshPrisma.repost.findMany({
+        where: { postId: { in: postsWithUsers.map(p => p.id) } },
+        orderBy: { createdAt: 'desc' },
+        include: { user: { select: { id: true, username: true, name: true } } },
+      });
+      for (const r of pageRepostRows) {
+        if (!latestReposterByPost.has(r.postId)) latestReposterByPost.set(r.postId, r.user);
+      }
+    }
+
     // Viewer's reposts (same pattern as likes)
     const userRepostedPostIds = new Set<number>();
     if (currentUserId) {
@@ -149,6 +162,7 @@ export async function GET(req: NextRequest) {
         tickers: post.tickerMentions.map(tm => tm.ticker),
         isLiked: userLikedPostIds.has(post.id),
         isReposted: userRepostedPostIds.has(post.id),
+        latestRepostBy: latestReposterByPost.get(post.id) ?? null,
         sentiment: {
           bullish: s.bullish,
           bearish: s.bearish,

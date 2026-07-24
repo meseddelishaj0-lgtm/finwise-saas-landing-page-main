@@ -2225,5 +2225,7 @@ const strings: Record<string, string> = {
   "Please log in to repost": "登录后即可转发",
   "Reposts": "转发",
   "No reposts yet": "还没有转发",
+  "Reposted by": "转发自",
+  "Reposted by you": "你已转发",
 };
 export default strings;

@@ -2225,5 +2225,7 @@ const strings: Record<string, string> = {
   "Please log in to repost": "Συνδεθείτε για αναδημοσίευση",
   "Reposts": "Αναδημοσιεύσεις",
   "No reposts yet": "Καμία αναδημοσίευση ακόμα",
+  "Reposted by": "Αναδημοσίευση από",
+  "Reposted by you": "Αναδημοσιεύτηκε από εσάς",
 };
 export default strings;

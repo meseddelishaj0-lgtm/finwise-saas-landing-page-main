@@ -497,6 +497,7 @@ interface Post {
   };
   forumId?: number;
   isReposted?: boolean;
+  latestRepostBy?: { id: number; username?: string | null; name?: string | null } | null;
   _count?: {
     reposts?: number;
     comments: number;
@@ -2704,6 +2705,18 @@ export default function CommunityPage() {
         }
         renderItem={({ item: post }) => (
           <View style={[styles.postCard, { backgroundColor: isDark ? colors.surface : colors.card, borderColor: isDark ? colors.borderLight : colors.border }]}>
+            {/* Reposted-by banner */}
+            {(post.isReposted || ((post._count?.reposts ?? 0) > 0 && post.latestRepostBy)) && (
+              <View style={styles.repostBanner}>
+                <Ionicons name="repeat" size={14} color="#00C853" />
+                <Text style={[styles.repostBannerText, { color: colors.textTertiary }]} numberOfLines={1}>
+                  {post.isReposted
+                    ? t('Reposted by you')
+                    : `${t('Reposted by')} @${post.latestRepostBy?.username || post.latestRepostBy?.name || 'user'}`}
+                  {(post._count?.reposts ?? 0) > 1 ? ` · ${post._count?.reposts}` : ''}
+                </Text>
+              </View>
+            )}
             {/* Post Header */}
             <View style={styles.postHeader}>
               <Avatar 
@@ -4793,6 +4806,17 @@ const styles = StyleSheet.create({
   profileTabPillText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  repostBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  repostBannerText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    flexShrink: 1,
   },
   repostByline: {
     flexDirection: 'row',
