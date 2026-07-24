@@ -3625,6 +3625,100 @@ export default function CommunityPage() {
             </TouchableOpacity>
           </View>
 
+          {/* COMMENT OPTIONS OVERLAY — rendered INSIDE the comments sheet on
+              purpose. As a second native Modal stacked on the pageSheet, iOS
+              could be left with a dead presented view-controller after closing
+              the sheet (dismissal race) — the screen behind froze while the
+              rest of the app kept working. An absolute-positioned View cannot
+              leave native state behind. */}
+          {commentOptionsModal && (
+          <TouchableOpacity
+            style={[styles.optionsModalOverlay, { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }]}
+            activeOpacity={1}
+            onPress={() => setCommentOptionsModal(false)}
+          >
+          <View style={[styles.optionsModalContainer, { backgroundColor: colors.card }]}>
+            {/* User Info Header */}
+            {selectedCommentForOptions?.user && (
+              <View style={[styles.optionsUserHeader, { borderBottomColor: colors.borderLight }]}>
+                <Avatar user={selectedCommentForOptions.user} size={40} />
+                <View style={styles.optionsUserInfo}>
+                  <Text style={[styles.optionsUserName, { color: colors.text }]}>
+                    {getUserDisplayName(selectedCommentForOptions.user)}
+                  </Text>
+                  <Text style={[styles.optionsUserHandle, { color: colors.textTertiary }]}>
+                    @{getUserHandle(selectedCommentForOptions.user)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Options List */}
+            <View style={styles.optionsList}>
+              {selectedCommentForOptions?.user?.id != null && Number(selectedCommentForOptions.user.id) === getUserId() ? (
+                /* Own comment/reply -> Delete */
+                <TouchableOpacity
+                  style={[styles.optionItem, styles.optionItemLast]}
+                  onPress={handleDeleteComment}
+                >
+                  <View style={[styles.optionIconContainer, { backgroundColor: '#FFEBEE' }]}>
+                    <Ionicons name="trash-outline" size={20} color="#F44336" />
+                  </View>
+                  <Text style={[styles.optionText, { color: '#F44336' }]}>{t('Delete Comment')}</Text>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                </TouchableOpacity>
+              ) : (
+              <>
+              {/* Mute Option */}
+              <TouchableOpacity
+                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
+                onPress={handleMuteCommentUser}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: '#FFF3E0' }]}>
+                  <Ionicons name="volume-mute-outline" size={20} color="#FF9800" />
+                </View>
+                <Text style={[styles.optionText, { color: colors.text }]}>{t('Mute')} @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+              </TouchableOpacity>
+
+              {/* Block Option */}
+              <TouchableOpacity
+                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
+                onPress={handleBlockCommentUser}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: '#FFEBEE' }]}>
+                  <Ionicons name="ban-outline" size={20} color="#F44336" />
+                </View>
+                <Text style={[styles.optionText, { color: colors.text }]}>{t('Block')} @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+              </TouchableOpacity>
+
+              {/* Report Option */}
+              <TouchableOpacity
+                style={[styles.optionItem, styles.optionItemLast]}
+                onPress={handleReportCommentUser}
+              >
+                <View style={[styles.optionIconContainer, { backgroundColor: '#FCE4EC' }]}>
+                  <Ionicons name="flag-outline" size={20} color="#E91E63" />
+                </View>
+                <Text style={[styles.optionText, { color: '#E91E63' }]}>{t('Report Comment')}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+              </TouchableOpacity>
+              </>
+              )}
+            </View>
+
+            {/* Cancel Button */}
+            <TouchableOpacity
+              style={[styles.optionsCancelButton, { backgroundColor: colors.surface }]}
+              onPress={() => setCommentOptionsModal(false)}
+            >
+              <Text style={[styles.optionsCancelText, { color: colors.primary }]}>{t('Cancel')}</Text>
+            </TouchableOpacity>
+          </View>
+          </TouchableOpacity>
+          )}
+
         </KeyboardAvoidingView>
       </Modal>
 
@@ -3750,100 +3844,6 @@ export default function CommunityPage() {
             <TouchableOpacity 
               style={[styles.optionsCancelButton, { backgroundColor: colors.surface }]}
               onPress={() => setPostOptionsModal(false)}
-            >
-              <Text style={[styles.optionsCancelText, { color: colors.primary }]}>{t('Cancel')}</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* COMMENT OPTIONS MODAL */}
-      <Modal
-        visible={commentOptionsModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setCommentOptionsModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.optionsModalOverlay}
-          activeOpacity={1}
-          onPress={() => setCommentOptionsModal(false)}
-        >
-          <View style={[styles.optionsModalContainer, { backgroundColor: colors.card }]}>
-            {/* User Info Header */}
-            {selectedCommentForOptions?.user && (
-              <View style={[styles.optionsUserHeader, { borderBottomColor: colors.borderLight }]}>
-                <Avatar user={selectedCommentForOptions.user} size={40} />
-                <View style={styles.optionsUserInfo}>
-                  <Text style={[styles.optionsUserName, { color: colors.text }]}>
-                    {getUserDisplayName(selectedCommentForOptions.user)}
-                  </Text>
-                  <Text style={[styles.optionsUserHandle, { color: colors.textTertiary }]}>
-                    @{getUserHandle(selectedCommentForOptions.user)}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            {/* Options List */}
-            <View style={styles.optionsList}>
-              {selectedCommentForOptions?.user?.id === getUserId() ? (
-                /* Own comment/reply -> Delete */
-                <TouchableOpacity
-                  style={[styles.optionItem, styles.optionItemLast]}
-                  onPress={handleDeleteComment}
-                >
-                  <View style={[styles.optionIconContainer, { backgroundColor: '#FFEBEE' }]}>
-                    <Ionicons name="trash-outline" size={20} color="#F44336" />
-                  </View>
-                  <Text style={[styles.optionText, { color: '#F44336' }]}>{t('Delete Comment')}</Text>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-                </TouchableOpacity>
-              ) : (
-              <>
-              {/* Mute Option */}
-              <TouchableOpacity
-                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
-                onPress={handleMuteCommentUser}
-              >
-                <View style={[styles.optionIconContainer, { backgroundColor: '#FFF3E0' }]}>
-                  <Ionicons name="volume-mute-outline" size={20} color="#FF9800" />
-                </View>
-                <Text style={[styles.optionText, { color: colors.text }]}>{t('Mute')} @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
-                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-              </TouchableOpacity>
-
-              {/* Block Option */}
-              <TouchableOpacity
-                style={[styles.optionItem, { borderBottomColor: colors.borderLight }]}
-                onPress={handleBlockCommentUser}
-              >
-                <View style={[styles.optionIconContainer, { backgroundColor: '#FFEBEE' }]}>
-                  <Ionicons name="ban-outline" size={20} color="#F44336" />
-                </View>
-                <Text style={[styles.optionText, { color: colors.text }]}>{t('Block')} @{selectedCommentForOptions?.user ? getUserHandle(selectedCommentForOptions.user) : ''}</Text>
-                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-              </TouchableOpacity>
-
-              {/* Report Option */}
-              <TouchableOpacity
-                style={[styles.optionItem, styles.optionItemLast]}
-                onPress={handleReportCommentUser}
-              >
-                <View style={[styles.optionIconContainer, { backgroundColor: '#FCE4EC' }]}>
-                  <Ionicons name="flag-outline" size={20} color="#E91E63" />
-                </View>
-                <Text style={[styles.optionText, { color: '#E91E63' }]}>{t('Report Comment')}</Text>
-                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-              </TouchableOpacity>
-              </>
-              )}
-            </View>
-
-            {/* Cancel Button */}
-            <TouchableOpacity
-              style={[styles.optionsCancelButton, { backgroundColor: colors.surface }]}
-              onPress={() => setCommentOptionsModal(false)}
             >
               <Text style={[styles.optionsCancelText, { color: colors.primary }]}>{t('Cancel')}</Text>
             </TouchableOpacity>
