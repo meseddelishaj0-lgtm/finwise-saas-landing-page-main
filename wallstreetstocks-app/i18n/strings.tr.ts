@@ -2216,5 +2216,7 @@ const strings: Record<string, string> = {
   "🚀 Growth": "🚀 Büyüme",
   "Saved Filters": "Kayıtlı Filtreler",
   "No Saved Filters": "Kayıtlı filtre yok",
+  "Reply": "Yanıtla",
+  "Replying to": "Yanıtlanıyor:",
 };
 export default strings;

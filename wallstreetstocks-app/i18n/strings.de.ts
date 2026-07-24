@@ -2216,5 +2216,7 @@ const strings: Record<string, string> = {
   "🚀 Growth": "🚀 Wachstum",
   "Saved Filters": "Gespeicherte Filter",
   "No Saved Filters": "Keine gespeicherten Filter",
+  "Reply": "Antworten",
+  "Replying to": "Antwort an",
 };
 export default strings;

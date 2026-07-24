@@ -2214,5 +2214,7 @@ const strings: Record<string, string> = {
   "🚀 Growth": "🚀 成長",
   "Saved Filters": "保存済みフィルター",
   "No Saved Filters": "保存済みフィルターはありません",
+  "Reply": "返信",
+  "Replying to": "返信先:",
 };
 export default strings;

@@ -2216,5 +2216,7 @@ const strings: Record<string, string> = {
   "🚀 Growth": "🚀 Ανάπτυξη",
   "Saved Filters": "Αποθηκευμένα Φίλτρα",
   "No Saved Filters": "Δεν υπάρχουν αποθηκευμένα φίλτρα",
+  "Reply": "Απάντηση",
+  "Replying to": "Απάντηση σε",
 };
 export default strings;

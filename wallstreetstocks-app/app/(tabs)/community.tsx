@@ -184,11 +184,11 @@ const fetchComments = async (postId: string | number, userId?: number): Promise<
   }
 };
 
-const createComment = async (postId: string | number, content: string, userId: number): Promise<any> => {
+const createComment = async (postId: string | number, content: string, userId: number, parentId?: number | null): Promise<any> => {
   const response = await fetch(`${API_BASE}/api/comments`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ postId: Number(postId), content, userId }),
+    body: JSON.stringify({ postId: Number(postId), content, userId, ...(parentId != null ? { parentId } : {}) }),
   });
   if (!response.ok) throw new Error('Failed to create comment');
   return response.json();
@@ -504,6 +504,7 @@ interface Comment {
   content: string;
   createdAt: string;
   user: User;
+  parentId?: number | null;
   _count?: {
     likes: number;
   };
@@ -583,6 +584,11 @@ export default function CommunityPage() {
   // Comment State
   const [newComment, setNewComment] = useState('');
   const [commenting, setCommenting] = useState(false);
+  // Replying to a specific comment (threaded replies via Comment.parentId)
+  const [replyingTo, setReplyingTo] = useState<{ id: number; handle: string } | null>(null);
+  useEffect(() => {
+    if (!commentsModal) setReplyingTo(null); // reset when the modal closes
+  }, [commentsModal]);
 
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -1549,7 +1555,7 @@ export default function CommunityPage() {
     setCommenting(true);
 
     try {
-      const comment = await createComment(selectedPost.id.toString(), newComment.trim(), userId);
+      const comment = await createComment(selectedPost.id.toString(), newComment.trim(), userId, replyingTo?.id ?? null);
       
       if (comment) {
         setComments(prev => [...prev, comment]);
@@ -1563,6 +1569,7 @@ export default function CommunityPage() {
       }
 
       setNewComment('');
+      setReplyingTo(null);
     } catch (error: any) {
       Alert.alert(t('Error'), error?.message || t('Failed to add comment'));
     } finally {
@@ -3437,63 +3444,86 @@ export default function CommunityPage() {
             {commentsLoading ? (
               <ActivityIndicator size="large" color="#B8860B" style={{ marginTop: 20 }} />
             ) : comments.length > 0 ? (
-              comments.filter(comment => comment.user).map((comment) => (
-                <View key={comment.id} style={styles.commentItem}>
-                  <Avatar
-                    user={comment.user!}
-                    size={36}
-                    onPress={() => {
-                      setCommentsModal(false);
-                      setTimeout(() => handleOpenProfile(comment.user!), 300);
-                    }}
-                  />
-                  <View style={styles.commentContent}>
-                    <View style={[styles.commentBubble, { backgroundColor: colors.surface }]}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setCommentsModal(false);
-                          setTimeout(() => handleOpenProfile(comment.user!), 300);
-                        }}
-                        activeOpacity={0.7}
-                        style={styles.commentUserRow}
-                      >
-                        <Text style={[styles.commentUsername, { color: colors.text }]}>
-                          {getUserDisplayName(comment.user!)}
-                        </Text>
-                        <VerifiedBadge verified={(comment.user as any)?.isVerified} size={12} />
-                        <SubscriptionBadgeInline tier={comment.user?.subscriptionTier as any} />
-                        <Text style={[styles.commentHandle, { color: colors.textTertiary }]}>@{getUserHandle(comment.user!)}</Text>
-                      </TouchableOpacity>
-                      <Text style={[styles.commentText, { color: colors.text }]}>{comment.content}</Text>
-                    </View>
-                    <View style={styles.commentMeta}>
-                      <Text style={[styles.commentTime, { color: colors.textTertiary }]}>{formatTimeAgo(comment.createdAt)}</Text>
-                      <TouchableOpacity
-                        style={styles.commentLikeButton}
-                        onPress={() => handleLikeComment(comment.id)}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('Like')}
-                      >
-                        <Ionicons
-                          name={comment.isLiked ? "heart" : "heart-outline"}
-                          size={14}
-                          color={comment.isLiked ? "#FF3B30" : "#8E8E93"}
-                        />
-                        <Text style={[styles.commentLikeCount, { color: colors.textSecondary }]}>{comment._count?.likes ?? 0}</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.commentOptionsButton}
-                        onPress={() => handleOpenCommentOptions(comment)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('More options')}
-                      >
-                        <Ionicons name="ellipsis-horizontal" size={16} color={colors.textTertiary} />
-                      </TouchableOpacity>
+              (() => {
+                // Threaded rendering: top-level comments with their replies
+                // indented beneath (one level deep, Instagram-style — replying
+                // to a reply threads under the same parent).
+                const visible = comments.filter(comment => comment.user);
+                const topLevel = visible.filter(c => !c.parentId);
+                const repliesOf = (id: number) => visible.filter(c => c.parentId === id);
+                const renderRow = (comment: Comment, isReply: boolean) => (
+                  <View key={comment.id} style={[styles.commentItem, isReply && styles.commentReplyItem]}>
+                    <Avatar
+                      user={comment.user!}
+                      size={isReply ? 28 : 36}
+                      onPress={() => {
+                        setCommentsModal(false);
+                        setTimeout(() => handleOpenProfile(comment.user!), 300);
+                      }}
+                    />
+                    <View style={styles.commentContent}>
+                      <View style={[styles.commentBubble, { backgroundColor: colors.surface }]}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setCommentsModal(false);
+                            setTimeout(() => handleOpenProfile(comment.user!), 300);
+                          }}
+                          activeOpacity={0.7}
+                          style={styles.commentUserRow}
+                        >
+                          <Text style={[styles.commentUsername, { color: colors.text }]}>
+                            {getUserDisplayName(comment.user!)}
+                          </Text>
+                          <VerifiedBadge verified={(comment.user as any)?.isVerified} size={12} />
+                          <SubscriptionBadgeInline tier={comment.user?.subscriptionTier as any} />
+                          <Text style={[styles.commentHandle, { color: colors.textTertiary }]}>@{getUserHandle(comment.user!)}</Text>
+                        </TouchableOpacity>
+                        <Text style={[styles.commentText, { color: colors.text }]}>{comment.content}</Text>
+                      </View>
+                      <View style={styles.commentMeta}>
+                        <Text style={[styles.commentTime, { color: colors.textTertiary }]}>{formatTimeAgo(comment.createdAt)}</Text>
+                        <TouchableOpacity
+                          style={styles.commentLikeButton}
+                          onPress={() => handleLikeComment(comment.id)}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('Like')}
+                        >
+                          <Ionicons
+                            name={comment.isLiked ? "heart" : "heart-outline"}
+                            size={14}
+                            color={comment.isLiked ? "#FF3B30" : "#8E8E93"}
+                          />
+                          <Text style={[styles.commentLikeCount, { color: colors.textSecondary }]}>{comment._count?.likes ?? 0}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.commentLikeButton}
+                          onPress={() => setReplyingTo({ id: comment.parentId ?? comment.id, handle: getUserHandle(comment.user!) })}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('Reply')}
+                        >
+                          <Ionicons name="arrow-undo-outline" size={14} color="#8E8E93" />
+                          <Text style={[styles.commentLikeCount, { color: colors.textSecondary }]}>{t('Reply')}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.commentOptionsButton}
+                          onPress={() => handleOpenCommentOptions(comment)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('More options')}
+                        >
+                          <Ionicons name="ellipsis-horizontal" size={16} color={colors.textTertiary} />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
-                </View>
-              ))
+                );
+                return topLevel.map((c) => (
+                  <View key={c.id}>
+                    {renderRow(c, false)}
+                    {repliesOf(c.id).map((r) => renderRow(r, true))}
+                  </View>
+                ));
+              })()
             ) : (
               <View style={styles.noComments}>
                 <Text style={[styles.noCommentsText, { color: colors.textTertiary }]}>{t('No comments yet. Be the first!')}</Text>
@@ -3501,6 +3531,22 @@ export default function CommunityPage() {
             )}
           </ScrollView>
 
+          {replyingTo && (
+            <View style={[styles.replyingBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
+              <Ionicons name="arrow-undo" size={14} color={colors.textSecondary} />
+              <Text style={[styles.replyingBarText, { color: colors.textSecondary }]} numberOfLines={1}>
+                {t('Replying to')} @{replyingTo.handle}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setReplyingTo(null)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={t('Cancel')}
+              >
+                <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </View>
+          )}
           <View style={[styles.commentInputContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
             <Avatar user={authUser as User | null | undefined} size={36} />
             <View style={[styles.commentInputWrapper, { backgroundColor: colors.surface }]}>
@@ -4878,6 +4924,21 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 8,
     borderBottomColor: '#F2F2F7',
+  },
+  commentReplyItem: {
+    marginLeft: 44,
+  },
+  replyingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    gap: 8,
+  },
+  replyingBarText: {
+    flex: 1,
+    fontSize: 13,
   },
   commentItem: {
     flexDirection: 'row',

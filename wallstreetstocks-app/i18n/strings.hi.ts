@@ -2214,5 +2214,7 @@ const strings: Record<string, string> = {
   "🚀 Growth": "🚀 वृद्धि",
   "Saved Filters": "सहेजे गए फ़िल्टर",
   "No Saved Filters": "कोई सहेजा गया फ़िल्टर नहीं",
+  "Reply": "जवाब दें",
+  "Replying to": "जवाब दे रहे हैं:",
 };
 export default strings;

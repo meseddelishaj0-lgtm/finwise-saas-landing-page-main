@@ -2214,5 +2214,7 @@ const strings: Record<string, string> = {
   "🚀 Growth": "🚀 성장",
   "Saved Filters": "저장된 필터",
   "No Saved Filters": "저장된 필터 없음",
+  "Reply": "답글",
+  "Replying to": "답글 대상:",
 };
 export default strings;
