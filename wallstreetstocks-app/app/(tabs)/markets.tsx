@@ -27,6 +27,7 @@ import { fetchQuotesWithCache } from "@/services/quoteService";
 import { fetchSparklines } from "@/services/sparklineService";
 import Sparkline from "@/components/Sparkline";
 import { priceStore } from "@/stores/priceStore";
+import { displaySymbol, displayAssetName } from "@/lib/symbolDisplay";
 import { useWebSocket } from "@/context/WebSocketContext";
 import { InlineAdBanner } from "@/components/AdBanner";
 import { marketDataService } from "@/services/marketDataService";
@@ -1893,10 +1894,10 @@ export default function Explore() {
               style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
             />
             <View style={styles.itemInfo}>
-              <Text style={[styles.itemSymbol, { color: colors.text }]}>{item.symbol}</Text>
+              <Text style={[styles.itemSymbol, { color: colors.text }]}>{displaySymbol(item.symbol)}</Text>
               {!!item.name && (
                 <Text style={[styles.itemName, { color: colors.textTertiary }]} numberOfLines={1}>
-                  {item.name}
+                  {displayAssetName(item.symbol, item.name)}
                 </Text>
               )}
             </View>

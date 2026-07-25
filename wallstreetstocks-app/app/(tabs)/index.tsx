@@ -37,6 +37,7 @@ import { useWebSocket } from '@/context/WebSocketContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchQuotesWithCache } from '@/services/quoteService';
 import { priceStore } from '@/stores/priceStore';
+import { displaySymbol } from '@/lib/symbolDisplay';
 import { AnimatedPrice, AnimatedChange, MarketStatusIndicator, LastUpdated, CryptoLiveIndicator, MarketTimeLabel } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
@@ -2148,12 +2149,9 @@ export default function Dashboard() {
   }, [liveWatchlistData, watchlistFilter, watchlistSort]);
 
   // Format crypto symbols with slash for display (BTCUSD -> BTC/USD)
-  const formatSymbolDisplay = (symbol: string): string => {
-    if (symbol.endsWith('USD') && !symbol.includes('/') && symbol.length >= 6 && symbol.length <= 10) {
-      return symbol.slice(0, -3) + '/USD';
-    }
-    return symbol;
-  };
+  // Crypto pairs display as their base asset (BTCUSD/BTC/USD -> BTC).
+  // Display-only — underlying symbols stay full pairs for data/navigation.
+  const formatSymbolDisplay = (symbol: string): string => displaySymbol(symbol);
 
   // Get icon for index type
   const getIndexIcon = (symbol: string): string => {

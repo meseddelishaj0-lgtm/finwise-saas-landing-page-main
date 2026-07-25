@@ -23,6 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFromMemory, setToMemory, clearFromMemory, CACHE_KEYS } from '../../../utils/memoryCache';
 import { priceStore, useQuote } from '../../../stores/priceStore';
+import { displaySymbol } from '../../../lib/symbolDisplay';
 import { useWebSocket } from '../../../context/WebSocketContext';
 import { useLanguage } from '@/context/LanguageContext';
 import TechnicalIndicators from '../../../components/TechnicalIndicators';
@@ -1156,7 +1157,7 @@ export default function ChartTab() {
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalSymbol}>{cleanSymbol}</Text>
+            <Text style={styles.modalSymbol}>{displaySymbol(cleanSymbol)}</Text>
             {currentPrice && <Text style={styles.modalCurrentPrice}>{t('Current:')} ${currentPrice.toFixed(2)}</Text>}
 
             <Text style={styles.inputLabel}>{t('Alert when price goes')}</Text>

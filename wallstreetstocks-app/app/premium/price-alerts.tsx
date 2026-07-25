@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { priceStore } from '@/stores/priceStore';
+import { displaySymbol } from '@/lib/symbolDisplay';
 import { useWebSocket } from '@/context/WebSocketContext';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -361,7 +362,7 @@ export default function PriceAlertsScreen() {
                 <View key={alert.id} style={[styles.alertCard, !alert.isActive && styles.alertCardDisabled]}>
                   <View style={styles.alertHeader}>
                     <View style={styles.alertSymbol}>
-                      <Text style={styles.alertSymbolText}>{alert.symbol}</Text>
+                      <Text style={styles.alertSymbolText}>{displaySymbol(alert.symbol)}</Text>
                       <View style={[styles.statusBadge, { backgroundColor: status.color + '20' }]}>
                         <View style={[styles.statusDot, { backgroundColor: status.color }]} />
                         <Text style={[styles.statusText, { color: status.color }]}>{status.text}</Text>

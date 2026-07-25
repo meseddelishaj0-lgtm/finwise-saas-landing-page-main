@@ -1,5 +1,6 @@
 // app/symbol/[symbol]/header.tsx
 import React, { useState } from "react";
+import { displaySymbol } from '@/lib/symbolDisplay';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -224,7 +225,7 @@ export default function SymbolHeader() {
       </TouchableOpacity>
 
       <View style={styles.centerContent}>
-        <Text style={styles.symbolText}>{currentSymbol}</Text>
+        <Text style={styles.symbolText}>{displaySymbol(currentSymbol)}</Text>
       </View>
 
       <View style={styles.rightActions}>
@@ -254,7 +255,7 @@ export default function SymbolHeader() {
       >
         <Pressable style={styles.modalOverlay} onPress={() => setShowAddMenu(false)}>
           <View style={styles.menuContainer}>
-            <Text style={styles.menuTitle}>{t("Add")} {currentSymbol}</Text>
+            <Text style={styles.menuTitle}>{t("Add")} {displaySymbol(currentSymbol)}</Text>
 
             <TouchableOpacity
               style={styles.menuItem}
@@ -302,7 +303,7 @@ export default function SymbolHeader() {
         <Pressable style={styles.portfolioModalOverlay} onPress={() => setShowPortfolioModal(false)}>
           <Pressable style={styles.portfolioModalContent} onPress={e => e.stopPropagation()}>
             <View style={styles.portfolioModalHeader}>
-              <Text style={styles.portfolioModalTitle}>{t("Add")} {currentSymbol} {t("to Portfolio")}</Text>
+              <Text style={styles.portfolioModalTitle}>{t("Add")} {displaySymbol(currentSymbol)} {t("to Portfolio")}</Text>
               <TouchableOpacity
                 onPress={() => setShowPortfolioModal(false)}
                 accessibilityRole="button"
