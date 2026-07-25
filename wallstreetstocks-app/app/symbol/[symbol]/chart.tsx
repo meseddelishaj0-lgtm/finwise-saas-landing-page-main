@@ -363,6 +363,8 @@ export default function ChartTab() {
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [previousClose, setPreviousClose] = useState<number | null>(null);
   const [marketStatus, setMarketStatus] = useState<MarketStatus>(getMarketStatus());
+  // Crypto trades 24/7 — the badge always shows open for crypto pairs
+  const effectiveMarketStatus: MarketStatus = isCrypto ? 'open' : marketStatus;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>('1D');
@@ -916,27 +918,28 @@ export default function ChartTab() {
             <View style={styles.updateRow}>
               <View style={[
                 styles.marketStatusBadge,
-                marketStatus === 'open' && styles.marketStatusOpen,
-                marketStatus === 'pre-market' && styles.marketStatusPreMarket,
-                marketStatus === 'after-hours' && styles.marketStatusAfterHours,
-                marketStatus === 'closed' && styles.marketStatusClosed,
+                effectiveMarketStatus === 'open' && styles.marketStatusOpen,
+                effectiveMarketStatus === 'pre-market' && styles.marketStatusPreMarket,
+                effectiveMarketStatus === 'after-hours' && styles.marketStatusAfterHours,
+                effectiveMarketStatus === 'closed' && styles.marketStatusClosed,
               ]}>
                 <View style={[
                   styles.marketStatusDot,
-                  marketStatus === 'open' && { backgroundColor: '#00C853' },
-                  marketStatus === 'pre-market' && { backgroundColor: '#FF9500' },
-                  marketStatus === 'after-hours' && { backgroundColor: '#AF52DE' },
-                  marketStatus === 'closed' && { backgroundColor: '#8E8E93' },
+                  effectiveMarketStatus === 'open' && { backgroundColor: '#00C853' },
+                  effectiveMarketStatus === 'pre-market' && { backgroundColor: '#FF9500' },
+                  effectiveMarketStatus === 'after-hours' && { backgroundColor: '#AF52DE' },
+                  effectiveMarketStatus === 'closed' && { backgroundColor: '#8E8E93' },
                 ]} />
                 <Text style={[
                   styles.marketStatusText,
-                  marketStatus === 'open' && { color: '#00C853' },
-                  marketStatus === 'pre-market' && { color: '#FF9500' },
-                  marketStatus === 'after-hours' && { color: '#AF52DE' },
+                  effectiveMarketStatus === 'open' && { color: '#00C853' },
+                  effectiveMarketStatus === 'pre-market' && { color: '#FF9500' },
+                  effectiveMarketStatus === 'after-hours' && { color: '#AF52DE' },
                 ]}>
-                  {marketStatus === 'open' ? t('Market Open') :
-                   marketStatus === 'pre-market' ? t('Pre-Market') :
-                   marketStatus === 'after-hours' ? t('After Hours') : t('Closed')}
+                  {isCrypto ? t('Market Open') + ' · 24/7' :
+                   effectiveMarketStatus === 'open' ? t('Market Open') :
+                   effectiveMarketStatus === 'pre-market' ? t('Pre-Market') :
+                   effectiveMarketStatus === 'after-hours' ? t('After Hours') : t('Closed')}
                 </Text>
               </View>
               <Text style={styles.lastUpdated}>
