@@ -2228,5 +2228,8 @@ const strings: Record<string, string> = {
   "Clear All Notifications": "सभी सूचनाएं हटाएं",
   "This will permanently delete all your notifications.": "यह आपकी सभी सूचनाओं को स्थायी रूप से हटा देगा।",
   "Failed to clear notifications": "सूचनाएं हटाने में विफल",
+  "Good morning": "सुप्रभात",
+  "Good afternoon": "शुभ दोपहर",
+  "Good evening": "शुभ संध्या",
 };
 export default strings;

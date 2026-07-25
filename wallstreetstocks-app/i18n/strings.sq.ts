@@ -2230,5 +2230,8 @@ const strings: Record<string, string> = {
   "Clear All Notifications": "Fshi të gjitha njoftimet",
   "This will permanently delete all your notifications.": "Kjo do t'i fshijë përgjithmonë të gjitha njoftimet e tua.",
   "Failed to clear notifications": "Fshirja e njoftimeve dështoi",
+  "Good morning": "Mirëmëngjes",
+  "Good afternoon": "Mirëdita",
+  "Good evening": "Mirëmbrëma",
 };
 export default strings;

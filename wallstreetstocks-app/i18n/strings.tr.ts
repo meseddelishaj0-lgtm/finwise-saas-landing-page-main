@@ -2230,5 +2230,8 @@ const strings: Record<string, string> = {
   "Clear All Notifications": "Tüm Bildirimleri Temizle",
   "This will permanently delete all your notifications.": "Bu, tüm bildirimlerinizi kalıcı olarak silecek.",
   "Failed to clear notifications": "Bildirimler temizlenemedi",
+  "Good morning": "Günaydın",
+  "Good afternoon": "İyi günler",
+  "Good evening": "İyi akşamlar",
 };
 export default strings;

@@ -2228,5 +2228,8 @@ const strings: Record<string, string> = {
   "Clear All Notifications": "모든 알림 지우기",
   "This will permanently delete all your notifications.": "모든 알림이 영구적으로 삭제됩니다.",
   "Failed to clear notifications": "알림을 지우지 못했습니다",
+  "Good morning": "좋은 아침이에요",
+  "Good afternoon": "좋은 오후예요",
+  "Good evening": "좋은 저녁이에요",
 };
 export default strings;

@@ -2228,5 +2228,8 @@ const strings: Record<string, string> = {
   "Clear All Notifications": "すべての通知を消去",
   "This will permanently delete all your notifications.": "すべての通知が完全に削除されます。",
   "Failed to clear notifications": "通知を消去できませんでした",
+  "Good morning": "おはようございます",
+  "Good afternoon": "こんにちは",
+  "Good evening": "こんばんは",
 };
 export default strings;

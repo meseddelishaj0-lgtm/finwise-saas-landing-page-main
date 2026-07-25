@@ -38,6 +38,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchQuotesWithCache } from '@/services/quoteService';
 import { priceStore } from '@/stores/priceStore';
 import { displaySymbol } from '@/lib/symbolDisplay';
+import { dateLocale } from '@/lib/dateLocale';
 import { AnimatedPrice, AnimatedChange, MarketStatusIndicator, LastUpdated, CryptoLiveIndicator, MarketTimeLabel } from '@/components/AnimatedPrice';
 import { InlineAdBanner } from '@/components/AdBanner';
 import { marketDataService } from '@/services/marketDataService';
@@ -416,7 +417,7 @@ const MARKET_OVERVIEW_SYMBOLS = [
 
 export default function Dashboard() {
   const { colors, isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const router = useRouter();
   const { isPremium, currentTier } = useSubscription();
   const { subscribe: wsSubscribe, isConnected: wsConnected } = useWebSocket();
@@ -2313,7 +2314,7 @@ export default function Dashboard() {
             <View>
               <Text style={[styles.greetingText, { color: colors.text }]}>{t(getGreeting())} 👋</Text>
               <Text style={[styles.greetingDate, { color: colors.textTertiary }]}>
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                {new Date().toLocaleDateString(dateLocale(lang), { weekday: 'long', month: 'long', day: 'numeric' })}
               </Text>
             </View>
             <MarketStatusIndicator />

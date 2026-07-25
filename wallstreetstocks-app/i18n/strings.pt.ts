@@ -2230,5 +2230,8 @@ const strings: Record<string, string> = {
   "Clear All Notifications": "Limpar todas as notificações",
   "This will permanently delete all your notifications.": "Isso excluirá permanentemente todas as suas notificações.",
   "Failed to clear notifications": "Falha ao limpar as notificações",
+  "Good morning": "Bom dia",
+  "Good afternoon": "Boa tarde",
+  "Good evening": "Boa noite",
 };
 export default strings;

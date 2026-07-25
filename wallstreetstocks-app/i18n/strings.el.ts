@@ -2230,5 +2230,8 @@ const strings: Record<string, string> = {
   "Clear All Notifications": "Διαγραφή όλων των ειδοποιήσεων",
   "This will permanently delete all your notifications.": "Αυτό θα διαγράψει οριστικά όλες τις ειδοποιήσεις σας.",
   "Failed to clear notifications": "Αποτυχία διαγραφής ειδοποιήσεων",
+  "Good morning": "Καλημέρα",
+  "Good afternoon": "Καλό απόγευμα",
+  "Good evening": "Καλησπέρα",
 };
 export default strings;

@@ -2230,5 +2230,8 @@ const strings: Record<string, string> = {
   "Clear All Notifications": "清除所有通知",
   "This will permanently delete all your notifications.": "这将永久删除您的所有通知。",
   "Failed to clear notifications": "清除通知失败",
+  "Good morning": "早上好",
+  "Good afternoon": "下午好",
+  "Good evening": "晚上好",
 };
 export default strings;
