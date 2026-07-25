@@ -1,5 +1,6 @@
 // app/(tabs)/trending.tsx - WITH AUTO-SCROLLING HEADER CARDS + TAB ICONS
 import React, { useState, useEffect, useCallback, useRef, memo, useMemo } from "react";
+import { displaySymbol, displayAssetName } from '@/lib/symbolDisplay';
 import {
   View,
   Text,
@@ -760,7 +761,7 @@ export default function Trending() {
 
     const isTopRank = index < 3;
     const goldInk = isDark ? '#FFD60A' : '#B8860B';
-    const displayName = item.companyName || item.name;
+    const displayName = displayAssetName(item.symbol, item.companyName || item.name);
 
     return (
       <FadeSlideIn delay={Math.min(index, 12) * 30} distance={10}>
@@ -785,8 +786,8 @@ export default function Trending() {
               style={{ marginRight: Platform.OS === 'android' ? 8 : 10 }}
             />
             <View style={styles.info}>
-              <Text style={[styles.symbol, { color: colors.text }]}>{item.symbol}</Text>
-              {!!displayName && displayName !== item.symbol && (
+              <Text style={[styles.symbol, { color: colors.text }]}>{displaySymbol(item.symbol)}</Text>
+              {!!displayName && displayName !== displaySymbol(item.symbol) && (
                 <Text style={[styles.name, { color: colors.textTertiary }]} numberOfLines={1}>
                   {displayName}
                 </Text>

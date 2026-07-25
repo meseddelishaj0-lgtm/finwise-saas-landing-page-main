@@ -49,5 +49,11 @@ export function displayAssetName(symbol?: string | null, name?: string | null): 
   if (!name || (symbol && normalized(name) === normalized(String(symbol)))) {
     return CRYPTO_NAMES[base] ?? base;
   }
+  // Provider pair-names like "SHIBA INU US Dollar" / "Bitcoin US Dollar" →
+  // friendly name (or the cleaned pair name without the quote currency)
+  const pairName = name.match(/^(.*?)\s*(?:\/\s*)?US Dollar$/i);
+  if (pairName) {
+    return CRYPTO_NAMES[base] ?? pairName[1].trim();
+  }
   return name;
 }
