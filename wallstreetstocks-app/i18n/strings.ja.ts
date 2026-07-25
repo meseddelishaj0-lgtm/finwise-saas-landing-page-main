@@ -2225,5 +2225,8 @@ const strings: Record<string, string> = {
   "No reposts yet": "リポストはまだありません",
   "Reposted by": "リポスト:",
   "Reposted by you": "リポスト済み",
+  "Clear All Notifications": "すべての通知を消去",
+  "This will permanently delete all your notifications.": "すべての通知が完全に削除されます。",
+  "Failed to clear notifications": "通知を消去できませんでした",
 };
 export default strings;

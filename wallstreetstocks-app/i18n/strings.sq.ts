@@ -2227,5 +2227,8 @@ const strings: Record<string, string> = {
   "No reposts yet": "Ende pa ripostime",
   "Reposted by": "Ripostuar nga",
   "Reposted by you": "Ripostuar nga ti",
+  "Clear All Notifications": "Fshi të gjitha njoftimet",
+  "This will permanently delete all your notifications.": "Kjo do t'i fshijë përgjithmonë të gjitha njoftimet e tua.",
+  "Failed to clear notifications": "Fshirja e njoftimeve dështoi",
 };
 export default strings;

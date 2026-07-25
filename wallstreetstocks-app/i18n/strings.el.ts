@@ -2227,5 +2227,8 @@ const strings: Record<string, string> = {
   "No reposts yet": "Καμία αναδημοσίευση ακόμα",
   "Reposted by": "Αναδημοσίευση από",
   "Reposted by you": "Αναδημοσιεύτηκε από εσάς",
+  "Clear All Notifications": "Διαγραφή όλων των ειδοποιήσεων",
+  "This will permanently delete all your notifications.": "Αυτό θα διαγράψει οριστικά όλες τις ειδοποιήσεις σας.",
+  "Failed to clear notifications": "Αποτυχία διαγραφής ειδοποιήσεων",
 };
 export default strings;

@@ -2227,5 +2227,8 @@ const strings: Record<string, string> = {
   "No reposts yet": "Henüz yeniden paylaşım yok",
   "Reposted by": "Yeniden paylaşan:",
   "Reposted by you": "Siz yeniden paylaştınız",
+  "Clear All Notifications": "Tüm Bildirimleri Temizle",
+  "This will permanently delete all your notifications.": "Bu, tüm bildirimlerinizi kalıcı olarak silecek.",
+  "Failed to clear notifications": "Bildirimler temizlenemedi",
 };
 export default strings;

@@ -2227,5 +2227,8 @@ const strings: Record<string, string> = {
   "No reposts yet": "Nenhum repost ainda",
   "Reposted by": "Repostado por",
   "Reposted by you": "Repostado por você",
+  "Clear All Notifications": "Limpar todas as notificações",
+  "This will permanently delete all your notifications.": "Isso excluirá permanentemente todas as suas notificações.",
+  "Failed to clear notifications": "Falha ao limpar as notificações",
 };
 export default strings;

@@ -9,6 +9,7 @@ import {
   Image,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -113,6 +114,35 @@ export default function Notifications() {
     } catch (error) {
       
     }
+  };
+
+  // Delete ALL notifications (confirmed) — server + local
+  const clearAllNotifications = () => {
+    Alert.alert(
+      t('Clear All Notifications'),
+      t('This will permanently delete all your notifications.'),
+      [
+        { text: t('Cancel'), style: 'cancel' },
+        {
+          text: t('Clear All'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const userId = await AsyncStorage.getItem('userId');
+              const res = await fetch(`${API_BASE_URL}/notifications/clear-all`, {
+                method: 'POST',
+                headers: await buildAuthHeaders(undefined, { 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ userId }),
+              });
+              if (!res.ok) throw new Error();
+              setNotifications([]);
+            } catch {
+              Alert.alert(t('Error'), t('Failed to clear notifications'));
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleNotificationPress = (notification: Notification) => {
@@ -265,11 +295,23 @@ export default function Notifications() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>{t('Notifications')}</Text>
-        {unreadCount > 0 && (
-          <TouchableOpacity onPress={markAllAsRead} style={styles.markAllButton}>
-            <Text style={[styles.markAllText, { color: colors.primary }]}>{t('Mark all read')}</Text>
-          </TouchableOpacity>
-        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          {unreadCount > 0 && (
+            <TouchableOpacity onPress={markAllAsRead} style={styles.markAllButton}>
+              <Text style={[styles.markAllText, { color: colors.primary }]}>{t('Mark all read')}</Text>
+            </TouchableOpacity>
+          )}
+          {notifications.length > 0 && (
+            <TouchableOpacity
+              onPress={clearAllNotifications}
+              accessibilityRole="button"
+              accessibilityLabel={t('Clear All')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="trash-outline" size={21} color="#FF3B30" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {loading ? (

@@ -2225,5 +2225,8 @@ const strings: Record<string, string> = {
   "No reposts yet": "لا توجد إعادات نشر بعد",
   "Reposted by": "أعاد نشره",
   "Reposted by you": "أعدت نشره",
+  "Clear All Notifications": "مسح جميع الإشعارات",
+  "This will permanently delete all your notifications.": "سيؤدي هذا إلى حذف جميع إشعاراتك نهائيًا.",
+  "Failed to clear notifications": "فشل مسح الإشعارات",
 };
 export default strings;

@@ -2227,5 +2227,8 @@ const strings: Record<string, string> = {
   "No reposts yet": "还没有转发",
   "Reposted by": "转发自",
   "Reposted by you": "你已转发",
+  "Clear All Notifications": "清除所有通知",
+  "This will permanently delete all your notifications.": "这将永久删除您的所有通知。",
+  "Failed to clear notifications": "清除通知失败",
 };
 export default strings;

@@ -2225,5 +2225,8 @@ const strings: Record<string, string> = {
   "No reposts yet": "अभी कोई रीपोस्ट नहीं",
   "Reposted by": "रीपोस्ट किया:",
   "Reposted by you": "आपने रीपोस्ट किया",
+  "Clear All Notifications": "सभी सूचनाएं हटाएं",
+  "This will permanently delete all your notifications.": "यह आपकी सभी सूचनाओं को स्थायी रूप से हटा देगा।",
+  "Failed to clear notifications": "सूचनाएं हटाने में विफल",
 };
 export default strings;
