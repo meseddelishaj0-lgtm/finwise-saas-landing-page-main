@@ -2259,5 +2259,6 @@ const strings: Record<string, string> = {
   "RSI, 52-week range, analyst ratings and insider activity.": "RSI, range 52 settimane, valutazioni degli analisti e attività insider.",
   "Scan smarter. Invest sharper.": "Scansiona meglio. Investi meglio.",
   "Unlock with Platinum": "Sblocca con Platinum",
+  "100+ Pro Filters": "Oltre 100 filtri pro",
 };
 export default strings;

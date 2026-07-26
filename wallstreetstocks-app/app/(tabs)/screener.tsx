@@ -42,6 +42,22 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 const smoothLayout = () =>
   LayoutAnimation.configureNext(LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity));
 
+// Gentle breathing scale loop (native driver) — used on the paywall icon + CTA
+const BreatheView = ({ children, style, to = 1.045, duration = 1400 }: { children: React.ReactNode; style?: any; to?: number; duration?: number }) => {
+  const scale = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scale, { toValue: to, duration, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [scale, to, duration]);
+  return <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>;
+};
+
 // Fade + slide-up entrance wrapper (opacity/transform only — never affects layout)
 const FadeSlideIn = ({
   children,
@@ -1421,10 +1437,11 @@ export default function Screener() {
   // ============ PLATINUM PAYWALL ============
   // The full screener requires Platinum (FEATURE_TIERS.SCREENER_FILTERS)
   if (!hasPlatinumAccess) {
-    const plat = isDark ? '#E5E4E2' : '#6E6E73';
+    const plat = isDark ? '#A78BFA' : '#7C3AED'; // app's Platinum violet (SubscriptionBadge)
+    const platTint = isDark ? 'rgba(139,92,246,0.16)' : 'rgba(124,58,237,0.10)';
     const features: Array<{ icon: any; title: string; desc: string }> = [
       { icon: 'flash-outline', title: 'Quick Screens', desc: 'One tap for trending, top gainers, losers and more.' },
-      { icon: 'options-outline', title: '30+ Pro Filters', desc: 'Stack valuation, profitability, growth and health filters.' },
+      { icon: 'options-outline', title: '100+ Pro Filters', desc: 'Stack valuation, profitability, growth and health filters.' },
       { icon: 'telescope-outline', title: 'Full-Market Scan', desc: 'Scan the entire market in seconds.' },
       { icon: 'bookmark-outline', title: 'Saved Filters', desc: 'Save your setups and re-run them anytime.' },
       { icon: 'analytics-outline', title: 'Advanced Metrics', desc: 'RSI, 52-week range, analyst ratings and insider activity.' },
@@ -1432,55 +1449,69 @@ export default function Screener() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <ScrollView contentContainerStyle={styles.paywallContent} showsVerticalScrollIndicator={false}>
-          <View style={[styles.paywallIconWrap, { backgroundColor: isDark ? 'rgba(229,228,226,0.12)' : '#EFEFF1' }]}>
-            <Ionicons name="funnel" size={44} color={plat} />
-          </View>
+          <FadeSlideIn distance={16}>
+            <View style={{ alignItems: 'center' }}>
+              <BreatheView>
+                <View style={[styles.paywallIconWrap, { backgroundColor: platTint, borderWidth: 1, borderColor: plat + '40' }]}>
+                  <Ionicons name="funnel" size={44} color={plat} />
+                </View>
+              </BreatheView>
 
-          <View style={[styles.paywallTierPill, { backgroundColor: isDark ? 'rgba(229,228,226,0.12)' : '#F3F3F5', borderColor: plat + '66' }]}>
-            <Ionicons name="diamond" size={12} color={plat} />
-            <Text style={[styles.paywallTierPillText, { color: plat }]}>PLATINUM</Text>
-          </View>
+              <View style={[styles.paywallTierPill, { backgroundColor: platTint, borderColor: plat + '66' }]}>
+                <Ionicons name="diamond-outline" size={12} color={plat} />
+                <Text style={[styles.paywallTierPillText, { color: plat }]}>PLATINUM</Text>
+              </View>
 
-          <Text style={[styles.paywallTitle, { color: colors.text }]}>{t('Unlock the Stock Screener')}</Text>
-          <Text style={[styles.paywallSubtitle, { color: colors.textSecondary }]}>
-            {t('Find tomorrow\u2019s winners with pro-grade filters.')}
-          </Text>
+              <Text style={[styles.paywallTitle, { color: colors.text }]}>{t('Unlock the Stock Screener')}</Text>
+              <Text style={[styles.paywallSubtitle, { color: colors.textSecondary }]}>
+                {t('Find tomorrow\u2019s winners with pro-grade filters.')}
+              </Text>
+            </View>
+          </FadeSlideIn>
 
           <View style={styles.paywallFeatures}>
-            {features.map((f) => (
-              <View key={f.title} style={[styles.paywallFeatureRow, { backgroundColor: colors.surface }]}>
-                <View style={[styles.paywallFeatureIcon, { backgroundColor: isDark ? 'rgba(229,228,226,0.12)' : '#EFEFF1' }]}>
-                  <Ionicons name={f.icon} size={22} color={plat} />
+            {features.map((f, idx) => (
+              <FadeSlideIn key={f.title} delay={120 + idx * 90} distance={12}>
+                <View style={[styles.paywallFeatureRow, { backgroundColor: colors.surface, borderWidth: 1, borderColor: plat + (isDark ? '26' : '1f') }]}>
+                  <View style={[styles.paywallFeatureIcon, { backgroundColor: platTint }]}>
+                    <Ionicons name={f.icon} size={22} color={plat} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.paywallFeatureTitle, { color: colors.text }]}>{t(f.title)}</Text>
+                    <Text style={[styles.paywallFeatureDesc, { color: colors.textSecondary }]}>{t(f.desc)}</Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.paywallFeatureTitle, { color: colors.text }]}>{t(f.title)}</Text>
-                  <Text style={[styles.paywallFeatureDesc, { color: colors.textSecondary }]}>{t(f.desc)}</Text>
-                </View>
-              </View>
+              </FadeSlideIn>
             ))}
           </View>
 
-          <Text style={[styles.paywallTagline, { color: colors.textSecondary }]}>
-            {t('Scan smarter. Invest sharper.')}
-          </Text>
+          <FadeSlideIn delay={620} distance={10}>
+            <Text style={[styles.paywallTagline, { color: colors.textSecondary }]}>
+              {t('Scan smarter. Invest sharper.')}
+            </Text>
+          </FadeSlideIn>
 
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => router.push('/(modals)/paywall' as any)}
-            accessibilityRole="button"
-            accessibilityLabel={t('Unlock with Platinum')}
-            style={styles.paywallCtaWrap}
-          >
-            <LinearGradient
-              colors={isDark ? ['#F5F5F7', '#B9BAC0'] : ['#7A7A80', '#4E4E54']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.paywallCta}
-            >
-              <Ionicons name="lock-open" size={19} color={isDark ? '#1a1a1a' : '#FFF'} />
-              <Text style={[styles.paywallCtaText, { color: isDark ? '#1a1a1a' : '#FFF' }]}>{t('Unlock with Platinum')}</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          <FadeSlideIn delay={720} distance={10} style={{ alignSelf: 'stretch' }}>
+            <BreatheView to={1.02} duration={1600}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push('/(modals)/paywall' as any)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Unlock with Platinum')}
+                style={[styles.paywallCtaWrap, { shadowColor: '#7C3AED' }]}
+              >
+                <LinearGradient
+                  colors={['#8B5CF6', '#6D28D9']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.paywallCta}
+                >
+                  <Ionicons name="lock-open" size={19} color="#FFF" />
+                  <Text style={[styles.paywallCtaText, { color: '#FFF' }]}>{t('Unlock with Platinum')}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </BreatheView>
+          </FadeSlideIn>
         </ScrollView>
       </SafeAreaView>
     );
