@@ -10,7 +10,7 @@ import {
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { PurchasesPackage } from 'react-native-purchases';
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscription } from '../context/SubscriptionContext';
@@ -192,7 +192,12 @@ export default function PaywallScreen() {
     error,
   } = useSubscription();
 
-  const [selectedTier, setSelectedTier] = useState<TierKey>('platinum');
+  // Entry points can preselect a tier (e.g. community 'Unlock with Gold'
+  // passes ?preselect=gold; the screener passes platinum). Defaults to
+  // platinum (Most Popular) when absent/invalid.
+  const { preselect } = useLocalSearchParams<{ preselect?: string }>();
+  const initialTier: TierKey = (TIER_ORDER as readonly string[]).includes(String(preselect)) ? (preselect as TierKey) : 'platinum';
+  const [selectedTier, setSelectedTier] = useState<TierKey>(initialTier);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const [isPurchasing, setIsPurchasing] = useState(false);
 

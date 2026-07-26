@@ -2522,7 +2522,7 @@ export default function CommunityPage() {
             <BreatheView to={1.02} duration={1600}>
               <TouchableOpacity
                 activeOpacity={0.85}
-                onPress={() => navRouter.push('/(modals)/paywall' as any)}
+                onPress={() => navRouter.push({ pathname: '/(modals)/paywall', params: { preselect: 'gold' } } as any)}
                 accessibilityRole="button"
                 accessibilityLabel={t('Unlock with Gold')}
                 style={styles.paywallCtaWrap}

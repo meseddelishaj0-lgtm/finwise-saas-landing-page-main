@@ -1495,7 +1495,7 @@ export default function Screener() {
             <BreatheView to={1.02} duration={1600}>
               <TouchableOpacity
                 activeOpacity={0.85}
-                onPress={() => router.push('/(modals)/paywall' as any)}
+                onPress={() => router.push({ pathname: '/(modals)/paywall', params: { preselect: 'platinum' } } as any)}
                 accessibilityRole="button"
                 accessibilityLabel={t('Unlock with Platinum')}
                 style={[styles.paywallCtaWrap, { shadowColor: '#7C3AED' }]}
