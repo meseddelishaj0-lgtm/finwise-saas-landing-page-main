@@ -115,8 +115,8 @@ function TierCard({ tierKey, isSelected, onSelect, pkg, billingPeriod, colors, i
 
   const tierPrice = pkg?.product.priceString || getDefaultPrice();
   const features = TIER_FEATURES[tierKey];
-  const isPopular = tierKey === 'platinum' && billingPeriod === 'monthly';
-  const isBestValue = tierKey === 'platinum' && billingPeriod === 'yearly';
+  const isPopular = tierKey === 'diamond' && billingPeriod === 'monthly';
+  const isBestValue = tierKey === 'diamond' && billingPeriod === 'yearly';
 
   return (
     <TouchableOpacity
@@ -196,7 +196,7 @@ export default function PaywallScreen() {
   // passes ?preselect=gold; the screener passes platinum). Defaults to
   // platinum (Most Popular) when absent/invalid.
   const { preselect } = useLocalSearchParams<{ preselect?: string }>();
-  const initialTier: TierKey = (TIER_ORDER as readonly string[]).includes(String(preselect)) ? (preselect as TierKey) : 'platinum';
+  const initialTier: TierKey = (TIER_ORDER as readonly string[]).includes(String(preselect)) ? (preselect as TierKey) : 'diamond';
   const [selectedTier, setSelectedTier] = useState<TierKey>(initialTier);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('monthly');
   const [isPurchasing, setIsPurchasing] = useState(false);
