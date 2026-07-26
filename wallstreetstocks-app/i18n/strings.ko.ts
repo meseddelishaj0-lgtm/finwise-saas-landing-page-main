@@ -2258,5 +2258,6 @@ const strings: Record<string, string> = {
   "Scan smarter. Invest sharper.": "더 똑똑하게 스캔, 더 날카롭게 투자.",
   "Unlock with Platinum": "Platinum으로 잠금 해제",
   "100+ Pro Filters": "100개 이상의 프로 필터",
+  "Welcome back": "다시 오신 것을 환영해요",
 };
 export default strings;

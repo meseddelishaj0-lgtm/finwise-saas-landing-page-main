@@ -2260,5 +2260,6 @@ const strings: Record<string, string> = {
   "Scan smarter. Invest sharper.": "Escaneie melhor. Invista melhor.",
   "Unlock with Platinum": "Desbloquear com Platinum",
   "100+ Pro Filters": "Mais de 100 filtros pro",
+  "Welcome back": "Bem-vindo de volta",
 };
 export default strings;

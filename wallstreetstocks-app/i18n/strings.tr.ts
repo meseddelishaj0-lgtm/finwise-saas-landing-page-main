@@ -2260,5 +2260,6 @@ const strings: Record<string, string> = {
   "Scan smarter. Invest sharper.": "Daha akıllı tara. Daha isabetli yatır.",
   "Unlock with Platinum": "Platinum ile Kilidi Aç",
   "100+ Pro Filters": "100+ Pro Filtre",
+  "Welcome back": "Tekrar hoş geldiniz",
 };
 export default strings;

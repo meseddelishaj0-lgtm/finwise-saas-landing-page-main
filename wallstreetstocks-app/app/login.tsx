@@ -1,5 +1,5 @@
 // app/login.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,11 @@ import {
   Platform,
   ScrollView,
   KeyboardAvoidingView,
+  Image,
+  Animated,
+  Easing,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { useLanguage } from '@/context/LanguageContext';
@@ -58,6 +62,19 @@ function decodeJWT(token: string): { email?: string; sub?: string } | null {
     return null;
   }
 }
+
+// Fade + slide-up entrance (native driver)
+const Enter = ({ children, delay = 0, distance = 16, style }: any) => {
+  const pr = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(pr, { toValue: 1, duration: 480, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, []);
+  return (
+    <Animated.View style={[style, { opacity: pr, transform: [{ translateY: pr.interpolate({ inputRange: [0, 1], outputRange: [distance, 0] }) }] }]}>
+      {children}
+    </Animated.View>
+  );
+};
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -227,8 +244,9 @@ export default function Login() {
   };
 
   return (
+    <LinearGradient colors={['#0B1A2E', '#070E1C', '#050A14']} style={styles.container}>
     <KeyboardAvoidingView
-      style={styles.container}
+      style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -236,24 +254,36 @@ export default function Login() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>{t('Log In')}</Text>
+        <Enter delay={0}>
+          <Image source={require('../assets/images/wallstreetstocks.png')} style={styles.headerLogo} />
+        </Enter>
+        <Enter delay={90}>
+          <Text style={styles.title}>{t('Log In')}</Text>
+        </Enter>
+        <Enter delay={160}>
+          <Text style={styles.subtitle}>{t('Welcome back')} 👋</Text>
+        </Enter>
 
-      <TextInput
-        style={styles.input}
-        placeholder={t('Email')}
-        placeholderTextColor="#999"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        editable={!loading}
-      />
-
-      <View style={styles.passwordContainer}>
+      <View style={styles.inputCard}>
+        <Ionicons name="mail-outline" size={19} color="rgba(255,255,255,0.45)" />
         <TextInput
-          style={styles.passwordInput}
+          style={styles.inputFlex}
+          placeholder={t('Email')}
+          placeholderTextColor="rgba(255,255,255,0.4)"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          editable={!loading}
+        />
+      </View>
+
+      <View style={styles.inputCard}>
+        <Ionicons name="lock-closed-outline" size={19} color="rgba(255,255,255,0.45)" />
+        <TextInput
+          style={styles.inputFlex}
           placeholder={t('Password')}
-          placeholderTextColor="#999"
+          placeholderTextColor="rgba(255,255,255,0.4)"
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
@@ -268,7 +298,7 @@ export default function Login() {
           <Ionicons 
             name={showPassword ? "eye-off" : "eye"} 
             size={22} 
-            color="#999" 
+            color="rgba(255,255,255,0.5)" 
           />
         </TouchableOpacity>
       </View>
@@ -281,18 +311,28 @@ export default function Login() {
       </TouchableOpacity>
 
       <TouchableOpacity 
-        style={[styles.button, loading && styles.buttonDisabled]} 
+        style={loading ? styles.buttonDisabled : undefined} 
         onPress={handleLogin}
         disabled={loading}
+        activeOpacity={0.85}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>{t('Log In')}</Text>
-        )}
+        <LinearGradient colors={['#FFD60A', '#DAA520']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.button}>
+          {loading ? (
+            <ActivityIndicator color="#1a1a1a" />
+          ) : (
+            <>
+              <Text style={styles.buttonText}>{t('Log In')}</Text>
+              <Ionicons name="arrow-forward" size={19} color="#1a1a1a" />
+            </>
+          )}
+        </LinearGradient>
       </TouchableOpacity>
 
-      <Text style={styles.or}>{t('or')}</Text>
+      <View style={styles.orRow}>
+        <View style={styles.orLine} />
+        <Text style={styles.or}>{t('or')}</Text>
+        <View style={styles.orLine} />
+      </View>
 
       <TouchableOpacity
         style={styles.socialButton}
@@ -308,7 +348,7 @@ export default function Login() {
       {Platform.OS === 'ios' && AppleAuthentication && (
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
           cornerRadius={30}
           style={styles.appleButton}
           onPress={handleAppleSignIn}
@@ -320,80 +360,128 @@ export default function Login() {
       </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 32,
-    paddingTop: 80,
+    paddingHorizontal: 28,
+    paddingTop: 72,
     paddingBottom: 40,
+    justifyContent: 'center',
+  },
+  headerLogo: {
+    width: 54,
+    height: 54,
+    borderRadius: 14,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,214,10,0.35)',
+    resizeMode: 'cover',
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 40,
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 6,
+    letterSpacing: -0.4,
+  },
+  subtitle: {
+    fontSize: 15.5,
+    color: 'rgba(255,255,255,0.6)',
+    marginBottom: 26,
+  },
+  inputCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  inputFlex: {
+    flex: 1,
+    paddingVertical: 15,
+    fontSize: 16,
+    color: '#FFFFFF',
   },
   input: {
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-    paddingVertical: 12,
+    flex: 1,
+    paddingVertical: 15,
     fontSize: 16,
-    marginBottom: 20,
-    color: '#000',
+    color: '#FFFFFF',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-    marginBottom: 20,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    marginBottom: 14,
   },
   passwordInput: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 15,
     fontSize: 16,
-    color: '#000',
+    color: '#FFFFFF',
   },
-  eyeButton: {
-    padding: 8,
-  },
+  eyeButton: { padding: 6 },
   forgot: {
-    color: '#B8860B',
-    textAlign: 'right',
-    marginBottom: 24,
-    textDecorationLine: 'underline',
+    color: '#FFD60A',
     fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'right',
+    marginBottom: 18,
+    marginTop: 2,
   },
   button: {
-    backgroundColor: '#0dd977',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
     paddingVertical: 16,
     borderRadius: 30,
-    alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
+    shadowColor: '#DAA520',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    elevation: 8,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
-  },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '800',
+    fontSize: 17,
+  },
+  orRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginVertical: 14,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   or: {
-    textAlign: 'center',
-    color: '#999',
-    marginVertical: 16,
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 13,
+    fontWeight: '600',
   },
   socialButton: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: 'rgba(255,255,255,0.14)',
     paddingVertical: 14,
     borderRadius: 30,
     alignItems: 'center',
@@ -402,12 +490,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
-  socialIcon: {
-    // Icon is inline with text
-  },
+  socialIcon: {},
   socialText: {
     fontSize: 16,
-    color: '#000',
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   appleButton: {
     width: '100%',
@@ -415,10 +502,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   link: {
-    color: '#B8860B',
+    color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
-    marginTop: 24,
-    textDecorationLine: 'underline',
-    fontSize: 16,
+    marginTop: 22,
+    fontSize: 15.5,
   },
 });
