@@ -2261,5 +2261,7 @@ const strings: Record<string, string> = {
   "Unlock with Platinum": "Platinum ile Kilidi Aç",
   "100+ Pro Filters": "100+ Pro Filtre",
   "Welcome back": "Tekrar hoş geldiniz",
+  "AI Analyzer, Compare & Forecast": "YZ Analiz, Karşılaştırma ve Tahmin",
+  "Pro research reports": "Profesyonel araştırma raporları",
 };
 export default strings;

@@ -2261,5 +2261,7 @@ const strings: Record<string, string> = {
   "Unlock with Platinum": "解锁 Platinum",
   "100+ Pro Filters": "100+ 专业筛选条件",
   "Welcome back": "欢迎回来",
+  "AI Analyzer, Compare & Forecast": "AI 分析器、对比与预测",
+  "Pro research reports": "专业研究报告",
 };
 export default strings;

@@ -2259,5 +2259,7 @@ const strings: Record<string, string> = {
   "Unlock with Platinum": "Platinumでアンロック",
   "100+ Pro Filters": "100以上のプロフィルター",
   "Welcome back": "おかえりなさい",
+  "AI Analyzer, Compare & Forecast": "AI分析・比較・予測",
+  "Pro research reports": "プロのリサーチレポート",
 };
 export default strings;
