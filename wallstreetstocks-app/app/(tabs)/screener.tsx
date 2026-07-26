@@ -1418,6 +1418,74 @@ export default function Screener() {
     { key: 'premium', label: '👑 Premium' },
   ];
 
+  // ============ PLATINUM PAYWALL ============
+  // The full screener requires Platinum (FEATURE_TIERS.SCREENER_FILTERS)
+  if (!hasPlatinumAccess) {
+    const plat = isDark ? '#E5E4E2' : '#6E6E73';
+    const features: Array<{ icon: any; title: string; desc: string }> = [
+      { icon: 'flash-outline', title: 'Quick Screens', desc: 'One tap for trending, top gainers, losers and more.' },
+      { icon: 'options-outline', title: '30+ Pro Filters', desc: 'Stack valuation, profitability, growth and health filters.' },
+      { icon: 'telescope-outline', title: 'Full-Market Scan', desc: 'Scan the entire market in seconds.' },
+      { icon: 'bookmark-outline', title: 'Saved Filters', desc: 'Save your setups and re-run them anytime.' },
+      { icon: 'analytics-outline', title: 'Advanced Metrics', desc: 'RSI, 52-week range, analyst ratings and insider activity.' },
+    ];
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        <ScrollView contentContainerStyle={styles.paywallContent} showsVerticalScrollIndicator={false}>
+          <View style={[styles.paywallIconWrap, { backgroundColor: isDark ? 'rgba(229,228,226,0.12)' : '#EFEFF1' }]}>
+            <Ionicons name="funnel" size={44} color={plat} />
+          </View>
+
+          <View style={[styles.paywallTierPill, { backgroundColor: isDark ? 'rgba(229,228,226,0.12)' : '#F3F3F5', borderColor: plat + '66' }]}>
+            <Ionicons name="diamond" size={12} color={plat} />
+            <Text style={[styles.paywallTierPillText, { color: plat }]}>PLATINUM</Text>
+          </View>
+
+          <Text style={[styles.paywallTitle, { color: colors.text }]}>{t('Unlock the Stock Screener')}</Text>
+          <Text style={[styles.paywallSubtitle, { color: colors.textSecondary }]}>
+            {t('Find tomorrow\u2019s winners with pro-grade filters.')}
+          </Text>
+
+          <View style={styles.paywallFeatures}>
+            {features.map((f) => (
+              <View key={f.title} style={[styles.paywallFeatureRow, { backgroundColor: colors.surface }]}>
+                <View style={[styles.paywallFeatureIcon, { backgroundColor: isDark ? 'rgba(229,228,226,0.12)' : '#EFEFF1' }]}>
+                  <Ionicons name={f.icon} size={22} color={plat} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.paywallFeatureTitle, { color: colors.text }]}>{t(f.title)}</Text>
+                  <Text style={[styles.paywallFeatureDesc, { color: colors.textSecondary }]}>{t(f.desc)}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <Text style={[styles.paywallTagline, { color: colors.textSecondary }]}>
+            {t('Scan smarter. Invest sharper.')}
+          </Text>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push('/(modals)/paywall' as any)}
+            accessibilityRole="button"
+            accessibilityLabel={t('Unlock with Platinum')}
+            style={styles.paywallCtaWrap}
+          >
+            <LinearGradient
+              colors={isDark ? ['#F5F5F7', '#B9BAC0'] : ['#7A7A80', '#4E4E54']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.paywallCta}
+            >
+              <Ionicons name="lock-open" size={19} color={isDark ? '#1a1a1a' : '#FFF'} />
+              <Text style={[styles.paywallCtaText, { color: isDark ? '#1a1a1a' : '#FFF' }]}>{t('Unlock with Platinum')}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.borderLight }]}>
@@ -2088,6 +2156,22 @@ const styles = StyleSheet.create({
   },
   applyButtonDisabled: { backgroundColor: '#B0B0B0' },
   applyButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  // Platinum paywall
+  paywallContent: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 56, paddingBottom: 140 },
+  paywallIconWrap: { width: 92, height: 92, borderRadius: 46, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  paywallTierPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, borderWidth: 1, marginBottom: 18 },
+  paywallTierPillText: { fontSize: 12, fontWeight: '800', letterSpacing: 1.5 },
+  paywallTitle: { fontSize: 28, fontWeight: '800', textAlign: 'center', marginBottom: 8, lineHeight: 34 },
+  paywallSubtitle: { fontSize: 15, textAlign: 'center', marginBottom: 28 },
+  paywallFeatures: { alignSelf: 'stretch', gap: 10, marginBottom: 26 },
+  paywallFeatureRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 16 },
+  paywallFeatureIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  paywallFeatureTitle: { fontSize: 15.5, fontWeight: '700', marginBottom: 2 },
+  paywallFeatureDesc: { fontSize: 13, lineHeight: 18 },
+  paywallTagline: { fontSize: 14, fontWeight: '600', fontStyle: 'italic', textAlign: 'center', marginBottom: 22 },
+  paywallCtaWrap: { alignSelf: 'stretch', borderRadius: 16, overflow: 'hidden', shadowColor: '#8E8E93', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 8 },
+  paywallCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 17 },
+  paywallCtaText: { fontSize: 17, fontWeight: '800' },
   // bottom 135 clears the floating glass tab-bar pill (100 sat behind it)
   fab: { position: 'absolute', bottom: 135, left: 20, right: 20, borderRadius: 16, overflow: 'hidden', shadowColor: '#B8860B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
   fabGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, gap: 8 },

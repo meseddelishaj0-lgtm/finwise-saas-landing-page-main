@@ -2245,5 +2245,17 @@ const strings: Record<string, string> = {
   "A respectful community focused on growth.": "성장에 집중하는 존중의 커뮤니티.",
   "Stronger together. Invest better together.": "함께라서 더 강하게. 함께라서 더 나은 투자.",
   "Unlock with Gold": "Gold로 잠금 해제",
+  "Unlock the Stock Screener": "주식 스크리너 잠금 해제",
+  "Find tomorrow’s winners with pro-grade filters.": "프로급 필터로 내일의 승자를 찾아보세요.",
+  "One tap for trending, top gainers, losers and more.": "인기, 상승, 하락 종목을 한 번의 탭으로.",
+  "30+ Pro Filters": "30개 이상의 프로 필터",
+  "Stack valuation, profitability, growth and health filters.": "밸류에이션·수익성·성장·재무 건전성 필터를 조합하세요.",
+  "Full-Market Scan": "전체 시장 스캔",
+  "Scan the entire market in seconds.": "몇 초 만에 전체 시장을 스캔합니다.",
+  "Save your setups and re-run them anytime.": "설정을 저장하고 언제든 다시 실행하세요.",
+  "Advanced Metrics": "고급 지표",
+  "RSI, 52-week range, analyst ratings and insider activity.": "RSI, 52주 범위, 애널리스트 평가, 내부자 동향.",
+  "Scan smarter. Invest sharper.": "더 똑똑하게 스캔, 더 날카롭게 투자.",
+  "Unlock with Platinum": "Platinum으로 잠금 해제",
 };
 export default strings;

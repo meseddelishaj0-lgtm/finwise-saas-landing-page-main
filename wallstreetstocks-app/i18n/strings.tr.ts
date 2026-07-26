@@ -2247,5 +2247,17 @@ const strings: Record<string, string> = {
   "A respectful community focused on growth.": "Büyümeye odaklı, saygılı bir topluluk.",
   "Stronger together. Invest better together.": "Birlikte daha güçlüyüz. Birlikte daha iyi yatırım.",
   "Unlock with Gold": "Gold ile Kilidi Aç",
+  "Unlock the Stock Screener": "Hisse Tarayıcısının Kilidini Açın",
+  "Find tomorrow’s winners with pro-grade filters.": "Yarının kazananlarını profesyonel filtrelerle bulun.",
+  "One tap for trending, top gainers, losers and more.": "Trendler, yükselenler, düşenler ve daha fazlası tek dokunuşta.",
+  "30+ Pro Filters": "30+ Pro Filtre",
+  "Stack valuation, profitability, growth and health filters.": "Değerleme, kârlılık, büyüme ve sağlık filtrelerini birleştirin.",
+  "Full-Market Scan": "Tüm Piyasa Taraması",
+  "Scan the entire market in seconds.": "Tüm piyasayı saniyeler içinde tarayın.",
+  "Save your setups and re-run them anytime.": "Kurulumlarınızı kaydedin, istediğiniz an yeniden çalıştırın.",
+  "Advanced Metrics": "Gelişmiş Metrikler",
+  "RSI, 52-week range, analyst ratings and insider activity.": "RSI, 52 haftalık aralık, analist notları ve insider hareketleri.",
+  "Scan smarter. Invest sharper.": "Daha akıllı tara. Daha isabetli yatır.",
+  "Unlock with Platinum": "Platinum ile Kilidi Aç",
 };
 export default strings;

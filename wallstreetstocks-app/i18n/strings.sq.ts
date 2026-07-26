@@ -2247,5 +2247,17 @@ const strings: Record<string, string> = {
   "A respectful community focused on growth.": "Një komunitet me respekt, i fokusuar te rritja.",
   "Stronger together. Invest better together.": "Më të fortë së bashku. Investojmë më mirë së bashku.",
   "Unlock with Gold": "Zhblloko me Gold",
+  "Unlock the Stock Screener": "Zhblloko skanerin e aksioneve",
+  "Find tomorrow’s winners with pro-grade filters.": "Gjej fituesit e së nesërmes me filtra profesionalë.",
+  "One tap for trending, top gainers, losers and more.": "Një prekje për trendet, fituesit, humbësit e më shumë.",
+  "30+ Pro Filters": "Mbi 30 filtra pro",
+  "Stack valuation, profitability, growth and health filters.": "Kombino filtra vlerësimi, përfitueshmërie, rritjeje dhe shëndeti.",
+  "Full-Market Scan": "Skanim i gjithë tregut",
+  "Scan the entire market in seconds.": "Skano gjithë tregun në sekonda.",
+  "Save your setups and re-run them anytime.": "Ruaj konfigurimet dhe ripërdori kur të duash.",
+  "Advanced Metrics": "Metrika të avancuara",
+  "RSI, 52-week range, analyst ratings and insider activity.": "RSI, diapazoni 52-javor, vlerësimet e analistëve dhe aktiviteti insider.",
+  "Scan smarter. Invest sharper.": "Skano më zgjuar. Investo më saktë.",
+  "Unlock with Platinum": "Zhblloko me Platinum",
 };
 export default strings;

@@ -2245,5 +2245,17 @@ const strings: Record<string, string> = {
   "A respectful community focused on growth.": "विकास पर केंद्रित एक सम्मानजनक समुदाय।",
   "Stronger together. Invest better together.": "साथ में मजबूत। साथ में बेहतर निवेश।",
   "Unlock with Gold": "Gold के साथ अनलॉक करें",
+  "Unlock the Stock Screener": "स्टॉक स्क्रीनर अनलॉक करें",
+  "Find tomorrow’s winners with pro-grade filters.": "प्रो फ़िल्टर से कल के विजेता खोजें।",
+  "One tap for trending, top gainers, losers and more.": "एक टैप में ट्रेंडिंग, टॉप गेनर्स, लूज़र्स और बहुत कुछ।",
+  "30+ Pro Filters": "30+ प्रो फ़िल्टर",
+  "Stack valuation, profitability, growth and health filters.": "वैल्यूएशन, लाभप्रदता, वृद्धि और वित्तीय सेहत के फ़िल्टर जोड़ें।",
+  "Full-Market Scan": "पूरे बाज़ार का स्कैन",
+  "Scan the entire market in seconds.": "सेकंडों में पूरा बाज़ार स्कैन करें।",
+  "Save your setups and re-run them anytime.": "अपने सेटअप सहेजें और कभी भी दोबारा चलाएं।",
+  "Advanced Metrics": "एडवांस्ड मेट्रिक्स",
+  "RSI, 52-week range, analyst ratings and insider activity.": "RSI, 52-सप्ताह रेंज, एनालिस्ट रेटिंग और इनसाइडर गतिविधि।",
+  "Scan smarter. Invest sharper.": "स्मार्ट स्कैन करें। बेहतर निवेश करें।",
+  "Unlock with Platinum": "Platinum के साथ अनलॉक करें",
 };
 export default strings;

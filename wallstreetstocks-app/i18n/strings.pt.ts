@@ -2247,5 +2247,17 @@ const strings: Record<string, string> = {
   "A respectful community focused on growth.": "Uma comunidade respeitosa focada em crescimento.",
   "Stronger together. Invest better together.": "Mais fortes juntos. Investindo melhor juntos.",
   "Unlock with Gold": "Desbloquear com Gold",
+  "Unlock the Stock Screener": "Desbloqueie o Screener de Ações",
+  "Find tomorrow’s winners with pro-grade filters.": "Encontre os vencedores de amanhã com filtros profissionais.",
+  "One tap for trending, top gainers, losers and more.": "Um toque para tendências, maiores altas, quedas e mais.",
+  "30+ Pro Filters": "Mais de 30 filtros pro",
+  "Stack valuation, profitability, growth and health filters.": "Combine filtros de avaliação, rentabilidade, crescimento e saúde.",
+  "Full-Market Scan": "Varredura de todo o mercado",
+  "Scan the entire market in seconds.": "Escaneie o mercado inteiro em segundos.",
+  "Save your setups and re-run them anytime.": "Salve suas configurações e reutilize quando quiser.",
+  "Advanced Metrics": "Métricas avançadas",
+  "RSI, 52-week range, analyst ratings and insider activity.": "RSI, faixa de 52 semanas, avaliações de analistas e atividade de insiders.",
+  "Scan smarter. Invest sharper.": "Escaneie melhor. Invista melhor.",
+  "Unlock with Platinum": "Desbloquear com Platinum",
 };
 export default strings;

@@ -2245,5 +2245,17 @@ const strings: Record<string, string> = {
   "A respectful community focused on growth.": "成長を大切にする、礼儀正しいコミュニティ。",
   "Stronger together. Invest better together.": "共に強く。共により良い投資を。",
   "Unlock with Gold": "Goldでアンロック",
+  "Unlock the Stock Screener": "株式スクリーナーをアンロック",
+  "Find tomorrow’s winners with pro-grade filters.": "プロ仕様のフィルターで明日の勝者を見つけよう。",
+  "One tap for trending, top gainers, losers and more.": "トレンド、値上がり、値下がりなどをワンタップで。",
+  "30+ Pro Filters": "30以上のプロフィルター",
+  "Stack valuation, profitability, growth and health filters.": "バリュエーション・収益性・成長・財務健全性を組み合わせ。",
+  "Full-Market Scan": "全市場スキャン",
+  "Scan the entire market in seconds.": "数秒で市場全体をスキャン。",
+  "Save your setups and re-run them anytime.": "設定を保存していつでも再実行。",
+  "Advanced Metrics": "高度な指標",
+  "RSI, 52-week range, analyst ratings and insider activity.": "RSI、52週レンジ、アナリスト評価、インサイダー動向。",
+  "Scan smarter. Invest sharper.": "賢くスキャン。鋭く投資。",
+  "Unlock with Platinum": "Platinumでアンロック",
 };
 export default strings;

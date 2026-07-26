@@ -2247,5 +2247,17 @@ const strings: Record<string, string> = {
   "A respectful community focused on growth.": "Μια κοινότητα με σεβασμό, εστιασμένη στην ανάπτυξη.",
   "Stronger together. Invest better together.": "Πιο δυνατοί μαζί. Επενδύουμε καλύτερα μαζί.",
   "Unlock with Gold": "Ξεκλείδωμα με Gold",
+  "Unlock the Stock Screener": "Ξεκλειδώστε το Screener μετοχών",
+  "Find tomorrow’s winners with pro-grade filters.": "Βρείτε τους αυριανούς νικητές με επαγγελματικά φίλτρα.",
+  "One tap for trending, top gainers, losers and more.": "Ένα άγγιγμα για δημοφιλή, κερδισμένους, χαμένους και άλλα.",
+  "30+ Pro Filters": "30+ επαγγελματικά φίλτρα",
+  "Stack valuation, profitability, growth and health filters.": "Συνδυάστε φίλτρα αποτίμησης, κερδοφορίας, ανάπτυξης και υγείας.",
+  "Full-Market Scan": "Σάρωση όλης της αγοράς",
+  "Scan the entire market in seconds.": "Σαρώστε όλη την αγορά σε δευτερόλεπτα.",
+  "Save your setups and re-run them anytime.": "Αποθηκεύστε τις ρυθμίσεις σας και ξανατρέξτε τις όποτε θέλετε.",
+  "Advanced Metrics": "Προηγμένοι δείκτες",
+  "RSI, 52-week range, analyst ratings and insider activity.": "RSI, εύρος 52 εβδομάδων, αξιολογήσεις αναλυτών και κινήσεις insiders.",
+  "Scan smarter. Invest sharper.": "Σαρώστε εξυπνότερα. Επενδύστε καλύτερα.",
+  "Unlock with Platinum": "Ξεκλείδωμα με Platinum",
 };
 export default strings;

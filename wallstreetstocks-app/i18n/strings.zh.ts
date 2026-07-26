@@ -2247,5 +2247,17 @@ const strings: Record<string, string> = {
   "A respectful community focused on growth.": "一个专注成长、互相尊重的社区。",
   "Stronger together. Invest better together.": "团结更强大，投资更出色。",
   "Unlock with Gold": "解锁 Gold",
+  "Unlock the Stock Screener": "解锁选股器",
+  "Find tomorrow’s winners with pro-grade filters.": "用专业筛选找出明天的赢家。",
+  "One tap for trending, top gainers, losers and more.": "一键查看热门、涨幅榜、跌幅榜等。",
+  "30+ Pro Filters": "30+ 专业筛选条件",
+  "Stack valuation, profitability, growth and health filters.": "叠加估值、盈利、成长和财务健康筛选。",
+  "Full-Market Scan": "全市场扫描",
+  "Scan the entire market in seconds.": "几秒钟扫描整个市场。",
+  "Save your setups and re-run them anytime.": "保存你的筛选组合，随时重新运行。",
+  "Advanced Metrics": "高级指标",
+  "RSI, 52-week range, analyst ratings and insider activity.": "RSI、52周区间、分析师评级和内部人动向。",
+  "Scan smarter. Invest sharper.": "更聪明地筛选，更精准地投资。",
+  "Unlock with Platinum": "解锁 Platinum",
 };
 export default strings;
