@@ -876,7 +876,7 @@ Always remind users that this is educational information, not financial advice.`
 
                   <TouchableOpacity
                     style={styles.premiumUpgradeButton}
-                    onPress={() => router.push('/(modals)/paywall' as any)}
+                    onPress={() => router.push({ pathname: '/(modals)/paywall', params: { preselect: 'diamond' } } as any)}
                   >
                     <Ionicons name="diamond" size={20} color="#000" />
                     <Text style={styles.premiumUpgradeText}>{t('Upgrade to Diamond')}</Text>
@@ -1208,7 +1208,7 @@ Always remind users that this is educational information, not financial advice.`
                       </View>
                     ))}
                   </View>
-                  <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
+                  <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push({ pathname: '/(modals)/paywall', params: { preselect: 'diamond' } } as any)}>
                     <Ionicons name="diamond" size={20} color="#000" />
                     <Text style={styles.premiumUpgradeText}>{t('Upgrade to Diamond')}</Text>
                   </TouchableOpacity>
@@ -1523,7 +1523,7 @@ Always remind users that this is educational information, not financial advice.`
                       </View>
                     ))}
                   </View>
-                  <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
+                  <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push({ pathname: '/(modals)/paywall', params: { preselect: 'diamond' } } as any)}>
                     <Ionicons name="diamond" size={20} color="#000" />
                     <Text style={styles.premiumUpgradeText}>{t('Upgrade to Diamond')}</Text>
                   </TouchableOpacity>
@@ -1872,7 +1872,7 @@ Always remind users that this is educational information, not financial advice.`
                     </View>
                   ))}
                 </View>
-                <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
+                <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push({ pathname: '/(modals)/paywall', params: { preselect: 'diamond' } } as any)}>
                   <Ionicons name="diamond" size={20} color="#000" />
                   <Text style={styles.premiumUpgradeText}>{t('Upgrade to Diamond')}</Text>
                 </TouchableOpacity>
@@ -2060,7 +2060,7 @@ Always remind users that this is educational information, not financial advice.`
                       </View>
                     ))}
                   </View>
-                  <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push('/(modals)/paywall' as any)}>
+                  <TouchableOpacity style={styles.premiumUpgradeButton} onPress={() => router.push({ pathname: '/(modals)/paywall', params: { preselect: 'diamond' } } as any)}>
                     <Ionicons name="diamond" size={20} color="#000" />
                     <Text style={styles.premiumUpgradeText}>{t('Upgrade to Diamond')}</Text>
                   </TouchableOpacity>
