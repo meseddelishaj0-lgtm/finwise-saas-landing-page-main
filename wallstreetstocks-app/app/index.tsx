@@ -173,7 +173,6 @@ export default function Index() {
       <View style={styles.content}>
         <Enter delay={0}>
           <View style={styles.logoWrap}>
-            <View style={styles.logoGlow} />
             <Image source={require('../assets/images/wallstreetstocks.png')} style={styles.logo} />
           </View>
         </Enter>
@@ -264,25 +263,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 28,
   },
-  logoGlow: {
-    position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: '#FFD60A',
-    opacity: 0.12,
-  },
   logo: {
-    width: 96,
-    height: 96,
-    borderRadius: 24, // squircle — kills the hard square edge
-    borderWidth: 1,
-    borderColor: 'rgba(255,214,10,0.35)',
+    width: 104,
+    height: 104,
+    borderRadius: 26, // squircle — kills the hard square edge
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,214,10,0.5)',
     resizeMode: 'cover',
+    // Diffused gold halo via shadow — no solid disc (a low-opacity gold
+    // circle over navy rendered as a muddy gray blob)
     shadowColor: '#FFD60A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 28,
+    elevation: 12,
   },
   title: {
     fontSize: 34,
