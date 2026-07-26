@@ -11,7 +11,11 @@ import {
   Platform,
   ScrollView,
   KeyboardAvoidingView,
+  Image,
+  Animated,
+  Easing,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import * as Google from 'expo-auth-session/providers/google';
@@ -60,6 +64,19 @@ function decodeJWT(token: string): { email?: string; sub?: string } | null {
     return null;
   }
 }
+
+// Fade + slide-up entrance (native driver)
+const Enter = ({ children, delay = 0, distance = 16, style }: any) => {
+  const pr = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(pr, { toValue: 1, duration: 480, delay, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, []);
+  return (
+    <Animated.View style={[style, { opacity: pr, transform: [{ translateY: pr.interpolate({ inputRange: [0, 1], outputRange: [distance, 0] }) }] }]}>
+      {children}
+    </Animated.View>
+  );
+};
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -327,8 +344,9 @@ export default function Signup() {
   };
 
   return (
+    <LinearGradient colors={['#0B1A2E', '#070E1C', '#050A14']} style={styles.container}>
     <KeyboardAvoidingView
-      style={styles.container}
+      style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -336,25 +354,36 @@ export default function Signup() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>{t('Create Account')}</Text>
-      <Text style={styles.subtitle}>{t('Join the community')}</Text>
+        <Enter delay={0}>
+          <Image source={require('../assets/images/wallstreetstocks.png')} style={styles.headerLogo} />
+        </Enter>
+        <Enter delay={90}>
+          <Text style={styles.title}>{t('Create Account')}</Text>
+        </Enter>
+        <Enter delay={160}>
+          <Text style={styles.subtitle}>{t('Join the community')}</Text>
+        </Enter>
 
-      <TextInput
-        style={styles.input}
-        placeholder={t('Full Name')}
-        placeholderTextColor="#999"
-        value={name}
-        onChangeText={setName}
-        autoCapitalize="words"
-        editable={!loading}
-      />
+      <View style={styles.inputCard}>
+        <Ionicons name="person-outline" size={19} color="rgba(255,255,255,0.45)" />
+        <TextInput
+          style={styles.inputFlex}
+          placeholder={t('Full Name')}
+          placeholderTextColor="rgba(255,255,255,0.4)"
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="words"
+          editable={!loading}
+        />
+      </View>
 
       <View>
-        <View style={styles.usernameRow}>
+        <View style={[styles.inputCard, usernameError ? styles.inputErrorBorder : usernameAvailable === true ? styles.inputSuccessBorder : null]}>
+          <Ionicons name="at-outline" size={19} color="rgba(255,255,255,0.45)" />
           <TextInput
-            style={[styles.input, { flex: 1 }, usernameError ? styles.inputErrorBorder : usernameAvailable === true ? styles.inputSuccessBorder : null]}
+            style={styles.inputFlex}
             placeholder={t('Username (e.g. wallstreetbull)')}
-            placeholderTextColor="#999"
+            placeholderTextColor="rgba(255,255,255,0.4)"
             value={username}
             onChangeText={validateUsername}
             autoCapitalize="none"
@@ -362,7 +391,7 @@ export default function Signup() {
             editable={!loading}
           />
           {checkingUsername && (
-            <ActivityIndicator size="small" color="#B8860B" style={styles.usernameLoader} />
+            <ActivityIndicator size="small" color="#FFD60A" />
           )}
         </View>
         {usernameError ? (
@@ -376,22 +405,26 @@ export default function Signup() {
         ) : null}
       </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder={t('Email')}
-        placeholderTextColor="#999"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        editable={!loading}
-      />
-
-      <View style={styles.passwordContainer}>
+      <View style={styles.inputCard}>
+        <Ionicons name="mail-outline" size={19} color="rgba(255,255,255,0.45)" />
         <TextInput
-          style={styles.passwordInput}
+          style={styles.inputFlex}
+          placeholder={t('Email')}
+          placeholderTextColor="rgba(255,255,255,0.4)"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          editable={!loading}
+        />
+      </View>
+
+      <View style={styles.inputCard}>
+        <Ionicons name="lock-closed-outline" size={19} color="rgba(255,255,255,0.45)" />
+        <TextInput
+          style={styles.inputFlex}
           placeholder={t('Password')}
-          placeholderTextColor="#999"
+          placeholderTextColor="rgba(255,255,255,0.4)"
           value={password}
           onChangeText={setPassword}
           secureTextEntry={!showPassword}
@@ -404,34 +437,47 @@ export default function Signup() {
           <Ionicons 
             name={showPassword ? "eye-off" : "eye"} 
             size={22} 
-            color="#999" 
+            color="rgba(255,255,255,0.5)" 
           />
         </TouchableOpacity>
       </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder={t('Confirm Password')}
-        placeholderTextColor="#999"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry={!showPassword}
-        editable={!loading}
-      />
+      <View style={styles.inputCard}>
+        <Ionicons name="shield-checkmark-outline" size={19} color="rgba(255,255,255,0.45)" />
+        <TextInput
+          style={styles.inputFlex}
+          placeholder={t('Confirm Password')}
+          placeholderTextColor="rgba(255,255,255,0.4)"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry={!showPassword}
+          editable={!loading}
+        />
+      </View>
 
       <TouchableOpacity
-        style={[styles.button, loading && styles.buttonDisabled]}
+        style={loading ? styles.buttonDisabled : undefined}
         onPress={handleSignup}
         disabled={loading}
+        activeOpacity={0.85}
       >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>{t('Create Account')}</Text>
-        )}
+        <LinearGradient colors={['#FFD60A', '#DAA520']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.button}>
+          {loading ? (
+            <ActivityIndicator color="#1a1a1a" />
+          ) : (
+            <>
+              <Text style={styles.buttonText}>{t('Create Account')}</Text>
+              <Ionicons name="arrow-forward" size={19} color="#1a1a1a" />
+            </>
+          )}
+        </LinearGradient>
       </TouchableOpacity>
 
-      <Text style={styles.or}>{t('or')}</Text>
+      <View style={styles.orRow}>
+        <View style={styles.orLine} />
+        <Text style={styles.or}>{t('or')}</Text>
+        <View style={styles.orLine} />
+      </View>
 
       <TouchableOpacity
         style={styles.socialButton}
@@ -447,7 +493,7 @@ export default function Signup() {
       {Platform.OS === 'ios' && AppleAuthentication && (
         <AppleAuthentication.AppleAuthenticationButton
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
           cornerRadius={30}
           style={styles.appleButton}
           onPress={handleAppleSignIn}
@@ -464,77 +510,122 @@ export default function Signup() {
       </Text>
       </ScrollView>
     </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  container: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 32,
-    paddingTop: 60,
+    paddingHorizontal: 28,
+    paddingTop: 64,
     paddingBottom: 40,
   },
-  title: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    marginBottom: 40 
+  headerLogo: {
+    width: 54,
+    height: 54,
+    borderRadius: 14,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,214,10,0.35)',
+    resizeMode: 'cover',
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 6,
+    letterSpacing: -0.4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
+    fontSize: 15.5,
+    color: 'rgba(255,255,255,0.6)',
+    marginBottom: 26,
   },
-  input: { 
-    borderBottomWidth: 1, 
-    borderColor: '#ddd', 
-    paddingVertical: 12, 
-    fontSize: 16, 
-    marginBottom: 20,
-    color: '#000',
+  // Frosted input cards
+  inputCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  inputFlex: {
+    flex: 1,
+    paddingVertical: 15,
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
+  // Legacy names kept for safety
+  input: {
+    flex: 1,
+    paddingVertical: 15,
+    fontSize: 16,
+    color: '#FFFFFF',
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-    marginBottom: 20,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    marginBottom: 14,
   },
   passwordInput: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 15,
     fontSize: 16,
-    color: '#000',
+    color: '#FFFFFF',
   },
-  eyeButton: {
-    padding: 8,
+  eyeButton: { padding: 6 },
+  button: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 30,
+    marginTop: 8,
+    marginBottom: 20,
+    shadowColor: '#DAA520',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    elevation: 8,
   },
-  button: { 
-    backgroundColor: '#0dd977', 
-    paddingVertical: 16, 
-    borderRadius: 30, 
-    alignItems: 'center', 
-    marginBottom: 24 
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: {
+    color: '#1a1a1a',
+    fontWeight: '800',
+    fontSize: 17,
   },
-  buttonDisabled: {
-    backgroundColor: '#ccc',
+  orRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginVertical: 14,
   },
-  buttonText: { 
-    color: '#fff', 
-    fontWeight: '600', 
-    fontSize: 16 
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
-  or: { 
-    textAlign: 'center', 
-    color: '#999', 
-    marginVertical: 16 
+  or: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 13,
+    fontWeight: '600',
   },
   socialButton: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: 'rgba(255,255,255,0.14)',
     paddingVertical: 14,
     borderRadius: 30,
     alignItems: 'center',
@@ -543,42 +634,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
-  socialIcon: {
-    // Icon is inline with text
-  },
+  socialIcon: {},
   socialText: {
     fontSize: 16,
-    color: '#000',
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   appleButton: {
     width: '100%',
     height: 48,
     marginBottom: 12,
   },
-  link: { 
-    color: '#B8860B', 
-    textAlign: 'center', 
-    marginTop: 24, 
-    textDecorationLine: 'underline' 
+  link: {
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
+    marginTop: 22,
+    fontSize: 15.5,
   },
-  terms: { 
-    fontSize: 12, 
-    color: '#999', 
-    textAlign: 'center', 
-    marginTop: 40 
+  terms: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.35)',
+    textAlign: 'center',
+    marginTop: 32,
   },
-  underline: { 
-    textDecorationLine: 'underline' 
+  underline: {
+    textDecorationLine: 'underline',
+    color: 'rgba(255,255,255,0.55)',
   },
   usernameInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1C1C1E',
-    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 14,
     marginBottom: 4,
   },
   usernamePrefix: {
-    color: '#999',
+    color: 'rgba(255,255,255,0.45)',
     fontSize: 16,
     paddingLeft: 16,
     paddingRight: 4,
@@ -590,59 +681,14 @@ const styles = StyleSheet.create({
     paddingLeft: 0,
     fontSize: 16,
   },
-  inputHint: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  inputError: {
-    fontSize: 12,
-    color: '#FF3B30',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  inputSuccess: {
-    fontSize: 12,
-    color: '#34C759',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  errorText: {
-    fontSize: 12,
-    color: '#FF3B30',
-    marginTop: 4,
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  successText: {
-    fontSize: 12,
-    color: '#34C759',
-    marginTop: 4,
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  inputErrorBorder: {
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-  },
-  inputSuccessBorder: {
-    borderWidth: 1,
-    borderColor: '#34C759',
-  },
-  usernameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  usernameLoader: {
-    position: 'absolute',
-    right: 16,
-  },
-  hintText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-    marginBottom: 8,
-    marginLeft: 4,
-  },
+  inputHint: { fontSize: 12, color: 'rgba(255,255,255,0.4)', marginBottom: 8, marginLeft: 4 },
+  inputError: { fontSize: 12, color: '#FF6B6B', marginBottom: 8, marginLeft: 4 },
+  inputSuccess: { fontSize: 12, color: '#34D399', marginBottom: 8, marginLeft: 4 },
+  errorText: { fontSize: 12, color: '#FF6B6B', marginTop: 2, marginBottom: 10, marginLeft: 4 },
+  successText: { fontSize: 12, color: '#34D399', marginTop: 2, marginBottom: 10, marginLeft: 4 },
+  inputErrorBorder: { borderColor: '#FF6B6B' },
+  inputSuccessBorder: { borderColor: '#34D399' },
+  usernameRow: { flexDirection: 'row', alignItems: 'center' },
+  usernameLoader: { position: 'absolute', right: 16 },
+  hintText: { fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2, marginBottom: 10, marginLeft: 4 },
 });
