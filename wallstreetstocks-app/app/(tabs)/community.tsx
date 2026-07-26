@@ -534,6 +534,21 @@ interface Notification {
   createdAt: string;
 }
 
+const BreatheView = ({ children, style, to = 1.045, duration = 1400 }: { children: React.ReactNode; style?: any; to?: number; duration?: number }) => {
+  const scale = React.useRef(new Animated.Value(1)).current;
+  React.useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scale, { toValue: to, duration, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [scale, to, duration]);
+  return <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>;
+};
+
 export default function CommunityPage() {
   const { colors, isDark } = useTheme();
   const navRouter = useRouter();
@@ -2450,6 +2465,7 @@ export default function CommunityPage() {
   // Community requires Gold (FEATURE_TIERS.COMMUNITY_ACCESS)
   if (!canAccess(FEATURE_TIERS.COMMUNITY_ACCESS)) {
     const gold = isDark ? '#FFD60A' : '#B8860B';
+    const goldTint = isDark ? 'rgba(255,214,10,0.14)' : '#F6EEDA';
     const features: Array<{ icon: any; title: string; desc: string }> = [
       { icon: 'people-outline', title: 'Share Ideas', desc: 'Exchange insights and investment strategies.' },
       { icon: 'chatbubbles-outline', title: 'Real Discussions', desc: 'Engage in meaningful conversations.' },
@@ -2460,59 +2476,74 @@ export default function CommunityPage() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScrollView contentContainerStyle={styles.paywallContent} showsVerticalScrollIndicator={false}>
-          <View style={[styles.paywallIconWrap, { backgroundColor: isDark ? 'rgba(255,214,10,0.12)' : '#F6EEDA' }]}>
-            <Ionicons name="people" size={44} color={gold} />
-          </View>
+          <FadeSlideIn distance={16}>
+            <View style={{ alignItems: 'center' }}>
+              <BreatheView>
+                <View style={[styles.paywallIconWrap, { backgroundColor: goldTint, borderWidth: 1, borderColor: gold + '45' }]}>
+                  <Ionicons name="people" size={44} color={gold} />
+                </View>
+              </BreatheView>
 
-          <View style={[styles.paywallTierPill, { backgroundColor: isDark ? 'rgba(255,215,0,0.15)' : '#FBF6E8', borderColor: gold + '55' }]}>
-            <Ionicons name="star" size={12} color={gold} />
-            <Text style={[styles.paywallTierPillText, { color: gold }]}>GOLD</Text>
-          </View>
+              <View style={[styles.paywallTierPill, { backgroundColor: goldTint, borderColor: gold + '66' }]}>
+                <Ionicons name="star" size={12} color={gold} />
+                <Text style={[styles.paywallTierPillText, { color: gold }]}>GOLD</Text>
+              </View>
 
-          <Text style={[styles.paywallTitle, { color: colors.text }]}>{t('Join the Community of Investors')}</Text>
-          <Text style={[styles.paywallSubtitle, { color: colors.textSecondary }]}>
-            {t('Connect, share ideas, and grow together.')}
-          </Text>
+              <Text style={[styles.paywallTitle, { color: colors.text }]}>{t('Join the Community of Investors')}</Text>
+              <Text style={[styles.paywallSubtitle, { color: colors.textSecondary }]}>
+                {t('Connect, share ideas, and grow together.')}
+              </Text>
+            </View>
+          </FadeSlideIn>
 
           <View style={styles.paywallFeatures}>
-            {features.map((f) => (
-              <View key={f.title} style={[styles.paywallFeatureRow, { backgroundColor: colors.surface }]}>
-                <View style={[styles.paywallFeatureIcon, { backgroundColor: isDark ? 'rgba(255,214,10,0.12)' : '#F6EEDA' }]}>
-                  <Ionicons name={f.icon} size={22} color={gold} />
+            {features.map((f, idx) => (
+              <FadeSlideIn key={f.title} delay={120 + idx * 90} distance={12}>
+                <View style={[styles.paywallFeatureRow, { backgroundColor: colors.surface, borderWidth: 1, borderColor: gold + (isDark ? '26' : '1f') }]}>
+                  <View style={[styles.paywallFeatureIcon, { backgroundColor: goldTint }]}>
+                    <Ionicons name={f.icon} size={22} color={gold} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.paywallFeatureTitle, { color: colors.text }]}>{t(f.title)}</Text>
+                    <Text style={[styles.paywallFeatureDesc, { color: colors.textSecondary }]}>{t(f.desc)}</Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.paywallFeatureTitle, { color: colors.text }]}>{t(f.title)}</Text>
-                  <Text style={[styles.paywallFeatureDesc, { color: colors.textSecondary }]}>{t(f.desc)}</Text>
-                </View>
-              </View>
+              </FadeSlideIn>
             ))}
           </View>
 
-          <Text style={[styles.paywallTagline, { color: colors.textSecondary }]}>
-            {t('Stronger together. Invest better together.')}
-          </Text>
+          <FadeSlideIn delay={620} distance={10}>
+            <Text style={[styles.paywallTagline, { color: colors.textSecondary }]}>
+              {t('Stronger together. Invest better together.')}
+            </Text>
+          </FadeSlideIn>
 
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => navRouter.push('/(modals)/paywall' as any)}
-            accessibilityRole="button"
-            accessibilityLabel={t('Unlock with Gold')}
-            style={styles.paywallCtaWrap}
-          >
-            <ExpoLinearGradient
-              colors={['#FFD60A', '#DAA520']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.paywallCta}
-            >
-              <Ionicons name="lock-open" size={19} color="#1a1a1a" />
-              <Text style={styles.paywallCtaText}>{t('Unlock with Gold')}</Text>
-            </ExpoLinearGradient>
-          </TouchableOpacity>
+          <FadeSlideIn delay={720} distance={10} style={{ alignSelf: 'stretch' }}>
+            <BreatheView to={1.02} duration={1600}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => navRouter.push('/(modals)/paywall' as any)}
+                accessibilityRole="button"
+                accessibilityLabel={t('Unlock with Gold')}
+                style={styles.paywallCtaWrap}
+              >
+                <ExpoLinearGradient
+                  colors={['#FFD60A', '#DAA520']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.paywallCta}
+                >
+                  <Ionicons name="lock-open" size={19} color="#1a1a1a" />
+                  <Text style={styles.paywallCtaText}>{t('Unlock with Gold')}</Text>
+                </ExpoLinearGradient>
+              </TouchableOpacity>
+            </BreatheView>
+          </FadeSlideIn>
         </ScrollView>
       </View>
     );
   }
+
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
