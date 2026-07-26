@@ -2446,6 +2446,74 @@ export default function CommunityPage() {
     );
   }
 
+  // ============ GOLD PAYWALL ============
+  // Community requires Gold (FEATURE_TIERS.COMMUNITY_ACCESS)
+  if (!canAccess(FEATURE_TIERS.COMMUNITY_ACCESS)) {
+    const gold = isDark ? '#FFD60A' : '#B8860B';
+    const features: Array<{ icon: any; title: string; desc: string }> = [
+      { icon: 'people-outline', title: 'Share Ideas', desc: 'Exchange insights and investment strategies.' },
+      { icon: 'chatbubbles-outline', title: 'Real Discussions', desc: 'Engage in meaningful conversations.' },
+      { icon: 'trending-up-outline', title: 'Learn Together', desc: 'Learn from experienced investors.' },
+      { icon: 'trophy-outline', title: 'Track & Compete', desc: 'Join challenges and compare performance.' },
+      { icon: 'shield-checkmark-outline', title: 'Safe & Positive', desc: 'A respectful community focused on growth.' },
+    ];
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ScrollView contentContainerStyle={styles.paywallContent} showsVerticalScrollIndicator={false}>
+          <View style={[styles.paywallIconWrap, { backgroundColor: isDark ? 'rgba(255,214,10,0.12)' : '#F6EEDA' }]}>
+            <Ionicons name="people" size={44} color={gold} />
+          </View>
+
+          <View style={[styles.paywallTierPill, { backgroundColor: isDark ? 'rgba(255,215,0,0.15)' : '#FBF6E8', borderColor: gold + '55' }]}>
+            <Ionicons name="star" size={12} color={gold} />
+            <Text style={[styles.paywallTierPillText, { color: gold }]}>GOLD</Text>
+          </View>
+
+          <Text style={[styles.paywallTitle, { color: colors.text }]}>{t('Join the Community of Investors')}</Text>
+          <Text style={[styles.paywallSubtitle, { color: colors.textSecondary }]}>
+            {t('Connect, share ideas, and grow together.')}
+          </Text>
+
+          <View style={styles.paywallFeatures}>
+            {features.map((f) => (
+              <View key={f.title} style={[styles.paywallFeatureRow, { backgroundColor: colors.surface }]}>
+                <View style={[styles.paywallFeatureIcon, { backgroundColor: isDark ? 'rgba(255,214,10,0.12)' : '#F6EEDA' }]}>
+                  <Ionicons name={f.icon} size={22} color={gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.paywallFeatureTitle, { color: colors.text }]}>{t(f.title)}</Text>
+                  <Text style={[styles.paywallFeatureDesc, { color: colors.textSecondary }]}>{t(f.desc)}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <Text style={[styles.paywallTagline, { color: colors.textSecondary }]}>
+            {t('Stronger together. Invest better together.')}
+          </Text>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navRouter.push('/(modals)/paywall' as any)}
+            accessibilityRole="button"
+            accessibilityLabel={t('Unlock with Gold')}
+            style={styles.paywallCtaWrap}
+          >
+            <ExpoLinearGradient
+              colors={['#FFD60A', '#DAA520']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.paywallCta}
+            >
+              <Ionicons name="lock-open" size={19} color="#1a1a1a" />
+              <Text style={styles.paywallCtaText}>{t('Unlock with Gold')}</Text>
+            </ExpoLinearGradient>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
@@ -4560,6 +4628,105 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Gold paywall
+  paywallContent: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 64,
+    paddingBottom: 140,
+  },
+  paywallIconWrap: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  paywallTierPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 18,
+  },
+  paywallTierPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+  },
+  paywallTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 34,
+  },
+  paywallSubtitle: {
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  paywallFeatures: {
+    alignSelf: 'stretch',
+    gap: 10,
+    marginBottom: 26,
+  },
+  paywallFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 14,
+    borderRadius: 16,
+  },
+  paywallFeatureIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paywallFeatureTitle: {
+    fontSize: 15.5,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  paywallFeatureDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  paywallTagline: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 22,
+  },
+  paywallCtaWrap: {
+    alignSelf: 'stretch',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#DAA520',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  paywallCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 17,
+  },
+  paywallCtaText: {
+    color: '#1a1a1a',
+    fontSize: 17,
+    fontWeight: '800',
+  },
   // FAB
   fab: {
     position: 'absolute',
