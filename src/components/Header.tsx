@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { Transition } from "@headlessui/react";
 import { HiOutlineXMark, HiBars3, HiChevronDown } from "react-icons/hi2";
@@ -111,13 +110,6 @@ const Header: React.FC = () => {
             href="/"
             className="flex items-center gap-2 group flex-shrink-0 -ml-2"
           >
-            <Image
-              src="/images/wallstreetstocks.png"
-              alt="WallStreetStocks Logo"
-              width={isScrolled ? 38 : 46}
-              height={38}
-              className="rounded-md transition-all duration-300 group-hover:scale-105"
-            />
             <span className="text-lg font-extrabold tracking-tight whitespace-nowrap">
               WallStreetStocks
             </span>

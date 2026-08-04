@@ -23,11 +23,6 @@ const Footer: React.FC = () => {
         {/* Logo and Description */}
         <div>
           <Link href="/" className="flex items-center gap-2">
-            <img
-              src="/images/wallstreetstocks.png"
-              alt="WallStreetStocks Logo"
-              className="w-8 h-8 object-contain"
-            />
             <h3 className="text-2xl font-semibold text-white cursor-pointer">
               {siteDetails.siteName}
             </h3>
