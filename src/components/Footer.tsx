@@ -139,7 +139,7 @@ const Footer: React.FC = () => {
       {/* Copyright */}
       <div className="relative z-10 mt-10 border-t border-yellow-500/10 pt-6 max-w-7xl mx-auto px-6">
         <p className="text-gray-500 text-center">
-          © {new Date().getFullYear()} {siteDetails.siteName}. All rights
+          © {new Date().getFullYear()} Wall Street Stocks LLC. All rights
           reserved.
         </p>
       </div>
