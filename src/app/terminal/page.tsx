@@ -3,10 +3,18 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuotes, fmtPrice, fmtCap, Quote } from "@/components/market/useQuotes";
+import { useQuotes, Quote } from "@/components/market/useQuotes";
 import TerminalChart from "@/components/market/TerminalChart";
 import SymbolSearch from "@/components/market/SymbolSearch";
 import MarketsPanel from "@/components/market/MarketsPanel";
+import { useDataset, Skeleton, EmptyNote } from "@/components/market/fundamentals/shared";
+import SymbolHeader from "@/components/market/fundamentals/SymbolHeader";
+import OverviewPanel from "@/components/market/fundamentals/OverviewPanel";
+import FinancialsTab from "@/components/market/fundamentals/FinancialsTab";
+import AnalystsTab from "@/components/market/fundamentals/AnalystsTab";
+import OwnershipTab from "@/components/market/fundamentals/OwnershipTab";
+import EarningsTab from "@/components/market/fundamentals/EarningsTab";
+import ProfileTab from "@/components/market/fundamentals/ProfileTab";
 
 const DEFAULT_WATCHLIST = ["NVDA", "AAPL", "MSFT", "META", "TSLA", "AMZN", "SPY", "BTCUSD"];
 const WATCHLIST_KEY = "wss_terminal_watchlist";
@@ -28,6 +36,86 @@ const timeAgo = (dateStr: string) => {
   return `${Math.floor(hrs / 24)}d`;
 };
 
+/* ---------------- fundamentals tab section ---------------- */
+
+const FUND_TABS = [
+  { key: "financials", label: "Financials", C: FinancialsTab },
+  { key: "analysts", label: "Analysts", C: AnalystsTab },
+  { key: "ownership", label: "Ownership", C: OwnershipTab },
+  { key: "earnings", label: "Earnings & Dividends", C: EarningsTab },
+  { key: "profile", label: "Profile", C: ProfileTab },
+] as const;
+
+type FundTabKey = (typeof FUND_TABS)[number]["key"];
+
+const FundamentalsSection: React.FC<{
+  symbol: string;
+  quote?: Quote;
+  profile: any;
+  profileLoading: boolean;
+}> = ({ symbol, quote, profile, profileLoading }) => {
+  const [tab, setTab] = useState<FundTabKey>("financials");
+  const [visited, setVisited] = useState<Set<FundTabKey>>(new Set(["financials"]));
+
+  // New symbol → only mount the active tab again
+  useEffect(() => {
+    setVisited(new Set([tab]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol]);
+
+  const pick = (k: FundTabKey) => {
+    setTab(k);
+    setVisited((v) => new Set(v).add(k));
+  };
+
+  if (profileLoading && !profile) {
+    return (
+      <div className="mt-4 rounded-2xl border border-white/10 bg-surface">
+        <Skeleton rows={4} />
+      </div>
+    );
+  }
+
+  // Indices, crypto, forex & commodities have no fundamentals — hide the suite.
+  if (!profile?.symbol) return null;
+
+  return (
+    <div className="mt-4">
+      <div className="flex items-center gap-1 overflow-x-auto rounded-2xl border border-white/10 bg-surface p-1.5">
+        {FUND_TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => pick(t.key)}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+              tab === t.key
+                ? "bg-yellow-400/15 text-yellow-300"
+                : "text-gray-500 hover:text-gray-200"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+        <span className="ml-auto hidden md:inline pr-3 text-[10px] font-mono text-gray-600 whitespace-nowrap">
+          {symbol.replace("^", "")} · FUNDAMENTALS
+        </span>
+      </div>
+
+      <div className="mt-4">
+        {FUND_TABS.filter((t) => visited.has(t.key)).map((t) => {
+          const C = t.C;
+          return (
+            <div key={`${symbol}-${t.key}`} className={tab === t.key ? "" : "hidden"}>
+              <C symbol={symbol} quote={quote} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ---------------------- page ---------------------- */
+
 function TerminalInner() {
   const router = useRouter();
   const params = useSearchParams();
@@ -35,6 +123,7 @@ function TerminalInner() {
 
   const [watchlist, setWatchlist] = useState<string[]>(DEFAULT_WATCHLIST);
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
   const [rightTab, setRightTab] = useState<"overview" | "news">("overview");
 
   // Watchlist persistence
@@ -56,14 +145,18 @@ function TerminalInner() {
   const { quotes: symQuotes } = useQuotes(symbolArr, 30000);
   const q: Quote | undefined = symQuotes[0];
 
+  const { data: profile, loading: profileLoading } = useDataset<any>(symbol, "profile");
+
   // Symbol news
   useEffect(() => {
     let alive = true;
     setNews([]);
+    setNewsLoading(true);
     fetch(`/api/market/news?symbol=${encodeURIComponent(symbol.replace("^", ""))}`)
       .then((r) => r.json())
       .then((d) => { if (alive && Array.isArray(d)) setNews(d); })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (alive) setNewsLoading(false); });
     return () => { alive = false; };
   }, [symbol]);
 
@@ -73,7 +166,6 @@ function TerminalInner() {
   };
 
   const inWatchlist = watchlist.includes(symbol);
-  const up = (q?.changePercent || 0) >= 0;
 
   return (
     <main className="min-h-screen bg-night text-white pt-24 pb-10 px-4 md:px-6">
@@ -108,15 +200,7 @@ function TerminalInner() {
             </Link>
           </div>
 
-          <div className="ml-auto flex items-center gap-4">
-            {q && (
-              <div className="text-right">
-                <span className="font-mono font-bold text-lg tabular-nums">${fmtPrice(q.price)}</span>
-                <span className={`ml-2 font-mono text-sm font-bold ${up ? "text-green-400" : "text-red-400"}`}>
-                  {up ? "▲" : "▼"} {Math.abs(q.changePercent || 0).toFixed(2)}%
-                </span>
-              </div>
-            )}
+          <div className="ml-auto flex items-center gap-3">
             <button
               onClick={() => persist(inWatchlist ? watchlist.filter((s) => s !== symbol) : [...watchlist, symbol])}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
@@ -127,6 +211,11 @@ function TerminalInner() {
               {inWatchlist ? "★ Watching" : "☆ Watch"}
             </button>
           </div>
+        </div>
+
+        {/* Company identity strip — keyed so per-symbol state (broken logo) resets */}
+        <div className="mb-4">
+          <SymbolHeader key={symbol} symbol={symbol} quote={q} profile={profile} loading={profileLoading} />
         </div>
 
         {/* Main grid */}
@@ -169,29 +258,15 @@ function TerminalInner() {
             </div>
 
             {rightTab === "overview" ? (
-              <div className="p-4 space-y-3">
-                {([
-                  ["Previous Close", q?.previousClose != null ? `$${fmtPrice(q.previousClose)}` : "—"],
-                  ["Day Range", q?.dayLow != null ? `$${fmtPrice(q.dayLow)} – $${fmtPrice(q.dayHigh)}` : "—"],
-                  ["52W Range", q?.yearLow != null ? `$${fmtPrice(q.yearLow)} – $${fmtPrice(q.yearHigh)}` : "—"],
-                  ["Market Cap", q?.marketCap ? `$${fmtCap(q.marketCap)}` : "—"],
-                  ["Volume", q?.volume ? fmtCap(q.volume) : "—"],
-                  ["P/E", q?.pe ? q.pe.toFixed(1) : "—"],
-                ] as [string, string][]).map(([label, value]) => (
-                  <div key={label} className="flex items-center justify-between border-b border-white/5 pb-2.5">
-                    <span className="text-xs text-gray-500">{label}</span>
-                    <span className="font-mono text-sm tabular-nums text-gray-100">{value}</span>
-                  </div>
-                ))}
-                <Link href="/register"
-                  className="block text-center mt-4 px-4 py-2.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400 text-black text-sm font-bold hover:scale-[1.02] transition-transform">
-                  Unlock AI Research →
-                </Link>
-              </div>
+              <OverviewPanel symbol={symbol} quote={q} profile={profile} />
             ) : (
               <div className="p-2 max-h-[70vh] overflow-y-auto">
                 {news.length === 0 ? (
-                  <p className="text-center text-gray-600 text-sm py-8">Loading news…</p>
+                  newsLoading ? (
+                    <Skeleton rows={8} />
+                  ) : (
+                    <EmptyNote text="No recent news for this symbol." />
+                  )
                 ) : (
                   news.map((n, i) => (
                     <a key={i} href={n.url} target="_blank" rel="noopener noreferrer"
@@ -205,6 +280,14 @@ function TerminalInner() {
             )}
           </div>
         </div>
+
+        {/* Fundamentals suite — statements, analysts, ownership, earnings, profile */}
+        <FundamentalsSection
+          symbol={symbol}
+          quote={q}
+          profile={profile}
+          profileLoading={profileLoading}
+        />
 
         <p className="text-center text-[11px] text-gray-600 mt-6">
           Market data delayed or real-time depending on source. For informational purposes only — not financial advice.
