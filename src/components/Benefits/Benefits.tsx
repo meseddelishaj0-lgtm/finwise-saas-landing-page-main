@@ -8,20 +8,16 @@ const Benefits: React.FC = () => {
   return (
     <section
       id="benefits"
-      className="relative w-screen overflow-hidden text-white bg-fixed"
+      className="relative w-screen overflow-hidden text-white bg-night"
       style={{ marginLeft: "calc(-50vw + 50%)" }}
     >
-      {/* ✅ Full-width radiant background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-b from-night via-night to-[#1a1000]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.15)_0%,rgba(0,0,0,1)_85%)] opacity-70" />
-      </div>
+      <div className="section-glow" />
 
       {/* ✅ Main content container */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-12 md:py-20">
         {/* Section Heading */}
         <div className="text-center mb-20">
-          <span className="inline-block px-4 py-1.5 mb-5 rounded-full text-sm font-medium text-yellow-300 bg-yellow-400/10 border border-yellow-400/25">
+          <span className="badge-pill mb-5">
             Why WallStreetStocks
           </span>
           <h2
@@ -39,7 +35,7 @@ const Benefits: React.FC = () => {
             <div
               key={index}
               className={`m-0 p-0 ${
-                index !== benefits.length - 1 ? "border-b border-[#1a1a1a]" : ""
+                index !== benefits.length - 1 ? "border-b border-white/10" : ""
               }`}
             >
               <BenefitSection
@@ -50,9 +46,6 @@ const Benefits: React.FC = () => {
           ))}
         </div>
       </div>
-
-      {/* ✅ Bottom fade to black for smooth transition */}
-      <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-b from-transparent to-night" />
     </section>
   );
 };

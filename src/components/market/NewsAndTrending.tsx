@@ -62,7 +62,7 @@ const NewsAndTrending: React.FC = () => {
           <div className="lg:col-span-2">
             {lead && (
               <a href={lead.url} target="_blank" rel="noopener noreferrer"
-                className="group block rounded-2xl overflow-hidden border border-white/10 bg-surface hover:border-yellow-400/30 transition-colors">
+                className="group block card-night overflow-hidden hover:border-yellow-400/40 transition-colors duration-300">
                 {lead.image && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={lead.image} alt="" className="w-full h-64 md:h-80 object-cover opacity-90 group-hover:opacity-100 transition-opacity" />
@@ -87,7 +87,7 @@ const NewsAndTrending: React.FC = () => {
             <div className="grid sm:grid-cols-2 gap-4 mt-4">
               {rest.slice(0, 6).map((n, i) => (
                 <a key={i} href={n.url} target="_blank" rel="noopener noreferrer"
-                  className="group flex gap-3 rounded-xl border border-white/10 bg-surface p-3 hover:border-yellow-400/30 transition-colors">
+                  className="group flex gap-3 card-night rounded-xl p-3 hover:border-yellow-400/40 transition-colors duration-300">
                   {n.image && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={n.image} alt="" className="w-20 h-20 rounded-lg object-cover flex-shrink-0" />
@@ -109,10 +109,10 @@ const NewsAndTrending: React.FC = () => {
           </div>
 
           {/* Trending tickers */}
-          <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden h-fit">
+          <div className="card-night overflow-hidden h-fit">
             <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2">
               <span className="text-yellow-400">🔥</span>
-              <h3 className="font-bold">Trending Tickers</h3>
+              <h3 className="text-sm font-bold">Trending Tickers</h3>
             </div>
             <div className="p-2">
               {actives.length === 0
@@ -123,15 +123,15 @@ const NewsAndTrending: React.FC = () => {
                     const up = (m.changePercent || 0) >= 0;
                     return (
                       <Link key={m.symbol} href={`/terminal?symbol=${encodeURIComponent(m.symbol)}`}
-                        className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors">
+                        className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors">
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-gray-600 font-mono text-xs w-4">{idx + 1}</span>
+                          <span className="text-gray-500 font-mono text-xs w-4 tabular-nums">{idx + 1}</span>
                           <div className="min-w-0">
                             <span className="font-bold text-white text-sm">{m.symbol}</span>
                             <span className="block text-[11px] text-gray-500 truncate max-w-[150px]">{m.name}</span>
                           </div>
                         </div>
-                        <span className={`font-mono text-xs font-bold ${up ? "text-green-400" : "text-red-400"}`}>
+                        <span className={`font-mono tabular-nums text-xs font-bold ${up ? "text-green-400" : "text-red-400"}`}>
                           {up ? "+" : ""}{(m.changePercent || 0).toFixed(2)}%
                         </span>
                       </Link>
@@ -139,7 +139,7 @@ const NewsAndTrending: React.FC = () => {
                   })}
             </div>
             <Link href="/terminal"
-              className="block text-center py-3 border-t border-white/5 text-yellow-400 text-sm font-semibold hover:bg-white/[0.03] transition-colors">
+              className="block text-center py-3 border-t border-white/5 text-gray-400 text-sm font-semibold hover:text-yellow-300 hover:bg-white/[0.03] transition-colors">
               View in Terminal →
             </Link>
           </div>

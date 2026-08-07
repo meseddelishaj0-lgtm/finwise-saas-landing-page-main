@@ -18,9 +18,20 @@ const config: Config = {
         "foreground-accent": "var(--foreground-accent)",
         "hero-background": "var(--hero-background)",
 
-        // Terminal dark theme: warm near-black bg + raised card surface
+        // Terminal dark theme: warm near-black bg + raised card surfaces
         night: "#0D0C09",
         surface: "#161410",
+        surface2: "#1D1A14",
+
+        // Brand gold scale — the ONLY yellows the site should use.
+        // gold = primary accent (== yellow-400), deep for hovers/borders,
+        // soft for tints/gradient highlights.
+        gold: {
+          DEFAULT: "#FACC15",
+          deep: "#EAB308",
+          soft: "#FDE68A",
+          amber: "#FBBF24",
+        },
       },
     },
   },

@@ -82,13 +82,13 @@ export default function DropdownMenu({
 
       {/* 🧭 Dropdown Container */}
       <div
-        className={`absolute left-0 mt-1 w-56 max-h-[70vh] overflow-y-auto rounded-xl shadow-xl z-[9999] p-2 transition-all duration-200 ease-out border ${
+        className={`absolute left-0 mt-1 w-56 max-h-[70vh] overflow-y-auto rounded-xl shadow-2xl z-[9999] p-2 transition-all duration-200 ease-out border ${
           open
             ? "opacity-100 translate-y-0 visible"
             : "opacity-0 -translate-y-2 invisible pointer-events-none"
         } ${
           isWhite
-            ? "bg-[#0b0b0f]/95 border-gray-800"
+            ? "bg-surface border-white/10"
             : "bg-white border-gray-100"
         }`}
         style={{
@@ -103,7 +103,7 @@ export default function DropdownMenu({
             href={item.href}
             className={`block px-3 py-2 text-sm rounded-lg transition-all ${
               isWhite
-                ? "text-gray-300 hover:text-yellow-400 hover:bg-gray-800/60"
+                ? "text-gray-300 hover:text-yellow-300 hover:bg-white/[0.04]"
                 : "text-gray-700 hover:bg-gray-100 hover:text-yellow-500"
             }`}
           >

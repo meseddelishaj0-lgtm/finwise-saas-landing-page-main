@@ -41,7 +41,7 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }) => {
         <h3 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">
           {title}
         </h3>
-        <p className="text-gray-300 text-lg leading-relaxed">{description}</p>
+        <p className="text-gray-400 text-lg leading-relaxed">{description}</p>
 
         <ul className="space-y-4">
           {bullets?.map((b, i) => (
@@ -50,7 +50,7 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }) => {
                 <span className="w-2 h-2 rounded-full bg-yellow-400" />
               </span>
               <span>
-                <strong className="text-yellow-400">{b.title}:</strong>{" "}
+                <strong className="text-gray-100">{b.title}:</strong>{" "}
                 {b.description}
               </span>
             </li>

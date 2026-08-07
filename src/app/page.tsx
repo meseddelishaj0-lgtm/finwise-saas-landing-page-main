@@ -38,16 +38,14 @@ const HomePage: React.FC = () => {
         {/* ✅ Renamed from Pricing to Plans */}
         <section
           id="plans"
-          className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-night via-night to-[#15120a]"
+          className="relative w-screen overflow-hidden text-white bg-night"
           style={{ marginLeft: 'calc(-50vw + 50%)' }}
         >
-          {/* Gold glow background */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.07)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-yellow-400/[0.06] rounded-full blur-[120px] pointer-events-none" />
+          <div className="section-glow" />
 
           <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 text-center">
             <Reveal>
-              <span className="inline-block px-4 py-1.5 mb-5 rounded-full text-sm font-medium text-yellow-300 bg-yellow-400/10 border border-yellow-400/25">
+              <span className="badge-pill mb-5">
                 Membership Plans
               </span>
               <h2 className="section-title-gold mb-4">Choose Your Edge</h2>
@@ -83,10 +81,10 @@ const HomePage: React.FC = () => {
               ].map((plan, i) => (
                 <Reveal key={plan.name} delay={i * 0.12} className="h-full">
                   <div
-                    className={`group relative h-full flex flex-col p-8 rounded-2xl backdrop-blur-md transition-all duration-300 transform hover:-translate-y-2 ${
+                    className={`glass-card group h-full flex flex-col p-8 ${
                       plan.featured
-                        ? 'bg-gradient-to-b from-yellow-400/[0.08] to-white/[0.02] border border-yellow-400/60 shadow-[0_0_35px_rgba(255,215,0,0.25)] hover:shadow-[0_0_55px_rgba(255,215,0,0.45)] md:scale-[1.04]'
-                        : 'bg-white/[0.03] border border-white/10 hover:border-yellow-400/50 hover:shadow-[0_0_30px_rgba(255,215,0,0.2)]'
+                        ? 'border-yellow-400/60 bg-gradient-to-b from-yellow-400/[0.08] to-white/[0.02] shadow-[0_0_35px_rgba(255,215,0,0.25)] md:scale-[1.04]'
+                        : ''
                     }`}
                   >
                     {plan.featured && (
@@ -112,11 +110,7 @@ const HomePage: React.FC = () => {
                     </ul>
                     <a
                       href="/plans"
-                      className={`inline-flex items-center justify-center px-6 py-3 font-bold rounded-full transition-all duration-300 ${
-                        plan.featured
-                          ? 'text-black bg-gradient-to-r from-yellow-400 to-amber-400 hover:shadow-[0_0_35px_rgba(255,215,0,0.7)]'
-                          : 'text-yellow-300 bg-white/[0.04] border border-yellow-400/30 hover:bg-yellow-400 hover:text-black hover:border-yellow-400'
-                      }`}
+                      className={plan.featured ? 'btn-gold w-full' : 'btn-ghost-gold w-full'}
                     >
                       Subscribe
                     </a>
@@ -132,15 +126,14 @@ const HomePage: React.FC = () => {
         {/* Testimonials Section */}
         <section
   id="testimonials"
-  className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-night via-night to-[#17150f]"
+  className="relative w-screen overflow-hidden text-white bg-night"
   style={{ marginLeft: 'calc(-50vw + 50%)' }}
 >
-  {/* Soft gold glow overlay */}
-  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
+  <div className="section-glow" />
 
   <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 text-center">
     <Reveal>
-      <span className="inline-block px-4 py-1.5 mb-5 rounded-full text-sm font-medium text-yellow-300 bg-yellow-400/10 border border-yellow-400/25">
+      <span className="badge-pill mb-5">
         Testimonials
       </span>
       <h2 className="section-title-gold mb-4">What Our Clients Say</h2>
@@ -175,7 +168,7 @@ const HomePage: React.FC = () => {
         },
       ].map((t, i) => (
         <Reveal key={t.name} delay={i * 0.12} className="h-full">
-          <div className="group relative h-full flex flex-col bg-white/[0.03] backdrop-blur-md p-8 rounded-2xl border border-white/10 hover:border-yellow-400/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,215,0,0.2)] transform hover:-translate-y-2">
+          <div className="glass-card group h-full flex flex-col p-8">
             <div className="absolute top-6 right-8 text-6xl text-yellow-400/15 font-serif leading-none select-none">”</div>
             <div className="flex text-yellow-400 mb-5 gap-0.5" aria-label="5 out of 5 stars">
               {'★★★★★'.split('').map((star, j) => (
@@ -206,16 +199,15 @@ const HomePage: React.FC = () => {
         {/* FAQ Section */}
         <section
   id="faq"
-  className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-night via-night to-[#17150f]"
+  className="relative w-screen overflow-hidden text-white bg-night"
   style={{ marginLeft: 'calc(-50vw + 50%)' }}
 >
-  {/* Gold Glow Overlay */}
-  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
+  <div className="section-glow" />
 
   <div className="relative z-10 max-w-7xl mx-auto px-6 py-24">
     {/* Title */}
     <div className="text-center mb-16">
-      <span className="inline-block px-4 py-1.5 mb-5 rounded-full text-sm font-medium text-yellow-300 bg-yellow-400/10 border border-yellow-400/25">
+      <span className="badge-pill mb-5">
         FAQ
       </span>
       <h2 className="section-title-gold mb-4">
@@ -258,9 +250,9 @@ const HomePage: React.FC = () => {
       ].map((faq, i) => (
         <details
           key={i}
-          className="group border border-white/10 bg-white/[0.03] backdrop-blur-md rounded-xl overflow-hidden hover:border-yellow-400/50 hover:shadow-[0_0_20px_rgba(255,215,0,0.12)] transition-all duration-300"
+          className="card-night group overflow-hidden hover:border-yellow-400/40 transition-all duration-300"
         >
-          <summary className="flex justify-between items-center cursor-pointer px-6 py-4 text-lg font-semibold text-white hover:text-yellow-300 transition-all duration-200">
+          <summary className="flex justify-between items-center cursor-pointer px-6 py-4 text-lg font-semibold text-gray-100 hover:text-yellow-300 transition-colors duration-200">
             {faq.q}
             <span className="text-yellow-400 group-open:rotate-45 transition-transform duration-300">
               +

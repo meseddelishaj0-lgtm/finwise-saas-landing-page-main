@@ -12,11 +12,11 @@ const Footer: React.FC = () => {
   return (
     <footer
       id="footer"
-      className="relative w-screen overflow-hidden text-gray-300 bg-gradient-to-b from-night to-surface border-t border-yellow-500/15 py-16"
+      className="relative w-screen overflow-hidden text-gray-300 bg-night border-t border-white/10 py-16"
       style={{ marginLeft: "calc(-50vw + 50%)" }}
     >
       {/* Subtle golden radial glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
+      <div className="section-glow" />
 
       {/* Footer Content */}
       <div className="relative z-10 max-w-7xl w-full mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -38,10 +38,10 @@ const Footer: React.FC = () => {
 
         {/* Quick Links - Center */}
         <div>
-          <h4 className="text-lg font-semibold mb-4 text-yellow-400">
+          <h4 className="text-sm font-bold uppercase tracking-wider text-yellow-300/90 mb-4">
             Quick Links
           </h4>
-          <ul className="text-gray-400 space-y-2">
+          <ul className="space-y-2">
             {[
               { label: "Trading Terminal", href: "/terminal" },
               { label: "AI Dashboard", href: "/ai-dashboard" },
@@ -57,7 +57,7 @@ const Footer: React.FC = () => {
               <li key={label}>
                 <Link
                   href={href}
-                  className="hover:text-yellow-400 transition-colors duration-300"
+                  className="text-gray-400 hover:text-yellow-300 transition-colors text-sm"
                 >
                   {label}
                 </Link>
@@ -68,14 +68,14 @@ const Footer: React.FC = () => {
 
         {/* Contact Info - Right */}
         <div>
-          <h4 className="text-lg font-semibold mb-4 text-yellow-400">
+          <h4 className="text-sm font-bold uppercase tracking-wider text-yellow-300/90 mb-4">
             Contact Us
           </h4>
 
           {footerDetails.email && (
             <a
               href={`mailto:${footerDetails.email}`}
-              className="block text-gray-300 hover:text-yellow-400 transition-colors"
+              className="block text-gray-400 hover:text-yellow-300 transition-colors text-sm"
             >
               Email: {footerDetails.email}
             </a>
@@ -84,7 +84,7 @@ const Footer: React.FC = () => {
           {footerDetails.telephone && (
             <a
               href={`tel:${footerDetails.telephone}`}
-              className="block mt-2 text-gray-300 hover:text-yellow-400 transition-colors"
+              className="block mt-2 text-gray-400 hover:text-yellow-300 transition-colors text-sm"
             >
               Phone: {footerDetails.telephone}
             </a>
@@ -99,7 +99,7 @@ const Footer: React.FC = () => {
                       key={platformName}
                       href={url}
                       aria-label={platformName}
-                      className="text-yellow-400 hover:text-white transition-all duration-300"
+                      className="text-gray-500 hover:text-yellow-300 transition-colors duration-300"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -113,7 +113,7 @@ const Footer: React.FC = () => {
       </div>
 
       {/* Disclaimer */}
-      <div className="relative z-10 mt-12 border-t border-yellow-500/10 pt-8 max-w-5xl mx-auto text-sm md:text-base text-gray-400 px-6 leading-relaxed">
+      <div className="relative z-10 mt-12 border-t border-white/10 pt-8 max-w-5xl mx-auto text-sm md:text-base text-gray-400 px-6 leading-relaxed">
         <p className="text-justify">
           <strong className="text-yellow-400">Disclaimer:</strong> WallStreetStocks.ai
           is a financial research and analytics platform powered by artificial
@@ -137,8 +137,8 @@ const Footer: React.FC = () => {
       </div>
 
       {/* Copyright */}
-      <div className="relative z-10 mt-10 border-t border-yellow-500/10 pt-6 max-w-7xl mx-auto px-6">
-        <p className="text-gray-500 text-center">
+      <div className="relative z-10 mt-10 border-t border-white/10 pt-6 max-w-7xl mx-auto px-6">
+        <p className="text-gray-500 text-sm text-center">
           © {new Date().getFullYear()} Wall Street Stocks LLC. All rights
           reserved.
         </p>

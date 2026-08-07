@@ -159,7 +159,7 @@ const Header: React.FC = () => {
 
             <Link
               href="/plans"
-              className="text-white hover:text-yellow-400 font-medium transition-all duration-200"
+              className="text-gray-300 hover:text-yellow-300 font-medium transition-colors duration-200"
             >
               Plans
             </Link>
@@ -169,22 +169,19 @@ const Header: React.FC = () => {
               <>
                 <Link
                   href="/dashboard"
-                  className="text-black bg-yellow-400 hover:bg-yellow-500 px-5 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap"
+                  className="btn-gold px-5 py-2 text-sm whitespace-nowrap"
                 >
                   {displayName}'s Dashboard
                 </Link>
                 <button
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="text-white bg-gray-800 hover:bg-gray-700 px-5 py-2 rounded-full text-sm font-semibold transition-all whitespace-nowrap"
+                  className="btn-ghost-gold px-5 py-2 text-sm whitespace-nowrap"
                 >
                   Logout
                 </button>
               </>
             ) : (
-              <Link
-                href="/login"
-                className="text-black bg-yellow-400 hover:bg-yellow-500 px-6 py-2 rounded-full text-sm font-semibold transition-all"
-              >
+              <Link href="/login" className="btn-gold px-5 py-2 text-sm">
                 Login
               </Link>
             )}
@@ -209,13 +206,13 @@ const Header: React.FC = () => {
       {/* ✅ Expanding search panel (desktop) */}
       {searchOpen && (
         <div
-          className="hidden md:block absolute left-0 right-0 top-full bg-black/95 backdrop-blur-lg border-b border-yellow-500/15 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
+          className="hidden md:block absolute left-0 right-0 top-full bg-night/[0.98] backdrop-blur-lg border-b border-white/10 py-4 shadow-2xl"
           onKeyDown={(e) => e.key === "Escape" && setSearchOpen(false)}
         >
           <Container>
             <div className="max-w-xl mx-auto">
               <SymbolSearch variant="terminal" autoFocus onNavigate={() => setSearchOpen(false)} />
-              <p className="mt-2 text-center text-[11px] text-gray-600">
+              <p className="mt-2 text-center text-[11px] text-gray-500">
                 Search any stock, ETF, index, or crypto — opens in the Terminal
               </p>
             </div>
@@ -233,7 +230,7 @@ const Header: React.FC = () => {
         leaveFrom="opacity-100 translate-y-0"
         leaveTo="opacity-0 -translate-y-3"
       >
-        <div className="md:hidden bg-black/95 text-white backdrop-blur-md shadow-2xl border-t border-gray-800">
+        <div className="md:hidden bg-night/[0.98] text-white backdrop-blur shadow-2xl border-t border-white/10">
           <ul className="flex flex-col space-y-2 py-4 px-6">
             <li className="pb-1">
               <SymbolSearch variant="terminal" onNavigate={() => setIsOpen(false)} />
@@ -252,7 +249,7 @@ const Header: React.FC = () => {
               <li key={label}>
                 <button
                   onClick={() => toggleSubmenu(label)}
-                  className="w-full flex justify-between items-center text-gray-300 hover:text-yellow-400 py-2 text-left font-medium"
+                  className="w-full flex justify-between items-center text-gray-300 hover:text-yellow-300 py-2 text-left font-medium transition-colors"
                 >
                   {label}
                   <HiChevronDown
@@ -262,13 +259,13 @@ const Header: React.FC = () => {
                   />
                 </button>
                 {openMobileMenu === label && (
-                  <ul className="ml-4 mt-1 space-y-1 border-l border-gray-700 pl-3">
+                  <ul className="ml-4 mt-1 space-y-1 border-l border-white/10 pl-3">
                     {items.map((subItem) => (
                       <li key={subItem.title}>
                         <Link
                           href={subItem.href}
                           onClick={() => setIsOpen(false)}
-                          className="block py-1 text-gray-400 hover:text-yellow-400 text-sm transition-all"
+                          className="block py-1 text-gray-400 hover:text-yellow-300 text-sm transition-colors"
                         >
                           {subItem.title}
                         </Link>
@@ -283,7 +280,7 @@ const Header: React.FC = () => {
               <Link
                 href="/plans"
                 onClick={() => setIsOpen(false)}
-                className="block text-gray-300 hover:text-yellow-400 py-2 font-medium"
+                className="block text-gray-300 hover:text-yellow-300 py-2 font-medium transition-colors"
               >
                 Plans
               </Link>
@@ -295,7 +292,7 @@ const Header: React.FC = () => {
                   <Link
                     href="/dashboard"
                     onClick={() => setIsOpen(false)}
-                    className="block w-full bg-yellow-400 text-black font-semibold text-center py-3 rounded-full shadow-md hover:bg-yellow-500 transition-all"
+                    className="btn-gold w-full py-3"
                   >
                     {displayName}'s Dashboard
                   </Link>
@@ -303,7 +300,7 @@ const Header: React.FC = () => {
                 <li>
                   <button
                     onClick={() => signOut({ callbackUrl: "/" })}
-                    className="block w-full bg-gray-800 text-white font-semibold text-center py-3 rounded-full shadow-md hover:bg-gray-700 transition-all"
+                    className="btn-ghost-gold w-full py-3"
                   >
                     Logout
                   </button>
@@ -314,7 +311,7 @@ const Header: React.FC = () => {
                 <Link
                   href="/login"
                   onClick={() => setIsOpen(false)}
-                  className="block w-full bg-yellow-400 text-black font-semibold text-center py-3 rounded-full shadow-md hover:bg-yellow-500 transition-all"
+                  className="btn-gold w-full py-3"
                 >
                   Login
                 </Link>

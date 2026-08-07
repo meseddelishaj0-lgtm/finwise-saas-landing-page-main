@@ -39,9 +39,8 @@ const TerminalHero: React.FC = () => {
   const { quotes, loading } = useQuotes(TABS[tab]);
 
   return (
-    <section className="relative w-screen overflow-hidden text-white" style={{ marginLeft: "calc(-50vw + 50%)" }}>
-      {/* Backdrop: black + terminal grid + gold glow */}
-      <div className="absolute inset-0 bg-night" />
+    <section className="relative w-screen overflow-hidden text-white bg-night" style={{ marginLeft: "calc(-50vw + 50%)" }}>
+      {/* Backdrop: terminal grid + gold glow */}
       <div
         className="absolute inset-0 opacity-[0.13]"
         style={{
@@ -52,18 +51,18 @@ const TerminalHero: React.FC = () => {
           WebkitMaskImage: "radial-gradient(ellipse at center, black 30%, transparent 75%)",
         }}
       />
-      <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[480px] bg-yellow-400/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="section-glow" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-10 pt-20 pb-16 md:pt-28 md:pb-24 grid lg:grid-cols-2 gap-14 items-center">
         {/* Left: headline */}
         <div>
           <motion.div custom={0} initial="hidden" animate="visible" variants={fadeUp}
-            className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-yellow-400/10 border border-yellow-400/30">
+            className="badge-pill mb-6 inline-flex items-center gap-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
             </span>
-            <span className="text-yellow-300 text-sm font-medium tracking-wide">Live Markets · Real-Time Data</span>
+            <span className="tracking-wide">Live Markets · Real-Time Data</span>
           </motion.div>
 
           <motion.h1 custom={1} initial="hidden" animate="visible" variants={fadeUp}
@@ -84,17 +83,12 @@ const TerminalHero: React.FC = () => {
           <motion.div custom={3} initial="hidden" animate="visible" variants={fadeUp}
             className="mt-9 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Link href="/terminal"
-              className="group inline-flex items-center justify-center px-8 py-3.5 rounded-full
-              bg-gradient-to-r from-yellow-400 to-amber-400 text-black font-bold text-base
-              shadow-[0_0_30px_rgba(255,215,0,0.35)] hover:shadow-[0_0_50px_rgba(255,215,0,0.6)]
-              hover:scale-[1.04] transition-all duration-300">
+              className="group btn-gold px-8 py-3.5 text-base">
               Open Trading Terminal
-              <span className="ml-2 transition-transform duration-300 group-hover:translate-x-1">→</span>
+              <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
             </Link>
             <Link href="/register"
-              className="inline-flex items-center justify-center px-8 py-3.5 rounded-full
-              bg-white/[0.05] backdrop-blur-md border border-white/15 text-white font-semibold text-base
-              hover:border-yellow-400/50 hover:bg-white/[0.08] transition-all duration-300">
+              className="btn-ghost-gold px-8 py-3.5 text-base">
               Get Started Free
             </Link>
           </motion.div>
@@ -106,8 +100,7 @@ const TerminalHero: React.FC = () => {
 
         {/* Right: live terminal window */}
         <motion.div custom={2} initial="hidden" animate="visible" variants={fadeUp}
-          className="rounded-2xl border border-yellow-500/20 bg-surface/90 backdrop-blur
-          shadow-[0_0_60px_rgba(255,215,0,0.12),0_30px_60px_rgba(0,0,0,0.6)] overflow-hidden">
+          className="card-night overflow-hidden">
           {/* Window chrome */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-white/[0.02]">
             <div className="flex items-center gap-2">
@@ -148,7 +141,7 @@ const TerminalHero: React.FC = () => {
                 const up = (q.changePercent || 0) >= 0;
                 return (
                   <Link key={q.symbol} href={`/terminal?symbol=${encodeURIComponent(q.symbol)}`}
-                    className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors">
+                    className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors">
                     <div className="min-w-0">
                       <span className="text-white font-bold">{q.symbol.replace("^", "")}</span>
                       <span className="ml-2 text-gray-500 text-xs truncate">
@@ -167,7 +160,7 @@ const TerminalHero: React.FC = () => {
                 );
               })
             )}
-            <div className="px-3 pt-2 text-[11px] text-gray-600">
+            <div className="px-3 pt-2 text-[11px] text-gray-500">
               <span className="text-yellow-500/70">$</span> streaming quotes · refreshed every 30s
               <span className="inline-block w-1.5 h-3 ml-1 bg-yellow-400/80 animate-pulse align-middle" />
             </div>

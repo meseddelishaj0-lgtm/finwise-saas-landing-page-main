@@ -11,6 +11,7 @@ export default function CTA() {
       className="relative w-screen overflow-hidden text-white bg-night py-16 md:py-24"
       style={{ marginLeft: "calc(-50vw + 50%)" }}
     >
+      <div className="section-glow" />
       <div className="relative z-10 max-w-5xl mx-auto px-6">
         <Reveal>
           <div className="relative rounded-3xl p-[1px] bg-gradient-to-r from-yellow-400/60 via-amber-300/20 to-yellow-400/60 shadow-[0_0_60px_rgba(255,215,0,0.15)]">
@@ -31,14 +32,14 @@ export default function CTA() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Link
                     href="/register"
-                    className="group inline-flex items-center bg-gradient-to-r from-yellow-400 to-amber-400 text-black font-bold px-8 py-3.5 rounded-full shadow-[0_0_30px_rgba(255,215,0,0.4)] hover:shadow-[0_0_45px_rgba(255,215,0,0.6)] hover:scale-[1.04] transition-all duration-300"
+                    className="btn-gold group px-8 py-3.5"
                   >
                     Register Now
                     <span className="ml-2 transition-transform duration-300 group-hover:translate-x-1">→</span>
                   </Link>
                   <Link
                     href="/plans"
-                    className="inline-flex items-center px-8 py-3.5 rounded-full bg-white/[0.05] border border-white/15 text-white font-semibold hover:border-yellow-400/50 hover:bg-white/[0.08] transition-all duration-300"
+                    className="btn-ghost-gold px-8 py-3.5"
                   >
                     View Plans
                   </Link>

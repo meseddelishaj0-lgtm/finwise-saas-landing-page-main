@@ -19,7 +19,7 @@ const Logos: React.FC = () => {
       id="logos"
       className="relative py-20 md:py-24 px-5 text-center bg-night text-white overflow-hidden"
     >
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[260px] bg-yellow-400/[0.05] rounded-full blur-[120px] pointer-events-none" />
+      <div className="section-glow" />
 
       <div className="relative z-10 max-w-6xl mx-auto">
         <Reveal>
@@ -39,7 +39,7 @@ const Logos: React.FC = () => {
         <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
           {STATS.map((s, i) => (
             <Reveal key={s.label} delay={i * 0.1}>
-              <div className="group rounded-2xl border border-white/10 bg-surface px-6 py-7 hover:border-yellow-400/40 hover:shadow-[0_0_30px_rgba(255,215,0,0.12)] transition-all duration-300">
+              <div className="card-night group px-6 py-7 hover:border-yellow-400/40 transition-all duration-300">
                 <p className="font-mono text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent tabular-nums">
                   {s.value}
                 </p>

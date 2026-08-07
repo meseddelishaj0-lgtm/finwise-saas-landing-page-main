@@ -35,7 +35,7 @@ export default function RootLayout({
         <link rel="icon" href="/images/wallstreetstocks.png" type="image/png" />
         <link rel="shortcut icon" href="/images/wallstreetstocks.png" />
         <link rel="apple-touch-icon" href="/images/wallstreetstocks.png" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#0D0C09" />
         <meta
           name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1"

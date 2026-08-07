@@ -37,21 +37,21 @@ const MarketsBoard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 md:px-10">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <span className="inline-block px-4 py-1.5 mb-4 rounded-full text-sm font-medium text-yellow-300 bg-yellow-400/10 border border-yellow-400/25">
+            <span className="badge-pill mb-4">
               Live Markets
             </span>
             <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">
               Markets Today
             </h2>
           </div>
-          <Link href="/terminal" className="hidden sm:inline-flex items-center gap-2 text-yellow-400 font-semibold hover:text-yellow-300 transition-colors">
+          <Link href="/terminal" className="hidden sm:inline-flex items-center gap-2 text-gray-400 font-semibold hover:text-yellow-300 transition-colors">
             Open Terminal <span>→</span>
           </Link>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main quotes table */}
-          <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-surface overflow-hidden">
+          <div className="lg:col-span-2 card-night overflow-hidden">
             <div className="flex gap-1 p-3 border-b border-white/5 overflow-x-auto">
               {Object.keys(TABS).map((t) => (
                 <button key={t} onClick={() => setTab(t)}
@@ -68,7 +68,7 @@ const MarketsBoard: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 text-xs uppercase tracking-wider">
+                  <tr className="text-left text-gray-500 text-[11px] uppercase tracking-wider">
                     <th className="px-5 py-3 font-semibold">Symbol</th>
                     <th className="px-5 py-3 font-semibold text-right">Price</th>
                     <th className="px-5 py-3 font-semibold text-right">Change</th>
@@ -124,7 +124,7 @@ const MarketsBoard: React.FC = () => {
           </div>
 
           {/* Movers sidebar */}
-          <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden">
+          <div className="card-night overflow-hidden">
             <div className="flex gap-1 p-3 border-b border-white/5">
               {(["Gainers", "Losers"] as MoverTab[]).map((t) => (
                 <button key={t} onClick={() => setMoverTab(t)}
@@ -148,14 +148,14 @@ const MarketsBoard: React.FC = () => {
                     const up = (m.changePercent || 0) >= 0;
                     return (
                       <Link key={m.symbol} href={`/terminal?symbol=${encodeURIComponent(m.symbol)}`}
-                        className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors">
+                        className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors">
                         <div className="min-w-0 mr-3">
                           <span className="font-bold text-white text-sm">{m.symbol}</span>
                           <span className="block text-[11px] text-gray-500 truncate max-w-[140px]">{m.name}</span>
                         </div>
                         <div className="text-right">
                           <span className="block font-mono tabular-nums text-gray-100 text-sm">${fmtPrice(m.price)}</span>
-                          <span className={`font-mono text-[11px] font-bold ${up ? "text-green-400" : "text-red-400"}`}>
+                          <span className={`font-mono tabular-nums text-[11px] font-bold ${up ? "text-green-400" : "text-red-400"}`}>
                             {up ? "+" : ""}{(m.changePercent || 0).toFixed(2)}%
                           </span>
                         </div>
