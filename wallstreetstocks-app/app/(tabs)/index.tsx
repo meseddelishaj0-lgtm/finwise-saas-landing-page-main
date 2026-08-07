@@ -3229,6 +3229,15 @@ export default function Dashboard() {
         <View style={styles.strategiesSection}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('Market Calendar')}</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={t('View All')}
+              onPress={() => router.push('/market-calendar' as any)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
+            >
+              <Text style={{ color: colors.primary, fontSize: 14, fontWeight: '600' }}>{t('View All')}</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+            </TouchableOpacity>
           </View>
           <ScrollView
             horizontal
@@ -3288,7 +3297,12 @@ export default function Dashboard() {
                     },
                   ]}
                 >
-                  <View style={styles.calendarHeader}>
+                  <TouchableOpacity
+                    style={styles.calendarHeader}
+                    activeOpacity={0.6}
+                    accessibilityRole="button"
+                    onPress={() => router.push(`/market-calendar?tab=${card.key}` as any)}
+                  >
                     <View style={[styles.calendarIconBubble, { backgroundColor: card.tint + '1C' }]}>
                       <Ionicons name={card.icon} size={17} color={card.tint} />
                     </View>
@@ -3296,7 +3310,8 @@ export default function Dashboard() {
                       <Text style={[styles.calendarTitle, { color: colors.text }]}>{card.title}</Text>
                       <Text style={[styles.calendarSub, { color: colors.textTertiary }]}>{card.sub}</Text>
                     </View>
-                  </View>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
                   {card.rows.length === 0 ? (
                     <Text style={[styles.calendarEmpty, { color: colors.textTertiary }]}>{t('No upcoming events')}</Text>
                   ) : (

@@ -2261,5 +2261,11 @@ const strings: Record<string, string> = {
   "Welcome back": "おかえりなさい",
   "AI Analyzer, Compare & Forecast": "AI分析・比較・予測",
   "Pro research reports": "プロのリサーチレポート",
+  "Past Week": "先週",
+  "Past Month": "先月",
+  "Actual": "実績",
+  "Price Range": "価格帯",
+  "No events on this date": "この日付にイベントはありません",
+  "No events in this period": "この期間にイベントはありません",
 };
 export default strings;

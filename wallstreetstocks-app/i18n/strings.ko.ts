@@ -2261,5 +2261,11 @@ const strings: Record<string, string> = {
   "Welcome back": "다시 오신 것을 환영해요",
   "AI Analyzer, Compare & Forecast": "AI 분석·비교·예측",
   "Pro research reports": "프로 리서치 리포트",
+  "Past Week": "지난주",
+  "Past Month": "지난달",
+  "Actual": "실제",
+  "Price Range": "가격 범위",
+  "No events on this date": "이 날짜에 이벤트가 없습니다",
+  "No events in this period": "이 기간에 이벤트가 없습니다",
 };
 export default strings;

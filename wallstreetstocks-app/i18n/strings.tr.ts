@@ -2263,5 +2263,11 @@ const strings: Record<string, string> = {
   "Welcome back": "Tekrar hoş geldiniz",
   "AI Analyzer, Compare & Forecast": "YZ Analiz, Karşılaştırma ve Tahmin",
   "Pro research reports": "Profesyonel araştırma raporları",
+  "Past Week": "Geçen Hafta",
+  "Past Month": "Geçen Ay",
+  "Actual": "Gerçekleşen",
+  "Price Range": "Fiyat Aralığı",
+  "No events on this date": "Bu tarihte etkinlik yok",
+  "No events in this period": "Bu dönemde etkinlik yok",
 };
 export default strings;

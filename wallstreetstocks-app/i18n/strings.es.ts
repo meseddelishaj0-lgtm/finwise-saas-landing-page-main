@@ -2263,5 +2263,11 @@ const strings: Record<string, string> = {
   "Welcome back": "Qué bueno verte de nuevo",
   "AI Analyzer, Compare & Forecast": "Analizador, Comparador y Pronóstico IA",
   "Pro research reports": "Informes de análisis profesionales",
+  "Past Week": "Semana pasada",
+  "Past Month": "Mes pasado",
+  "Actual": "Real",
+  "Price Range": "Rango de precio",
+  "No events on this date": "No hay eventos en esta fecha",
+  "No events in this period": "No hay eventos en este período",
 };
 export default strings;

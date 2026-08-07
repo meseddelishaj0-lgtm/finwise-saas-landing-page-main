@@ -2263,5 +2263,11 @@ const strings: Record<string, string> = {
   "Welcome back": "欢迎回来",
   "AI Analyzer, Compare & Forecast": "AI 分析器、对比与预测",
   "Pro research reports": "专业研究报告",
+  "Past Week": "上周",
+  "Past Month": "上个月",
+  "Actual": "实际",
+  "Price Range": "价格区间",
+  "No events on this date": "该日期没有事件",
+  "No events in this period": "此期间没有事件",
 };
 export default strings;

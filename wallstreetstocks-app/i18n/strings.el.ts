@@ -2263,5 +2263,11 @@ const strings: Record<string, string> = {
   "Welcome back": "Καλώς ήρθες ξανά",
   "AI Analyzer, Compare & Forecast": "Ανάλυση, Σύγκριση & Πρόβλεψη AI",
   "Pro research reports": "Επαγγελματικές εκθέσεις έρευνας",
+  "Past Week": "Προηγούμενη εβδομάδα",
+  "Past Month": "Προηγούμενος μήνας",
+  "Actual": "Πραγματικό",
+  "Price Range": "Εύρος τιμής",
+  "No events on this date": "Δεν υπάρχουν γεγονότα αυτή την ημερομηνία",
+  "No events in this period": "Δεν υπάρχουν γεγονότα σε αυτή την περίοδο",
 };
 export default strings;

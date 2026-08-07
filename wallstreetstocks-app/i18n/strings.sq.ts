@@ -2263,5 +2263,11 @@ const strings: Record<string, string> = {
   "Welcome back": "Mirë se u ktheve",
   "AI Analyzer, Compare & Forecast": "Analizues, Krahasim dhe Parashikim IA",
   "Pro research reports": "Raporte kërkimore profesionale",
+  "Past Week": "Java e kaluar",
+  "Past Month": "Muaji i kaluar",
+  "Actual": "Aktuale",
+  "Price Range": "Diapazoni i çmimit",
+  "No events on this date": "Nuk ka ngjarje në këtë datë",
+  "No events in this period": "Nuk ka ngjarje në këtë periudhë",
 };
 export default strings;
