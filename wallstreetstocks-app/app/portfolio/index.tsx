@@ -1,6 +1,6 @@
 // app/portfolio/index.tsx
 // Portfolio Tracker Screen
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,10 @@ import { useAuth } from '@/lib/auth';
 import { parseLocaleNumber } from '@/lib/parseNumber';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
+
+// Same quote source PortfolioContext uses for pricing holdings
+const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
+const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
 interface Holding {
   id: number;
@@ -69,11 +73,67 @@ export default function PortfolioScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addingHolding, setAddingHolding] = useState(false);
   const [newHolding, setNewHolding] = useState({ symbol: '', shares: '', avgCost: '' });
+  const [livePrice, setLivePrice] = useState<number | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  // True once the user types their own cost basis — auto-fill then backs off
+  const costEditedRef = useRef(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try { await refreshPrices(); } finally { setRefreshing(false); }
   }, [refreshPrices]);
+
+  // Fresh modal → fresh auto-fill state
+  useEffect(() => {
+    if (showAddModal) {
+      costEditedRef.current = false;
+      setLivePrice(null);
+      setPriceLoading(false);
+    }
+  }, [showAddModal]);
+
+  // Fetch the live price as the symbol is typed (debounced) and pre-fill
+  // Avg Cost with it unless the user has entered their own number.
+  useEffect(() => {
+    if (!showAddModal) return;
+    const sym = newHolding.symbol.trim().toUpperCase();
+    setLivePrice(null);
+    if (!/^[A-Z][A-Z0-9.-]{0,9}$/.test(sym)) {
+      setPriceLoading(false);
+      return;
+    }
+    let alive = true;
+    setPriceLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(sym)}&apikey=${TWELVE_DATA_API_KEY}`
+        );
+        const data = await res.json();
+        const price = parseFloat(data?.close);
+        if (!alive) return;
+        if (Number.isFinite(price) && price > 0) {
+          setLivePrice(price);
+          if (!costEditedRef.current) {
+            setNewHolding((prev) =>
+              prev.symbol.trim().toUpperCase() === sym
+                ? { ...prev, avgCost: price.toFixed(2) }
+                : prev
+            );
+          }
+        }
+      } catch {
+        // quiet — the field simply stays manual
+      } finally {
+        if (alive) setPriceLoading(false);
+      }
+    }, 600);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newHolding.symbol, showAddModal]);
 
   const addHolding = async () => {
     if (!newHolding.symbol || !newHolding.shares || !newHolding.avgCost) {
@@ -92,6 +152,8 @@ export default function PortfolioScreen() {
       await ctxAddHolding(newHolding.symbol.toUpperCase().trim(), shares, avgCost);
       setShowAddModal(false);
       setNewHolding({ symbol: '', shares: '', avgCost: '' });
+      setLivePrice(null);
+      costEditedRef.current = false;
     } catch (error) {
       Alert.alert(t('Error'), t('Failed to add holding'));
     } finally {
@@ -368,9 +430,37 @@ export default function PortfolioScreen() {
                 placeholder="150.00"
                 placeholderTextColor={colors.textTertiary}
                 value={newHolding.avgCost}
-                onChangeText={(text) => setNewHolding({ ...newHolding, avgCost: text })}
+                onChangeText={(text) => {
+                  // User typing their own cost basis pauses auto-fill;
+                  // clearing the field hands control back to it.
+                  costEditedRef.current = text.trim().length > 0;
+                  setNewHolding({ ...newHolding, avgCost: text });
+                }}
                 keyboardType="decimal-pad"
               />
+              {(priceLoading || livePrice != null) && (
+                <TouchableOpacity
+                  style={styles.livePriceRow}
+                  disabled={priceLoading || livePrice == null}
+                  onPress={() => {
+                    if (livePrice != null) {
+                      costEditedRef.current = false;
+                      setNewHolding((prev) => ({ ...prev, avgCost: livePrice.toFixed(2) }));
+                    }
+                  }}
+                >
+                  {priceLoading ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <>
+                      <Ionicons name="flash" size={12} color={colors.primary} />
+                      <Text style={[styles.livePriceText, { color: colors.primary }]}>
+                        {t('Current Price')}: ${livePrice!.toFixed(2)}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
 
             <TouchableOpacity
@@ -610,6 +700,17 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     color: '#000',
+  },
+  livePriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  livePriceText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   submitButton: {
     backgroundColor: '#B8860B',
