@@ -2269,5 +2269,6 @@ const strings: Record<string, string> = {
   "Price Range": "Preisspanne",
   "No events on this date": "Keine Ereignisse an diesem Datum",
   "No events in this period": "Keine Ereignisse in diesem Zeitraum",
+  "year": "Jahr",
 };
 export default strings;

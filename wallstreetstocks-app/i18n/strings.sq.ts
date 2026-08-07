@@ -2269,5 +2269,6 @@ const strings: Record<string, string> = {
   "Price Range": "Diapazoni i çmimit",
   "No events on this date": "Nuk ka ngjarje në këtë datë",
   "No events in this period": "Nuk ka ngjarje në këtë periudhë",
+  "year": "vit",
 };
 export default strings;

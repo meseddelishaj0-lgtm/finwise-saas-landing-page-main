@@ -2269,5 +2269,6 @@ const strings: Record<string, string> = {
   "Price Range": "价格区间",
   "No events on this date": "该日期没有事件",
   "No events in this period": "此期间没有事件",
+  "year": "年",
 };
 export default strings;

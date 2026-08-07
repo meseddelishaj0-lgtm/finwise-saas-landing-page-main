@@ -2269,5 +2269,6 @@ const strings: Record<string, string> = {
   "Price Range": "Εύρος τιμής",
   "No events on this date": "Δεν υπάρχουν γεγονότα αυτή την ημερομηνία",
   "No events in this period": "Δεν υπάρχουν γεγονότα σε αυτή την περίοδο",
+  "year": "έτος",
 };
 export default strings;

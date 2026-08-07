@@ -2267,5 +2267,6 @@ const strings: Record<string, string> = {
   "Price Range": "가격 범위",
   "No events on this date": "이 날짜에 이벤트가 없습니다",
   "No events in this period": "이 기간에 이벤트가 없습니다",
+  "year": "년",
 };
 export default strings;

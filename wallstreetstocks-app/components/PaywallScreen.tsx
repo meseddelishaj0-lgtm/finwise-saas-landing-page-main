@@ -73,13 +73,13 @@ const TIER_PRICES_MONTHLY: Record<string, string> = {
 };
 
 const TIER_PRICES_YEARLY: Record<string, string> = {
-  gold: '$199.99',
-  platinum: '$399.99',
-  diamond: '$599.99',
+  gold: '$159.99',
+  platinum: '$319.99',
+  diamond: '$479.99',
 };
 
 const TIER_PRICES_LIFETIME: Record<string, string> = {
-  lifetime: '$199.99',
+  lifetime: '$999.99',
 };
 
 type BillingPeriod = 'monthly' | 'yearly';
@@ -137,7 +137,7 @@ function TierCard({ tierKey, isSelected, onSelect, pkg, billingPeriod, colors, i
       )}
       {isBestValue && (
         <View style={[styles.popularBadge, { backgroundColor: '#34C759' }]}>
-          <Text style={styles.popularText}>{t('SAVE 17%')}</Text>
+          <Text style={styles.popularText}>{t('Save 33%')}</Text>
         </View>
       )}
       {isLifetime && (

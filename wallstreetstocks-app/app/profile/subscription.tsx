@@ -85,7 +85,7 @@ const TIERS = {
     bgColor: "#FFFBEB",
     borderColor: "#FFD700",
     monthlyPrice: "$19.99",
-    yearlyPrice: "$199.99",
+    yearlyPrice: "$159.99",
     features: [
       { icon: TrendingUp, text: "5 Expert Stock Picks" },
       { icon: Shield, text: "Ad-free experience" },
@@ -104,7 +104,7 @@ const TIERS = {
     borderColor: "#7C3AED",
     popular: true,
     monthlyPrice: "$39.99",
-    yearlyPrice: "$399.99",
+    yearlyPrice: "$319.99",
     features: [
       { icon: Check, text: "Everything in Gold" },
       { icon: TrendingUp, text: "8 Expert Stock Picks" },
@@ -122,7 +122,7 @@ const TIERS = {
     bgColor: "#ECFEFF",
     borderColor: "#06B6D4",
     monthlyPrice: "$59.99",
-    yearlyPrice: "$599.99",
+    yearlyPrice: "$479.99",
     features: [
       { icon: Check, text: "Everything in Platinum" },
       { icon: VerifiedSealIcon, text: "Verified Profile Badge" },
@@ -142,8 +142,8 @@ const TIERS = {
     bgColor: "#F5F0FF",
     borderColor: "#9B59B6",
     isLifetime: true,
-    monthlyPrice: "$199.99",
-    yearlyPrice: "$199.99",
+    monthlyPrice: "$999.99",
+    yearlyPrice: "$999.99",
     features: [
       { icon: Check, text: "All Diamond Features Forever" },
       { icon: Shield, text: "One-time payment" },

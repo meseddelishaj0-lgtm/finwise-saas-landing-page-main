@@ -130,7 +130,8 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false);
   const [savedCounts, setSavedCounts] = useState({ watch: 0, holdings: 0 });
   const [selectedPlan, setSelectedPlan] = useState('diamond');
-  // Live monthly prices from the App Store (via RevenueCat offerings);
+  const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
+  // Live prices from the App Store (via RevenueCat offerings);
   // hardcoded PLANS prices are only the pre-load fallback.
   const [livePrices, setLivePrices] = useState<Record<string, string>>({});
 
@@ -143,15 +144,19 @@ export default function Onboarding() {
         if (!Purchases?.getOfferings) return;
         const offerings = await Purchases.getOfferings();
         const pkgs = offerings?.current?.availablePackages ?? [];
-        const MONTHLY_IDS: Record<string, string> = {
-          gold: 'wallstreetstocks.gold.monthly',
-          platinum: 'wallstreetstocks.platinum.monthly',
-          diamond: 'wallstreetstocks.diamond.monthly',
+        const PRICE_IDS: Record<string, string> = {
+          gold_monthly: 'wallstreetstocks.gold.monthly',
+          gold_yearly: 'wallstreetstocks.gold.yearly',
+          platinum_monthly: 'wallstreetstocks.platinum.monthly',
+          platinum_yearly: 'wallstreetstocks.platinum.yearly',
+          diamond_monthly: 'wallstreetstocks.diamond.monthly',
+          diamond_yearly: 'wallstreetstocks.diamond.yearly',
+          lifetime: 'wallstreetstocks_lifetime',
         };
         const next: Record<string, string> = {};
-        for (const key of Object.keys(MONTHLY_IDS)) {
+        for (const key of Object.keys(PRICE_IDS)) {
           const pkg = pkgs.find(
-            (p: any) => p?.product?.identifier?.toLowerCase() === MONTHLY_IDS[key].toLowerCase()
+            (p: any) => p?.product?.identifier?.toLowerCase() === PRICE_IDS[key].toLowerCase()
           );
           if (pkg?.product?.priceString) next[key] = pkg.product.priceString;
         }
@@ -594,9 +599,9 @@ export default function Onboarding() {
   // Fallback prices only — live App Store prices (via RevenueCat) replace
   // these as soon as offerings load, so store price changes propagate here.
   const PLANS = [
-    { key: 'gold', name: 'Gold', price: '$19.99', tag: null, emoji: '🥇', features: ['5 Expert Stock Picks', 'Ad-free experience', 'Community access', 'Basic watchlists', 'Daily market summary'] },
-    { key: 'platinum', name: 'Platinum', price: '$39.99', tag: null, emoji: '🏆', features: ['Everything in Gold', '8 Expert Stock Picks', 'Screener Filters & Premium Presets', 'Unlimited watchlists', 'Priority support'] },
-    { key: 'diamond', name: 'Diamond', price: '$59.99', tag: 'MOST POPULAR', emoji: '💎', features: ['Everything in Platinum', '15 Picks + AI Tools', 'AI Analyzer, Compare & Forecast', 'Pro research reports', 'Verified Profile Badge'] },
+    { key: 'gold', name: 'Gold', price: '$19.99', yearlyPrice: '$159.99', tag: null, emoji: '🥇', features: ['5 Expert Stock Picks', 'Ad-free experience', 'Community access', 'Basic watchlists', 'Daily market summary'] },
+    { key: 'platinum', name: 'Platinum', price: '$39.99', yearlyPrice: '$319.99', tag: null, emoji: '🏆', features: ['Everything in Gold', '8 Expert Stock Picks', 'Screener Filters & Premium Presets', 'Unlimited watchlists', 'Priority support'] },
+    { key: 'diamond', name: 'Diamond', price: '$59.99', yearlyPrice: '$479.99', tag: 'MOST POPULAR', emoji: '💎', features: ['Everything in Platinum', '15 Picks + AI Tools', 'AI Analyzer, Compare & Forecast', 'Pro research reports', 'Verified Profile Badge'] },
   ];
 
   const renderPlans = () => (
@@ -609,6 +614,34 @@ export default function Onboarding() {
       </Animated.View>
       <Text style={styles.stepTitle}>{t('Pick your edge')}</Text>
       <Text style={styles.stepSub}>{t('7-day free trial on every plan. Cancel anytime.')}</Text>
+
+      {/* Monthly / Yearly billing toggle */}
+      <View style={styles.billingToggle}>
+        {(['monthly', 'yearly'] as const).map((b) => {
+          const on = billing === b;
+          return (
+            <TouchableOpacity
+              key={b}
+              onPress={() => {
+                tap();
+                setBilling(b);
+              }}
+              style={[styles.billingBtn, on && styles.billingBtnOn]}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.billingBtnText, on && styles.billingBtnTextOn]}>
+                {t(b === 'monthly' ? 'Monthly' : 'Yearly')}
+              </Text>
+              {b === 'yearly' && (
+                <View style={styles.saveChip}>
+                  <Text style={styles.saveChipText}>{t('Save 33%')}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {PLANS.map((plan, i) => {
           const on = selectedPlan === plan.key;
@@ -632,8 +665,10 @@ export default function Onboarding() {
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.planName, on && { color: GOLD }]}>{plan.name}</Text>
                     <Text style={styles.planPrice}>
-                      {livePrices[plan.key] ?? plan.price}
-                      <Text style={styles.planPer}>/{t('month')}</Text>
+                      {billing === 'yearly'
+                        ? livePrices[`${plan.key}_yearly`] ?? plan.yearlyPrice
+                        : livePrices[`${plan.key}_monthly`] ?? plan.price}
+                      <Text style={styles.planPer}>/{t(billing === 'yearly' ? 'year' : 'month')}</Text>
                     </Text>
                   </View>
                   <Ionicons
@@ -652,6 +687,42 @@ export default function Onboarding() {
             </Animated.View>
           );
         })}
+
+        {/* Lifetime — one-time purchase */}
+        <Animated.View entering={FadeInUp.delay(360).springify()}>
+          <TouchableOpacity
+            style={[styles.planCard, selectedPlan === 'lifetime' && styles.planCardOn]}
+            onPress={() => {
+              tap();
+              setSelectedPlan('lifetime');
+            }}
+            activeOpacity={0.85}
+          >
+            <View style={styles.planTop}>
+              <Text style={styles.planEmoji}>♾️</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.planName, selectedPlan === 'lifetime' && { color: GOLD }]}>
+                  {t('Lifetime')}
+                </Text>
+                <Text style={styles.planPrice}>
+                  {livePrices['lifetime'] ?? '$999.99'}
+                  <Text style={styles.planPer}> · {t('One-time payment')}</Text>
+                </Text>
+              </View>
+              <Ionicons
+                name={selectedPlan === 'lifetime' ? 'checkmark-circle' : 'ellipse-outline'}
+                size={24}
+                color={selectedPlan === 'lifetime' ? GOLD : '#555'}
+              />
+            </View>
+            {['All Diamond Features Forever', 'No recurring charges'].map((f) => (
+              <View key={f} style={styles.planFeatureRow}>
+                <Ionicons name="checkmark" size={13} color={GOLD} />
+                <Text style={styles.planFeature}>{t(f)}</Text>
+              </View>
+            ))}
+          </TouchableOpacity>
+        </Animated.View>
       </ScrollView>
       <CTA
         label={`${t('Start my free trial')} →`}
@@ -884,6 +955,34 @@ const styles = StyleSheet.create({
   planName: { color: '#FFF', fontSize: 17, fontWeight: '800' },
   planPrice: { color: '#DDD', fontSize: 14, fontWeight: '700', marginTop: 1 },
   planPer: { color: '#888', fontSize: 12, fontWeight: '500' },
+  billingToggle: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    backgroundColor: '#1A1A1C',
+    borderRadius: 22,
+    padding: 4,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#2A2A2C',
+  },
+  billingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
+  },
+  billingBtnOn: { backgroundColor: 'rgba(255, 214, 10, 0.15)' },
+  billingBtnText: { color: '#888', fontSize: 13, fontWeight: '700' },
+  billingBtnTextOn: { color: GOLD },
+  saveChip: {
+    backgroundColor: 'rgba(52, 199, 89, 0.16)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  saveChipText: { color: '#34C759', fontSize: 9.5, fontWeight: '800' },
   planFeatureRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 3 },
   planFeature: { color: '#BBB', fontSize: 12.5 },
   freeLink: { alignItems: 'center', paddingVertical: 12 },
