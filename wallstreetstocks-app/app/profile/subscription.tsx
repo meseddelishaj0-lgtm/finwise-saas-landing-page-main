@@ -84,8 +84,8 @@ const TIERS = {
     color: "#FFD700",
     bgColor: "#FFFBEB",
     borderColor: "#FFD700",
-    monthlyPrice: "$4.99",
-    yearlyPrice: "$49.99",
+    monthlyPrice: "$19.99",
+    yearlyPrice: "$199.99",
     features: [
       { icon: TrendingUp, text: "5 Expert Stock Picks" },
       { icon: Shield, text: "Ad-free experience" },
@@ -103,8 +103,8 @@ const TIERS = {
     bgColor: "#F5F3FF",
     borderColor: "#7C3AED",
     popular: true,
-    monthlyPrice: "$6.99",
-    yearlyPrice: "$69.99",
+    monthlyPrice: "$39.99",
+    yearlyPrice: "$399.99",
     features: [
       { icon: Check, text: "Everything in Gold" },
       { icon: TrendingUp, text: "8 Expert Stock Picks" },
@@ -121,8 +121,8 @@ const TIERS = {
     color: "#06B6D4",
     bgColor: "#ECFEFF",
     borderColor: "#06B6D4",
-    monthlyPrice: "$9.99",
-    yearlyPrice: "$99.99",
+    monthlyPrice: "$59.99",
+    yearlyPrice: "$599.99",
     features: [
       { icon: Check, text: "Everything in Platinum" },
       { icon: VerifiedSealIcon, text: "Verified Profile Badge" },

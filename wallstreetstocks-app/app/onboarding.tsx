@@ -560,9 +560,9 @@ export default function Onboarding() {
   };
 
   const PLANS = [
-    { key: 'gold', name: 'Gold', price: '$4.99', tag: null, emoji: '🥇', features: ['5 Expert Stock Picks', 'Ad-free experience', 'Community access', 'Basic watchlists', 'Daily market summary'] },
-    { key: 'platinum', name: 'Platinum', price: '$6.99', tag: null, emoji: '🏆', features: ['Everything in Gold', '8 Expert Stock Picks', 'Screener Filters & Premium Presets', 'Unlimited watchlists', 'Priority support'] },
-    { key: 'diamond', name: 'Diamond', price: '$9.99', tag: 'MOST POPULAR', emoji: '💎', features: ['Everything in Platinum', '15 Picks + AI Tools', 'AI Analyzer, Compare & Forecast', 'Pro research reports', 'Verified Profile Badge'] },
+    { key: 'gold', name: 'Gold', price: '$19.99', tag: null, emoji: '🥇', features: ['5 Expert Stock Picks', 'Ad-free experience', 'Community access', 'Basic watchlists', 'Daily market summary'] },
+    { key: 'platinum', name: 'Platinum', price: '$39.99', tag: null, emoji: '🏆', features: ['Everything in Gold', '8 Expert Stock Picks', 'Screener Filters & Premium Presets', 'Unlimited watchlists', 'Priority support'] },
+    { key: 'diamond', name: 'Diamond', price: '$59.99', tag: 'MOST POPULAR', emoji: '💎', features: ['Everything in Platinum', '15 Picks + AI Tools', 'AI Analyzer, Compare & Forecast', 'Pro research reports', 'Verified Profile Badge'] },
   ];
 
   const renderPlans = () => (
