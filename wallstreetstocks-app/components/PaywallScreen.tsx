@@ -67,15 +67,15 @@ const TIER_NAMES: Record<string, string> = {
 };
 
 const TIER_PRICES_MONTHLY: Record<string, string> = {
-  gold: '$4.99',
-  platinum: '$6.99',
-  diamond: '$9.99',
+  gold: '$19.99',
+  platinum: '$39.99',
+  diamond: '$59.99',
 };
 
 const TIER_PRICES_YEARLY: Record<string, string> = {
-  gold: '$49.99',
-  platinum: '$69.99',
-  diamond: '$99.99',
+  gold: '$199.99',
+  platinum: '$399.99',
+  diamond: '$599.99',
 };
 
 const TIER_PRICES_LIFETIME: Record<string, string> = {

@@ -130,6 +130,38 @@ export default function Onboarding() {
   const [saving, setSaving] = useState(false);
   const [savedCounts, setSavedCounts] = useState({ watch: 0, holdings: 0 });
   const [selectedPlan, setSelectedPlan] = useState('diamond');
+  // Live monthly prices from the App Store (via RevenueCat offerings);
+  // hardcoded PLANS prices are only the pre-load fallback.
+  const [livePrices, setLivePrices] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const pModule = require('react-native-purchases');
+        const Purchases = pModule?.default ?? pModule;
+        if (!Purchases?.getOfferings) return;
+        const offerings = await Purchases.getOfferings();
+        const pkgs = offerings?.current?.availablePackages ?? [];
+        const MONTHLY_IDS: Record<string, string> = {
+          gold: 'wallstreetstocks.gold.monthly',
+          platinum: 'wallstreetstocks.platinum.monthly',
+          diamond: 'wallstreetstocks.diamond.monthly',
+        };
+        const next: Record<string, string> = {};
+        for (const key of Object.keys(MONTHLY_IDS)) {
+          const pkg = pkgs.find(
+            (p: any) => p?.product?.identifier?.toLowerCase() === MONTHLY_IDS[key].toLowerCase()
+          );
+          if (pkg?.product?.priceString) next[key] = pkg.product.priceString;
+        }
+        if (alive && Object.keys(next).length) setLivePrices(next);
+      } catch {
+        // RC not configured yet or store unavailable — fallback prices show
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   const progress = useSharedValue(1 / TOTAL_STEPS);
   useEffect(() => {
@@ -559,6 +591,8 @@ export default function Onboarding() {
     );
   };
 
+  // Fallback prices only — live App Store prices (via RevenueCat) replace
+  // these as soon as offerings load, so store price changes propagate here.
   const PLANS = [
     { key: 'gold', name: 'Gold', price: '$19.99', tag: null, emoji: '🥇', features: ['5 Expert Stock Picks', 'Ad-free experience', 'Community access', 'Basic watchlists', 'Daily market summary'] },
     { key: 'platinum', name: 'Platinum', price: '$39.99', tag: null, emoji: '🏆', features: ['Everything in Gold', '8 Expert Stock Picks', 'Screener Filters & Premium Presets', 'Unlimited watchlists', 'Priority support'] },
@@ -598,7 +632,7 @@ export default function Onboarding() {
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.planName, on && { color: GOLD }]}>{plan.name}</Text>
                     <Text style={styles.planPrice}>
-                      {plan.price}
+                      {livePrices[plan.key] ?? plan.price}
                       <Text style={styles.planPer}>/{t('month')}</Text>
                     </Text>
                   </View>
