@@ -1,5 +1,5 @@
 // app/symbol/[symbol]/header.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { displaySymbol } from '@/lib/symbolDisplay';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,6 +10,7 @@ import { parseLocaleNumber } from "../../../lib/parseNumber";
 import { useWatchlist } from "../../../context/WatchlistContext";
 import { usePortfolio } from "../../../context/PortfolioContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { fetchQuotesWithCache } from "@/services/quoteService";
 
 const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 
@@ -34,8 +35,36 @@ export default function SymbolHeader() {
   const [shares, setShares] = useState('');
   const [avgCost, setAvgCost] = useState('');
   const [loading, setLoading] = useState(false);
+  const [livePrice, setLivePrice] = useState<number | null>(null);
+  // True once the user types their own avg cost — auto-fill then backs off
+  const costEditedRef = useRef(false);
 
   const currentSymbol = symbol?.toUpperCase() || '';
+
+  // Opening the portfolio modal pre-fills Avg Cost with the live price
+  useEffect(() => {
+    if (!showPortfolioModal || !currentSymbol) return;
+    let alive = true;
+    costEditedRef.current = false;
+    setLivePrice(null);
+    (async () => {
+      try {
+        const quotes = await fetchQuotesWithCache([currentSymbol], { timeout: 15000 });
+        const price = Number(quotes?.[0]?.price);
+        if (alive && Number.isFinite(price) && price > 0) {
+          setLivePrice(price);
+          if (!costEditedRef.current) {
+            setAvgCost(price.toFixed(2));
+          }
+        }
+      } catch {
+        // quiet — the field simply stays manual
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [showPortfolioModal, currentSymbol]);
 
   const handleAddToWatchlist = async () => {
     setShowAddMenu(false);
@@ -332,9 +361,26 @@ export default function SymbolHeader() {
                 placeholder={t("e.g., 150.00")}
                 placeholderTextColor="#999"
                 value={avgCost}
-                onChangeText={setAvgCost}
+                onChangeText={(text) => {
+                  costEditedRef.current = text.trim().length > 0;
+                  setAvgCost(text);
+                }}
                 keyboardType="decimal-pad"
               />
+              {livePrice != null && (
+                <TouchableOpacity
+                  style={styles.livePriceRow}
+                  onPress={() => {
+                    costEditedRef.current = false;
+                    setAvgCost(livePrice.toFixed(2));
+                  }}
+                >
+                  <Ionicons name="flash" size={12} color="#FFD60A" />
+                  <Text style={styles.livePriceText}>
+                    {t('Current Price')}: ${livePrice.toFixed(2)}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <TouchableOpacity
@@ -616,6 +662,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 8,
+  },
+  livePriceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    alignSelf: "flex-start",
+  },
+  livePriceText: {
+    color: "#FFD60A",
+    fontSize: 13,
+    fontWeight: "600",
   },
   input: {
     backgroundColor: "#252525",

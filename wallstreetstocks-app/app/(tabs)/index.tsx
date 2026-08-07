@@ -460,6 +460,10 @@ export default function Dashboard() {
   const [addingStock, setAddingStock] = useState(false);
   const [stockSearchResults, setStockSearchResults] = useState<any[]>([]);
   const [showStockSearchDropdown, setShowStockSearchDropdown] = useState(false);
+  const [addStockLivePrice, setAddStockLivePrice] = useState<number | null>(null);
+  const [addStockPriceLoading, setAddStockPriceLoading] = useState(false);
+  // True once the user types their own avg cost — auto-fill then backs off
+  const addStockCostEditedRef = useRef(false);
 
   // Edit Holding Modal
   const [editHoldingModal, setEditHoldingModal] = useState(false);
@@ -2003,6 +2007,50 @@ export default function Dashboard() {
     return () => clearTimeout(delayDebounce);
   }, [newStockSymbol]);
 
+  // Fresh Add Stock modal → fresh auto-fill state
+  useEffect(() => {
+    if (addStockModal) {
+      addStockCostEditedRef.current = false;
+      setAddStockLivePrice(null);
+      setAddStockPriceLoading(false);
+    }
+  }, [addStockModal]);
+
+  // Fetch the live price for the typed/picked symbol (debounced) and
+  // pre-fill Avg Cost with it unless the user entered their own number.
+  useEffect(() => {
+    if (!addStockModal) return;
+    const sym = newStockSymbol.trim().toUpperCase();
+    setAddStockLivePrice(null);
+    if (!/^[A-Z][A-Z0-9.-]{0,9}$/.test(sym)) {
+      setAddStockPriceLoading(false);
+      return;
+    }
+    let alive = true;
+    setAddStockPriceLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const quotes = await fetchBatchQuotes([sym]);
+        const price = Number(quotes?.[0]?.price);
+        if (!alive) return;
+        if (Number.isFinite(price) && price > 0) {
+          setAddStockLivePrice(price);
+          if (!addStockCostEditedRef.current) {
+            setNewStockAvgCost(price.toFixed(2));
+          }
+        }
+      } catch {
+        // quiet — the field simply stays manual
+      } finally {
+        if (alive) setAddStockPriceLoading(false);
+      }
+    }, 500);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [newStockSymbol, addStockModal]);
+
   // Refresh all data
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -3466,12 +3514,41 @@ export default function Dashboard() {
                     placeholder="150.00"
                     placeholderTextColor="#999"
                     value={newStockAvgCost}
-                    onChangeText={setNewStockAvgCost}
+                    onChangeText={(text) => {
+                      // Typing your own cost basis pauses auto-fill;
+                      // clearing the field hands control back to it.
+                      addStockCostEditedRef.current = text.trim().length > 0;
+                      setNewStockAvgCost(text);
+                    }}
                     keyboardType="decimal-pad"
                     editable={!addingStock}
                   />
                 </View>
               </View>
+
+              {(addStockPriceLoading || addStockLivePrice != null) && (
+                <TouchableOpacity
+                  style={styles.livePriceRow}
+                  disabled={addStockPriceLoading || addStockLivePrice == null}
+                  onPress={() => {
+                    if (addStockLivePrice != null) {
+                      addStockCostEditedRef.current = false;
+                      setNewStockAvgCost(addStockLivePrice.toFixed(2));
+                    }
+                  }}
+                >
+                  {addStockPriceLoading ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <>
+                      <Ionicons name="flash" size={12} color={colors.primary} />
+                      <Text style={[styles.livePriceText, { color: colors.primary }]}>
+                        {t('Current Price')}: ${addStockLivePrice!.toFixed(2)}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
                 style={[styles.modalButton, addingStock && styles.modalButtonDisabled]}
@@ -4931,6 +5008,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E5EA',
     color: '#000',
+  },
+  livePriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-end',
+    marginTop: -6,
+    marginBottom: 4,
+    paddingVertical: 4,
+  },
+  livePriceText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   modalButton: {
     backgroundColor: '#B8860B',
