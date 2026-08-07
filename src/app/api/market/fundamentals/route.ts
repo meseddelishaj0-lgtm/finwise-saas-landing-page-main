@@ -13,10 +13,18 @@ const HOUR = 60 * MIN;
 
 type Slim = (raw: any) => any;
 
+interface FetchOpts {
+  period: "annual" | "quarter";
+  quarter?: number;
+  year?: number;
+}
+
 interface DatasetSpec {
-  url: (symbol: string, period: "annual" | "quarter") => string;
+  url: (symbol: string, opts: FetchOpts) => string;
   ttl: number;
   slim?: Slim;
+  /** Requires valid quarter+year query params (earnings transcripts). */
+  needsQuarterYear?: boolean;
 }
 
 const first: Slim = (r) => (Array.isArray(r) && r.length ? r[0] : null);
@@ -29,19 +37,19 @@ const DATASETS: Record<string, DatasetSpec> = {
     slim: first,
   },
   income: {
-    url: (s, p) => `${FMP}/v3/income-statement/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
+    url: (s, { period: p }) => `${FMP}/v3/income-statement/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
     ttl: 6 * HOUR,
   },
   balance: {
-    url: (s, p) => `${FMP}/v3/balance-sheet-statement/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
+    url: (s, { period: p }) => `${FMP}/v3/balance-sheet-statement/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
     ttl: 6 * HOUR,
   },
   cashflow: {
-    url: (s, p) => `${FMP}/v3/cash-flow-statement/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
+    url: (s, { period: p }) => `${FMP}/v3/cash-flow-statement/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
     ttl: 6 * HOUR,
   },
   "key-metrics": {
-    url: (s, p) => `${FMP}/v3/key-metrics/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
+    url: (s, { period: p }) => `${FMP}/v3/key-metrics/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
     ttl: 6 * HOUR,
   },
   "key-metrics-ttm": {
@@ -50,7 +58,7 @@ const DATASETS: Record<string, DatasetSpec> = {
     slim: first,
   },
   ratios: {
-    url: (s, p) => `${FMP}/v3/ratios/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
+    url: (s, { period: p }) => `${FMP}/v3/ratios/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
     ttl: 6 * HOUR,
   },
   "ratios-ttm": {
@@ -59,7 +67,7 @@ const DATASETS: Record<string, DatasetSpec> = {
     slim: first,
   },
   growth: {
-    url: (s, p) => `${FMP}/v3/financial-growth/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
+    url: (s, { period: p }) => `${FMP}/v3/financial-growth/${s}?period=${p}&limit=${p === "quarter" ? 12 : 8}`,
     ttl: 6 * HOUR,
   },
   estimates: {
@@ -269,6 +277,28 @@ const DATASETS: Record<string, DatasetSpec> = {
         titleSince: e.titleSince,
       })),
   },
+  // v4 list endpoint returns tuples: [[quarter, year, "date"], ...]
+  "transcript-dates": {
+    url: (s) => `${FMP}/v4/earning_call_transcript?symbol=${s}`,
+    ttl: 6 * HOUR,
+    slim: (r) =>
+      arr(r)
+        .filter((t) => Array.isArray(t) && t.length >= 3)
+        .slice(0, 16)
+        .map((t) => ({ quarter: t[0], year: t[1], date: t[2] })),
+  },
+  transcript: {
+    url: (s, { quarter, year }) =>
+      `${FMP}/v3/earning_call_transcript/${s}?quarter=${quarter}&year=${year}`,
+    ttl: 24 * HOUR,
+    needsQuarterYear: true,
+    slim: (r) => {
+      const t = first(r);
+      return t
+        ? { quarter: t.quarter, year: t.year, date: t.date, content: t.content }
+        : null;
+    },
+  },
 };
 
 // FMP occasionally emits invalid JSON — raw backslashes inside strings
@@ -289,6 +319,8 @@ export async function GET(req: NextRequest) {
   const symbol = (sp.get("symbol") || "").trim().toUpperCase();
   const dataset = (sp.get("dataset") || "").trim();
   const period = sp.get("period") === "quarter" ? "quarter" : "annual";
+  const quarter = Number(sp.get("quarter"));
+  const year = Number(sp.get("year"));
 
   if (!/^[A-Z0-9^./-]{1,12}$/.test(symbol)) {
     return NextResponse.json({ error: "invalid symbol" }, { status: 400 });
@@ -297,8 +329,15 @@ export async function GET(req: NextRequest) {
   if (!spec) {
     return NextResponse.json({ error: "unknown dataset" }, { status: 400 });
   }
+  if (
+    spec.needsQuarterYear &&
+    (!Number.isInteger(quarter) || quarter < 1 || quarter > 4 ||
+      !Number.isInteger(year) || year < 1990 || year > 2100)
+  ) {
+    return NextResponse.json({ error: "quarter/year required" }, { status: 400 });
+  }
 
-  const key = `${symbol}|${dataset}|${period}`;
+  const key = `${symbol}|${dataset}|${period}|${quarter || ""}|${year || ""}`;
   const hit = cache.get(key);
   if (hit && Date.now() - hit.ts < hit.ttl) {
     return NextResponse.json(hit.data, {
@@ -307,7 +346,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const url = spec.url(encodeURIComponent(symbol), period);
+    const url = spec.url(encodeURIComponent(symbol), { period, quarter, year });
     const joined = url.includes("?") ? "&" : "?";
     const res = await fetch(`${url}${joined}apikey=${process.env.FMP_API_KEY}`, {
       cache: "no-store",

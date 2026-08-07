@@ -11,20 +11,28 @@ import React, { useEffect, useState } from "react";
 export function useDataset<T = any>(
   symbol: string,
   dataset: string,
-  period?: "annual" | "quarter"
+  period?: "annual" | "quarter",
+  extra?: string
 ) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    // Empty dataset = disabled fetch (e.g. transcript before a quarter is picked)
+    if (!dataset) {
+      setData(null);
+      setLoading(false);
+      setError(false);
+      return;
+    }
     let alive = true;
     setLoading(true);
     setError(false);
     setData(null);
     const qs = `symbol=${encodeURIComponent(symbol)}&dataset=${dataset}${
       period ? `&period=${period}` : ""
-    }`;
+    }${extra ? `&${extra}` : ""}`;
     fetch(`/api/market/fundamentals?${qs}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("bad status"))))
       .then((d) => {
@@ -40,7 +48,7 @@ export function useDataset<T = any>(
     return () => {
       alive = false;
     };
-  }, [symbol, dataset, period]);
+  }, [symbol, dataset, period, extra]);
 
   return { data, loading, error };
 }

@@ -14,6 +14,7 @@ import FinancialsTab from "@/components/market/fundamentals/FinancialsTab";
 import AnalystsTab from "@/components/market/fundamentals/AnalystsTab";
 import OwnershipTab from "@/components/market/fundamentals/OwnershipTab";
 import EarningsTab from "@/components/market/fundamentals/EarningsTab";
+import TranscriptsTab from "@/components/market/fundamentals/TranscriptsTab";
 import ProfileTab from "@/components/market/fundamentals/ProfileTab";
 
 const DEFAULT_WATCHLIST = ["NVDA", "AAPL", "MSFT", "META", "TSLA", "AMZN", "SPY", "BTCUSD"];
@@ -43,6 +44,7 @@ const FUND_TABS = [
   { key: "analysts", label: "Analysts", C: AnalystsTab },
   { key: "ownership", label: "Ownership", C: OwnershipTab },
   { key: "earnings", label: "Earnings & Dividends", C: EarningsTab },
+  { key: "transcripts", label: "Transcripts", C: TranscriptsTab },
   { key: "profile", label: "Profile", C: ProfileTab },
 ] as const;
 
