@@ -24,7 +24,7 @@ const TickerTape: React.FC = () => {
 
   if (quotes.length === 0) {
     return (
-      <div className="w-screen h-[44px] border-y border-white/10 bg-night" style={{ marginLeft: "calc(-50vw + 50%)" }} />
+      <div className="w-screen h-[38px] border-y border-white/10 bg-night" style={{ marginLeft: "calc(-50vw + 50%)" }} />
     );
   }
 
@@ -36,11 +36,11 @@ const TickerTape: React.FC = () => {
         href={`/terminal?symbol=${encodeURIComponent(q.symbol)}`}
         className="inline-flex items-center gap-2 px-5 border-r border-white/5 hover:bg-white/[0.03] h-full transition-colors"
       >
-        <span className="font-mono font-bold text-[13px] text-gray-200">
+        <span className="font-monodata font-semibold text-[12px] text-gray-200">
           {NAMES[q.symbol] || q.symbol}
         </span>
-        <span className="font-mono text-[13px] tabular-nums text-gray-300">{fmtPrice(q.price)}</span>
-        <span className={`font-mono text-[12px] font-bold tabular-nums ${up ? "text-green-400" : "text-red-400"}`}>
+        <span className="font-monodata text-[12px] tabular-nums text-gray-400">{fmtPrice(q.price)}</span>
+        <span className={`font-monodata text-[11px] font-semibold tabular-nums ${up ? "text-green-400" : "text-red-400"}`}>
           {up ? "▲" : "▼"} {Math.abs(q.changePercent || 0).toFixed(2)}%
         </span>
       </Link>
@@ -49,7 +49,7 @@ const TickerTape: React.FC = () => {
 
   return (
     <div
-      className="group w-screen h-[44px] overflow-hidden border-y border-white/10 bg-night"
+      className="group w-screen h-[38px] overflow-hidden border-y border-white/10 bg-night"
       style={{ marginLeft: "calc(-50vw + 50%)" }}
     >
       <style>{`

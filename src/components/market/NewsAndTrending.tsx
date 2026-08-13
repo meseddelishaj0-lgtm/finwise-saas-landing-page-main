@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import CommandLine from "@/components/ui/CommandLine";
 
 interface NewsItem {
   symbol?: string;
@@ -51,9 +52,10 @@ const NewsAndTrending: React.FC = () => {
   return (
     <section className="relative w-screen text-white bg-night pb-20" style={{ marginLeft: "calc(-50vw + 50%)" }}>
       <div className="max-w-7xl mx-auto px-6 md:px-10">
-        <div className="flex items-end justify-between mb-8">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">
-            Market News
+        <div className="mb-8">
+          <CommandLine cmd="TOP" note="top market news" className="mb-4" />
+          <h2 className="font-display text-ivory text-4xl md:text-5xl tracking-tight">
+            On the wire
           </h2>
         </div>
 

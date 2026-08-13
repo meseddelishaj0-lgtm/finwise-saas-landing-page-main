@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { Analytics } from "@vercel/analytics/react";
-import { Source_Sans_3, Manrope } from "next/font/google";
+import { Source_Sans_3, Manrope, Newsreader, IBM_Plex_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { siteDetails } from "@/data/siteDetails";
@@ -10,6 +10,20 @@ import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 
 const manrope = Manrope({ subsets: ["latin"] });
 const sourceSans = Source_Sans_3({ subsets: ["latin"] });
+// Editorial serif for display headlines (financial-print masthead voice)
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-display",
+  adjustFontFallback: false,
+  fallback: ["Georgia", "serif"],
+});
+// Machine mono for data, commands, and labels (terminal voice)
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-mono-wss",
+});
 
 export const metadata: Metadata = {
   title: siteDetails.metadata.title,
@@ -51,7 +65,7 @@ export default function RootLayout({
       </head>
 
       <body
-        className={`${manrope.className} ${sourceSans.className} antialiased bg-gray-50`}
+        className={`${manrope.className} ${sourceSans.className} ${newsreader.variable} ${plexMono.variable} antialiased bg-gray-50`}
       >
         <SessionProviderWrapper>
           <Header />

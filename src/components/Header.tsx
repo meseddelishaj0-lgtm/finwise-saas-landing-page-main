@@ -110,7 +110,7 @@ const Header: React.FC = () => {
             href="/"
             className="flex items-center gap-2 group flex-shrink-0 -ml-2"
           >
-            <span className="text-lg font-extrabold tracking-tight whitespace-nowrap">
+            <span className="font-display text-xl text-ivory tracking-tight whitespace-nowrap">
               WallStreetStocks
             </span>
           </Link>
@@ -142,7 +142,7 @@ const Header: React.FC = () => {
 
             <Link
               href="/terminal"
-              className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 font-semibold transition-all duration-200 whitespace-nowrap"
+              className="flex items-center gap-2 font-monodata text-[13px] font-semibold uppercase tracking-wider text-gold hover:text-gold-soft transition-all duration-200 whitespace-nowrap"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               Terminal

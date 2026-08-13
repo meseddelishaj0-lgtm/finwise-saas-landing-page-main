@@ -330,3 +330,37 @@ h1, h2, h3 {
     background-position: -200% 0;
   }
 }
+
+/* === Terminal command-line signature (landing redesign) === */
+@keyframes wss-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.cmd-cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  margin-left: 2px;
+  background: #facc15;
+  vertical-align: text-bottom;
+  animation: wss-blink 1.1s steps(1) infinite;
+}
+
+/* Inverse button — for use on solid-gold surfaces only */
+.btn-night {
+  @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-gold bg-night transition-all duration-300;
+}
+.btn-night:hover {
+  @apply -translate-y-0.5;
+  box-shadow: 0 8px 30px rgba(13, 12, 9, 0.45);
+}
+
+/* Respect reduced motion globally: settle every animation to its end state */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

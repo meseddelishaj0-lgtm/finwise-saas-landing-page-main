@@ -1,76 +1,78 @@
 import { IBenefit } from "@/types";
 
+// NOTE: titles are keys into BenefitSection's PANELS map — don't rename
+// without updating the panel components.
 const benefits: IBenefit[] = [
   {
     title: "Smart Analysis",
     description:
-      "Take the guesswork out of managing your money. Our AI-powered analysis tool adapts to your lifestyle and helps you stay on track.",
+      "Every symbol, scored. AI ratings, momentum reads, and risk signals are computed on live market data — so you read the market instead of just watching it.",
     bullets: [
       {
-        title: "Intelligent Categorization",
+        title: "AI ratings",
         description:
-          "Automatically sorts your transactions for crystal-clear insights.",
-        icon: undefined
+          "Buy, hold, and sell calls with the reasoning behind them, on every covered stock.",
+        icon: undefined,
       },
       {
-        title: "Customizable Goals",
+        title: "Momentum & trend signals",
         description:
-          "Set and track financial objectives that matter to you with AI support.",
-        icon: undefined
+          "Directional reads that update as the tape moves, not at the end of the day.",
+        icon: undefined,
       },
       {
-        title: "Predictive Analysis",
+        title: "Risk & volatility checks",
         description:
-          "Get ahead of your finances with machine learning forecasts and alerts.",
-        icon: undefined
+          "Know how much a position can swing before you size it.",
+        icon: undefined,
       },
     ],
   },
   {
     title: "AI Stock Research",
     description:
-      "Start building wealth today—no financial degree required. WallStreetStocks makes AI-driven investing simple, visual, and powerful.",
+      "Deep research without the analyst desk. Fundamentals, filings, and forecasts distilled into briefs you can actually read before the open.",
     bullets: [
       {
-        title: "AI Micro-Investing",
+        title: "Research briefs",
         description:
-          "Invest small amounts automatically, making it easy to grow your portfolio.",
-        icon: undefined
+          "Plain-English summaries of what matters in a company's numbers and news.",
+        icon: undefined,
       },
       {
-        title: "Expert Portfolios",
+        title: "27 fundamental datasets",
         description:
-          "Access machine-curated strategies that align with your goals and risk tolerance.",
-        icon: undefined
+          "Income, balance sheet, ratios, growth, and more — the full picture on one page.",
+        icon: undefined,
       },
       {
-        title: "Real-Time Performance",
+        title: "Track record you can audit",
         description:
-          "Track your investments with interactive metrics and visual analytics.",
-        icon: undefined
+          "Every AI pick is logged and measured against the S&P 500, in public.",
+        icon: undefined,
       },
     ],
   },
   {
     title: "Market Data",
     description:
-      "Stay ahead with real-time global market coverage. WallStreetStocks brings together equities, ETFs, indices, commodities, and forex — all in one dynamic platform.",
+      "Equities, ETFs, indices, crypto, forex, and commodities — streaming onto one desk, with terminal-grade charts under every symbol.",
     bullets: [
-    {
-      title: "Live Price Feeds",
-      description:
-        "Track every tick in real time across global exchanges with accurate, low-latency updates.",
-    },
-    {
-      title: "Comprehensive Coverage",
-      description:
-        "Access data from equities, ETFs, commodities, futures, crypto, and currencies — all unified in one view.",
-    },
-    {
-      title: "Actionable Insights",
-      description:
-        "Analyze volume, performance, and trends instantly through AI-powered analytics and visual charts.",
-    },
+      {
+        title: "Live price feeds",
+        description:
+          "Low-latency quotes across global exchanges, refreshed around the clock.",
+      },
+      {
+        title: "Every asset class",
+        description:
+          "One search reaches stocks, funds, coins, currencies, and futures alike.",
+      },
+      {
+        title: "Terminal-grade charts",
+        description:
+          "Intraday to decade view, with volume, ranges, and pre/post sessions.",
+      },
     ],
   },
 ];

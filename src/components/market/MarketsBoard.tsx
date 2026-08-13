@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuotes, fmtPrice, fmtCap, Quote } from "./useQuotes";
+import CommandLine from "@/components/ui/CommandLine";
 
 const TABS: Record<string, string[]> = {
   Indices: ["^GSPC", "^IXIC", "^DJI", "^RUT", "^VIX", "GLD", "USO", "TLT"],
@@ -37,14 +38,15 @@ const MarketsBoard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 md:px-10">
         <div className="flex items-end justify-between mb-8">
           <div>
-            <span className="badge-pill mb-4">
-              Live Markets
-            </span>
-            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-yellow-400 to-amber-300 bg-clip-text text-transparent">
-              Markets Today
+            <CommandLine cmd="WEI" note="world equity indices" className="mb-4" />
+            <h2 className="font-display text-ivory text-4xl md:text-5xl tracking-tight">
+              Markets today
             </h2>
           </div>
-          <Link href="/terminal" className="hidden sm:inline-flex items-center gap-2 text-gray-400 font-semibold hover:text-yellow-300 transition-colors">
+          <Link
+            href="/terminal"
+            className="hidden sm:inline-flex items-center gap-2 font-monodata text-xs uppercase tracking-wider text-gray-400 hover:text-gold transition-colors"
+          >
             Open Terminal <span>→</span>
           </Link>
         </div>

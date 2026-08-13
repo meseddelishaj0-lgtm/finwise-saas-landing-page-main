@@ -15,15 +15,12 @@ const Footer: React.FC = () => {
       className="relative w-screen overflow-hidden text-gray-300 bg-night border-t border-white/10 py-16"
       style={{ marginLeft: "calc(-50vw + 50%)" }}
     >
-      {/* Subtle golden radial glow */}
-      <div className="section-glow" />
-
       {/* Footer Content */}
       <div className="relative z-10 max-w-7xl w-full mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
         {/* Logo and Description */}
         <div>
           <Link href="/" className="flex items-center gap-2">
-            <h3 className="text-2xl font-semibold text-white cursor-pointer">
+            <h3 className="font-display text-2xl text-ivory cursor-pointer">
               {siteDetails.siteName}
             </h3>
           </Link>
@@ -38,7 +35,7 @@ const Footer: React.FC = () => {
 
         {/* Quick Links - Center */}
         <div>
-          <h4 className="text-sm font-bold uppercase tracking-wider text-yellow-300/90 mb-4">
+          <h4 className="font-monodata text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-4">
             Quick Links
           </h4>
           <ul className="space-y-2">
@@ -68,7 +65,7 @@ const Footer: React.FC = () => {
 
         {/* Contact Info - Right */}
         <div>
-          <h4 className="text-sm font-bold uppercase tracking-wider text-yellow-300/90 mb-4">
+          <h4 className="font-monodata text-[11px] font-semibold uppercase tracking-widest text-gray-500 mb-4">
             Contact Us
           </h4>
 
@@ -113,22 +110,23 @@ const Footer: React.FC = () => {
       </div>
 
       {/* Disclaimer */}
-      <div className="relative z-10 mt-12 border-t border-white/10 pt-8 max-w-5xl mx-auto text-sm md:text-base text-gray-400 px-6 leading-relaxed">
-        <p className="text-justify">
-          <strong className="text-yellow-400">Disclaimer:</strong> WallStreetStocks.ai
+      <div className="relative z-10 mt-12 border-t border-white/10 pt-8 max-w-5xl mx-auto text-sm text-gray-500 px-6 leading-relaxed">
+        <p>
+          <strong className="font-monodata text-[11px] uppercase tracking-widest text-gray-400">Disclaimer —</strong>{" "}
+          WallStreetStocks.ai
           is a financial research and analytics platform powered by artificial
           intelligence and real-time market data. The information, tools, and
           insights provided are for educational and informational purposes only
           and do not constitute investment, legal, or tax advice.
         </p>
-        <p className="mt-4 text-justify">
+        <p className="mt-4">
           WallStreetStocks.ai and its AI systems do not make personalized
           investment recommendations or solicit the purchase or sale of any
           security. Past performance is not indicative of future results. Users
           should conduct their own due diligence or consult with a licensed
           financial advisor before making any investment decisions.
         </p>
-        <p className="mt-4 text-justify">
+        <p className="mt-4">
           WallStreetStocks.ai is not registered as a broker-dealer, investment
           advisor, or financial institution with the U.S. Securities and
           Exchange Commission (SEC), the Financial Industry Regulatory Authority
@@ -138,9 +136,8 @@ const Footer: React.FC = () => {
 
       {/* Copyright */}
       <div className="relative z-10 mt-10 border-t border-white/10 pt-6 max-w-7xl mx-auto px-6">
-        <p className="text-gray-500 text-sm text-center">
-          © {new Date().getFullYear()} Wall Street Stocks LLC. All rights
-          reserved.
+        <p className="font-monodata text-[11px] uppercase tracking-widest text-gray-500 text-center">
+          © {new Date().getFullYear()} Wall Street Stocks LLC · All rights reserved · Not investment advice
         </p>
       </div>
     </footer>

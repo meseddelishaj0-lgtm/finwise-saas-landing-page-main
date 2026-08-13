@@ -8,7 +8,15 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        // Display serif — landing-page headlines only
+        display: ["var(--font-display)", "Georgia", "serif"],
+        // Data mono — commands, tickers, labels
+        monodata: ["var(--font-mono-wss)", "ui-monospace", "SFMono-Regular", "monospace"],
+      },
       colors: {
+        // Warm paper-white for display text on night (print voice)
+        ivory: "#F2EDE3",
         background: "var(--background)",
         foreground: "var(--foreground)",
         primary: "var(--primary)",
