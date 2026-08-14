@@ -28,6 +28,11 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: siteDetails.metadata.title,
   description: siteDetails.metadata.description,
+  twitter: {
+    card: "summary_large_image",
+    site: "@WallStStocksAI",
+    creator: "@WallStStocksAI",
+  },
   icons: {
     icon: "/images/wallstreetstocks.png", // ✅ correct relative path
     shortcut: "/images/wallstreetstocks.png",

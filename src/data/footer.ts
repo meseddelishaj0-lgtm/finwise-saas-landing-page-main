@@ -26,6 +26,7 @@ export const footerDetails: {
     email: "wallstreetstocks@outlook.com",
     telephone: "+1(216)548-33-78",
     socials: {
+        x: "https://x.com/WallStStocksAI",
         instagram: "https://www.instagram.com/wallstreetstocks",
         tiktok: "https://www.tiktok.com/@wallstreetstocks1",
     },
