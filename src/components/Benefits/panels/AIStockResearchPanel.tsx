@@ -3,13 +3,15 @@
 import React from "react";
 import { motion } from "framer-motion";
 import Sparkline from "./Sparkline";
+import { useQuotes, fmtPrice } from "@/components/market/useQuotes";
+import { useSparkSeries, fmtBarTime } from "./useSparkSeries";
 
 const GOLD = "#FACC15";
 const UP = "#34C759";
 const DOWN = "#FF453A";
 
-const priceHistory = [178, 180, 179, 183, 182, 186, 185, 188, 187, 190, 189, 192, 194, 192];
-
+// The score and notes are an illustrative product sample; the quote and
+// chart are live NVDA data from the same proxies the Terminal uses.
 const scores = [
   { label: "Fundamentals", value: 92 },
   { label: "Momentum", value: 84 },
@@ -29,6 +31,18 @@ const fadeUp = {
 };
 
 const AIStockResearchPanel: React.FC = () => {
+  const { quotes } = useQuotes(["NVDA"], 60000);
+  const q = quotes[0];
+  const spark = useSparkSeries("NVDA", "1D", 48);
+
+  const up =
+    q != null
+      ? (q.changePercent ?? 0) >= 0
+      : spark != null
+        ? spark.closes[spark.closes.length - 1] >= spark.closes[0]
+        : true;
+  const tone = up ? UP : DOWN;
+
   return (
     <div className="w-full h-full flex flex-col gap-5 p-6 md:p-8">
       {/* Stock header */}
@@ -43,24 +57,44 @@ const AIStockResearchPanel: React.FC = () => {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-white font-bold text-lg tabular-nums leading-tight">$192.44</p>
-          <span
-            className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-xs font-bold tabular-nums"
-            style={{ color: UP, backgroundColor: "rgba(52,199,89,0.12)" }}
-          >
-            ▲ +2.31%
-          </span>
+          <p className="text-white font-bold text-lg tabular-nums leading-tight">
+            {q ? `$${fmtPrice(q.price)}` : "—"}
+          </p>
+          {q ? (
+            <span
+              className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-xs font-bold tabular-nums"
+              style={{ color: tone, backgroundColor: up ? "rgba(52,199,89,0.12)" : "rgba(255,69,58,0.12)" }}
+            >
+              {up ? "▲" : "▼"} {up ? "+" : ""}
+              {(q.changePercent ?? 0).toFixed(2)}%
+            </span>
+          ) : (
+            <span className="inline-block mt-0.5 h-[20px] w-16 rounded bg-white/[0.05] animate-pulse" />
+          )}
         </div>
       </motion.div>
 
-      {/* Price chart */}
+      {/* Price chart — live 1D session */}
       <motion.div {...fadeUp} transition={{ duration: 0.5, delay: 0.1 }} className="rounded-xl bg-white/[0.03] border border-white/10 p-4">
-        <Sparkline data={priceHistory} width={480} height={110} color={UP} area className="w-full" />
-        <div className="flex justify-between mt-2 text-[11px] text-gray-600">
-          <span>9:30 AM</span>
-          <span>12:00 PM</span>
-          <span>4:00 PM</span>
-        </div>
+        {spark && spark.closes.length > 1 ? (
+          <>
+            <Sparkline data={spark.closes} width={480} height={110} color={tone} area className="w-full" />
+            <div className="flex justify-between mt-2 text-[11px] text-gray-600">
+              <span>{fmtBarTime(spark.tFirst)}</span>
+              <span>{fmtBarTime(spark.tMid)}</span>
+              <span>{fmtBarTime(spark.tLast)}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="w-full h-[110px] rounded bg-white/[0.03] animate-pulse" />
+            <div className="flex justify-between mt-2 text-[11px] text-gray-600">
+              <span>9:30 AM</span>
+              <span>12:00 PM</span>
+              <span>4:00 PM</span>
+            </div>
+          </>
+        )}
       </motion.div>
 
       {/* AI score */}
@@ -109,7 +143,9 @@ const AIStockResearchPanel: React.FC = () => {
         ))}
       </motion.div>
 
-      <p className="text-[11px] text-gray-600 text-center mt-auto">Illustrative example of AI research output</p>
+      <p className="text-[11px] text-gray-600 text-center mt-auto">
+        Live NVDA quote &amp; chart · AI score and notes shown as an illustrative example
+      </p>
     </div>
   );
 };
