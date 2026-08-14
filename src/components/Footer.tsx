@@ -44,6 +44,7 @@ const Footer: React.FC = () => {
               { label: "AI Dashboard", href: "/ai-dashboard" },
               { label: "Features", href: "/features" },
               { label: "Plans", href: "/plans" },
+              { label: "Newsroom", href: "/newsroom" },
               { label: "Community", href: "/community" },
               { label: "Resources", href: "/resources" },
               { label: "About Us", href: "/about-us" },

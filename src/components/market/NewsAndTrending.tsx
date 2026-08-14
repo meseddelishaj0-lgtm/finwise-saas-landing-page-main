@@ -21,6 +21,14 @@ interface Mover {
   changePercent: number;
 }
 
+interface DeskArticle {
+  slug: string;
+  title: string;
+  summary: string | null;
+  symbol: string | null;
+  publishedAt: string;
+}
+
 const timeAgo = (dateStr: string) => {
   const diff = Date.now() - new Date(dateStr.replace(" ", "T")).getTime();
   const mins = Math.floor(diff / 60000);
@@ -33,6 +41,7 @@ const timeAgo = (dateStr: string) => {
 const NewsAndTrending: React.FC = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [actives, setActives] = useState<Mover[]>([]);
+  const [desk, setDesk] = useState<DeskArticle[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -43,6 +52,10 @@ const NewsAndTrending: React.FC = () => {
     fetch("/api/market/movers?list=actives")
       .then((r) => r.json())
       .then((d) => { if (alive && Array.isArray(d)) setActives(d); })
+      .catch(() => {});
+    fetch("/api/newsroom?limit=3")
+      .then((r) => r.json())
+      .then((d) => { if (alive && Array.isArray(d?.articles)) setDesk(d.articles); })
       .catch(() => {});
     return () => { alive = false; };
   }, []);
@@ -58,6 +71,35 @@ const NewsAndTrending: React.FC = () => {
             On the wire
           </h2>
         </div>
+
+        {/* From the desk — owner-published newsroom stories */}
+        {desk.length > 0 && (
+          <div className="mb-6 grid sm:grid-cols-3 gap-4">
+            {desk.map((a) => (
+              <Link
+                key={a.slug}
+                href={`/newsroom/${a.slug}`}
+                className="card-night p-5 hover:border-yellow-400/40 transition-colors duration-300"
+              >
+                <div className="flex items-center gap-2 font-monodata text-[10px] font-semibold uppercase tracking-widest text-gold mb-2.5">
+                  From the desk
+                  {a.symbol && (
+                    <span className="text-gray-500">· {a.symbol}</span>
+                  )}
+                  <span className="text-gray-600 font-normal normal-case tracking-normal ml-auto">
+                    {timeAgo(a.publishedAt)}
+                  </span>
+                </div>
+                <h3 className="font-display text-xl text-ivory leading-snug line-clamp-2">
+                  {a.title}
+                </h3>
+                {a.summary && (
+                  <p className="mt-2 text-sm text-gray-400 leading-relaxed line-clamp-2">{a.summary}</p>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Lead story + grid */}

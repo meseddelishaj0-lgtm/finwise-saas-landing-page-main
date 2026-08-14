@@ -34,6 +34,7 @@ const NAV_MENUS: { label: string; items: { title: string; href: string }[] }[] =
       { title: "AI Dashboard", href: "/ai-dashboard" },
       { title: "Market Calendar", href: "/calendars" },
       { title: "Market News", href: "/news" },
+      { title: "WSS Newsroom", href: "/newsroom" },
       { title: "AI Stock Picks", href: "/ai-stock-picks" },
       { title: "AI Assistant", href: "/ai-assistant" },
       { title: "Mergers & Acquisitions", href: "/mergers-aquisitions" },

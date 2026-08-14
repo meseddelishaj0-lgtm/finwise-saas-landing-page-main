@@ -521,6 +521,24 @@ model ScreenerPreset {
   @@index([userId])
 }
 
+// Owner-published newsroom articles (website "From the desk" feed)
+model NewsArticle {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  summary     String?
+  content     String
+  imageUrl    String?
+  symbol      String? // optional ticker tag, e.g. "NVDA"
+  published   Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  authorEmail String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@index([published, publishedAt])
+}
+
 // Sent notification tracking for deduplication (market movers, news)
 model SentNotification {
   id             Int      @id @default(autoincrement())
