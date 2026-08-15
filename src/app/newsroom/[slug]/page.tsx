@@ -20,13 +20,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     select: { title: true, summary: true, imageUrl: true, published: true },
   });
   if (!article || !article.published) return { title: "Newsroom — WallStreetStocks" };
+  // Explicit dimensions + type make social crawlers (X especially) render the
+  // card image reliably without a fetch-and-measure round trip.
+  const images = article.imageUrl
+    ? [
+        {
+          url: article.imageUrl,
+          width: 1200,
+          height: 630,
+          type: article.imageUrl.endsWith(".png") ? "image/png" : "image/jpeg",
+        },
+      ]
+    : undefined;
   return {
     title: `${article.title} — WallStreetStocks Newsroom`,
     description: article.summary ?? "From the WallStreetStocks desk.",
     openGraph: {
       title: article.title,
       description: article.summary ?? "From the WallStreetStocks desk.",
-      images: article.imageUrl ? [article.imageUrl] : undefined,
+      type: "article",
+      images,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.summary ?? "From the WallStreetStocks desk.",
+      images: images?.map((i) => i.url),
     },
   };
 }
