@@ -23,6 +23,18 @@
     {
       "path": "/api/cron/watchlist-news",
       "schedule": "45 13,15,17,19,21 * * 1-5"
+    },
+    {
+      "path": "/api/newsroom/auto",
+      "schedule": "45 14 * * 1-5"
+    },
+    {
+      "path": "/api/newsroom/auto",
+      "schedule": "45 17 * * 1-5"
+    },
+    {
+      "path": "/api/newsroom/auto",
+      "schedule": "15 21 * * 1-5"
     }
   ]
 }
