@@ -35,15 +35,15 @@
       "schedule": "45 13,15,17,19,21 * * 1-5"
     },
     {
-      "path": "/api/newsroom/auto",
+      "path": "/api/newsroom/auto?slot=open",
       "schedule": "45 14 * * 1-5"
     },
     {
-      "path": "/api/newsroom/auto",
+      "path": "/api/newsroom/auto?slot=midday",
       "schedule": "45 17 * * 1-5"
     },
     {
-      "path": "/api/newsroom/auto",
+      "path": "/api/newsroom/auto?slot=close",
       "schedule": "15 21 * * 1-5"
     }
   ]
