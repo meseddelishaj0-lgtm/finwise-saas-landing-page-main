@@ -1,0 +1,18 @@
+# Publishes the automated desk notes (open / midday / close, US market days).
+# Runs here because Vercel crons are not enabled on the current plan —
+# the endpoint itself dedupes by slug, so extra deliveries are harmless.
+name: Newsroom desk notes
+on:
+  schedule:
+    - cron: "45 14 * * 1-5"   # ~10:45 AM ET open note
+    - cron: "45 17 * * 1-5"   # ~1:45 PM ET midday note
+    - cron: "15 21 * * 1-5"   # ~5:15 PM ET closing note
+  workflow_dispatch: {}
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger desk note
+        run: |
+          curl -fsS --max-time 150 -H "x-vercel-cron: 1" \
+            "https://www.wallstreetstocks.ai/api/newsroom/auto"
