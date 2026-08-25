@@ -113,9 +113,19 @@ function fallbackNote(d: {
   const tg = d.topGainers[0];
   const tl = d.topLosers[0];
 
-  const title = `Desk note: ${slotName} — S&P 500 ${pct(spx?.changePercent)}, small caps ${
-    (rut?.changePercent ?? 0) >= 0 ? "up" : "down"
-  } ${pct(rut?.changePercent)}`;
+  const spxDir =
+    Math.abs(spx?.changePercent ?? 0) < 0.1
+      ? "little changed"
+      : spxUp
+        ? "higher"
+        : "lower";
+  const rutRel =
+    (rut?.changePercent ?? 0) >= (spx?.changePercent ?? 0)
+      ? "small caps lead"
+      : "small caps lag";
+  const slotPhrase =
+    d.slot === "open" ? "at the open" : d.slot === "midday" ? "at midday" : "at the close";
+  const title = `S&P 500 ${spxDir} ${slotPhrase} (${pct(spx?.changePercent)}) as ${rutRel}`;
 
   const paragraphs = [
     `The tape at ${slotName}: the S&P 500 ${verb} ${tone} at ${fmtPrice(spx?.price)} (${pct(
@@ -274,7 +284,7 @@ STRICT RULES:
 - 5 to 7 short paragraphs, 180 to 300 words total. Paragraphs separated by a blank line.
 - End the final paragraph with a short pointer to following it live in the Terminal.
 - ${slotFraming[slot]}
-Return JSON: {"title": string (max 78 chars, lowercase after the colon like "Desk note: ..."), "summary": string (one sentence, max 200 chars), "content": string}.`;
+Return JSON: {"title": string (max 78 chars — a plain news headline stating what the market did, e.g. "S&P 500 slips at midday as energy leads"; NEVER prefix it with "Desk note" or any label), "summary": string (one sentence, max 200 chars), "content": string}.`;
 
     let note: { title: string; summary?: string; content: string };
     let writer = "gpt-4o-mini";
