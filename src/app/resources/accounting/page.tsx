@@ -3,11 +3,11 @@ import Link from "next/link";
 
 const AccountingPage = () => {
   return (
-    <main className="min-h-screen py-16 px-6 md:px-20 bg-background text-foreground">
-      <section className="max-w-5xl mx-auto text-center mb-12 pt-32 md:pt-40">
+    <main className="min-h-screen py-16 px-6 md:px-20 bg-night text-foreground">
+      <section className="max-w-5xl mx-auto text-center mb-12 pt-12 md:pt-40">
 
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 flex justify-center items-center gap-2">
-          📘 Accounting Resources
+        <h1 className="text-4xl md:text-5xl mb-4 flex justify-center items-center gap-2 font-display font-normal tracking-tight">
+          Accounting Resources
         </h1>
         <p className="text-lg text-foreground-accent">
           Learn the language of business — from journal entries to financial statement analysis.
@@ -21,7 +21,7 @@ const AccountingPage = () => {
         {/* Financial Statements */}
         <div className="bg-card p-6 rounded-2xl shadow-md hover:shadow-xl transition">
           <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2">
-            📄 Financial Statements Explained
+            Financial Statements Explained
           </h2>
           <p className="text-foreground-accent mb-3">
             Understand the structure and purpose of the three core financial statements — 
@@ -30,9 +30,9 @@ const AccountingPage = () => {
             communicate financial performance.
           </p>
           <ul className="list-disc list-inside text-foreground-accent">
-            <li>📊 Balance Sheet: Assets, Liabilities, and Equity</li>
-            <li>💰 Income Statement: Revenue, Expenses, and Profitability</li>
-            <li>🔁 Cash Flow Statement: Operating, Investing, and Financing activities</li>
+            <li>Balance Sheet: Assets, Liabilities, and Equity</li>
+            <li>Income Statement: Revenue, Expenses, and Profitability</li>
+            <li>Cash Flow Statement: Operating, Investing, and Financing activities</li>
           </ul>
           <Link href="#" className="text-primary mt-3 inline-block hover:underline">
             → Read more on Financial Statement Analysis
@@ -42,7 +42,7 @@ const AccountingPage = () => {
         {/* GAAP vs IFRS */}
         <div className="bg-card p-6 rounded-2xl shadow-md hover:shadow-xl transition">
           <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2">
-            🌍 GAAP vs IFRS Fundamentals
+            GAAP vs IFRS Fundamentals
           </h2>
           <p className="text-foreground-accent mb-3">
             Compare the two most widely used accounting frameworks — U.S. GAAP and IFRS.
@@ -62,7 +62,7 @@ const AccountingPage = () => {
         {/* Ratio Analysis */}
         <div className="bg-card p-6 rounded-2xl shadow-md hover:shadow-xl transition">
           <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2">
-            📊 Ratio Analysis & Interpretation
+            Ratio Analysis & Interpretation
           </h2>
           <p className="text-foreground-accent mb-3">
             Learn how to interpret financial health using key ratios from a company’s statements.
@@ -82,7 +82,7 @@ const AccountingPage = () => {
         {/* Auditing */}
         <div className="bg-card p-6 rounded-2xl shadow-md hover:shadow-xl transition">
           <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2">
-            💡 Auditing & Internal Controls Basics
+            Auditing & Internal Controls Basics
           </h2>
           <p className="text-foreground-accent mb-3">
             Auditing ensures the accuracy of financial statements and strengthens trust
@@ -101,13 +101,13 @@ const AccountingPage = () => {
 
       {/* Extra Learning Section */}
       <section className="max-w-5xl mx-auto mt-16 text-center">
-        <h2 className="text-3xl font-semibold mb-4">📚 Expand Your Knowledge</h2>
+        <h2 className="text-3xl font-semibold mb-4">Expand Your Knowledge</h2>
         <p className="text-foreground-accent mb-6">
           Explore our recommended learning materials to master accounting and financial reporting:
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h3 className="font-semibold text-xl mb-2">🎓 Recommended Books</h3>
+            <h3 className="font-semibold text-xl mb-2">Recommended Books</h3>
             <ul className="text-foreground-accent list-disc list-inside">
               <li>Financial Accounting by Weygandt, Kimmel, & Kieso</li>
               <li>Intermediate Accounting by Kieso & Warfield</li>
@@ -115,7 +115,7 @@ const AccountingPage = () => {
             </ul>
           </div>
           <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h3 className="font-semibold text-xl mb-2">🧠 Online Courses</h3>
+            <h3 className="font-semibold text-xl mb-2">Online Courses</h3>
             <ul className="text-foreground-accent list-disc list-inside">
               <li>Coursera: Introduction to Financial Accounting (Wharton)</li>
               <li>edX: IFRS Certification Course</li>

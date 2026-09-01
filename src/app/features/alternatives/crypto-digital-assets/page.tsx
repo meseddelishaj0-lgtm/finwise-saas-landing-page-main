@@ -105,13 +105,13 @@ export default function CryptoScreenerPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 px-6 pt-28 pb-20">
+    <main className="min-h-screen bg-night text-ivory px-6 pt-10 pb-20">
       <div className="max-w-7xl mx-auto">
-        {/* 🔙 Back to Features */}
+        {/* Back to Features */}
         <div className="flex justify-start mb-6">
           <button
             onClick={() => router.push("/features")}
-            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+            className="flex items-center gap-2 text-sm text-gold hover:underline"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Features
           </button>
@@ -123,10 +123,10 @@ export default function CryptoScreenerPage() {
           transition={{ duration: 0.7 }}
           className="text-center mb-10"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-3 mt-4">
-            🪙 Crypto & Digital Assets Screener
+          <h1 className="text-4xl md:text-5xl mb-3 mt-4 font-display font-normal tracking-tight">
+            Crypto & Digital Assets Screener
           </h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-gray-400 max-w-2xl mx-auto">
             Track live prices, performance, and market caps of top
             cryptocurrencies — powered by your WallStreetStocks.ai
           </p>
@@ -135,14 +135,14 @@ export default function CryptoScreenerPage() {
         {/* Search + Sort */}
         <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
           {/* Search bar */}
-          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-full px-4 py-2 w-full max-w-md shadow-sm">
+          <div className="flex items-center bg-surface2 border border-white/10 rounded-full px-4 py-2 w-full max-w-md shadow-sm">
             <Search className="w-5 h-5 text-gray-500 mr-2" />
             <input
               type="text"
               placeholder="Search crypto (e.g. BTC, Ethereum)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
+              className="flex-1 bg-transparent outline-none text-gray-300 placeholder-gray-400"
             />
           </div>
 
@@ -150,30 +150,30 @@ export default function CryptoScreenerPage() {
           <div className="flex items-center gap-4">
             <button
               className={`px-4 py-2 rounded-full border ${
-                sortKey === "marketCap"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-gray-200 text-gray-700"
-              }`}
+ sortKey === "marketCap"
+ ? "border-gold/40 text-gold"
+ : "border-white/10 text-gray-300"
+ }`}
               onClick={() => handleSortChange("marketCap")}
             >
               Market Cap {sortKey === "marketCap" && (sortAsc ? "↑" : "↓")}
             </button>
             <button
               className={`px-4 py-2 rounded-full border ${
-                sortKey === "price"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-gray-200 text-gray-700"
-              }`}
+ sortKey === "price"
+ ? "border-gold/40 text-gold"
+ : "border-white/10 text-gray-300"
+ }`}
               onClick={() => handleSortChange("price")}
             >
               Price {sortKey === "price" && (sortAsc ? "↑" : "↓")}
             </button>
             <button
               className={`px-4 py-2 rounded-full border ${
-                sortKey === "changesPercentage"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-gray-200 text-gray-700"
-              }`}
+ sortKey === "changesPercentage"
+ ? "border-gold/40 text-gold"
+ : "border-white/10 text-gray-300"
+ }`}
               onClick={() => handleSortChange("changesPercentage")}
             >
               Change %{" "}
@@ -184,30 +184,30 @@ export default function CryptoScreenerPage() {
 
         {/* Table */}
         <div className="overflow-x-auto border rounded-2xl shadow-sm">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-white/10">
+            <thead className="bg-surface2">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   #
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Name
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Price (USD)
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Change %
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Market Cap
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-300 uppercase tracking-wider">
                   Volume
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-white/10">
               {filteredCryptos.length === 0 ? (
                 <tr>
                   <td
@@ -221,13 +221,13 @@ export default function CryptoScreenerPage() {
                 filteredCryptos.map((coin, index) => (
                   <tr
                     key={coin.symbol}
-                    className="hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+                    className="hover:bg-surface2 transition-colors duration-200 cursor-pointer"
                     onClick={() => handleRowClick(coin)}
                   >
-                    <td className="px-6 py-3 text-sm text-gray-600">
+                    <td className="px-6 py-3 text-sm text-gray-400">
                       {index + 1}
                     </td>
-                    <td className="px-6 py-3 text-sm font-medium text-gray-900 flex items-center gap-2">
+                    <td className="px-6 py-3 text-sm font-medium text-ivory flex items-center gap-2">
                       {coin.name}
                       <span className="text-gray-400 uppercase text-xs">
                         ({coin.symbol})
@@ -238,10 +238,10 @@ export default function CryptoScreenerPage() {
                     </td>
                     <td
                       className={`px-6 py-3 text-sm text-right font-semibold flex items-center justify-end gap-1 ${
-                        coin.changesPercentage >= 0
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
+ coin.changesPercentage >= 0
+ ? "text-green-400"
+ : "text-red-400"
+ }`}
                     >
                       {coin.changesPercentage >= 0 ? (
                         <TrendingUp className="w-4 h-4" />
@@ -250,10 +250,10 @@ export default function CryptoScreenerPage() {
                       )}
                       {coin.changesPercentage.toFixed(2)}%
                     </td>
-                    <td className="px-6 py-3 text-sm text-right text-gray-700">
+                    <td className="px-6 py-3 text-sm text-right text-gray-300">
                       ${coin.marketCap.toLocaleString()}
                     </td>
-                    <td className="px-6 py-3 text-sm text-right text-gray-700">
+                    <td className="px-6 py-3 text-sm text-right text-gray-300">
                       ${coin.volume.toLocaleString()}
                     </td>
                   </tr>

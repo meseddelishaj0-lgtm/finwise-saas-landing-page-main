@@ -72,9 +72,9 @@ export default function AiForecastsForumPage() {
     );
 
   return (
-    <main className="min-h-screen bg-black text-white py-24 px-6">
-      <h1 className="text-3xl font-bold mb-8 text-center text-yellow-400">
-        🤖 AI Forecasts & Analysis
+    <main className="min-h-screen bg-night text-white py-14 px-6">
+      <h1 className="text-3xl mb-8 text-center text-yellow-400 font-display font-normal tracking-tight md:text-4xl">
+        AI Forecasts & Analysis
       </h1>
 
       <form
@@ -90,7 +90,7 @@ export default function AiForecastsForumPage() {
           placeholder="Post title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full mb-3 p-3 rounded-lg bg-neutral-900 border border-gray-700 text-white"
+          className="w-full mb-3 p-3 rounded-lg bg-surface border border-white/10 text-white"
         />
 
         <textarea
@@ -98,13 +98,13 @@ export default function AiForecastsForumPage() {
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={4}
-          className="w-full p-3 rounded-lg bg-neutral-900 border border-gray-700 text-white"
+          className="w-full p-3 rounded-lg bg-surface border border-white/10 text-white"
         />
 
         <button
           type="submit"
           disabled={creating}
-          className="mt-4 bg-yellow-500 hover:bg-yellow-400 text-black px-5 py-2 rounded-lg font-semibold disabled:opacity-50 transition"
+          className="mt-4 bg-gold hover:bg-yellow-400 text-black px-5 py-2 rounded-lg font-semibold disabled:opacity-50 transition"
         >
           {creating ? "Posting..." : "Create Post"}
         </button>
@@ -128,7 +128,7 @@ export default function AiForecastsForumPage() {
               <p className="text-gray-400 mt-2 whitespace-pre-line">
                 {post.content}
               </p>
-              <p className="text-xs text-gray-600 mt-3">
+              <p className="text-xs text-gray-400 mt-3">
                 Posted {new Date(post.createdAt).toLocaleString()}
               </p>
             </div>

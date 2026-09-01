@@ -61,23 +61,23 @@ export default function AlternativesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-yellow-50 pt-28 pb-10 px-6 flex flex-col items-center">
+    <main className="min-h-screen pt-10 pb-10 px-6 flex flex-col items-center bg-night">
       {/* Header */}
       <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3 flex items-center gap-2"
+        className="text-3xl md:text-4xl text-ivory mb-3 flex items-center gap-2 font-display font-normal tracking-tight"
       >
         <Building2 className="text-yellow-400" /> Alternative Investments Overview
       </motion.h1>
-      <p className="text-gray-600 mb-8 text-center max-w-2xl">
+      <p className="text-gray-400 mb-8 text-center max-w-2xl">
         Explore non-traditional assets — commodities, REITs, private equity, and hedge fund indices — to diversify your portfolio.
       </p>
 
       {/* Search & Refresh */}
       <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
-        <div className="flex items-center bg-white shadow-sm rounded-full border border-gray-200 px-4 py-2 w-full md:w-80">
+        <div className="flex items-center bg-surface shadow-sm rounded-full border border-white/10 px-4 py-2 w-full md:w-80">
           <Search className="text-gray-400 mr-2" />
           <input
             type="text"
@@ -85,12 +85,12 @@ export default function AlternativesPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && fetchData(type)}
-            className="flex-grow outline-none text-sm text-gray-700"
+            className="flex-grow outline-none text-sm text-gray-300"
           />
         </div>
         <button
           onClick={() => fetchData(type)}
-          className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-yellow-500 shadow-md flex items-center gap-2 transition-all"
+          className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-gold shadow-md flex items-center gap-2 transition-all"
         >
           <RefreshCcw size={16} /> Refresh
         </button>
@@ -106,10 +106,10 @@ export default function AlternativesPage() {
               fetchData(t);
             }}
             className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-              type === t
-                ? "bg-yellow-400 text-black shadow-md"
-                : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-100"
-            }`}
+ type === t
+ ? "bg-yellow-400 text-black shadow-md"
+ : "bg-surface border border-white/10 text-gray-300 hover:bg-surface2"
+ }`}
           >
             {t.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
           </button>
@@ -118,8 +118,8 @@ export default function AlternativesPage() {
 
       {/* Data Table */}
       <div className="w-full max-w-6xl overflow-x-auto">
-        <table className="min-w-full border border-gray-200 rounded-xl bg-white shadow-sm">
-          <thead className="bg-yellow-100 text-gray-800 font-semibold text-sm">
+        <table className="min-w-full border border-white/10 rounded-xl bg-surface shadow-sm">
+          <thead className="bg-gold/15 text-gray-100 font-semibold text-sm">
             <tr>
               <th className="p-3 text-left cursor-pointer" onClick={() => toggleSort("symbol")}>
                 Symbol
@@ -154,23 +154,23 @@ export default function AlternativesPage() {
               </tr>
             ) : (
               filtered.slice(0, 50).map((item, i) => (
-                <tr key={i} className="border-t hover:bg-yellow-50 transition">
+                <tr key={i} className="border-t hover:bg-gold/10 transition">
                   <td className="p-3 font-semibold">{item.symbol}</td>
                   <td className="p-3">{item.name ?? "—"}</td>
                   <td className="p-3">${item.price?.toFixed(2) ?? "—"}</td>
                   <td
                     className={`p-3 font-medium ${
-                      item.change && item.change >= 0 ? "text-green-600" : "text-red-500"
-                    }`}
+ item.change && item.change >= 0 ? "text-green-400" : "text-red-500"
+ }`}
                   >
                     {item.change?.toFixed(2) ?? "—"}
                   </td>
                   <td
                     className={`p-3 font-medium ${
-                      item.changesPercentage && item.changesPercentage >= 0
-                        ? "text-green-600"
-                        : "text-red-500"
-                    }`}
+ item.changesPercentage && item.changesPercentage >= 0
+ ? "text-green-400"
+ : "text-red-500"
+ }`}
                   >
                     {item.changesPercentage ? `${item.changesPercentage.toFixed(2)}%` : "—"}
                   </td>

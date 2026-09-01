@@ -37,7 +37,7 @@ export default function StartupFundamentalsPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center py-24 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
       {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}
@@ -45,10 +45,10 @@ export default function StartupFundamentalsPage() {
         transition={{ duration: 0.6 }}
         className="max-w-4xl text-center mb-12"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
+        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
           Startup Fundamentals
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           A structured guide to launching, funding and scaling your startup — designed for entrepreneurs and business builders.
         </p>
       </motion.section>
@@ -64,15 +64,15 @@ export default function StartupFundamentalsPage() {
             <motion.div
               key={m.id}
               whileHover={{ scale: 1.02 }}
-              className="bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-6"
+              className="bg-surface2 border border-white/10 rounded-2xl shadow-md p-6"
             >
-              <h3 className="text-2xl font-semibold mb-2 text-gray-800">
+              <h3 className="text-2xl font-semibold mb-2 text-gray-100">
                 {m.title}
               </h3>
-              <p className="text-gray-700 mb-4">{m.description}</p>
+              <p className="text-gray-300 mb-4">{m.description}</p>
               <Link
                 href={m.link}
-                className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-5 py-3 rounded-xl transition-all"
+                className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-5 py-3 rounded-xl transition-all"
               >
                 Explore Module
               </Link>
@@ -83,15 +83,15 @@ export default function StartupFundamentalsPage() {
 
       {/* CTA Section */}
       <div className="text-center">
-        <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+        <h3 className="text-2xl font-semibold mb-3 text-ivory">
           Ready to Build Your Startup?
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-400 mb-6">
           Join WallStreetStocks’ entrepreneurship community for live workshops, founder interviews and startup funding strategies.
         </p>
         <Link
           href="/register"
-          className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-xl transition-all"
+          className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
         >
           Join the Community
         </Link>

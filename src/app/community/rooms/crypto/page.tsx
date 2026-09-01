@@ -53,15 +53,15 @@ export default function CryptoRoom() {
   };
 
   return (
-    <main className="min-h-screen bg-hero-background text-foreground py-20 px-6">
+    <main className="min-h-screen bg-night text-foreground py-14 px-6">
       <div className="max-w-5xl mx-auto">
         <motion.h1
-          className="text-4xl md:text-5xl font-bold text-center mb-6"
+          className="text-4xl md:text-5xl text-center mb-6 font-display font-normal tracking-tight"
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          ✅ Crypto Room
+          Crypto Room
         </motion.h1>
 
         <p className="text-center text-foreground-accent mb-8">
@@ -74,7 +74,7 @@ export default function CryptoRoom() {
             onChange={(e) => setNewPost(e.target.value)}
             placeholder="Share your crypto insights..."
             rows={3}
-            className="w-full border border-gray-300 rounded-xl p-3 mb-3 focus:ring-2 focus:ring-primary"
+            className="w-full border border-white/10 rounded-xl p-3 mb-3 focus:ring-2 focus:ring-primary"
           />
           <button
             onClick={addPost}
@@ -85,21 +85,21 @@ export default function CryptoRoom() {
         </div>
 
         {posts.map((p) => (
-          <motion.div key={p.id} className="bg-white/90 p-5 rounded-xl shadow mb-5 border border-gray-100">
+          <motion.div key={p.id} className="bg-white/90 p-5 rounded-xl shadow mb-5 border border-white/10">
             <div className="flex justify-between items-center mb-2">
               <span className="font-semibold">{p.author}</span>
               <span className="text-xs text-gray-500">{p.createdAt}</span>
             </div>
-            <p className="mb-3 text-gray-800">{p.content}</p>
+            <p className="mb-3 text-gray-100">{p.content}</p>
             <button onClick={() => likePost(p.id)} className="text-primary text-sm font-semibold hover:underline">
-              👍 {p.likes} Likes
+              {p.likes} Likes
             </button>
 
             <div className="mt-4 border-t pt-2">
               <CommentBox onAdd={(t) => addComment(p.id, t)} />
-              <div className="mt-3 space-y-2 pl-3 border-l border-gray-200">
+              <div className="mt-3 space-y-2 pl-3 border-l border-white/10">
                 {p.comments.map((c) => (
-                  <div key={c.id} className="bg-gray-50 p-2 rounded-lg">
+                  <div key={c.id} className="bg-surface2 p-2 rounded-lg">
                     <div className="flex justify-between items-center">
                       <span className="font-medium text-sm">{c.author}</span>
                       <span className="text-xs text-gray-500">{c.createdAt}</span>

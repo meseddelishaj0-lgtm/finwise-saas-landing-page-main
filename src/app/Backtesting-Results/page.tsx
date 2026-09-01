@@ -54,7 +54,7 @@ export default function BacktestingResultsPage() {
     : 0;
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center py-24 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
       {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}
@@ -62,23 +62,23 @@ export default function BacktestingResultsPage() {
         transition={{ duration: 0.6 }}
         className="max-w-4xl text-center mb-12"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
+        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
           Backtesting Results
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           A transparent breakdown of how our strategy has performed versus the benchmark.
         </p>
       </motion.section>
 
       {/* Summary Metrics */}
       <div className="grid md:grid-cols-2 gap-6 max-w-5xl w-full mb-12">
-        <div className="bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-6 text-center">
-          <h3 className="text-xl font-semibold mb-2 text-gray-800">Strategy Total Return</h3>
-          <p className="text-3xl font-bold text-yellow-500">{totalStrategyReturn.toFixed(2)}%</p>
+        <div className="bg-surface2 border border-white/10 rounded-2xl shadow-md p-6 text-center">
+          <h3 className="text-xl font-semibold mb-2 text-gray-100">Strategy Total Return</h3>
+          <p className="text-3xl font-bold text-gold">{totalStrategyReturn.toFixed(2)}%</p>
         </div>
-        <div className="bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-6 text-center">
-          <h3 className="text-xl font-semibold mb-2 text-gray-800">Benchmark (S&P 500) Total Return</h3>
-          <p className="text-3xl font-bold text-yellow-500">{totalBenchmarkReturn.toFixed(2)}%</p>
+        <div className="bg-surface2 border border-white/10 rounded-2xl shadow-md p-6 text-center">
+          <h3 className="text-xl font-semibold mb-2 text-gray-100">Benchmark (S&P 500) Total Return</h3>
+          <p className="text-3xl font-bold text-gold">{totalBenchmarkReturn.toFixed(2)}%</p>
         </div>
       </div>
 
@@ -86,7 +86,7 @@ export default function BacktestingResultsPage() {
       <button
         onClick={fetchData}
         disabled={loading}
-        className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-5 py-3 rounded-xl transition-all mb-10"
+        className="flex items-center gap-2 bg-gold hover:bg-gold-deep text-black font-semibold px-5 py-3 rounded-xl transition-all mb-10"
       >
         <RefreshCcw className="w-5 h-5" />
         {loading ? "Refreshing…" : "Refresh Data"}
@@ -97,9 +97,9 @@ export default function BacktestingResultsPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-8 max-w-5xl w-full mb-16"
+        className="bg-surface2 border border-white/10 rounded-2xl shadow-md p-8 max-w-5xl w-full mb-16"
       >
-        <h3 className="text-2xl font-semibold mb-6 text-center text-gray-800">
+        <h3 className="text-2xl font-semibold mb-6 text-center text-gray-100">
           Strategy vs Benchmark (Last Year)
         </h3>
         {loading || !data.length ? (
@@ -134,25 +134,25 @@ export default function BacktestingResultsPage() {
       {/* Info Section */}
       <div className="max-w-4xl text-center mb-12">
         <h2 className="text-2xl font-semibold mb-4">How to Interpret These Results</h2>
-        <p className="text-gray-600 leading-relaxed mb-4">
+        <p className="text-gray-400 leading-relaxed mb-4">
           We plot our strategy’s equity curve alongside the benchmark to provide full transparency. The total return values above reflect performance over the full period shown.  
         </p>
-        <p className="text-gray-600 leading-relaxed">
+        <p className="text-gray-400 leading-relaxed">
           Note: Past performance is not a guarantee of future results. Strategy may differ in live trading and actual results will vary.
         </p>
       </div>
 
       {/* CTA Section */}
       <div className="text-center">
-        <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+        <h3 className="text-2xl font-semibold mb-3 text-ivory">
           Want Full Backtesting Reports?
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-400 mb-6">
           Access full monthly reports, strategy breakdowns and historic performance when you join WallStreetStocks Premium.
         </p>
         <a
           href="/register"
-          className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-xl transition-all"
+          className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
         >
           Get Premium Access
         </a>

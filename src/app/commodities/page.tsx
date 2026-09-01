@@ -36,7 +36,7 @@ export default function CommoditiesPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center py-24 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
       {/* Header Section */}
       <motion.section
         initial={{ opacity: 0, y: -10 }}
@@ -44,10 +44,10 @@ export default function CommoditiesPage() {
         transition={{ duration: 0.6 }}
         className="max-w-4xl text-center mb-12"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
+        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
           AI-Powered Commodities Overview
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           Live market data and AI commentary across gold, oil, natural gas, and agricultural commodities.
         </p>
       </motion.section>
@@ -56,7 +56,7 @@ export default function CommoditiesPage() {
       <button
         onClick={fetchCommodities}
         disabled={loading}
-        className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-5 py-3 rounded-xl transition-all mb-8"
+        className="flex items-center gap-2 bg-gold hover:bg-gold-deep text-black font-semibold px-5 py-3 rounded-xl transition-all mb-8"
       >
         <RefreshCcw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
         {loading ? "Refreshing..." : "Refresh Data"}
@@ -69,9 +69,9 @@ export default function CommoditiesPage() {
             <motion.div
               key={i}
               whileHover={{ scale: 1.03 }}
-              className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-md"
+              className="bg-surface2 border border-white/10 rounded-2xl p-6 shadow-md"
             >
-              <h3 className="text-2xl font-semibold mb-2 text-gray-800">
+              <h3 className="text-2xl font-semibold mb-2 text-gray-100">
                 {c.name}
               </h3>
               <p className="text-sm text-gray-500 mb-2">{c.symbol}</p>
@@ -80,17 +80,17 @@ export default function CommoditiesPage() {
                 <p className="text-lg font-bold">${c.price}</p>
                 <p
                   className={`font-semibold ${
-                    parseFloat(c.changesPercentage) >= 0
-                      ? "text-green-600"
-                      : "text-red-500"
-                  }`}
+ parseFloat(c.changesPercentage) >= 0
+ ? "text-green-400"
+ : "text-red-500"
+ }`}
                 >
                   {parseFloat(c.changesPercentage) >= 0 ? "+" : ""}
                   {c.changesPercentage}%
                 </p>
               </div>
 
-              <p className="text-gray-700 text-sm italic border-t pt-3">
+              <p className="text-gray-300 text-sm italic border-t pt-3">
                 {c.summary || "AI summary loading..."}
               </p>
             </motion.div>
@@ -104,15 +104,15 @@ export default function CommoditiesPage() {
 
       {/* CTA */}
       <div className="text-center mt-16">
-        <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+        <h3 className="text-2xl font-semibold mb-3 text-ivory">
           Unlock Advanced Commodity Analytics
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-400 mb-6">
           Gain access to real-time sentiment models, forecasts, and volatility indicators across global commodities.
         </p>
         <a
           href="/register"
-          className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-xl transition-all"
+          className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
         >
           Upgrade to Premium
         </a>

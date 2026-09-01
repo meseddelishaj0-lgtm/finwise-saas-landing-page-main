@@ -21,7 +21,7 @@ import {
   Tooltip,
 } from "recharts";
 
-// ✅ Define the types
+// Define the types
 interface TrendPoint {
   day: string;
   value: number;
@@ -54,12 +54,12 @@ export default function ForecastPage() {
 
         const aiComment =
           json.sentiment === "Bullish"
-            ? "🚀 AI models detect optimism across growth sectors. Expect continued momentum this week."
+            ? "AI models detect optimism across growth sectors. Expect continued momentum this week."
             : json.sentiment === "Bearish"
-            ? "⚠️ Caution: AI signals weakness and increased volatility in risk assets."
-            : "🤖 AI models show mixed signals — neutral positioning may be best for now.";
+            ? "Caution: AI signals weakness and increased volatility in risk assets."
+            : "AI models show mixed signals — neutral positioning may be best for now.";
 
-        // ✅ Create demo trend
+        // Create demo trend
         const simulatedTrend: TrendPoint[] = Array.from({ length: 7 }).map(
           (_, i) => ({
             day: `Day ${i + 1}`,
@@ -90,7 +90,7 @@ export default function ForecastPage() {
           risk: "Moderate",
           trend: fallbackTrend,
           comment:
-            "📊 Using fallback data: market stability remains moderate with mixed short-term signals.",
+            "Using fallback data: market stability remains moderate with mixed short-term signals.",
         });
       } finally {
         setLoading(false);
@@ -101,14 +101,14 @@ export default function ForecastPage() {
   }, []);
 
   return (
-    <section className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-gray-50 pt-28 pb-16 px-6">
+    <section className="min-h-screen pt-10 pb-16 px-6 bg-night">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mb-3">
-            📈 AI Market Forecast
+          <h1 className="text-5xl mb-3 text-gold font-display font-normal tracking-tight">
+            AI Market Forecast
           </h1>
-          <p className="text-gray-600 text-lg max-w-3xl mx-auto">
+          <p className="text-gray-400 text-lg max-w-3xl mx-auto">
             Real-time AI-powered outlook combining sentiment, volatility, and
             probability models to forecast short-term market movements.
           </p>
@@ -128,9 +128,9 @@ export default function ForecastPage() {
             {/* Metric Cards */}
             <div className="grid md:grid-cols-3 gap-6 mb-12">
               <div className="rounded-2xl bg-gradient-to-br from-green-100 to-green-50 shadow-md p-6 text-center">
-                <TrendingUp className="w-10 h-10 text-green-600 mx-auto mb-2" />
+                <TrendingUp className="w-10 h-10 text-green-400 mx-auto mb-2" />
                 <h3 className="text-lg font-bold">AI Confidence</h3>
-                <p className="text-4xl font-extrabold text-green-700">
+                <p className="text-4xl font-extrabold text-green-400">
                   {data.confidence}%
                 </p>
                 <p className="text-gray-500 text-sm mt-1">
@@ -138,17 +138,17 @@ export default function ForecastPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 shadow-md p-6 text-center">
-                <Brain className="w-10 h-10 text-blue-600 mx-auto mb-2" />
+              <div className="rounded-2xl shadow-md p-6 text-center bg-surface">
+                <Brain className="w-10 h-10 text-gold mx-auto mb-2" />
                 <h3 className="text-lg font-bold">Market Sentiment</h3>
                 <p
                   className={`text-4xl font-extrabold ${
-                    data.sentiment === "Bullish"
-                      ? "text-green-600"
-                      : data.sentiment === "Bearish"
-                      ? "text-red-500"
-                      : "text-gray-700"
-                  }`}
+ data.sentiment === "Bullish"
+ ? "text-green-400"
+ : data.sentiment === "Bearish"
+ ? "text-red-500"
+ : "text-gray-300"
+ }`}
                 >
                   {data.sentiment}
                 </p>
@@ -157,17 +157,17 @@ export default function ForecastPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-gradient-to-br from-purple-100 to-purple-50 shadow-md p-6 text-center">
-                <BarChart3 className="w-10 h-10 text-purple-600 mx-auto mb-2" />
+              <div className="rounded-2xl shadow-md p-6 text-center bg-surface">
+                <BarChart3 className="w-10 h-10 text-gold-soft mx-auto mb-2" />
                 <h3 className="text-lg font-bold">Risk Level</h3>
                 <p
                   className={`text-4xl font-extrabold ${
-                    data.risk === "Low"
-                      ? "text-green-600"
-                      : data.risk === "Moderate"
-                      ? "text-yellow-600"
-                      : "text-red-600"
-                  }`}
+ data.risk === "Low"
+ ? "text-green-400"
+ : data.risk === "Moderate"
+ ? "text-gold"
+ : "text-red-400"
+ }`}
                 >
                   {data.risk}
                 </p>
@@ -176,21 +176,21 @@ export default function ForecastPage() {
             </div>
 
             {/* AI Market Commentary */}
-            <div className="bg-white rounded-2xl shadow-lg border p-8 mb-12">
+            <div className="bg-surface rounded-2xl shadow-lg border p-8 mb-12">
               <div className="flex items-center gap-3 mb-3">
-                <Zap className="w-6 h-6 text-yellow-500" />
-                <h4 className="font-bold text-lg text-gray-800">
+                <Zap className="w-6 h-6 text-gold" />
+                <h4 className="font-bold text-lg text-gray-100">
                   AI Market Commentary
                 </h4>
               </div>
-              <p className="text-gray-700 text-base leading-relaxed">
+              <p className="text-gray-300 text-base leading-relaxed">
                 {data.comment}
               </p>
             </div>
 
             {/* Confidence Trend Chart */}
-            <div className="bg-gray-50 p-8 rounded-2xl shadow mb-12">
-              <h3 className="text-xl font-bold text-blue-700 mb-4 flex items-center gap-2">
+            <div className="bg-surface2 p-8 rounded-2xl shadow mb-12">
+              <h3 className="text-xl font-bold text-gold mb-4 flex items-center gap-2">
                 <ChartIcon className="w-6 h-6" /> Confidence Trend (7 Days)
               </h3>
               <ResponsiveContainer width="100%" height={250}>
@@ -214,14 +214,14 @@ export default function ForecastPage() {
             <div className="flex flex-wrap justify-center gap-4">
               <button
                 onClick={() => window.location.reload()}
-                className="flex items-center gap-2 bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-700 transition"
+                className="flex items-center gap-2 bg-gold text-night font-semibold px-6 py-3 rounded-xl hover:bg-gold-deep transition"
               >
                 <RefreshCw className="w-5 h-5" /> Refresh Forecast
               </button>
 
               <Link
                 href="/ai-dashboard"
-                className="flex items-center gap-2 bg-yellow-400 text-black font-semibold px-6 py-3 rounded-xl hover:bg-yellow-500 transition"
+                className="flex items-center gap-2 bg-yellow-400 text-black font-semibold px-6 py-3 rounded-xl hover:bg-gold transition"
               >
                 <ArrowLeft className="w-5 h-5" /> Back to AI Dashboard
               </Link>

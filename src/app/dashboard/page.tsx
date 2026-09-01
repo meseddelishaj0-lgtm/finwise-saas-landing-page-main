@@ -13,7 +13,7 @@ export default function DashboardPage() {
     nextBillingDate: "Loading...",
   });
 
-  // ✅ Fetch user billing info
+  // Fetch user billing info
   useEffect(() => {
     const fetchBillingInfo = async () => {
       try {
@@ -40,13 +40,13 @@ export default function DashboardPage() {
 
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-600 text-lg">
+      <div className="flex items-center justify-center h-screen text-gray-400 text-lg">
         Loading your personalized dashboard...
       </div>
     );
   }
 
-  // ✅ Stripe Billing Portal handler
+  // Stripe Billing Portal handler
   const handleManageBilling = async () => {
     try {
       const res = await fetch("/api/create-portal-session", { method: "POST" });
@@ -62,7 +62,7 @@ export default function DashboardPage() {
     }
   };
 
-  // ✅ Handle navigation to current plan dashboard
+  // Handle navigation to current plan dashboard
   const handleGoToPlan = () => {
     const plan = billingInfo.plan.toLowerCase();
     if (plan === "gold") router.push("/dashboard/gold");
@@ -71,40 +71,40 @@ export default function DashboardPage() {
     else router.push("/plans");
   };
 
-  // ✅ Dynamic color scheme for plan cards
+  // Dynamic color scheme for plan cards
   const getPlanStyle = (plan: string) => {
     switch (plan.toLowerCase()) {
       case "gold":
         return {
           bg: "from-yellow-100 to-yellow-50",
           border: "border-yellow-400",
-          text: "text-yellow-700",
+          text: "text-gold-soft",
           button:
-            "bg-yellow-400 hover:bg-yellow-500 text-black hover:scale-105 transition-all",
+            "bg-yellow-400 hover:bg-gold text-black hover:scale-105 transition-all",
         };
       case "platinum":
         return {
           bg: "from-gray-100 to-gray-50",
-          border: "border-gray-400",
-          text: "text-gray-700",
+          border: "border-white/20",
+          text: "text-gray-300",
           button:
-            "bg-gray-300 hover:bg-gray-400 text-black hover:scale-105 transition-all",
+            "bg-white/15 hover:bg-white/20 text-black hover:scale-105 transition-all",
         };
       case "diamond":
         return {
           bg: "from-blue-100 to-blue-50",
           border: "border-blue-400",
-          text: "text-blue-700",
+          text: "text-gold",
           button:
-            "bg-blue-400 hover:bg-blue-500 text-white hover:scale-105 transition-all",
+            "bg-blue-400 hover:bg-gold text-white hover:scale-105 transition-all",
         };
       default:
         return {
           bg: "from-gray-50 to-gray-100",
-          border: "border-gray-300",
-          text: "text-gray-700",
+          border: "border-white/10",
+          text: "text-gray-300",
           button:
-            "bg-gray-300 hover:bg-gray-400 text-black hover:scale-105 transition-all",
+            "bg-white/15 hover:bg-white/20 text-black hover:scale-105 transition-all",
         };
     }
   };
@@ -112,19 +112,19 @@ export default function DashboardPage() {
   const planStyle = getPlanStyle(billingInfo.plan);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-night">
       {/* Header */}
-      <header className="bg-white shadow-sm py-5">
+      <header className="bg-surface shadow-sm py-5">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6">
           <h1
-            className="text-2xl font-semibold text-gray-900 cursor-pointer"
+            className="text-2xl text-ivory cursor-pointer font-display font-normal tracking-tight"
             onClick={() => router.push("/dashboard")}
           >
-            🧠 WallStreetStocks
+            WallStreetStocks
           </h1>
 
           <div className="flex items-center gap-4">
-            <p className="text-gray-700">
+            <p className="text-gray-300">
               Welcome,{" "}
               <span className="font-semibold">
                 {session?.user?.name || session?.user?.email}
@@ -132,7 +132,7 @@ export default function DashboardPage() {
             </p>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black px-5 py-2 rounded-full font-medium transition-all"
+              className="bg-yellow-400 hover:bg-gold text-black px-5 py-2 rounded-full font-medium transition-all"
             >
               Logout
             </button>
@@ -143,23 +143,23 @@ export default function DashboardPage() {
       {/* Dashboard Body */}
       <main className="max-w-6xl mx-auto px-6 py-14">
         {/* Welcome Card */}
-        <div className="bg-white p-10 rounded-2xl shadow-md text-center mb-12">
-          <h2 className="text-3xl font-bold mb-2 text-gray-900">
+        <div className="bg-surface p-10 rounded-2xl shadow-md text-center mb-12">
+          <h2 className="text-3xl font-bold mb-2 text-ivory">
             Welcome to Your Dashboard
           </h2>
-          <p className="text-gray-600 mb-8">
+          <p className="text-gray-400 mb-8">
             Explore your premium AI-powered financial insights and tools.
           </p>
           <div className="flex flex-col md:flex-row gap-4 justify-center">
             <button
               onClick={() => router.push("/dashboard/portfolio")}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-8 rounded-full transition-all"
+              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-3 px-8 rounded-full transition-all"
             >
               View My Portfolio
             </button>
             <button
               onClick={() => router.push("/dashboard/ai-picks")}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-8 rounded-full transition-all"
+              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-3 px-8 rounded-full transition-all"
             >
               AI Research Ideas
             </button>
@@ -169,81 +169,81 @@ export default function DashboardPage() {
         {/* Feature Grid */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* 1. AI Stock Picks */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
-            <h3 className="text-xl font-semibold mb-2">🤖 AI Stock Picks</h3>
-            <p className="text-gray-600 mb-4">
+          <div className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+            <h3 className="text-xl font-semibold mb-2">AI Stock Picks</h3>
+            <p className="text-gray-400 mb-4">
               Get real-time stock picks generated by our proprietary AI model
               trained on market sentiment, fundamentals, and technicals.
             </p>
             <button
               onClick={() => router.push("/dashboard/ai-picks")}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-6 rounded-full"
+              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full"
             >
               View Today’s Picks
             </button>
           </div>
 
           {/* 2. Weekly Research Reports */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <div className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
             <h3 className="text-xl font-semibold mb-2">
-              📅 Weekly Research Reports
+              Weekly Research Reports
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-400 mb-4">
               Access in-depth reports on trending sectors, key economic data,
               and high-performing companies — updated weekly.
             </p>
             <button
               onClick={() => router.push("/dashboard/reports")}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-6 rounded-full"
+              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full"
             >
               Read Reports
             </button>
           </div>
 
           {/* 3. Fundamental AI Ratings */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <div className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
             <h3 className="text-xl font-semibold mb-2">
-              📊 Fundamental AI Ratings
+              Fundamental AI Ratings
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-400 mb-4">
               Get AI-powered ratings for companies based on intrinsic value,
               growth metrics, and balance sheet strength.
             </p>
             <button
               onClick={() => router.push("/dashboard/ratings")}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-6 rounded-full"
+              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full"
             >
               Explore Ratings
             </button>
           </div>
 
           {/* 4. Beginner Portfolio Templates */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <div className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
             <h3 className="text-xl font-semibold mb-2">
-              📈 Beginner Portfolio Templates
+              Beginner Portfolio Templates
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-400 mb-4">
               New to investing? Start with our ready-made templates built for
               long-term growth and diversification.
             </p>
             <button
               onClick={() => router.push("/dashboard/templates")}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-6 rounded-full"
+              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full"
             >
               Browse Templates
             </button>
           </div>
 
           {/* 5. Community Access */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
-            <h3 className="text-xl font-semibold mb-2">💬 Community Access</h3>
-            <p className="text-gray-600 mb-4">
+          <div className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
+            <h3 className="text-xl font-semibold mb-2">Community Access</h3>
+            <p className="text-gray-400 mb-4">
               Join our exclusive WallStreetStocks investor community — share
               insights, track ideas, and grow together.
             </p>
             <button
               onClick={() => router.push("/dashboard/community")}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-6 rounded-full"
+              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full"
             >
               Join Community
             </button>
@@ -251,8 +251,8 @@ export default function DashboardPage() {
         </section>
 
         {/* Market Chart */}
-        <div className="mt-14 bg-white p-6 rounded-2xl shadow-sm">
-          <h3 className="text-xl font-semibold mb-4">📈 Live Market Chart</h3>
+        <div className="mt-14 bg-surface p-6 rounded-2xl shadow-sm">
+          <h3 className="text-xl font-semibold mb-4">Live Market Chart</h3>
           <div className="tradingview-widget-container">
             <iframe
               src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_01&symbol=NASDAQ:AAPL&interval=D&hidesidetoolbar=1&theme=light"
@@ -266,14 +266,14 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* 🎟 My Plan Access - color themed */}
+        {/* My Plan Access - color themed */}
         <div
           className={`bg-gradient-to-br ${planStyle.bg} border ${planStyle.border} p-6 rounded-2xl shadow-sm text-center mt-12 transition-all`}
         >
           <h3 className={`text-xl font-semibold mb-2 ${planStyle.text}`}>
-            🎟 My Plan Access
+            My Plan Access
           </h3>
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-300 mb-4">
             Current Plan:{" "}
             <span className={`font-semibold ${planStyle.text}`}>
               {billingInfo.plan}
@@ -287,20 +287,20 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* 💳 Billing Overview */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm text-center mt-12 border border-gray-100">
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            💳 Billing Overview
+        {/* Billing Overview */}
+        <div className="bg-surface p-6 rounded-2xl shadow-sm text-center mt-12 border border-white/10">
+          <h3 className="text-xl font-semibold text-ivory mb-2">
+            Billing Overview
           </h3>
-          <p className="text-gray-700">
+          <p className="text-gray-300">
             Active Plan:{" "}
-            <span className="font-semibold text-blue-600">
+            <span className="font-semibold text-gold">
               {billingInfo.plan}
             </span>
           </p>
-          <p className="text-gray-700 mt-1">
+          <p className="text-gray-300 mt-1">
             Next Billing Date:{" "}
-            <span className="font-semibold text-blue-600">
+            <span className="font-semibold text-gold">
               {billingInfo.nextBillingDate}
             </span>
           </p>
@@ -310,7 +310,7 @@ export default function DashboardPage() {
         <div className="text-center mt-8 mb-10">
           <button
             onClick={handleManageBilling}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-full transition-all"
+            className="bg-gold hover:bg-gold-deep text-night font-semibold py-3 px-8 rounded-full transition-all"
           >
             Manage Subscription & Billing
           </button>

@@ -59,7 +59,7 @@ export default function YieldCurveVisualizer() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#fffcee] text-[#111] px-6 md:px-14 py-28">
+    <main className="min-h-screen bg-night text-[#111] px-6 md:px-14 py-14">
       {/* Back Button */}
       <div className="flex justify-start mb-6">
         <Link
@@ -73,33 +73,33 @@ export default function YieldCurveVisualizer() {
 
       {/* Title */}
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-extrabold text-[#111]">
+        <h1 className="text-4xl text-[#111] font-display font-normal tracking-tight md:text-5xl">
           Yield Curve Visualizer
         </h1>
-        <p className="text-lg text-gray-600 mt-3">
+        <p className="text-lg text-gray-400 mt-3">
           Interactive yield curves with macro overlays and forecast tracking.
         </p>
       </div>
 
       {/* Feature Cards */}
       <div className="grid md:grid-cols-3 gap-6 mb-10">
-        <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-lg mb-2 text-[#111]">Slope</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-gray-400 text-sm leading-relaxed">
             Measures the difference between short- and long-term yields —
             indicating economic growth expectations.
           </p>
         </div>
-        <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-lg mb-2 text-[#111]">Butterfly</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-gray-400 text-sm leading-relaxed">
             Analyzes curvature changes by comparing mid-term yields with short
             and long maturities.
           </p>
         </div>
-        <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-lg mb-2 text-[#111]">Carry/Roll</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-gray-400 text-sm leading-relaxed">
             Tracks potential yield gains from holding or rolling down the curve
             as maturities shorten.
           </p>
@@ -118,7 +118,7 @@ export default function YieldCurveVisualizer() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-md">
+      <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-md">
         {loading ? (
           <p className="text-center text-gray-500">Loading yield data...</p>
         ) : data.length > 0 ? (
@@ -132,7 +132,7 @@ export default function YieldCurveVisualizer() {
               />
               <Tooltip
                 contentStyle={{
-                  background: "#fff",
+                  background: "#161410",
                   borderRadius: "10px",
                   border: "1px solid #f9d949",
                 }}

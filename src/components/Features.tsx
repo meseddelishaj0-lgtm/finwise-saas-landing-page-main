@@ -65,7 +65,7 @@ const DarkTooltip = (props: any) => (
   <Tooltip
     {...props}
     contentStyle={{
-      backgroundColor: '#111',
+      backgroundColor: "#F2EDE3",
       border: '1px solid #FACC15',
       borderRadius: '8px',
       color: '#fff',
@@ -138,7 +138,7 @@ const Features: React.FC = () => {
   return (
     <section
       id="features"
-      className="relative w-screen overflow-hidden text-white bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a]"
+      className="relative w-screen overflow-hidden text-white bg-night"
       style={{ marginLeft: 'calc(-50vw + 50%)' }}
     >
       {/* Radial gold glow */}
@@ -152,7 +152,7 @@ const Features: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-4xl md:text-5xl font-bold text-center mb-10"
         >
-          ⚙️ WallStreetStocks.ai Features
+          WallStreetStocks.ai Features
         </motion.h2>
 
         {/* Tabs */}
@@ -162,10 +162,10 @@ const Features: React.FC = () => {
               key={cat.id}
               onClick={() => setActiveTab(cat.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-                activeTab === cat.id
-                  ? 'bg-yellow-400 text-black shadow-md'
-                  : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-              }`}
+ activeTab === cat.id
+ ? 'bg-yellow-400 text-black shadow-md'
+ : 'bg-white/10 hover:bg-white/10 text-gray-300'
+ }`}
             >
               <cat.icon className="w-4 h-4" />
               {cat.label}
@@ -189,7 +189,7 @@ const Features: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05, duration: 0.5 }}
-                className="p-6 bg-gradient-to-b from-[#111] to-[#1a1a1a] rounded-2xl shadow-lg hover:shadow-yellow-500/10 border border-gray-800 transition-all duration-300"
+                className="p-6 rounded-2xl shadow-lg border border-white/10 transition-all duration-300 bg-surface"
               >
                 <feature.icon className="w-10 h-10 text-yellow-400 mb-4" />
                 <h3 className="text-xl font-semibold mb-2 text-white">{feature.title}</h3>

@@ -143,7 +143,7 @@ export default function MarketTrendsPage() {
       2️⃣ 1-line interpretation of sentiment index (0–100) using tone emojis.
       `;
 
-      // ✅ secure API call (server-side)
+      // secure API call (server-side)
       const res = await fetch("/api/ai-summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -174,31 +174,31 @@ export default function MarketTrendsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 py-20 px-6 md:px-16">
+    <div className="min-h-screen bg-night text-ivory py-14 px-6 md:px-16">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="max-w-7xl mx-auto bg-white rounded-3xl shadow-lg border border-gray-100 p-10"
+        className="max-w-7xl mx-auto bg-surface rounded-3xl shadow-lg border border-white/10 p-10"
       >
         {/* Header */}
         <div className="flex justify-between items-center mb-8 flex-wrap gap-3">
           <button
             onClick={() => router.back()}
-            className="flex items-center text-sm text-gray-500 hover:text-gray-700"
+            className="flex items-center text-sm text-gray-500 hover:text-gray-300"
           >
             <ArrowLeft className="h-4 w-4 mr-1" /> Back to AI Dashboard
           </button>
 
           <div className="flex items-center gap-2">
             <Activity className="text-green-500" />
-            <h1 className="text-3xl font-bold">
+            <h1 className="text-3xl font-display font-normal tracking-tight md:text-4xl">
               Market Trends, Sectors & Sentiment
             </h1>
           </div>
         </div>
 
-        <p className="text-gray-600 mb-10">
+        <p className="text-gray-400 mb-10">
           Real-time market overview powered by WallStreetStocks.ai analysis:
           indices, sector rotation, and sentiment.
         </p>
@@ -206,14 +206,14 @@ export default function MarketTrendsPage() {
         {/* Gainers / Losers / Indices cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           {/* Gainers */}
-          <div className="bg-green-50 p-6 rounded-2xl border border-green-100">
-            <h3 className="font-semibold text-gray-800 mb-2 flex items-center">
-              <TrendingUp className="h-5 w-5 text-green-600 mr-2" /> Top Gainers
+          <div className="bg-green-400/10 p-6 rounded-2xl border border-green-400/20">
+            <h3 className="font-semibold text-gray-100 mb-2 flex items-center">
+              <TrendingUp className="h-5 w-5 text-green-400 mr-2" /> Top Gainers
             </h3>
             {loading ? (
               <p className="text-gray-400 text-sm">Loading…</p>
             ) : (
-              <ul className="text-sm text-gray-700 space-y-1">
+              <ul className="text-sm text-gray-300 space-y-1">
                 {gainers.map((g) => (
                   <li key={g.symbol}>
                     <strong>{g.symbol}</strong> +{g.changesPercentage.toFixed(2)}%
@@ -224,14 +224,14 @@ export default function MarketTrendsPage() {
           </div>
 
           {/* Losers */}
-          <div className="bg-red-50 p-6 rounded-2xl border border-red-100">
-            <h3 className="font-semibold text-gray-800 mb-2 flex items-center">
-              <TrendingDown className="h-5 w-5 text-red-600 mr-2" /> Top Losers
+          <div className="bg-red-400/10 p-6 rounded-2xl border border-red-400/20">
+            <h3 className="font-semibold text-gray-100 mb-2 flex items-center">
+              <TrendingDown className="h-5 w-5 text-red-400 mr-2" /> Top Losers
             </h3>
             {loading ? (
               <p className="text-gray-400 text-sm">Loading…</p>
             ) : (
-              <ul className="text-sm text-gray-700 space-y-1">
+              <ul className="text-sm text-gray-300 space-y-1">
                 {losers.map((l) => (
                   <li key={l.symbol}>
                     <strong>{l.symbol}</strong> {l.changesPercentage.toFixed(2)}%
@@ -242,14 +242,14 @@ export default function MarketTrendsPage() {
           </div>
 
           {/* Indices */}
-          <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-            <h3 className="font-semibold text-gray-800 mb-2 flex items-center">
-              <BarChart3 className="h-5 w-5 text-blue-600 mr-2" /> Major Indices
+          <div className="bg-surface2 p-6 rounded-2xl border border-white/10">
+            <h3 className="font-semibold text-gray-100 mb-2 flex items-center">
+              <BarChart3 className="h-5 w-5 text-gold mr-2" /> Major Indices
             </h3>
             {loading ? (
               <p className="text-gray-400 text-sm">Loading…</p>
             ) : (
-              <ul className="text-sm text-gray-700 space-y-1">
+              <ul className="text-sm text-gray-300 space-y-1">
                 {indices.map((i) => (
                   <li key={i.symbol}>
                     <strong>{i.symbol}</strong>{" "}
@@ -263,7 +263,7 @@ export default function MarketTrendsPage() {
         </div>
 
         {/* Index chart */}
-        <div className="bg-gray-50 p-6 rounded-2xl mb-10 border border-gray-100 h-96">
+        <div className="bg-surface2 p-6 rounded-2xl mb-10 border border-white/10 h-96">
           {loading ? (
             <p className="text-center text-gray-400 mt-36">Loading chart…</p>
           ) : (
@@ -316,16 +316,16 @@ export default function MarketTrendsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="bg-green-50 border border-green-200 rounded-2xl p-6 mb-10"
+          className="bg-green-400/10 border border-green-400/20 rounded-2xl p-6 mb-10"
         >
           <div className="flex items-center mb-2">
-            <Sparkles className="h-5 w-5 text-green-600 mr-2" />
-            <h2 className="text-lg font-semibold text-gray-900">
+            <Sparkles className="h-5 w-5 text-green-400 mr-2" />
+            <h2 className="text-lg font-semibold text-ivory">
               AI Market Summary
             </h2>
           </div>
           {aiInsight ? (
-            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+            <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
               {aiInsight}
             </p>
           ) : (
@@ -338,14 +338,14 @@ export default function MarketTrendsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
-          className="bg-gray-100 border border-gray-200 rounded-2xl p-6 flex flex-col items-center justify-center"
+          className="bg-surface2 border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center"
         >
           <div className="flex items-center gap-2 mb-2">
             <Gauge
               className="h-5 w-5"
               color={sentiment ? gaugeColor(sentiment) : "#9ca3af"}
             />
-            <h2 className="text-lg font-semibold text-gray-800">
+            <h2 className="text-lg font-semibold text-gray-100">
               Fear & Greed Index
             </h2>
           </div>
@@ -354,7 +354,7 @@ export default function MarketTrendsPage() {
             <p className="text-gray-500 text-sm">Loading sentiment…</p>
           ) : (
             <>
-              <div className="relative w-72 h-3 bg-gray-200 rounded-full overflow-hidden mb-3">
+              <div className="relative w-72 h-3 bg-white/10 rounded-full overflow-hidden mb-3">
                 <motion.div
                   className="absolute left-0 top-0 h-3 rounded-full"
                   initial={{ width: 0 }}
@@ -371,7 +371,7 @@ export default function MarketTrendsPage() {
               >
                 {sentiment.toFixed(0)} / 100
               </p>
-              <p className="text-gray-700 text-sm mt-2 text-center max-w-md">
+              <p className="text-gray-300 text-sm mt-2 text-center max-w-md">
                 {aiSentimentComment || "Analyzing market mood..."}
               </p>
             </>

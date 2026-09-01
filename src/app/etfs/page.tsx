@@ -55,29 +55,29 @@ export default function ETFsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 px-6 pt-32 pb-12">
+    <main className="min-h-screen bg-night text-ivory px-6 pt-12 pb-12">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <motion.h1
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="text-3xl md:text-4xl font-bold text-gray-900"
+          className="text-3xl md:text-4xl text-ivory font-display font-normal tracking-tight"
         >
           Most Active ETFs
         </motion.h1>
         <button
           onClick={fetchETFs}
-          className="flex items-center gap-2 text-sm bg-yellow-500 text-black px-3 py-2 rounded-md hover:bg-yellow-400 transition"
+          className="flex items-center gap-2 text-sm bg-gold text-black px-3 py-2 rounded-md hover:bg-yellow-400 transition"
         >
           <RefreshCcw className="w-4 h-4" /> Refresh
         </button>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto border border-gray-300 rounded-xl shadow-sm">
+      <div className="overflow-x-auto border border-white/10 rounded-xl shadow-sm">
         <table className="min-w-full text-sm">
-          <thead className="bg-gray-100 text-gray-700">
+          <thead className="bg-surface2 text-gray-300">
             <tr>
               {[
                 { key: "symbol", label: "Symbol" },
@@ -93,7 +93,7 @@ export default function ETFsPage() {
                 <th
                   key={key}
                   onClick={() => handleSort(key as keyof ETF)}
-                  className="px-4 py-3 text-left font-semibold cursor-pointer hover:text-yellow-600 transition"
+                  className="px-4 py-3 text-left font-semibold cursor-pointer hover:text-gold transition"
                 >
                   {label}
                   {sortKey === key && (sortDir === "asc" ? " ▲" : " ▼")}
@@ -112,32 +112,32 @@ export default function ETFsPage() {
               sortedEtfs.map((etf, idx) => (
                 <tr
                   key={idx}
-                  className="border-t border-gray-200 hover:bg-gray-50 transition"
+                  className="border-t border-white/10 hover:bg-surface2 transition"
                 >
-                  <td className="px-4 py-3 font-semibold text-yellow-600">
+                  <td className="px-4 py-3 font-semibold text-gold">
                     {etf.symbol}
                   </td>
                   <td className="px-4 py-3">{etf.name}</td>
                   <td className="px-4 py-3">${etf.price?.toFixed(2)}</td>
                   <td
                     className={`px-4 py-3 ${
-                      etf.change > 0
-                        ? "text-green-600"
-                        : etf.change < 0
-                        ? "text-red-500"
-                        : ""
-                    }`}
+ etf.change > 0
+ ? "text-green-400"
+ : etf.change < 0
+ ? "text-red-500"
+ : ""
+ }`}
                   >
                     {etf.change?.toFixed(2)}
                   </td>
                   <td
                     className={`px-4 py-3 ${
-                      etf.changesPercentage > 0
-                        ? "text-green-600"
-                        : etf.changesPercentage < 0
-                        ? "text-red-500"
-                        : ""
-                    }`}
+ etf.changesPercentage > 0
+ ? "text-green-400"
+ : etf.changesPercentage < 0
+ ? "text-red-500"
+ : ""
+ }`}
                   >
                     {etf.changesPercentage?.toFixed(2)}%
                   </td>
@@ -146,19 +146,19 @@ export default function ETFsPage() {
                   </td>
                   <td
                     className={`px-4 py-3 ${
-                      etf.ytdReturn && etf.ytdReturn > 0
-                        ? "text-green-600"
-                        : "text-red-500"
-                    }`}
+ etf.ytdReturn && etf.ytdReturn > 0
+ ? "text-green-400"
+ : "text-red-500"
+ }`}
                   >
                     {etf.ytdReturn ? `${etf.ytdReturn.toFixed(2)}%` : "-"}
                   </td>
                   <td
                     className={`px-4 py-3 ${
-                      etf.threeMonthReturn && etf.threeMonthReturn > 0
-                        ? "text-green-600"
-                        : "text-red-500"
-                    }`}
+ etf.threeMonthReturn && etf.threeMonthReturn > 0
+ ? "text-green-400"
+ : "text-red-500"
+ }`}
                   >
                     {etf.threeMonthReturn
                       ? `${etf.threeMonthReturn.toFixed(2)}%`
@@ -166,10 +166,10 @@ export default function ETFsPage() {
                   </td>
                   <td
                     className={`px-4 py-3 ${
-                      etf.fiftyTwoWeekChange && etf.fiftyTwoWeekChange > 0
-                        ? "text-green-600"
-                        : "text-red-500"
-                    }`}
+ etf.fiftyTwoWeekChange && etf.fiftyTwoWeekChange > 0
+ ? "text-green-400"
+ : "text-red-500"
+ }`}
                   >
                     {etf.fiftyTwoWeekChange
                       ? `${etf.fiftyTwoWeekChange.toFixed(2)}%`

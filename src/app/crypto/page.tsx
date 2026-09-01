@@ -21,7 +21,7 @@ export default function CryptoPage() {
   const [aiResponse, setAiResponse] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
-  // ✅ Fetch crypto data from our unified API route
+  // Fetch crypto data from our unified API route
   const fetchCryptos = async () => {
     try {
       setLoading(true);
@@ -40,7 +40,7 @@ export default function CryptoPage() {
     fetchCryptos();
   }, []);
 
-  // ✅ AI Insights
+  // AI Insights
   const handleAIAnalyze = async () => {
     if (!aiInput) return;
     setAiLoading(true);
@@ -62,7 +62,7 @@ export default function CryptoPage() {
     }
   };
 
-  // ✅ Filtered results
+  // Filtered results
   const filteredCryptos = cryptos.filter(
     (c) =>
       c.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -70,7 +70,7 @@ export default function CryptoPage() {
   );
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center py-24 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
       {/* ===== Hero Section ===== */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}
@@ -78,10 +78,10 @@ export default function CryptoPage() {
         transition={{ duration: 0.6 }}
         className="max-w-4xl text-center mb-12"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
+        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
           Cryptocurrency Dashboard
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           Live crypto prices, market caps, and AI-powered insights — all from
           WallStreetStocks.ai.
         </p>
@@ -89,7 +89,7 @@ export default function CryptoPage() {
 
       {/* ===== Search + Refresh ===== */}
       <div className="flex flex-col md:flex-row items-center gap-4 mb-10">
-        <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden">
+        <div className="flex items-center border border-white/10 rounded-xl overflow-hidden">
           <Search className="ml-3 text-gray-500" />
           <input
             type="text"
@@ -103,7 +103,7 @@ export default function CryptoPage() {
         <button
           onClick={fetchCryptos}
           disabled={loading}
-          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-5 py-3 rounded-xl transition-all"
+          className="flex items-center gap-2 bg-gold hover:bg-gold-deep text-black font-semibold px-5 py-3 rounded-xl transition-all"
         >
           <RefreshCcw className="w-5 h-5" />
           {loading ? "Refreshing..." : "Refresh Data"}
@@ -111,16 +111,16 @@ export default function CryptoPage() {
       </div>
 
       {/* ===== Crypto Table ===== */}
-      <div className="overflow-x-auto w-full max-w-6xl border border-gray-200 rounded-2xl shadow-md bg-gray-50 mb-14">
+      <div className="overflow-x-auto w-full max-w-6xl border border-white/10 rounded-2xl shadow-md bg-surface2 mb-14">
         <table className="min-w-full text-left text-sm md:text-base">
-          <thead className="bg-gray-100 border-b border-gray-200">
+          <thead className="bg-surface2 border-b border-white/10">
             <tr>
-              <th className="py-3 px-4 font-semibold text-gray-800">Name</th>
-              <th className="py-3 px-4 font-semibold text-gray-800">Symbol</th>
-              <th className="py-3 px-4 font-semibold text-gray-800">Price</th>
-              <th className="py-3 px-4 font-semibold text-gray-800">24h %</th>
-              <th className="py-3 px-4 font-semibold text-gray-800">Market Cap</th>
-              <th className="py-3 px-4 font-semibold text-gray-800">Volume (24h)</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">Name</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">Symbol</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">Price</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">24h %</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">Market Cap</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">Volume (24h)</th>
             </tr>
           </thead>
           <tbody>
@@ -128,19 +128,19 @@ export default function CryptoPage() {
               filteredCryptos.map((c, i) => (
                 <tr
                   key={i}
-                  className="border-t border-gray-200 hover:bg-white transition-all"
+                  className="border-t border-white/10 hover:bg-surface transition-all"
                 >
                   <td className="py-3 px-4">{c.name}</td>
-                  <td className="py-3 px-4 font-medium text-yellow-600">
+                  <td className="py-3 px-4 font-medium text-gold">
                     {c.symbol}
                   </td>
                   <td className="py-3 px-4">${c.price}</td>
                   <td
                     className={`py-3 px-4 font-semibold ${
-                      parseFloat(c.changes24h) >= 0
-                        ? "text-green-600"
-                        : "text-red-500"
-                    }`}
+ parseFloat(c.changes24h) >= 0
+ ? "text-green-400"
+ : "text-red-500"
+ }`}
                   >
                     {c.changes24h}%
                   </td>
@@ -167,16 +167,16 @@ export default function CryptoPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="max-w-5xl w-full bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-8"
+        className="max-w-5xl w-full bg-surface2 border border-white/10 rounded-2xl shadow-md p-8"
       >
         <div className="flex items-center gap-3 mb-4">
-          <Brain className="text-yellow-500 w-7 h-7" />
-          <h2 className="text-2xl font-semibold text-gray-900">
+          <Brain className="text-gold w-7 h-7" />
+          <h2 className="text-2xl font-semibold text-ivory">
             AI Crypto Insights
           </h2>
         </div>
 
-        <p className="text-gray-700 mb-6">
+        <p className="text-gray-300 mb-6">
           Enter a cryptocurrency name or symbol for an AI-powered investment
           summary and sentiment report.
         </p>
@@ -186,12 +186,12 @@ export default function CryptoPage() {
             value={aiInput}
             onChange={(e) => setAiInput(e.target.value)}
             placeholder="e.g. Bitcoin, Ethereum, Solana"
-            className="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="flex-1 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
           <button
             onClick={handleAIAnalyze}
             disabled={aiLoading}
-            className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-xl transition-all"
+            className="bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
           >
             {aiLoading ? "Analyzing..." : "Analyze Crypto"}
           </button>
@@ -202,28 +202,28 @@ export default function CryptoPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="mt-4 bg-white border border-gray-200 rounded-xl p-6"
+            className="mt-4 bg-surface border border-white/10 rounded-xl p-6"
           >
-            <h3 className="text-lg font-semibold mb-3 text-gray-900">
+            <h3 className="text-lg font-semibold mb-3 text-ivory">
               AI Insights
             </h3>
-            <p className="text-gray-700 whitespace-pre-line">{aiResponse}</p>
+            <p className="text-gray-300 whitespace-pre-line">{aiResponse}</p>
           </motion.div>
         )}
       </motion.div>
 
       {/* ===== CTA ===== */}
       <div className="text-center mt-16">
-        <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+        <h3 className="text-2xl font-semibold mb-3 text-ivory">
           Explore the Future of Finance
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-400 mb-6">
           Join WallStreetStocks.ai and unlock advanced AI analytics for
           cryptocurrencies, stocks, and more.
         </p>
         <a
           href="/register"
-          className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-xl transition-all"
+          className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
         >
           Unlock Full Access
         </a>

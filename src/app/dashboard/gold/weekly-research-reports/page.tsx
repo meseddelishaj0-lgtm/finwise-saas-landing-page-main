@@ -31,23 +31,23 @@ export default function WeeklyResearchReportsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-100 to-yellow-50 py-16 px-6 text-gray-900">
+    <div className="min-h-screen py-16 px-6 text-ivory bg-night">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="max-w-5xl mx-auto text-center"
       >
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-500 via-amber-600 to-yellow-700 bg-clip-text text-transparent">
+        <h1 className="text-4xl md:text-5xl text-gold font-display font-normal tracking-tight">
           Weekly Research Reports
         </h1>
-        <p className="mt-4 text-lg text-gray-700">
+        <p className="mt-4 text-lg text-gray-300">
           The latest insights, analysis, and institutional-grade reports powered by Finnhub and AI summarization.
         </p>
       </motion.div>
 
       {loading ? (
-        <div className="flex justify-center mt-16 text-amber-600 font-semibold animate-pulse">
+        <div className="flex justify-center mt-16 text-gold font-semibold animate-pulse">
           Loading reports...
         </div>
       ) : (
@@ -58,12 +58,12 @@ export default function WeeklyResearchReportsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="bg-white rounded-2xl shadow-lg p-6 border border-amber-100 hover:shadow-xl transition-all"
+              className="bg-surface rounded-2xl shadow-lg p-6 border border-gold/20 hover:shadow-xl transition-all"
             >
-              <h2 className="text-xl font-semibold text-gray-900">{r.headline}</h2>
+              <h2 className="text-xl font-semibold text-ivory">{r.headline}</h2>
               <p className="text-sm text-gray-500 mt-1">{r.source}</p>
-              <p className="mt-3 text-gray-700">{r.summary}</p>
-              <a href={r.url} target="_blank" rel="noreferrer" className="text-amber-600 font-medium mt-3 inline-block hover:underline">
+              <p className="mt-3 text-gray-300">{r.summary}</p>
+              <a href={r.url} target="_blank" rel="noreferrer" className="text-gold font-medium mt-3 inline-block hover:underline">
                 Read Full Report →
               </a>
             </motion.div>

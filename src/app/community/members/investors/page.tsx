@@ -118,10 +118,10 @@ export default function InvestorsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-hero-background py-20 px-6 text-foreground">
+    <main className="min-h-screen bg-night py-14 px-6 text-foreground">
       <div className="max-w-5xl mx-auto">
-        <motion.h1 className="text-4xl md:text-5xl font-bold text-center mb-6">
-          💼 Professional Investors
+        <motion.h1 className="text-4xl md:text-5xl text-center mb-6 font-display font-normal tracking-tight">
+          Professional Investors
         </motion.h1>
         <p className="text-center text-foreground-accent mb-8">
           Connect with portfolio managers, analysts, and traders to share insights and discuss professional strategies.
@@ -133,13 +133,13 @@ export default function InvestorsPage() {
             value={newPost}
             onChange={(e) => setNewPost(e.target.value)}
             placeholder={currentUserId ? "Share a market insight or strategy..." : "Please login to post"}
-            className="w-full border border-gray-300 rounded-xl p-3 mb-3"
+            className="w-full border border-white/10 rounded-xl p-3 mb-3"
             rows={3}
             disabled={!currentUserId}
           />
           <button 
             onClick={addPost} 
-            className={`px-6 py-2 rounded-full ${currentUserId ? 'bg-primary text-white' : 'bg-gray-400 text-gray-600 cursor-not-allowed'}`}
+            className={`px-6 py-2 rounded-full ${currentUserId ? 'bg-primary text-white' : 'bg-white/20 text-gray-400 cursor-not-allowed'}`}
             disabled={!currentUserId}
           >
             Post Insight
@@ -151,7 +151,7 @@ export default function InvestorsPage() {
           {posts.map((p) => {
             const user = userProfiles[p.userId];
             return (
-              <motion.div key={p.id} className="bg-white/90 p-5 rounded-xl shadow border border-gray-100">
+              <motion.div key={p.id} className="bg-white/90 p-5 rounded-xl shadow border border-white/10">
                 <div className="flex justify-between mb-2">
                   <span className="font-semibold">
                     {user ? (
@@ -167,17 +167,17 @@ export default function InvestorsPage() {
                 </div>
                 <p className="mb-3">{p.content}</p>
                 <button onClick={() => likePost(p.id)} className="text-primary text-sm font-semibold hover:underline">
-                  👍 {p.likes} Likes
+                  {p.likes} Likes
                 </button>
 
                 {/* Comments */}
                 <div className="mt-4 border-t pt-2">
                   <CommentBox onAdd={(t) => addComment(p.id, t)} />
-                  <div className="space-y-2 mt-3 pl-3 border-l border-gray-200">
+                  <div className="space-y-2 mt-3 pl-3 border-l border-white/10">
                     {p.comments.map((c) => {
                       const commentUser = userProfiles[c.userId];
                       return (
-                        <div key={c.id} className="bg-gray-50 p-2 rounded-lg">
+                        <div key={c.id} className="bg-surface2 p-2 rounded-lg">
                           <div className="flex justify-between items-center">
                             <span className="font-medium text-sm">
                               {commentUser ? (

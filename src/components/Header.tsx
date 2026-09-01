@@ -98,14 +98,13 @@ const Header: React.FC = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
-        isScrolled
-          ? "bg-night/90 backdrop-blur-lg py-2 border-b border-yellow-500/15"
-          : "bg-gradient-to-b from-night/90 via-night/45 to-transparent backdrop-blur-sm py-3 border-none"
+      className={`fixed top-0 left-0 right-0 z-50 w-full bg-night/95 backdrop-blur-lg border-b transition-colors duration-300 ${
+        isScrolled ? "border-white/10" : "border-white/5"
       }`}
     >
-      <Container>
-        <nav className="flex items-center text-white gap-3">
+      {/* Fixed 64px bar; layout <main> carries the matching pt-16 */}
+      <Container className="h-16 flex items-center">
+        <nav className="w-full flex items-center text-white gap-3">
           {/* ✅ Logo */}
           <Link
             href="/"

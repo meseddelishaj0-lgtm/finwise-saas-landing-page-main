@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import CommandLine from "@/components/ui/CommandLine";
+
+const inputClass =
+  "mt-1.5 w-full rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-ivory placeholder:text-gray-600 transition-colors focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/25";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -32,58 +37,91 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-6">
-      <div className="bg-white p-8 rounded-2xl shadow-md w-full max-w-md">
-        <h2 className="text-3xl font-bold mb-6 text-center text-gray-900">
-          Create Your Account
-        </h2>
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-night px-6 py-16">
+      <div className="w-full max-w-md rounded-xl border border-white/10 bg-surface p-8 md:p-10">
+        <CommandLine cmd="NEW" note="open a free account" className="mb-4" />
+        <h1 className="font-display text-ivory text-3xl md:text-4xl tracking-tight">
+          Take a seat at the <em className="italic text-gold-soft">desk</em>.
+        </h1>
+        <p className="mt-2 text-sm text-gray-400">
+          Free to start. The terminal, live data, and research follow you on
+          the web and in the iOS app.
+        </p>
 
-        {error && <p className="text-red-500 text-center mb-3">{error}</p>}
+        {error && (
+          <p className="mt-5 rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-2 text-sm text-red-400">
+            {error}
+          </p>
+        )}
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-yellow-400"
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-yellow-400"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring focus:ring-yellow-400"
-            required
-          />
+        <form onSubmit={handleRegister} className="mt-6 space-y-4">
+          <label className="block">
+            <span className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+              Full name
+            </span>
+            <input
+              type="text"
+              placeholder="Jane Doe"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={inputClass}
+              autoComplete="name"
+              required
+            />
+          </label>
+          <label className="block">
+            <span className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+              Email
+            </span>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputClass}
+              autoComplete="email"
+              required
+            />
+          </label>
+          <label className="block">
+            <span className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+              Password
+            </span>
+            <input
+              type="password"
+              placeholder="At least 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={inputClass}
+              autoComplete="new-password"
+              required
+            />
+          </label>
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-2 rounded-lg font-semibold transition-all ${
-              loading
-                ? "bg-yellow-300 cursor-not-allowed"
-                : "bg-yellow-400 hover:bg-yellow-500 text-black"
-            }`}
+            className={`btn-gold w-full py-3 mt-2 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
           >
-            {loading ? "Creating..." : "Create Account"}
+            {loading ? "Creating…" : "Create free account"}
           </button>
         </form>
 
-        <p className="text-sm text-center mt-4 text-gray-600">
+        <p className="mt-6 text-center text-sm text-gray-400">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-600 hover:underline">
-            Login
-          </a>
+          <Link
+            href="/login"
+            className="text-gold hover:text-gold-soft underline underline-offset-4 transition-colors"
+          >
+            Sign in
+          </Link>
+        </p>
+
+        <p className="mt-4 text-center text-[11px] leading-relaxed text-gray-500">
+          By creating an account you agree to our{" "}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-gray-300">Terms</Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-gray-300">Privacy Policy</Link>.
         </p>
       </div>
     </div>

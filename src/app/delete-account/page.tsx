@@ -26,12 +26,12 @@ export default function DeleteAccount() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a] text-gray-300">
+    <div className="min-h-screen text-gray-300 bg-night">
       {/* Hero Section */}
       <div className="relative py-20 px-6">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(250,204,21,0.06)_0%,rgba(13,12,9,0)_70%)] pointer-events-none" />
         <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-yellow-400 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)] mb-4">
+          <h1 className="text-4xl md:text-5xl text-yellow-400 mb-4 font-display font-normal tracking-tight">
             Delete Your Account
           </h1>
           <p className="text-gray-400 text-lg">
@@ -95,17 +95,17 @@ export default function DeleteAccount() {
           <section>
             <h2 className="text-2xl font-bold text-yellow-400 mb-4">Before You Delete</h2>
             <div className="space-y-4">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+              <div className="bg-surface2 border border-white/10 rounded-xl p-4">
                 <h4 className="font-semibold text-yellow-400 mb-2">Cancel Active Subscriptions</h4>
                 <p>If you have an active subscription, please cancel it first through the app or your app store settings to avoid future charges.</p>
               </div>
 
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+              <div className="bg-surface2 border border-white/10 rounded-xl p-4">
                 <h4 className="font-semibold text-yellow-400 mb-2">Export Your Data</h4>
                 <p>Consider exporting any data you want to keep before requesting deletion. Once deleted, your data cannot be recovered.</p>
               </div>
 
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+              <div className="bg-surface2 border border-white/10 rounded-xl p-4">
                 <h4 className="font-semibold text-yellow-400 mb-2">Consider Alternatives</h4>
                 <p>If you're having issues with your account, please <a href="mailto:wallstreetstocks@outlook.com" className="text-yellow-400 hover:underline">contact our support team</a> first. We may be able to help resolve your concerns.</p>
               </div>
@@ -167,7 +167,7 @@ export default function DeleteAccount() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50"
+                    className="w-full px-4 py-3 bg-surface2 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50"
                     placeholder="Enter the email associated with your account"
                   />
                 </div>
@@ -181,7 +181,7 @@ export default function DeleteAccount() {
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     rows={3}
-                    className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50"
+                    className="w-full px-4 py-3 bg-surface2 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500/50 focus:ring-1 focus:ring-yellow-500/50"
                     placeholder="Help us improve by sharing why you're leaving"
                   />
                 </div>
@@ -193,7 +193,7 @@ export default function DeleteAccount() {
                     required
                     checked={confirmed}
                     onChange={(e) => setConfirmed(e.target.checked)}
-                    className="mt-1 w-4 h-4 rounded border-gray-600 text-yellow-500 focus:ring-yellow-500 bg-gray-800"
+                    className="mt-1 w-4 h-4 rounded border-gray-600 text-gold focus:ring-yellow-500 bg-white/10"
                   />
                   <label htmlFor="confirm" className="ml-3 text-sm text-gray-300">
                     I understand that deleting my account is permanent and all my data will be removed. I have cancelled any active subscriptions and exported any data I want to keep.
@@ -203,7 +203,7 @@ export default function DeleteAccount() {
                 <button
                   type="submit"
                   disabled={!confirmed || !email}
-                  className="w-full py-3 px-6 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 disabled:text-gray-500 text-white font-semibold rounded-xl transition-colors"
+                  className="w-full py-3 px-6 bg-red-600 hover:bg-red-700 disabled:bg-white/10 disabled:text-gray-500 text-white font-semibold rounded-xl transition-colors"
                 >
                   Request Account Deletion
                 </button>
@@ -225,7 +225,7 @@ export default function DeleteAccount() {
             <p className="mb-4">
               If you have any questions about the account deletion process or need assistance, please contact us:
             </p>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+            <div className="bg-surface2 border border-white/10 rounded-xl p-6">
               <p className="font-semibold text-yellow-400">WallStreetStocks.ai Support</p>
               <p className="mt-2">
                 Email:{" "}
@@ -245,13 +245,13 @@ export default function DeleteAccount() {
             <div className="flex flex-wrap gap-4">
               <Link
                 href="/privacy"
-                className="px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-yellow-400 hover:bg-gray-800 transition-colors"
+                className="px-4 py-2 bg-surface2 border border-white/10 rounded-lg text-yellow-400 hover:bg-white/10 transition-colors"
               >
                 Privacy Policy
               </Link>
               <Link
                 href="/terms"
-                className="px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-yellow-400 hover:bg-gray-800 transition-colors"
+                className="px-4 py-2 bg-surface2 border border-white/10 rounded-lg text-yellow-400 hover:bg-white/10 transition-colors"
               >
                 Terms and Conditions
               </Link>

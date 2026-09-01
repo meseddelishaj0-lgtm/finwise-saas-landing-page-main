@@ -74,11 +74,7 @@ const FAQS = [
 const HomePage: React.FC = () => {
   return (
     <>
-      {/* Spacer under the fixed header, then the tape opens the session */}
-      <div
-        className="w-screen h-16 bg-night"
-        style={{ marginLeft: "calc(-50vw + 50%)" }}
-      />
+      {/* The tape opens the session (layout <main> already clears the fixed header) */}
       <TickerTape />
 
       {/* Masthead + live terminal pane */}

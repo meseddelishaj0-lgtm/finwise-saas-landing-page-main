@@ -5,12 +5,12 @@ import Link from "next/link";
 
 export default function TermsAndConditions() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a] text-gray-300">
+    <div className="min-h-screen text-gray-300 bg-night">
       {/* Hero Section */}
       <div className="relative py-20 px-6">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(250,204,21,0.06)_0%,rgba(13,12,9,0)_70%)] pointer-events-none" />
         <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-yellow-400 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)] mb-4">
+          <h1 className="text-4xl md:text-5xl text-yellow-400 mb-4 font-display font-normal tracking-tight">
             Terms and Conditions
           </h1>
           <p className="text-gray-400 text-lg">
@@ -174,7 +174,7 @@ export default function TermsAndConditions() {
           {/* Limitation of Liability */}
           <section>
             <h2 className="text-2xl font-bold text-yellow-400 mb-4">11. Limitation of Liability</h2>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+            <div className="bg-surface2 border border-white/10 rounded-xl p-6">
               <p className="mb-4">
                 TO THE MAXIMUM EXTENT PERMITTED BY LAW, WALLSTREETSTOCKS.AI AND ITS OFFICERS, DIRECTORS, EMPLOYEES, AND AGENTS SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO:
               </p>
@@ -242,7 +242,7 @@ export default function TermsAndConditions() {
             <p className="mb-4">
               If you have any questions about these Terms, please contact us at:
             </p>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+            <div className="bg-surface2 border border-white/10 rounded-xl p-6">
               <p className="font-semibold text-yellow-400">WallStreetStocks.ai</p>
               <p className="mt-2">
                 Email:{" "}

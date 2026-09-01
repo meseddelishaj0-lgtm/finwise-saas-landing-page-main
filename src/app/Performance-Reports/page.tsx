@@ -38,7 +38,7 @@ export default function PerformanceReportsPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center py-24 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
       {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}
@@ -46,10 +46,10 @@ export default function PerformanceReportsPage() {
         transition={{ duration: 0.6 }}
         className="max-w-4xl text-center mb-12"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
+        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
           Performance Reports
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           Download our latest quarterly and annual performance reports — full transparency on strategy returns, risk metrics and benchmark comparisons.
         </p>
       </motion.section>
@@ -65,14 +65,14 @@ export default function PerformanceReportsPage() {
             <motion.div
               key={r.id}
               whileHover={{ scale: 1.02 }}
-              className="bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-6"
+              className="bg-surface2 border border-white/10 rounded-2xl shadow-md p-6"
             >
-              <h3 className="text-xl font-semibold mb-2 text-gray-800">{r.title}</h3>
+              <h3 className="text-xl font-semibold mb-2 text-gray-100">{r.title}</h3>
               <p className="text-sm text-gray-500 mb-4">Date: {r.date}</p>
-              <p className="text-gray-700 mb-4">{r.summary}</p>
+              <p className="text-gray-300 mb-4">{r.summary}</p>
               <Link
                 href={r.url}
-                className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-5 py-3 rounded-xl transition-all"
+                className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-5 py-3 rounded-xl transition-all"
                 target="_blank"
               >
                 Download Report
@@ -84,15 +84,15 @@ export default function PerformanceReportsPage() {
 
       {/* Call to Action */}
       <div className="text-center">
-        <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+        <h3 className="text-2xl font-semibold mb-3 text-ivory">
           Want More In-Depth Analytics?
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-400 mb-6">
           Join WallStreetStocks Premium to gain access to monthly updates, full backtest archives, and live performance dashboards.
         </p>
         <Link
           href="/register"
-          className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-xl transition-all"
+          className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
         >
           Get Premium Access
         </Link>

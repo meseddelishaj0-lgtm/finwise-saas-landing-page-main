@@ -244,7 +244,7 @@ function HeatmapPage() {
   }, [items, size, grouped, scope]);
 
   return (
-    <main className="min-h-screen bg-night text-white pt-24 pb-10 px-4 md:px-6">
+    <main className="min-h-screen bg-night text-white pt-6 pb-10 px-4 md:px-6">
       <div className="max-w-[1600px] mx-auto">
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-yellow-500/20 bg-surface px-4 py-3 mb-4">

@@ -57,7 +57,7 @@ export default function Page() {
     })) || [];
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center py-24 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
       {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}
@@ -65,10 +65,10 @@ export default function Page() {
         transition={{ duration: 0.6 }}
         className="max-w-4xl text-center mb-12"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
+        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
           Money Market Dashboard
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           Explore real-time short-term interest rates, Treasury yields, repo and
           CD rates — straight from the Federal Reserve.
         </p>
@@ -78,7 +78,7 @@ export default function Page() {
       <button
         onClick={fetchData}
         disabled={loading}
-        className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-5 py-3 rounded-xl transition-all mb-10"
+        className="flex items-center gap-2 bg-gold hover:bg-gold-deep text-black font-semibold px-5 py-3 rounded-xl transition-all mb-10"
       >
         <RefreshCcw className="w-5 h-5" />
         {loading ? "Refreshing..." : "Refresh Data"}
@@ -90,12 +90,12 @@ export default function Page() {
           <motion.div
             key={index}
             whileHover={{ scale: 1.03 }}
-            className="bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-6 text-center"
+            className="bg-surface2 border border-white/10 rounded-2xl shadow-md p-6 text-center"
           >
-            <h3 className="text-sm font-semibold mb-2 text-gray-800">
+            <h3 className="text-sm font-semibold mb-2 text-gray-100">
               {item.name}
             </h3>
-            <p className="text-2xl font-bold text-yellow-500">
+            <p className="text-2xl font-bold text-gold">
               {item.value ? item.value.toFixed(2) + "%" : "—"}
             </p>
           </motion.div>
@@ -107,9 +107,9 @@ export default function Page() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-8 max-w-6xl w-full mb-16"
+        className="bg-surface2 border border-white/10 rounded-2xl shadow-md p-8 max-w-6xl w-full mb-16"
       >
-        <h3 className="text-2xl font-semibold mb-6 text-center text-gray-800">
+        <h3 className="text-2xl font-semibold mb-6 text-center text-gray-100">
           Yield Curve & Short-Term Rates (Last 60 Days)
         </h3>
         {loading || !chartData.length ? (
@@ -154,7 +154,7 @@ export default function Page() {
       {/* About Section */}
       <div className="max-w-4xl text-center mb-12">
         <h2 className="text-2xl font-semibold mb-4">About This Data</h2>
-        <p className="text-gray-600 leading-relaxed">
+        <p className="text-gray-400 leading-relaxed">
           Data sourced directly from the Federal Reserve’s FRED — including
           the Treasury yield curve (1M–30Y), overnight reverse repo facility,
           certificate of deposit rates, and the effective federal funds rate.
@@ -165,16 +165,16 @@ export default function Page() {
 
       {/* CTA Section */}
       <div className="text-center">
-        <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+        <h3 className="text-2xl font-semibold mb-3 text-ivory">
           Monitor the Pulse of Global Liquidity
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-400 mb-6">
           Join WallStreetStocks.ai to unlock advanced analytics on bonds,
           money-market funds, repo markets, and short-term instruments.
         </p>
         <a
           href="/register"
-          className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-xl transition-all"
+          className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
         >
           Unlock Full Access
         </a>

@@ -47,7 +47,7 @@ export default function AIStockPicksPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-100 to-yellow-50 py-20 px-6 text-gray-900">
+    <div className="min-h-screen py-14 px-6 text-ivory bg-night">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -55,10 +55,10 @@ export default function AIStockPicksPage() {
         transition={{ duration: 0.8 }}
         className="max-w-6xl mx-auto text-center mb-10"
       >
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-yellow-500 via-amber-600 to-yellow-700 bg-clip-text text-transparent">
+        <h1 className="text-4xl md:text-5xl text-gold font-display font-normal tracking-tight">
           AI Stock Picks
         </h1>
-        <p className="mt-4 text-lg text-gray-700">
+        <p className="mt-4 text-lg text-gray-300">
           Curated by AI — today’s top-performing stocks based on sentiment,
           fundamentals, and technical trends.
         </p>
@@ -67,7 +67,7 @@ export default function AIStockPicksPage() {
       {/* Loading state */}
       {loading ? (
         <div className="flex justify-center mt-16">
-          <p className="text-amber-600 animate-pulse text-lg font-medium">
+          <p className="text-gold animate-pulse text-lg font-medium">
             Loading live market data...
           </p>
         </div>
@@ -79,30 +79,30 @@ export default function AIStockPicksPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-2xl shadow-lg p-6 border border-amber-100 hover:shadow-xl hover:-translate-y-1 transition-all"
+              className="bg-surface rounded-2xl shadow-lg p-6 border border-gold/20 hover:shadow-xl hover:-translate-y-1 transition-all"
             >
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-ivory">
                 {stock.symbol}{" "}
                 <span className="text-sm text-gray-500">
                   {stock.description.slice(0, 40)}...
                 </span>
               </h2>
 
-              <p className="mt-3 text-3xl font-bold text-amber-600">
+              <p className="mt-3 text-3xl font-bold text-gold">
                 ${stock.currentPrice.toFixed(2)}
               </p>
 
               <p
                 className={`mt-1 text-sm font-medium ${
-                  stock.changePercent >= 0 ? "text-green-600" : "text-red-600"
-                }`}
+ stock.changePercent >= 0 ? "text-green-400" : "text-red-400"
+ }`}
               >
                 {stock.changePercent >= 0 ? "+" : ""}
                 {stock.changePercent.toFixed(2)}%
               </p>
 
-              <div className="mt-4 bg-gradient-to-r from-yellow-100 to-amber-100 p-3 rounded-xl">
-                <p className="text-sm text-gray-800">
+              <div className="mt-4 p-3 rounded-xl bg-surface">
+                <p className="text-sm text-gray-100">
                   <span className="font-semibold">AI Insight:</span>{" "}
                   {stock.aiSummary}
                 </p>
@@ -122,10 +122,9 @@ export default function AIStockPicksPage() {
         </Link>
         <Link
           href="/plans"
-          className="px-6 py-3 rounded-full text-amber-700 font-semibold border border-amber-400 hover:bg-amber-100 transition-all"
+          className="px-6 py-3 rounded-full text-gold font-semibold border border-amber-400 hover:bg-gold/15 transition-all"
         >
-          Upgrade to Platinum 🚀
-        </Link>
+          Upgrade to Platinum </Link>
       </div>
     </div>
   );

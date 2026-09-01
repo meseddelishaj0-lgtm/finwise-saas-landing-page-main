@@ -53,9 +53,9 @@ export default function StockMarketRoom() {
   };
 
   return (
-    <main className="min-h-screen bg-hero-background text-foreground py-20 px-6">
+    <main className="min-h-screen bg-night text-foreground py-14 px-6">
       <div className="max-w-5xl mx-auto">
-        <motion.h1 className="text-4xl md:text-5xl font-bold text-center mb-6">🧾 Stock Market Room</motion.h1>
+        <motion.h1 className="text-4xl md:text-5xl text-center mb-6 font-display font-normal tracking-tight">Stock Market Room</motion.h1>
         <p className="text-center text-foreground-accent mb-8">
           Join traders and investors to discuss market trends, earnings, and top stock picks.
         </p>
@@ -67,7 +67,7 @@ export default function StockMarketRoom() {
             onChange={(e) => setNewPost(e.target.value)}
             placeholder="Share your thoughts..."
             rows={3}
-            className="w-full border border-gray-300 rounded-xl p-3 mb-3 focus:ring-2 focus:ring-primary"
+            className="w-full border border-white/10 rounded-xl p-3 mb-3 focus:ring-2 focus:ring-primary"
           />
           <button onClick={addPost} className="bg-primary text-white px-6 py-2 rounded-full hover:bg-primary/90">
             Post Message
@@ -77,22 +77,22 @@ export default function StockMarketRoom() {
         {/* Posts */}
         <div className="space-y-5">
           {posts.map((p) => (
-            <motion.div key={p.id} className="bg-white/90 p-5 rounded-xl shadow border border-gray-100">
+            <motion.div key={p.id} className="bg-white/90 p-5 rounded-xl shadow border border-white/10">
               <div className="flex justify-between items-center mb-2">
                 <span className="font-semibold">{p.author}</span>
                 <span className="text-xs text-gray-500">{p.createdAt}</span>
               </div>
-              <p className="mb-3 text-gray-800">{p.content}</p>
+              <p className="mb-3 text-gray-100">{p.content}</p>
               <button onClick={() => likePost(p.id)} className="text-primary text-sm font-semibold hover:underline">
-                👍 {p.likes} Likes
+                {p.likes} Likes
               </button>
 
               {/* Comments */}
               <div className="mt-4 border-t pt-2">
                 <CommentBox onAdd={(t) => addComment(p.id, t)} />
-                <div className="mt-3 space-y-2 pl-3 border-l border-gray-200">
+                <div className="mt-3 space-y-2 pl-3 border-l border-white/10">
                   {p.comments.map((c) => (
-                    <div key={c.id} className="bg-gray-50 p-2 rounded-lg">
+                    <div key={c.id} className="bg-surface2 p-2 rounded-lg">
                       <div className="flex justify-between items-center">
                         <span className="font-medium text-sm">{c.author}</span>
                         <span className="text-xs text-gray-500">{c.createdAt}</span>

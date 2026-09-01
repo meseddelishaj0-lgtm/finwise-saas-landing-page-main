@@ -34,7 +34,7 @@ export default async function NewsroomPage() {
       className="relative w-screen min-h-screen text-white bg-night"
       style={{ marginLeft: "calc(-50vw + 50%)" }}
     >
-      <div className="max-w-5xl mx-auto px-6 md:px-10 pt-28 md:pt-32 pb-24">
+      <div className="max-w-5xl mx-auto px-6 md:px-10 pt-12 md:pt-16 pb-24">
         <CommandLine cmd="NWS" note="from the desk" className="mb-4" />
         <h1 className="font-display text-ivory text-5xl md:text-6xl tracking-tight">
           From the desk.

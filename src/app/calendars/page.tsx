@@ -45,16 +45,16 @@ export default function CalendarsPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-yellow-50 pt-28 pb-10 px-6 flex flex-col items-center">
+    <main className="min-h-screen pt-10 pb-10 px-6 flex flex-col items-center bg-night">
       <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3 flex items-center gap-2"
+        className="text-3xl md:text-4xl text-ivory mb-3 flex items-center gap-2 font-display font-normal tracking-tight"
       >
         <Calendar className="text-yellow-400" /> Market Calendars
       </motion.h1>
-      <p className="text-gray-600 mb-8 text-center max-w-2xl">
+      <p className="text-gray-400 mb-8 text-center max-w-2xl">
         Track upcoming earnings, dividends, and key economic events — all powered by WallStreetStocks.ai.
       </p>
 
@@ -68,17 +68,17 @@ export default function CalendarsPage() {
               fetchCalendar(type);
             }}
             className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-              calendarType === type
-                ? "bg-yellow-400 text-black shadow-md"
-                : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-100"
-            }`}
+ calendarType === type
+ ? "bg-yellow-400 text-black shadow-md"
+ : "bg-surface border border-white/10 text-gray-300 hover:bg-surface2"
+ }`}
           >
             {type.charAt(0).toUpperCase() + type.slice(1)}
           </button>
         ))}
         <button
           onClick={() => fetchCalendar(calendarType)}
-          className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-yellow-500 shadow-md flex items-center gap-2 transition-all"
+          className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-gold shadow-md flex items-center gap-2 transition-all"
         >
           <RefreshCcw size={16} /> Refresh
         </button>
@@ -86,8 +86,8 @@ export default function CalendarsPage() {
 
       {/* Calendar Data */}
       <div className="w-full max-w-5xl overflow-x-auto">
-        <table className="min-w-full border border-gray-200 rounded-xl bg-white shadow-sm">
-          <thead className="bg-yellow-100 text-gray-800 font-semibold text-sm">
+        <table className="min-w-full border border-white/10 rounded-xl bg-surface shadow-sm">
+          <thead className="bg-gold/15 text-gray-100 font-semibold text-sm">
             <tr>
               {calendarType === "earnings" && (
                 <>
@@ -131,10 +131,10 @@ export default function CalendarsPage() {
               </tr>
             ) : (
               events.map((event, i) => (
-                <tr key={i} className="border-t hover:bg-yellow-50 transition">
+                <tr key={i} className="border-t hover:bg-gold/10 transition">
                   {calendarType === "earnings" && (
                     <>
-                      <td className="p-3 text-sm text-gray-700">
+                      <td className="p-3 text-sm text-gray-300">
                         {new Date(event.date).toLocaleDateString()}
                       </td>
                       <td className="p-3 font-semibold">{event.symbol}</td>
@@ -145,7 +145,7 @@ export default function CalendarsPage() {
                   )}
                   {calendarType === "dividends" && (
                     <>
-                      <td className="p-3 text-sm text-gray-700">
+                      <td className="p-3 text-sm text-gray-300">
                         {new Date(event.date).toLocaleDateString()}
                       </td>
                       <td className="p-3 font-semibold">{event.symbol}</td>
@@ -154,7 +154,7 @@ export default function CalendarsPage() {
                   )}
                   {calendarType === "economy" && (
                     <>
-                      <td className="p-3 text-sm text-gray-700">
+                      <td className="p-3 text-sm text-gray-300">
                         {new Date(event.date).toLocaleDateString()}
                       </td>
                       <td className="p-3 font-semibold">

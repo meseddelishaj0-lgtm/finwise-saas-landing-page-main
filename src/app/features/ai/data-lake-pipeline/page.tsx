@@ -15,24 +15,24 @@ const data = [
 
 export default function DataLakePipelinePage() {
   return (
-    <section className="min-h-screen bg-white text-gray-900 py-20 px-6">
+    <section className="min-h-screen bg-night text-ivory py-14 px-6">
       <div className="max-w-6xl mx-auto text-center">
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-5xl font-bold mb-4 text-yellow-500"
+          className="text-5xl mb-4 text-gold font-display font-normal tracking-tight"
         >
-          🧮 Data Lake Pipeline
+          Data Lake Pipeline
         </motion.h1>
-        <p className="text-gray-700 text-lg mb-10 max-w-3xl mx-auto">
+        <p className="text-gray-300 text-lg mb-10 max-w-3xl mx-auto">
           Visualize the end-to-end flow of AI data pipelines — from ingestion and transformation to
           modeling and deployment — using real-time infrastructure metrics.
         </p>
 
-        <div className="bg-gray-50 rounded-2xl shadow-lg p-8">
+        <div className="bg-surface2 rounded-2xl shadow-lg p-8">
           <h3 className="text-xl font-semibold mb-4 flex justify-center items-center gap-2">
-            <Database className="text-yellow-500" /> Pipeline Record Flow
+            <Database className="text-gold" /> Pipeline Record Flow
           </h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data}>
@@ -46,7 +46,7 @@ export default function DataLakePipelinePage() {
         <div className="mt-10">
           <Link
             href="/features"
-            className="inline-block bg-yellow-400 text-black font-semibold px-6 py-3 rounded-full hover:bg-yellow-500 transition-all"
+            className="inline-block bg-yellow-400 text-black font-semibold px-6 py-3 rounded-full hover:bg-gold transition-all"
           >
             ← Back to Features
           </Link>

@@ -729,11 +729,11 @@ const SectionHeader: React.FC<{ title: string; subtitle?: string }> = ({
     transition={{ duration: 0.5 }}
     className="text-center mb-10"
   >
-    <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-      ⚙️ {title}
+    <h1 className="text-4xl md:text-5xl tracking-tight font-display font-normal tracking-tight">
+      {title}
     </h1>
     {subtitle ? (
-      <p className="text-gray-600 mt-3 max-w-3xl mx-auto">{subtitle}</p>
+      <p className="text-gray-400 mt-3 max-w-3xl mx-auto">{subtitle}</p>
     ) : null}
   </motion.div>
 );
@@ -753,10 +753,10 @@ const TabPills: React.FC<{
             key={cat.id}
             onClick={() => onChange(cat.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-              Active
-                ? 'bg-yellow-400 text-black shadow-md'
-                : 'bg-gray-100 hover:bg-yellow-100 text-gray-700'
-            }`}
+ Active
+ ? 'bg-yellow-400 text-black shadow-md'
+ : 'bg-surface2 hover:bg-gold/15 text-gray-300'
+ }`}
           >
             <Icon className="w-4 h-4" />
             {cat.label}
@@ -775,7 +775,7 @@ const BadgeRow: React.FC<{ items?: string[] }> = ({ items }) => {
       {items.map((b, idx) => (
         <span
           key={idx}
-          className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-semibold text-yellow-800"
+          className="inline-flex items-center rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-semibold text-gold-soft"
         >
           {b}
         </span>
@@ -788,10 +788,10 @@ const BadgeRow: React.FC<{ items?: string[] }> = ({ items }) => {
 const BulletList: React.FC<{ items?: string[] }> = ({ items }) => {
   if (!items || items.length === 0) return null;
   return (
-    <ul className="mt-2 space-y-1 text-sm text-gray-700">
+    <ul className="mt-2 space-y-1 text-sm text-gray-300">
       {items.map((it, i) => (
         <li key={i} className="flex items-start gap-2">
-          <CheckIcon className="w-4 h-4 text-yellow-500 mt-0.5" />
+          <CheckIcon className="w-4 h-4 text-gold mt-0.5" />
           <span>{it}</span>
         </li>
       ))}
@@ -804,7 +804,7 @@ const ExploreButton: React.FC<{ href: string }> = ({ href }) => {
   return (
     <Link
       href={href}
-      className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-500 transition"
+      className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-gold transition"
     >
       Explore
       <ArrowIcon className="w-4 h-4" />
@@ -827,13 +827,13 @@ const FeatureCard: React.FC<{
       initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: index * 0.04 }}
-      className="group flex flex-col justify-between rounded-2xl bg-gray-50 p-6 shadow-sm hover:shadow-lg hover:bg-yellow-50 transition"
+      className="group flex flex-col justify-between rounded-2xl bg-surface2 p-6 shadow-sm hover:shadow-lg hover:bg-gold/10 transition"
     >
       <div>
-        <Icon className="mb-4 h-10 w-10 text-yellow-500" />
+        <Icon className="mb-4 h-10 w-10 text-gold" />
         <BadgeRow items={item.badges} />
         <h3 className="text-xl font-semibold">{item.title}</h3>
-        <p className="mt-1 text-sm text-gray-700">{item.description}</p>
+        <p className="mt-1 text-sm text-gray-300">{item.description}</p>
         <BulletList items={item.bullets} />
         {item.chart ? <div className="mt-4 h-28">{item.chart}</div> : null}
       </div>
@@ -855,7 +855,7 @@ const FeaturesPage: React.FC = () => {
   const items = useMemo(() => FEATURES[activeTab] ?? [], [activeTab]);
 
   return (
-    <section id="features" className="bg-white py-24 text-gray-900">
+    <section id="features" className="bg-night py-14 text-ivory">
       <div className="mx-auto max-w-7xl px-6">
         <SectionHeader
           title="WallStreetStocks.ai Features"

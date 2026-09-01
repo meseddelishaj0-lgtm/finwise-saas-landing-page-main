@@ -17,26 +17,26 @@ export default function FinancePage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 py-20 px-6 text-gray-900">
+    <main className="min-h-screen bg-night py-14 px-6 text-ivory">
       <div className="max-w-5xl mx-auto text-center">
         {/* Header */}
-        <Library className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
-        <h1 className="text-4xl font-bold mb-6">💰 Finance Resources</h1>
-        <p className="text-lg text-gray-600 mb-10">
+        <Library className="w-12 h-12 text-gold mx-auto mb-3" />
+        <h1 className="text-4xl mb-6 font-display font-normal tracking-tight md:text-5xl">Finance Resources</h1>
+        <p className="text-lg text-gray-400 mb-10">
           Explore guides on investment strategy, valuation models, and portfolio management.
           You can also upload your own PDFs or notes to customize your learning.
         </p>
 
         {/* Upload Section */}
-        <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-8 mb-14 text-left">
+        <div className="bg-surface border border-white/10 shadow-sm rounded-2xl p-8 mb-14 text-left">
           <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-            <Upload className="w-6 h-6 text-yellow-500" /> Upload Your Materials
+            <Upload className="w-6 h-6 text-gold" /> Upload Your Materials
           </h2>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-400 mb-4">
             Add your own PDFs, class notes, or finance research for future access.
           </p>
 
-          <label className="cursor-pointer bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-xl font-semibold inline-block transition">
+          <label className="cursor-pointer bg-gold hover:bg-gold-deep text-night px-5 py-2.5 rounded-xl font-semibold inline-block transition">
             Choose File
             <input
               type="file"
@@ -53,10 +53,10 @@ export default function FinancePage() {
               {uploadedFiles.map((file, index) => (
                 <li
                   key={index}
-                  className="flex items-center justify-between bg-gray-100 p-3 rounded-lg"
+                  className="flex items-center justify-between bg-surface2 p-3 rounded-lg"
                 >
-                  <span className="flex items-center gap-2 text-gray-800 font-medium">
-                    <FileText className="w-5 h-5 text-yellow-500" />
+                  <span className="flex items-center gap-2 text-gray-100 font-medium">
+                    <FileText className="w-5 h-5 text-gold" />
                     {file.name}
                   </span>
                   <button
@@ -72,13 +72,13 @@ export default function FinancePage() {
         </div>
 
         {/* Resource Links */}
-        <ul className="text-left space-y-6 text-gray-800 max-w-3xl mx-auto">
+        <ul className="text-left space-y-6 text-gray-100 max-w-3xl mx-auto">
           <li>
             <Link
               href="/resources/finance/risk-return"
-              className="flex items-center gap-2 hover:text-yellow-600 font-semibold transition"
+              className="flex items-center gap-2 hover:text-gold font-semibold transition"
             >
-              <TrendingUp className="w-5 h-5 text-yellow-500" />
+              <TrendingUp className="w-5 h-5 text-gold" />
               Understanding Risk and Return
             </Link>
           </li>
@@ -86,9 +86,9 @@ export default function FinancePage() {
           <li>
             <Link
               href="/resources/finance/valuation"
-              className="flex items-center gap-2 hover:text-yellow-600 font-semibold transition"
+              className="flex items-center gap-2 hover:text-gold font-semibold transition"
             >
-              <BookOpen className="w-5 h-5 text-yellow-500" />
+              <BookOpen className="w-5 h-5 text-gold" />
               Valuation Models: DCF, Multiples, and Intrinsic Value
             </Link>
           </li>
@@ -96,9 +96,9 @@ export default function FinancePage() {
           <li>
             <Link
               href="/resources/finance/behavioral"
-              className="flex items-center gap-2 hover:text-yellow-600 font-semibold transition"
+              className="flex items-center gap-2 hover:text-gold font-semibold transition"
             >
-              <Brain className="w-5 h-5 text-yellow-500" />
+              <Brain className="w-5 h-5 text-gold" />
               Market Psychology and Behavioral Finance
             </Link>
           </li>
@@ -106,9 +106,9 @@ export default function FinancePage() {
           <li>
             <Link
               href="/resources/finance/portfolio"
-              className="flex items-center gap-2 hover:text-yellow-600 font-semibold transition"
+              className="flex items-center gap-2 hover:text-gold font-semibold transition"
             >
-              <FileText className="w-5 h-5 text-yellow-500" />
+              <FileText className="w-5 h-5 text-gold" />
               Building a Diversified Portfolio
             </Link>
           </li>
@@ -118,7 +118,7 @@ export default function FinancePage() {
         <div className="mt-12">
           <Link
             href="/resources"
-            className="inline-block bg-gray-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-800 transition"
+            className="inline-block bg-white/10 text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/10 transition"
           >
             ← Back to Resources
           </Link>

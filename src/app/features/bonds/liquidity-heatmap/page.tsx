@@ -58,7 +58,7 @@ export default function LiquidityHeatmap() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#fffcee] text-[#111] px-6 md:px-14 py-28">
+    <main className="min-h-screen bg-night text-[#111] px-6 md:px-14 py-14">
       {/* Back Button */}
       <div className="flex justify-start mb-6">
         <Link
@@ -72,10 +72,10 @@ export default function LiquidityHeatmap() {
 
       {/* Title */}
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-extrabold text-[#111]">
+        <h1 className="text-4xl text-[#111] font-display font-normal tracking-tight md:text-5xl">
           Liquidity Heatmap
         </h1>
-        <p className="text-lg text-gray-600 mt-3">
+        <p className="text-lg text-gray-400 mt-3">
           Identify pockets of liquidity, turnover, and dealer depth across bond
           universes.
         </p>
@@ -83,23 +83,23 @@ export default function LiquidityHeatmap() {
 
       {/* Feature Cards */}
       <div className="grid md:grid-cols-3 gap-6 mb-10">
-        <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-lg mb-2 text-[#111]">Dealer Axes</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-gray-400 text-sm leading-relaxed">
             Visualizes dealer positioning and bid/ask liquidity concentration
             across major regions.
           </p>
         </div>
-        <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-lg mb-2 text-[#111]">TRACE Heatmap</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-gray-400 text-sm leading-relaxed">
             Uses transaction-level TRACE data to estimate turnover intensity and
             execution speed.
           </p>
         </div>
-        <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-lg mb-2 text-[#111]">Ladder Export</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-gray-400 text-sm leading-relaxed">
             Generate exportable liquidity ladders to optimize duration, depth,
             and pricing visibility.
           </p>
@@ -120,7 +120,7 @@ export default function LiquidityHeatmap() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-md">
+      <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-md">
         {loading ? (
           <p className="text-center text-gray-500">Loading liquidity data...</p>
         ) : data.length > 0 ? (
@@ -145,7 +145,7 @@ export default function LiquidityHeatmap() {
               />
               <Tooltip
                 contentStyle={{
-                  background: "#fff",
+                  background: "#161410",
                   borderRadius: "10px",
                   border: "1px solid #f9d949",
                 }}

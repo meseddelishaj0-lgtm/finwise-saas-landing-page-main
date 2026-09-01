@@ -46,7 +46,7 @@ export default function CreditRiskInsights() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#fffcee] text-[#111] px-6 md:px-14 py-28">
+    <main className="min-h-screen bg-night text-[#111] px-6 md:px-14 py-14">
       {/* Back Button */}
       <div className="flex justify-start mb-6">
         <Link
@@ -60,33 +60,33 @@ export default function CreditRiskInsights() {
 
       {/* Title */}
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-extrabold text-[#111]">
+        <h1 className="text-4xl text-[#111] font-display font-normal tracking-tight md:text-5xl">
           Credit Risk Insights
         </h1>
-        <p className="text-lg text-gray-600 mt-3">
+        <p className="text-lg text-gray-400 mt-3">
           AI-based credit scoring blending ratings, spreads, and sentiment for forward risk.
         </p>
       </div>
 
       {/* Feature Cards */}
       <div className="grid md:grid-cols-3 gap-6 mb-10">
-        <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-lg mb-2 text-[#111]">Issuer Trend</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-gray-400 text-sm leading-relaxed">
             Tracks credit quality movement for corporate and sovereign issuers
             using rating transitions and yield spreads.
           </p>
         </div>
-        <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-lg mb-2 text-[#111]">Sector Model</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-gray-400 text-sm leading-relaxed">
             Identifies sector-level credit risks and default probabilities
             based on debt metrics and market sentiment.
           </p>
         </div>
-        <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-sm">
+        <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
           <h3 className="font-bold text-lg mb-2 text-[#111]">Macro Stress</h3>
-          <p className="text-gray-600 text-sm leading-relaxed">
+          <p className="text-gray-400 text-sm leading-relaxed">
             Measures credit spread sensitivity to macroeconomic shocks like
             inflation, growth slowdown, or rate hikes.
           </p>
@@ -107,7 +107,7 @@ export default function CreditRiskInsights() {
       </div>
 
       {/* Bar Chart */}
-      <div className="bg-white border border-yellow-200 rounded-2xl p-6 shadow-md">
+      <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-md">
         {loading ? (
           <p className="text-center text-gray-500">Loading credit risk data...</p>
         ) : data.length > 0 ? (
@@ -121,7 +121,7 @@ export default function CreditRiskInsights() {
               />
               <Tooltip
                 contentStyle={{
-                  background: "#fff",
+                  background: "#161410",
                   borderRadius: "10px",
                   border: "1px solid #f9d949",
                 }}

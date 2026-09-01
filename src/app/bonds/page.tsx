@@ -43,27 +43,27 @@ export default function BondsPage() {
   const renderCard = (label: string, value: number | undefined) => (
     <motion.div
       whileHover={{ scale: 1.05 }}
-      className="border border-gray-200 bg-gray-50 rounded-xl p-6 shadow-sm text-center"
+      className="border border-white/10 bg-surface2 rounded-xl p-6 shadow-sm text-center"
     >
-      <h2 className="text-lg font-semibold mb-1 text-gray-800">{label}</h2>
-      <p className="text-3xl font-bold text-yellow-500">
+      <h2 className="text-lg font-semibold mb-1 text-gray-100">{label}</h2>
+      <p className="text-3xl font-bold text-gold">
         {value ? `${value.toFixed(2)}%` : "—"}
       </p>
     </motion.div>
   );
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center py-24 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
       <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-4xl font-bold mb-6 text-center"
+        className="text-4xl mb-6 text-center font-display font-normal tracking-tight md:text-5xl"
       >
         U.S. Treasury Yield Curve
       </motion.h1>
 
-      <p className="text-gray-600 mb-8 text-center max-w-2xl">
+      <p className="text-gray-400 mb-8 text-center max-w-2xl">
         Live Treasury rates across short and long-term maturities, updated daily from WallStreetStocks.ai
       </p>
 

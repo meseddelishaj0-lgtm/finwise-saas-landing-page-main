@@ -29,7 +29,7 @@ export default function GlobalBondsDashboardPage() {
   const [lastUpdated, setLastUpdated] = useState("");
   const prevData = useRef<Record<string, number>>({});
 
-  // ✅ Fetch live bonds directly from FMP
+  // Fetch live bonds directly from FMP
   const fetchBondData = async () => {
     setLoading(true);
     try {
@@ -65,14 +65,14 @@ export default function GlobalBondsDashboardPage() {
     }
   };
 
-  // ✅ Auto-refresh every 60s
+  // Auto-refresh every 60s
   useEffect(() => {
     fetchBondData();
     const interval = setInterval(fetchBondData, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // ✅ Search
+  // Search
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = query.toLowerCase();
@@ -85,7 +85,7 @@ export default function GlobalBondsDashboardPage() {
     setFiltered(results);
   };
 
-  // ✅ Compare changes between refreshes
+  // Compare changes between refreshes
   const getDirection = (symbol: string, current: number | null) => {
     if (current === null) return null;
     const prev = prevData.current[symbol];
@@ -101,20 +101,20 @@ export default function GlobalBondsDashboardPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Globe2 className="w-6 h-6 text-yellow-500" />
-          <h1 className="text-3xl font-bold text-gray-900">
+          <Globe2 className="w-6 h-6 text-gold" />
+          <h1 className="text-3xl text-ivory font-display font-normal tracking-tight md:text-4xl">
             Global Bonds Dashboard
           </h1>
         </div>
         <button
           onClick={fetchBondData}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-yellow-600 transition"
+          className="flex items-center gap-2 text-sm text-gray-400 hover:text-gold transition"
         >
           <RefreshCw className="w-4 h-4" /> Refresh
         </button>
       </div>
 
-      <p className="text-gray-600 mb-8">
+      <p className="text-gray-400 mb-8">
         Track global yields, coupons, and price changes — updated every minute
         with live data and AI-driven insights.
       </p>
@@ -122,18 +122,18 @@ export default function GlobalBondsDashboardPage() {
       {/* Search */}
       <form
         onSubmit={handleSearch}
-        className="flex items-center gap-2 mb-8 bg-white shadow rounded-full border border-gray-200 p-2"
+        className="flex items-center gap-2 mb-8 bg-surface shadow rounded-full border border-white/10 p-2"
       >
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search Global Bonds (e.g. US10Y, Germany)"
-          className="flex-1 px-4 py-2 rounded-full outline-none text-gray-700"
+          className="flex-1 px-4 py-2 rounded-full outline-none text-gray-300"
         />
         <button
           type="submit"
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-4 py-2 rounded-full transition"
+          className="bg-yellow-400 hover:bg-gold text-black font-semibold px-4 py-2 rounded-full transition"
         >
           <Search className="w-4 h-4" />
         </button>
@@ -143,9 +143,9 @@ export default function GlobalBondsDashboardPage() {
       {loading ? (
         <p>Loading bond data...</p>
       ) : (
-        <div className="overflow-x-auto bg-white rounded-2xl shadow border border-gray-100">
+        <div className="overflow-x-auto bg-surface rounded-2xl shadow border border-white/10">
           <table className="min-w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-700 border-b">
+            <thead className="bg-surface2 text-gray-300 border-b">
               <tr>
                 <th className="py-3 px-4">Country</th>
                 <th className="py-3 px-4">Symbol</th>
@@ -164,7 +164,7 @@ export default function GlobalBondsDashboardPage() {
                 const yieldDir = getDirection(`${b.symbol}-yield`, b.yield);
                 const priceDir = getDirection(`${b.symbol}-price`, b.price);
                 return (
-                  <tr key={i} className="border-t hover:bg-yellow-50 transition">
+                  <tr key={i} className="border-t hover:bg-gold/10 transition">
                     <td className="py-3 px-4">{b.country}</td>
                     <td className="py-3 px-4 font-medium">{b.symbol}</td>
                     <td className="py-3 px-4">{b.name}</td>
@@ -173,8 +173,8 @@ export default function GlobalBondsDashboardPage() {
                     {/* Yield */}
                     <td
                       className={`py-3 px-4 text-right ${
-                        b.changePct < 0 ? "text-red-600" : "text-green-600"
-                      }`}
+ b.changePct < 0 ? "text-red-400" : "text-green-400"
+ }`}
                     >
                       {b.yield ? `${b.yield.toFixed(3)}%` : "—"}
                       {yieldDir === "up" && (
@@ -191,8 +191,8 @@ export default function GlobalBondsDashboardPage() {
                     {/* Price */}
                     <td
                       className={`py-3 px-4 text-right ${
-                        b.change < 0 ? "text-red-600" : "text-green-600"
-                      }`}
+ b.change < 0 ? "text-red-400" : "text-green-400"
+ }`}
                     >
                       {b.price ? b.price.toFixed(3) : "—"}
                       {priceDir === "up" && (
@@ -205,15 +205,15 @@ export default function GlobalBondsDashboardPage() {
 
                     <td
                       className={`py-3 px-4 text-right ${
-                        b.changePct < 0 ? "text-red-600" : "text-green-600"
-                      }`}
+ b.changePct < 0 ? "text-red-400" : "text-green-400"
+ }`}
                     >
                       {b.changePct.toFixed(2)}%
                     </td>
                     <td
                       className={`py-3 px-4 text-right ${
-                        b.change < 0 ? "text-red-600" : "text-green-600"
-                      }`}
+ b.change < 0 ? "text-red-400" : "text-green-400"
+ }`}
                     >
                       {b.change.toFixed(3)}
                     </td>
@@ -227,9 +227,9 @@ export default function GlobalBondsDashboardPage() {
 
       {/* Chart */}
       {!loading && filtered.length > 0 && (
-        <div className="mt-8 bg-white rounded-3xl shadow p-6">
+        <div className="mt-8 bg-surface rounded-3xl shadow p-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-yellow-500" /> Global Yield Curve
+            <TrendingUp className="w-5 h-5 text-gold" /> Global Yield Curve
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart

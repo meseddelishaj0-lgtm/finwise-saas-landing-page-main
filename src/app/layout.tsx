@@ -70,11 +70,12 @@ export default function RootLayout({
       </head>
 
       <body
-        className={`${manrope.className} ${sourceSans.className} ${newsreader.variable} ${plexMono.variable} antialiased bg-gray-50`}
+        className={`${manrope.className} ${sourceSans.className} ${newsreader.variable} ${plexMono.variable} antialiased bg-night`}
       >
         <SessionProviderWrapper>
           <Header />
-          <main>{children}</main>
+          {/* pt-16 clears the fixed 64px header on every page */}
+          <main className="pt-16">{children}</main>
           <Footer />
         </SessionProviderWrapper>
 

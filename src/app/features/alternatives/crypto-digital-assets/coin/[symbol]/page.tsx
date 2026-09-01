@@ -130,20 +130,20 @@ export default function CryptoDetailPage() {
     );
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 px-6 pt-36 pb-20">
+    <main className="min-h-screen bg-night text-ivory px-6 pt-12 pb-20">
       <div className="max-w-6xl mx-auto">
         {/* Back buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-black"
+            className="flex items-center gap-2 text-sm text-gray-400 hover:text-ivory"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Screener
           </button>
 
           <button
             onClick={() => router.push("/features")}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-gold hover:underline"
           >
             ← Back to Features
           </button>
@@ -156,16 +156,16 @@ export default function CryptoDetailPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-6"
         >
-          <h1 className="text-4xl font-bold mb-2">{symbol} Price Chart</h1>
+          <h1 className="text-4xl mb-2 font-display font-normal tracking-tight md:text-5xl">{symbol} Price Chart</h1>
           {price && (
             <p className="text-3xl font-semibold">
               ${price.toLocaleString()}{" "}
               <span
                 className={`text-lg ml-2 ${
-                  percent && percent >= 0
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
+ percent && percent >= 0
+ ? "text-green-400"
+ : "text-red-400"
+ }`}
               >
                 {change && change.toFixed(2)} ({percent && percent.toFixed(2)}%)
               </span>
@@ -180,10 +180,10 @@ export default function CryptoDetailPage() {
               key={r}
               onClick={() => setActiveRange(r)}
               className={`px-4 py-1 rounded-full text-sm font-medium transition-all ${
-                activeRange === r
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+ activeRange === r
+ ? "bg-gold text-night shadow-sm"
+ : "bg-surface2 text-gray-300 hover:bg-white/10"
+ }`}
             >
               {r}
             </button>
@@ -191,7 +191,7 @@ export default function CryptoDetailPage() {
         </div>
 
         {/* Chart */}
-        <div className="bg-gray-50 p-6 rounded-2xl shadow-sm">
+        <div className="bg-surface2 p-6 rounded-2xl shadow-sm">
           <ResponsiveContainer width="100%" height={400}>
             <LineChart data={chartData}>
               <XAxis
@@ -209,7 +209,7 @@ export default function CryptoDetailPage() {
               />
               <Tooltip
                 contentStyle={{
-                  background: "white",
+                  background: "#161410",
                   borderRadius: "10px",
                   border: "1px solid #e5e7eb",
                 }}

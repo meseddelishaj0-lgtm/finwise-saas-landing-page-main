@@ -4,18 +4,19 @@
 
 /* === Root Theme Variables === */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0D0C09;
+  --foreground: #F2EDE3;
   --primary: #FACC15;
   --secondary: #304fff;
 
   --primary-accent: #EAB308;
-  --foreground-accent: #454545;
-  --hero-background: #F3F3F5;
+  --foreground-accent: #9CA3AF;
+  --hero-background: #0D0C09;
 }
 
 html {
   @apply scroll-smooth;
+  color-scheme: dark;
 }
 
 body {
@@ -30,6 +31,28 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/* Form controls default to the night surface so inner pages never render
+   white inputs on a dark page. Utilities on the element still win. */
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  textarea,
+  select {
+    background-color: rgba(255, 255, 255, 0.04);
+    color: #F2EDE3;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #6B7280;
+  }
+  select option {
+    background-color: #161410;
+    color: #F2EDE3;
+  }
+  hr {
+    border-color: rgba(255, 255, 255, 0.1);
   }
 }
 

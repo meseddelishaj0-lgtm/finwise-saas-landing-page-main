@@ -110,10 +110,10 @@ export default function EventsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-hero-background text-foreground py-20 px-6">
+    <main className="min-h-screen bg-night text-foreground py-14 px-6">
       <div className="max-w-5xl mx-auto">
-        <motion.h1 className="text-4xl md:text-5xl font-bold text-center mb-6">
-          🤝 Networking Events
+        <motion.h1 className="text-4xl md:text-5xl text-center mb-6 font-display font-normal tracking-tight">
+          Networking Events
         </motion.h1>
         <p className="text-center text-foreground-accent mb-8">
           Access exclusive online meetups, webinars, and collaboration sessions to expand your professional network.
@@ -134,12 +134,12 @@ function PostInput({ value, setValue, onSubmit, currentUserId }: any) {
         onChange={(e) => setValue(e.target.value)}
         placeholder={currentUserId ? "Share details about a meetup, event, or networking idea..." : "Please login to post"}
         rows={3}
-        className="w-full border border-gray-300 rounded-xl p-3 mb-3 focus:ring-2 focus:ring-primary"
+        className="w-full border border-white/10 rounded-xl p-3 mb-3 focus:ring-2 focus:ring-primary"
         disabled={!currentUserId}
       />
       <button 
         onClick={onSubmit} 
-        className={`px-6 py-2 rounded-full hover:bg-primary/90 ${currentUserId ? 'bg-primary text-white' : 'bg-gray-400 text-gray-600 cursor-not-allowed'}`}
+        className={`px-6 py-2 rounded-full hover:bg-primary/90 ${currentUserId ? 'bg-primary text-white' : 'bg-white/20 text-gray-400 cursor-not-allowed'}`}
         disabled={!currentUserId}
       >
         Post Event
@@ -187,7 +187,7 @@ function PostList({ posts, likePost, addComment }: any) {
       {posts.map((p: any) => {
         const user = userProfiles[p.userId];
         return (
-          <motion.div key={p.id} className="bg-white/90 p-5 rounded-xl shadow border border-gray-100">
+          <motion.div key={p.id} className="bg-white/90 p-5 rounded-xl shadow border border-white/10">
             <div className="flex justify-between mb-2">
               <span className="font-semibold">
                 {user ? (
@@ -203,7 +203,7 @@ function PostList({ posts, likePost, addComment }: any) {
             </div>
             <p className="mb-3">{p.content}</p>
             <button onClick={() => likePost(p.id)} className="text-primary text-sm font-semibold hover:underline">
-              👍 {p.likes} Likes
+              {p.likes} Likes
             </button>
             <div className="mt-4 border-t pt-2">
               <CommentBox onAdd={(t: string) => addComment(p.id, t)} />
@@ -235,11 +235,11 @@ function CommentBox({ onAdd }: { onAdd: (text: string) => void }) {
 
 function CommentList({ comments, userProfiles }: any) {
   return (
-    <div className="space-y-2 mt-3 pl-3 border-l border-gray-200">
+    <div className="space-y-2 mt-3 pl-3 border-l border-white/10">
       {comments.map((c: any) => {
         const user = userProfiles[c.userId];
         return (
-          <div key={c.id} className="bg-gray-50 p-2 rounded-lg">
+          <div key={c.id} className="bg-surface2 p-2 rounded-lg">
             <div className="flex justify-between items-center">
               <span className="font-medium text-sm">
                 {user ? (

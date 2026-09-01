@@ -59,7 +59,7 @@ export default function PostComposer({ user, slug }: PostComposerProps) {
       setFiles([]);
       setPreviewUrls([]);
     } catch (err) {
-      console.error("❌ Error submitting post:", err);
+      console.error("Error submitting post:", err);
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ export default function PostComposer({ user, slug }: PostComposerProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-2xl bg-[#1d1f21] border border-gray-700 rounded-2xl p-4 text-gray-200 shadow-md"
+      className="w-full max-w-2xl bg-[#1d1f21] border border-white/10 rounded-2xl p-4 text-gray-200 shadow-md"
     >
       {/* Header */}
       <div className="flex items-center mb-3">
@@ -101,7 +101,7 @@ export default function PostComposer({ user, slug }: PostComposerProps) {
               <img
                 src={url}
                 alt="Preview"
-                className="rounded-lg max-h-48 object-cover border border-gray-700"
+                className="rounded-lg max-h-48 object-cover border border-white/10"
               />
               <button
                 onClick={() => handleRemoveFile(index)}
@@ -115,7 +115,7 @@ export default function PostComposer({ user, slug }: PostComposerProps) {
       )}
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between border-t border-gray-700 pt-2">
+      <div className="flex items-center justify-between border-t border-white/10 pt-2">
         <div className="flex gap-3 text-gray-400">
           <label className="cursor-pointer">
             <input
@@ -146,10 +146,10 @@ export default function PostComposer({ user, slug }: PostComposerProps) {
             onClick={handleSubmit}
             disabled={loading}
             className={`px-4 py-1.5 text-sm font-medium rounded-full transition-all ${
-              loading
-                ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-500 text-white"
-            }`}
+ loading
+ ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+ : "bg-gold hover:bg-gold text-night"
+ }`}
           >
             {loading ? "Posting..." : "Post"}
           </button>

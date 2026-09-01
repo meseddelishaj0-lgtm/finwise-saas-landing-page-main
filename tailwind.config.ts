@@ -14,6 +14,10 @@ const config: Config = {
         // Data mono — commands, tickers, labels
         monodata: ["var(--font-mono-wss)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
+      // Hairline default so bare `border` / `divide-y` read correctly on night surfaces
+      borderColor: {
+        DEFAULT: "rgba(255, 255, 255, 0.10)",
+      },
       colors: {
         // Warm paper-white for display text on night (print voice)
         ivory: "#F2EDE3",

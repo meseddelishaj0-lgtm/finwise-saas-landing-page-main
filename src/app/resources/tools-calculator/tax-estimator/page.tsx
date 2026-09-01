@@ -155,7 +155,7 @@ export default function TaxEstimatorPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center pt-36 md:pt-44 pb-16 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center pt-12 md:pt-16 pb-16 px-6">
       {/* Header */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}
@@ -163,18 +163,18 @@ export default function TaxEstimatorPage() {
         transition={{ duration: 0.6 }}
         className="text-center max-w-2xl mb-10"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
-          🧾 Advanced Tax Estimator
+        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
+          Advanced Tax Estimator
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           Calculate your federal, state, and FICA taxes with deductions and credits
           to get a realistic picture of your net income.
         </p>
       </motion.section>
 
       {/* Calculator Form */}
-      <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-8">
-        <label className="block text-gray-800 font-semibold mb-2">
+      <div className="w-full max-w-md bg-surface2 border border-white/10 rounded-2xl shadow-md p-8">
+        <label className="block text-gray-100 font-semibold mb-2">
           Annual Income ($)
         </label>
         <input
@@ -182,26 +182,26 @@ export default function TaxEstimatorPage() {
           value={income}
           onChange={(e) => setIncome(e.target.value)}
           placeholder="e.g. 95000"
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
         />
 
-        <label className="block text-gray-800 font-semibold mb-2">
+        <label className="block text-gray-100 font-semibold mb-2">
           Filing Status
         </label>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
         >
           <option value="single">Single</option>
           <option value="married">Married Filing Jointly</option>
         </select>
 
-        <label className="block text-gray-800 font-semibold mb-2">State</label>
+        <label className="block text-gray-100 font-semibold mb-2">State</label>
         <select
           value={state}
           onChange={(e) => setState(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
         >
           {states.map((s) => (
             <option key={s.name} value={s.name.split(" ")[0]}>
@@ -219,22 +219,22 @@ export default function TaxEstimatorPage() {
             onChange={() => setAdvanced(!advanced)}
             className="mr-2 w-5 h-5"
           />
-          <label htmlFor="advanced" className="text-gray-800 font-semibold">
+          <label htmlFor="advanced" className="text-gray-100 font-semibold">
             Enable Advanced Mode
           </label>
         </div>
 
         {/* Advanced Options */}
         {advanced && (
-          <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 space-y-4">
+          <div className="bg-surface border border-white/10 rounded-xl p-4 mb-4 space-y-4">
             <div>
-              <label className="block text-gray-800 font-semibold mb-2">
+              <label className="block text-gray-100 font-semibold mb-2">
                 Deduction Type
               </label>
               <select
                 value={deduction}
                 onChange={(e) => setDeduction(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="w-full border border-white/10 rounded-lg px-4 py-3 mb-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
               >
                 <option value="standard">Standard Deduction</option>
                 <option value="itemized">Itemized Deduction</option>
@@ -246,13 +246,13 @@ export default function TaxEstimatorPage() {
                   value={itemized}
                   onChange={(e) => setItemized(e.target.value)}
                   placeholder="Enter itemized deduction amount"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  className="w-full border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
               )}
             </div>
 
             <div>
-              <label className="block text-gray-800 font-semibold mb-2">
+              <label className="block text-gray-100 font-semibold mb-2">
                 Number of Qualifying Children
               </label>
               <input
@@ -260,7 +260,7 @@ export default function TaxEstimatorPage() {
                 value={children}
                 onChange={(e) => setChildren(e.target.value)}
                 placeholder="e.g. 2"
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="w-full border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
             </div>
           </div>
@@ -269,13 +269,13 @@ export default function TaxEstimatorPage() {
         <div className="flex gap-3">
           <button
             onClick={calculateTax}
-            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 rounded-xl transition-all"
+            className="flex-1 bg-gold hover:bg-gold-deep text-black font-semibold py-3 rounded-xl transition-all"
           >
             Calculate
           </button>
           <button
             onClick={reset}
-            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-xl transition-all"
+            className="flex-1 bg-white/10 hover:bg-white/15 text-gray-100 font-semibold py-3 rounded-xl transition-all"
           >
             Reset
           </button>
@@ -288,54 +288,54 @@ export default function TaxEstimatorPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="max-w-3xl w-full mt-10 bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-6"
+          className="max-w-3xl w-full mt-10 bg-surface2 border border-white/10 rounded-2xl shadow-md p-6"
         >
-          <h2 className="text-xl font-bold mb-4 text-gray-800 text-center">
+          <h2 className="text-xl font-bold mb-4 text-gray-100 text-center">
             Tax Summary
           </h2>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
             <div>
-              <p className="text-lg font-semibold text-gray-700">Federal Tax</p>
-              <p className="text-2xl text-yellow-500 font-bold">
+              <p className="text-lg font-semibold text-gray-300">Federal Tax</p>
+              <p className="text-2xl text-gold font-bold">
                 ${result.federal.toFixed(2)}
               </p>
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-700">State Tax</p>
-              <p className="text-2xl text-yellow-500 font-bold">
+              <p className="text-lg font-semibold text-gray-300">State Tax</p>
+              <p className="text-2xl text-gold font-bold">
                 ${result.state.toFixed(2)}
               </p>
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-700">FICA</p>
-              <p className="text-2xl text-yellow-500 font-bold">
+              <p className="text-lg font-semibold text-gray-300">FICA</p>
+              <p className="text-2xl text-gold font-bold">
                 ${result.fica.toFixed(2)}
               </p>
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-700">Total Tax</p>
-              <p className="text-3xl text-yellow-600 font-bold">
+              <p className="text-lg font-semibold text-gray-300">Total Tax</p>
+              <p className="text-3xl text-gold font-bold">
                 ${result.total.toFixed(2)}
               </p>
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-700">Effective Rate</p>
-              <p className="text-3xl text-yellow-600 font-bold">
+              <p className="text-lg font-semibold text-gray-300">Effective Rate</p>
+              <p className="text-3xl text-gold font-bold">
                 {result.effectiveRate.toFixed(2)}%
               </p>
             </div>
             <div>
-              <p className="text-lg font-semibold text-gray-700">After-Tax Income</p>
-              <p className="text-3xl text-green-600 font-bold">
+              <p className="text-lg font-semibold text-gray-300">After-Tax Income</p>
+              <p className="text-3xl text-green-400 font-bold">
                 ${result.afterTax.toFixed(2)}
               </p>
             </div>
           </div>
 
           {advanced && (
-            <div className="mt-6 border-t border-gray-200 pt-4 text-center">
-              <p className="text-sm text-gray-600">
+            <div className="mt-6 border-t border-white/10 pt-4 text-center">
+              <p className="text-sm text-gray-400">
                 <strong>Deductions:</strong> ${result.deductionAmount.toLocaleString()} |{" "}
                 <strong>Credits:</strong> ${result.creditAmount.toLocaleString()}
               </p>

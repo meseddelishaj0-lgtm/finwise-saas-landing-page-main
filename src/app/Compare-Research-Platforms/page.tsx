@@ -39,7 +39,7 @@ export default function CompareResearchPlatformsPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center py-24 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
       {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}
@@ -47,10 +47,10 @@ export default function CompareResearchPlatformsPage() {
         transition={{ duration: 0.6 }}
         className="max-w-4xl text-center mb-12"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
+        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
           Compare Research Platforms
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           Evaluate different research & analytics platforms side-by-side to find the best fit for your investing or advisory workflow.
         </p>
       </motion.section>
@@ -66,13 +66,13 @@ export default function CompareResearchPlatformsPage() {
             <motion.div
               key={idx}
               whileHover={{ scale: 1.02 }}
-              className="bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-6"
+              className="bg-surface2 border border-white/10 rounded-2xl shadow-md p-6"
             >
-              <h3 className="text-2xl font-semibold mb-2 text-gray-800">{p.name}</h3>
+              <h3 className="text-2xl font-semibold mb-2 text-gray-100">{p.name}</h3>
               <p className="text-sm text-gray-500 mb-4">Pricing: {p.pricing}</p>
-              <p className="text-gray-700 mb-3"><strong>Best for:</strong> {p.bestFor}</p>
+              <p className="text-gray-300 mb-3"><strong>Best for:</strong> {p.bestFor}</p>
               <div className="mb-3"><strong>Key Features:</strong></div>
-              <ul className="list-disc list-inside text-gray-700 mb-3">
+              <ul className="list-disc list-inside text-gray-300 mb-3">
                 {p.features.map((f, i) => (
                   <li key={i}>{f}</li>
                 ))}
@@ -81,7 +81,7 @@ export default function CompareResearchPlatformsPage() {
               <div className="mb-2"><strong>Cons:</strong> {p.cons}</div>
               <Link
                 href="/register"
-                className="inline-block mt-4 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-5 py-3 rounded-xl transition-all"
+                className="inline-block mt-4 bg-gold hover:bg-gold-deep text-black font-semibold px-5 py-3 rounded-xl transition-all"
               >
                 Get Started
               </Link>
@@ -92,15 +92,15 @@ export default function CompareResearchPlatformsPage() {
 
       {/* CTA Section */}
       <div className="text-center">
-        <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+        <h3 className="text-2xl font-semibold mb-3 text-ivory">
           Ready to Gain an Edge?
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-400 mb-6">
           Join WallStreetStocks to access exclusive comparisons, expert reviews, and AI-driven research tools tailored for serious investors.
         </p>
         <Link
           href="/register"
-          className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-xl transition-all"
+          className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
         >
           Join Now
         </Link>

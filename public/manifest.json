@@ -1,0 +1,12 @@
+{
+  "name": "WallStreetStocks.ai",
+  "short_name": "WallStreetStocks",
+  "description": "AI-powered market research, live data, and a pro-grade terminal for every investor.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0C09",
+  "theme_color": "#0D0C09",
+  "icons": [
+    { "src": "/images/wallstreetstocks.png", "sizes": "any", "type": "image/png" }
+  ]
+}

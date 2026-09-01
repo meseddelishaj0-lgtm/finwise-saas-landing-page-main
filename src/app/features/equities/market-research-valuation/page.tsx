@@ -65,7 +65,7 @@ export default function MarketScreenerPage() {
     }
   };
 
-  // 🟢 TradingView Widget Loader
+  // TradingView Widget Loader
   const loadTradingView = (symbol: string) => {
     const existing = document.getElementById("tv-widget");
     if (existing) existing.remove();
@@ -102,12 +102,12 @@ export default function MarketScreenerPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 px-6 pt-28 pb-20">
+    <main className="min-h-screen bg-night text-ivory px-6 pt-10 pb-20">
       <div className="max-w-7xl mx-auto">
         {/* Back Button */}
         <button
           onClick={() => router.push("/features")}
-          className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black font-medium px-4 py-2 rounded-full mb-8 transition-all shadow-sm"
+          className="flex items-center gap-2 bg-yellow-400 hover:bg-gold text-black font-medium px-4 py-2 rounded-full mb-8 transition-all shadow-sm"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Features
         </button>
@@ -119,8 +119,8 @@ export default function MarketScreenerPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-8"
         >
-          <h1 className="text-4xl font-bold mb-2">All US Stocks</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h1 className="text-4xl mb-2 font-display font-normal tracking-tight md:text-5xl">All US Stocks</h1>
+          <p className="text-gray-400 max-w-2xl mx-auto">
             Explore the full U.S. stock market — prices, volumes, and live charts.
           </p>
           {lastUpdated && (
@@ -138,24 +138,24 @@ export default function MarketScreenerPage() {
             placeholder="Search by symbol or company name"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full focus:ring-2 focus:ring-yellow-400 outline-none text-gray-700"
+            className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-full focus:ring-2 focus:ring-yellow-400 outline-none text-gray-300"
           />
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-x-auto">
+        <div className="bg-surface border border-white/10 rounded-2xl shadow-sm overflow-x-auto">
           {loading ? (
             <p className="text-center text-gray-500 py-10">Loading stock data...</p>
           ) : error ? (
             <p className="text-center text-red-500 py-10">{error}</p>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-white/10 text-sm">
+              <thead className="bg-surface2">
                 <tr>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                  <th className="px-6 py-3 text-left font-semibold text-gray-300">
                     Symbol
                   </th>
-                  <th className="px-6 py-3 text-left font-semibold text-gray-700">
+                  <th className="px-6 py-3 text-left font-semibold text-gray-300">
                     Company
                   </th>
                   {[
@@ -168,14 +168,14 @@ export default function MarketScreenerPage() {
                     <th
                       key={key}
                       onClick={() => handleSort(key as SortKey)}
-                      className="px-6 py-3 text-right font-semibold text-gray-700 cursor-pointer select-none"
+                      className="px-6 py-3 text-right font-semibold text-gray-300 cursor-pointer select-none"
                     >
                       <div className="flex items-center justify-end gap-1">
                         {label}
                         <ArrowUpDown
                           className={`w-3 h-3 ${
-                            sortKey === key ? "text-yellow-500" : "text-gray-400"
-                          }`}
+ sortKey === key ? "text-gold" : "text-gray-400"
+ }`}
                         />
                       </div>
                     </th>
@@ -183,17 +183,17 @@ export default function MarketScreenerPage() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-white/10">
                 {filteredData.map((d: any, idx) => (
                   <tr
                     key={idx}
                     onClick={() => openChart(d.symbol)}
-                    className="hover:bg-yellow-50 transition-colors cursor-pointer"
+                    className="hover:bg-gold/10 transition-colors cursor-pointer"
                   >
-                    <td className="px-6 py-3 font-medium text-gray-800">
+                    <td className="px-6 py-3 font-medium text-gray-100">
                       {d.symbol}
                     </td>
-                    <td className="px-6 py-3 text-gray-600">
+                    <td className="px-6 py-3 text-gray-400">
                       {d.companyName}
                     </td>
                     <td className="px-6 py-3 text-right font-semibold">
@@ -201,22 +201,22 @@ export default function MarketScreenerPage() {
                     </td>
                     <td
                       className={`px-6 py-3 text-right font-semibold ${
-                        d.changesPercentage >= 0
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
+ d.changesPercentage >= 0
+ ? "text-green-400"
+ : "text-red-400"
+ }`}
                     >
                       {Number(d.changesPercentage || 0).toFixed(2)}%
                     </td>
-                    <td className="px-6 py-3 text-right text-gray-700">
+                    <td className="px-6 py-3 text-right text-gray-300">
                       {d.volume ? d.volume.toLocaleString() : "—"}
                     </td>
-                    <td className="px-6 py-3 text-right text-gray-700">
+                    <td className="px-6 py-3 text-right text-gray-300">
                       {d.marketCap
                         ? (d.marketCap / 1e9).toFixed(2) + "B"
                         : "—"}
                     </td>
-                    <td className="px-6 py-3 text-right text-gray-600">
+                    <td className="px-6 py-3 text-right text-gray-400">
                       {d.sector || "—"}
                     </td>
                   </tr>
@@ -229,10 +229,10 @@ export default function MarketScreenerPage() {
         {/* Chart Modal */}
         {selectedTicker && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl shadow-xl w-[90%] max-w-5xl p-4 relative">
+            <div className="bg-surface rounded-2xl shadow-xl w-[90%] max-w-5xl p-4 relative">
               <button
                 onClick={closeChart}
-                className="absolute top-3 right-3 text-gray-600 hover:text-black"
+                className="absolute top-3 right-3 text-gray-400 hover:text-ivory"
               >
                 <X className="w-6 h-6" />
               </button>

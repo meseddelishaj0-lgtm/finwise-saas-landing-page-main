@@ -38,17 +38,17 @@ export default function AIStockPicksPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-yellow-50 pt-28 pb-10 px-6 flex flex-col items-center">
+    <main className="min-h-screen pt-10 pb-10 px-6 flex flex-col items-center bg-night">
       {/* Title */}
       <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3 flex items-center gap-2"
+        className="text-3xl md:text-4xl text-ivory mb-3 flex items-center gap-2 font-display font-normal tracking-tight"
       >
         <Brain className="text-yellow-400" /> AI-Powered Stock Picks
       </motion.h1>
-      <p className="text-gray-600 mb-8 text-center max-w-2xl">
+      <p className="text-gray-400 mb-8 text-center max-w-2xl">
         Discover curated AI-driven stock recommendations for Growth, Value, and
         Momentum strategies — updated in real time.
       </p>
@@ -60,10 +60,10 @@ export default function AIStockPicksPage() {
             key={t}
             onClick={() => setTheme(t)}
             className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-              theme === t
-                ? "bg-yellow-400 text-black shadow-md"
-                : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-100"
-            }`}
+ theme === t
+ ? "bg-yellow-400 text-black shadow-md"
+ : "bg-surface border border-white/10 text-gray-300 hover:bg-surface2"
+ }`}
           >
             {t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
@@ -77,11 +77,11 @@ export default function AIStockPicksPage() {
           placeholder="Optional: Sector (e.g., Technology, Energy)"
           value={sector}
           onChange={(e) => setSector(e.target.value)}
-          className="border border-gray-300 rounded-full px-4 py-2 w-full md:w-80 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="border border-white/10 rounded-full px-4 py-2 w-full md:w-80 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
         />
         <button
           onClick={fetchPicks}
-          className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-yellow-500 shadow-md flex items-center gap-2 transition-all"
+          className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-gold shadow-md flex items-center gap-2 transition-all"
         >
           <RefreshCcw size={16} /> Generate Picks
         </button>
@@ -89,14 +89,14 @@ export default function AIStockPicksPage() {
 
       {/* Search */}
       {picks.length > 0 && (
-        <div className="flex items-center bg-white shadow-sm rounded-full border border-gray-200 px-4 py-2 w-full md:w-96 mb-8">
+        <div className="flex items-center bg-surface shadow-sm rounded-full border border-white/10 px-4 py-2 w-full md:w-96 mb-8">
           <Search className="text-gray-400 mr-2" />
           <input
             type="text"
             placeholder="Filter by company or symbol..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-grow outline-none text-sm text-gray-700"
+            className="flex-grow outline-none text-sm text-gray-300"
           />
         </div>
       )}
@@ -123,25 +123,25 @@ export default function AIStockPicksPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="bg-white border border-gray-200 rounded-2xl shadow-md p-5 hover:shadow-lg transition-all"
+                  className="bg-surface border border-white/10 rounded-2xl shadow-md p-5 hover:shadow-lg transition-all"
                 >
                   <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xl font-bold text-gray-900">{p.symbol}</h3>
+                    <h3 className="text-xl font-bold text-ivory">{p.symbol}</h3>
                     <span
                       className={`px-3 py-1 text-xs rounded-full font-semibold ${
-                        p.sentiment.toLowerCase() === "bullish"
-                          ? "bg-green-100 text-green-700"
-                          : p.sentiment.toLowerCase() === "bearish"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
+ p.sentiment.toLowerCase() === "bullish"
+ ? "bg-green-400/15 text-green-400"
+ : p.sentiment.toLowerCase() === "bearish"
+ ? "bg-red-400/15 text-red-400"
+ : "bg-surface2 text-gray-300"
+ }`}
                     >
                       {p.sentiment}
                     </span>
                   </div>
-                  <p className="text-gray-700 font-semibold mb-1">{p.name}</p>
+                  <p className="text-gray-300 font-semibold mb-1">{p.name}</p>
                   <p className="text-gray-500 text-sm mb-3">Sector: {p.sector}</p>
-                  <p className="text-gray-600 text-sm leading-relaxed">{p.rationale}</p>
+                  <p className="text-gray-400 text-sm leading-relaxed">{p.rationale}</p>
                 </motion.div>
               ))}
           </div>

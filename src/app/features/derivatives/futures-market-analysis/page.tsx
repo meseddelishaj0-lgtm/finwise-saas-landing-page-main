@@ -25,7 +25,7 @@ export default function FuturesMarketAnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Fetch all futures data from FMP Ultimate
+  // Fetch all futures data from FMP Ultimate
   const fetchFuturesData = async () => {
     try {
       setLoading(true);
@@ -46,7 +46,7 @@ export default function FuturesMarketAnalysisPage() {
     }
   };
 
-  // ✅ Filter function
+  // Filter function
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim() === "") {
@@ -62,7 +62,7 @@ export default function FuturesMarketAnalysisPage() {
     setFiltered(results);
   };
 
-  // ✅ Auto-refresh
+  // Auto-refresh
   useEffect(() => {
     fetchFuturesData();
     const interval = setInterval(fetchFuturesData, 60000);
@@ -71,40 +71,40 @@ export default function FuturesMarketAnalysisPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
-      {/* 🔙 Back Button */}
+      {/* Back Button */}
       <div className="mb-4">
         <Link
           href="/features"
-          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-yellow-600 transition"
+          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gold transition"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Features
         </Link>
       </div>
 
-      {/* 🔰 Title */}
+      {/* Title */}
       <div className="flex items-center gap-3 mb-3">
-        <BarChart3 className="w-6 h-6 text-yellow-500" />
-        <h1 className="text-3xl font-bold text-gray-900">Futures Market Analysis</h1>
+        <BarChart3 className="w-6 h-6 text-gold" />
+        <h1 className="text-3xl text-ivory font-display font-normal tracking-tight md:text-4xl">Futures Market Analysis</h1>
       </div>
-      <p className="text-gray-600 mb-8 text-base">
+      <p className="text-gray-400 mb-8 text-base">
         Search and analyze real-time futures contracts with AI-generated insights powered by WallStreetStocks.ai.
       </p>
 
-      {/* 🔍 Search Bar */}
+      {/* Search Bar */}
       <form
         onSubmit={handleSearch}
-        className="flex items-center gap-2 mb-8 bg-white shadow rounded-full border border-gray-200 p-2"
+        className="flex items-center gap-2 mb-8 bg-surface shadow rounded-full border border-white/10 p-2"
       >
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search futures (e.g. Gold, Crude Oil, 10Y Yield)"
-          className="flex-1 px-4 py-2 rounded-full outline-none text-gray-700"
+          className="flex-1 px-4 py-2 rounded-full outline-none text-gray-300"
         />
         <button
           type="submit"
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-4 py-2 rounded-full transition"
+          className="bg-yellow-400 hover:bg-gold text-black font-semibold px-4 py-2 rounded-full transition"
         >
           <Search className="w-4 h-4" />
         </button>
@@ -113,11 +113,11 @@ export default function FuturesMarketAnalysisPage() {
       {loading && <p>Loading futures data...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* 📊 Table */}
+      {/* Table */}
       {!loading && !error && filtered.length > 0 && (
-        <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="overflow-x-auto bg-surface rounded-2xl shadow-sm border border-white/10">
           <table className="min-w-full text-sm text-left">
-            <thead className="bg-gray-50 text-gray-700 border-b">
+            <thead className="bg-surface2 text-gray-300 border-b">
               <tr>
                 <th className="py-3 px-4">Symbol</th>
                 <th className="py-3 px-4">Name</th>
@@ -132,9 +132,9 @@ export default function FuturesMarketAnalysisPage() {
               {filtered.map((item, idx) => (
                 <tr
                   key={idx}
-                  className="border-t hover:bg-yellow-50 transition-colors"
+                  className="border-t hover:bg-gold/10 transition-colors"
                 >
-                  <td className="py-3 px-4 font-medium text-gray-800">
+                  <td className="py-3 px-4 font-medium text-gray-100">
                     {item.symbol}
                   </td>
                   <td className="py-3 px-4">{item.name}</td>
@@ -143,23 +143,23 @@ export default function FuturesMarketAnalysisPage() {
                   </td>
                   <td
                     className={`py-3 px-4 text-right ${
-                      item.change > 0
-                        ? "text-green-600"
-                        : item.change < 0
-                        ? "text-red-600"
-                        : "text-gray-700"
-                    }`}
+ item.change > 0
+ ? "text-green-400"
+ : item.change < 0
+ ? "text-red-400"
+ : "text-gray-300"
+ }`}
                   >
                     {item.change?.toFixed(2)}
                   </td>
                   <td
                     className={`py-3 px-4 text-right ${
-                      item.changesPercentage > 0
-                        ? "text-green-600"
-                        : item.changesPercentage < 0
-                        ? "text-red-600"
-                        : "text-gray-700"
-                    }`}
+ item.changesPercentage > 0
+ ? "text-green-400"
+ : item.changesPercentage < 0
+ ? "text-red-400"
+ : "text-gray-300"
+ }`}
                   >
                     {item.changesPercentage?.toFixed(2)}%
                   </td>
@@ -176,11 +176,11 @@ export default function FuturesMarketAnalysisPage() {
         </div>
       )}
 
-      {/* 📈 Optional Mini Chart */}
+      {/* Optional Mini Chart */}
       {!loading && filtered.length > 0 && (
-        <div className="mt-8 bg-white rounded-3xl shadow p-6">
+        <div className="mt-8 bg-surface rounded-3xl shadow p-6">
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-yellow-500" /> Sample Trend (First 5 Contracts)
+            <TrendingUp className="w-5 h-5 text-gold" /> Sample Trend (First 5 Contracts)
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart
@@ -206,7 +206,7 @@ export default function FuturesMarketAnalysisPage() {
 
       {/* AI commentary removed — needs a server route */}
 
-      {/* ⚠️ Disclaimer */}
+      {/* Disclaimer */}
       <div className="mt-10 text-xs text-gray-500 leading-relaxed">
         <p>
           <strong>Disclaimer:</strong> WallStreetStocks.ai provides financial

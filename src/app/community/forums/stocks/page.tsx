@@ -43,17 +43,17 @@ export default function StocksCommunityPage() {
   const [replyInputs, setReplyInputs] = useState<Record<number, string>>({});
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
 
-  // ❤️ Likes
+  // Likes
   const [likes, setLikes] = useState<Record<number, number>>({});
   const [userLiked, setUserLiked] = useState<Record<number, boolean>>({});
 
-  // 🔥 Reactions (for posts + comments)
+  // Reactions (for posts + comments)
   const [reactions, setReactions] = useState<
     Record<string, { [emoji: string]: number }>
   >({});
   const [userReactions, setUserReactions] = useState<Record<string, string[]>>({});
 
-  // 🟢 Fetch posts
+  // Fetch posts
   const fetchPosts = async () => {
     setLoading(true);
     try {
@@ -91,7 +91,7 @@ export default function StocksCommunityPage() {
       setReactions(reactionsData);
       setUserReactions(userReactionData);
     } catch (err) {
-      console.error("❌ Failed to fetch posts:", err);
+      console.error("Failed to fetch posts:", err);
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ export default function StocksCommunityPage() {
     fetchPosts();
   }, []);
 
-  // ❤️ Like toggle
+  // Like toggle
   const handleLikeToggle = async (postId: number) => {
     try {
       const res = await fetch("/api/likes", {
@@ -123,11 +123,11 @@ export default function StocksCommunityPage() {
         [postId]: (prev[postId] || 0) + (data.liked ? 1 : -1),
       }));
     } catch (err) {
-      console.error("❌ Error liking post:", err);
+      console.error("Error liking post:", err);
     }
   };
 
-  // ⚡ Reaction toggle (optimistic)
+  // Reaction toggle (optimistic)
   const handleReactionToggle = async (
     type: "post" | "comment",
     id: number,
@@ -164,13 +164,13 @@ export default function StocksCommunityPage() {
         }),
       });
     } catch (err) {
-      console.error("❌ Reaction error:", err);
+      console.error("Reaction error:", err);
       setReactions((prev) => ({ ...prev, [key]: prevReactions }));
       setUserReactions((prev) => ({ ...prev, [key]: prevUser }));
     }
   };
 
-  // 🟢 Create post
+  // Create post
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.title || !newPost.content) return;
@@ -190,13 +190,13 @@ export default function StocksCommunityPage() {
         alert(errorData.error || "Failed to create post");
       }
     } catch (err) {
-      console.error("❌ Error creating post:", err);
+      console.error("Error creating post:", err);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // 🟢 Delete post
+  // Delete post
   const handleDeletePost = async (id: number) => {
     if (!confirm("Delete this post?")) return;
     try {
@@ -206,25 +206,25 @@ export default function StocksCommunityPage() {
       });
       if (res.ok) setPosts((prev) => prev.filter((p) => p.id !== id));
     } catch (err) {
-      console.error("❌ Error deleting post:", err);
+      console.error("Error deleting post:", err);
     }
   };
 
-  // 🟢 Toggle comments
+  // Toggle comments
   const toggleComments = async (postId: number) => {
     if (expandedPostId === postId) return setExpandedPostId(null);
     setExpandedPostId(postId);
     await fetchComments(postId);
   };
 
-  // 🟢 Fetch comments
+  // Fetch comments
   const fetchComments = async (postId: number) => {
     try {
       const res = await fetch(`/api/comments?postId=${postId}`);
       const data = await res.json();
       setComments((prev) => ({ ...prev, [postId]: data }));
 
-      // 🔥 Fetch reactions for comments
+      // Fetch reactions for comments
       const reactionData: Record<string, { [emoji: string]: number }> = {};
       const userReactData: Record<string, string[]> = {};
 
@@ -244,11 +244,11 @@ export default function StocksCommunityPage() {
       setReactions((prev) => ({ ...prev, ...reactionData }));
       setUserReactions((prev) => ({ ...prev, ...userReactData }));
     } catch (err) {
-      console.error("❌ Failed to fetch comments:", err);
+      console.error("Failed to fetch comments:", err);
     }
   };
 
-  // 🟢 Create comment
+  // Create comment
   const handleCommentSubmit = async (postId: number) => {
     const content = newComments[postId];
     if (!content) return;
@@ -263,13 +263,13 @@ export default function StocksCommunityPage() {
       setNewComments((prev) => ({ ...prev, [postId]: "" }));
       fetchComments(postId);
     } catch (err) {
-      console.error("❌ Error posting comment:", err);
+      console.error("Error posting comment:", err);
     } finally {
       setCommentSubmitting(null);
     }
   };
 
-  // 🟢 Reply to a comment
+  // Reply to a comment
   const handleReplySubmit = async (postId: number, parentId: number) => {
     const replyContent = replyInputs[parentId];
     if (!replyContent) return;
@@ -288,11 +288,11 @@ export default function StocksCommunityPage() {
       setReplyingTo(null);
       fetchComments(postId);
     } catch (err) {
-      console.error("❌ Error posting reply:", err);
+      console.error("Error posting reply:", err);
     }
   };
 
-  // 🟢 Delete comment
+  // Delete comment
   const handleDeleteComment = async (commentId: number, postId: number) => {
     if (!confirm("Delete this comment?")) return;
     try {
@@ -302,11 +302,11 @@ export default function StocksCommunityPage() {
       });
       fetchComments(postId);
     } catch (err) {
-      console.error("❌ Error deleting comment:", err);
+      console.error("Error deleting comment:", err);
     }
   };
 
-  // 🟢 Flag comment
+  // Flag comment
   const handleFlagComment = async (commentId: number, postId: number) => {
     if (!confirm("Report this comment as inappropriate?")) return;
     try {
@@ -316,25 +316,25 @@ export default function StocksCommunityPage() {
         credentials: "include",
         body: JSON.stringify({ isFlagged: true }),
       });
-      alert("🚩 Comment flagged for review.");
+      alert("Comment flagged for review.");
       fetchComments(postId);
     } catch (err) {
-      console.error("❌ Error flagging comment:", err);
+      console.error("Error flagging comment:", err);
     }
   };
 
-  const emojis = ["🔥", "👍", "💡", "🧠"];
+  const emojis = ["", "", "", ""];
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1000] text-white pt-24 p-6">
+    <main className="min-h-screen text-white pt-10 p-6 bg-night">
       <div className="max-w-4xl mx-auto">
         <motion.h1
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-3xl font-bold mb-6 text-center"
+          className="text-3xl mb-6 text-center font-display font-normal tracking-tight md:text-4xl"
         >
-          📈 Stocks Community
+          Stocks Community
         </motion.h1>
 
         {/* Create Post */}
@@ -349,7 +349,7 @@ export default function StocksCommunityPage() {
             onChange={(e) =>
               setNewPost({ ...newPost, title: e.target.value })
             }
-            className="w-full p-3 rounded-lg bg-black border border-gray-700 mb-3 text-white"
+            className="w-full p-3 rounded-lg bg-black border border-white/10 mb-3 text-white"
             required
           />
           <textarea
@@ -358,7 +358,7 @@ export default function StocksCommunityPage() {
             onChange={(e) =>
               setNewPost({ ...newPost, content: e.target.value })
             }
-            className="w-full p-3 rounded-lg bg-black border border-gray-700 text-white"
+            className="w-full p-3 rounded-lg bg-black border border-white/10 text-white"
             rows={4}
             required
           />
@@ -384,7 +384,7 @@ export default function StocksCommunityPage() {
                 key={post.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-[#111] rounded-2xl p-5 shadow-md hover:shadow-amber-700/20 transition-shadow"
+                className="bg-[#111] rounded-2xl p-5 shadow-md transition-shadow"
               >
                 <h2 className="text-xl font-semibold mb-2 text-amber-500">
                   {post.title}
@@ -397,14 +397,14 @@ export default function StocksCommunityPage() {
                   </span>
 
                   <div className="flex gap-3 items-center">
-                    {/* ❤️ Like */}
+                    {/* Like */}
                     <button
                       onClick={() => handleLikeToggle(post.id)}
                       className={`flex items-center gap-1 transition ${
-                        userLiked[post.id]
-                          ? "text-red-500"
-                          : "text-gray-400 hover:text-red-400"
-                      }`}
+ userLiked[post.id]
+ ? "text-red-500"
+ : "text-gray-400 hover:text-red-400"
+ }`}
                     >
                       <Heart
                         size={16}
@@ -414,7 +414,7 @@ export default function StocksCommunityPage() {
                       {likes[post.id] || 0}
                     </button>
 
-                    {/* 🔥 Emoji Reactions */}
+                    {/* Emoji Reactions */}
                     <div className="flex gap-2">
                       {emojis.map((emoji) => (
                         <button
@@ -451,7 +451,7 @@ export default function StocksCommunityPage() {
 
                 {/* Comments */}
                 {expandedPostId === post.id && (
-                  <div className="mt-5 bg-black/30 rounded-xl p-4 border border-gray-700">
+                  <div className="mt-5 bg-black/30 rounded-xl p-4 border border-white/10">
                     <div className="mb-4">
                       <textarea
                         placeholder="Write a comment..."
@@ -462,7 +462,7 @@ export default function StocksCommunityPage() {
                             [post.id]: e.target.value,
                           })
                         }
-                        className="w-full p-3 rounded-lg bg-[#0a0a0a] border border-gray-700 text-white"
+                        className="w-full p-3 rounded-lg bg-[#0a0a0a] border border-white/10 text-white"
                         rows={2}
                       />
                       <button
@@ -478,7 +478,7 @@ export default function StocksCommunityPage() {
                         {comments[post.id].map((comment) => (
                           <div
                             key={comment.id}
-                            className="border-t border-gray-700 pt-2"
+                            className="border-t border-white/10 pt-2"
                           >
                             <p
                               className={
@@ -530,7 +530,7 @@ export default function StocksCommunityPage() {
                                   </button>
                                 </div>
 
-                                {/* 💬 Reactions for comments */}
+                                {/* Reactions for comments */}
                                 <div className="flex gap-2 ml-2 mt-1">
                                   {emojis.map((emoji) => (
                                     <button
@@ -574,7 +574,7 @@ export default function StocksCommunityPage() {
                                       [comment.id]: e.target.value,
                                     })
                                   }
-                                  className="w-full p-2 rounded-lg bg-[#0a0a0a] border border-gray-700 text-white text-sm"
+                                  className="w-full p-2 rounded-lg bg-[#0a0a0a] border border-white/10 text-white text-sm"
                                   rows={2}
                                 />
                                 <button
@@ -589,7 +589,7 @@ export default function StocksCommunityPage() {
                             )}
 
                             {comment.replies?.length && (
-                              <div className="ml-4 mt-3 border-l border-gray-700 pl-3 space-y-2">
+                              <div className="ml-4 mt-3 border-l border-white/10 pl-3 space-y-2">
                                 {comment.replies.map((reply) => (
                                   <div key={reply.id}>
                                     <p

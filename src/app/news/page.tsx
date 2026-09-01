@@ -51,35 +51,35 @@ const NewsPage = () => {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-yellow-50 pt-28 py-10 px-6 flex flex-col items-center">
+    <main className="min-h-screen pt-10 py-10 px-6 flex flex-col items-center bg-night">
       <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3 flex items-center gap-2"
+        className="text-3xl md:text-4xl text-ivory mb-3 flex items-center gap-2 font-display font-normal tracking-tight"
       >
         <Newspaper className="text-yellow-400" /> U.S. Market News
       </motion.h1>
-      <p className="text-gray-600 mb-8 text-center max-w-2xl">
+      <p className="text-gray-400 mb-8 text-center max-w-2xl">
         Stay up-to-date with real-time stock market headlines, breaking economy
         updates, and AI-curated insights from WallStreetStocks.ai.
       </p>
 
       {/* Search & Filters */}
       <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
-        <div className="flex items-center bg-white shadow-sm rounded-full border border-gray-200 px-4 py-2 w-full md:w-80">
+        <div className="flex items-center bg-surface shadow-sm rounded-full border border-white/10 px-4 py-2 w-full md:w-80">
           <Search className="text-gray-400 mr-2" />
           <input
             type="text"
             placeholder="Search tickers or keywords (e.g. AAPL, inflation)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-grow outline-none text-sm text-gray-700"
+            className="flex-grow outline-none text-sm text-gray-300"
           />
         </div>
         <button
           onClick={() => fetchNews()}
-          className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-yellow-500 shadow-md flex items-center gap-2 transition-all"
+          className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-gold shadow-md flex items-center gap-2 transition-all"
         >
           <RefreshCcw size={16} /> Refresh
         </button>
@@ -92,10 +92,10 @@ const NewsPage = () => {
             key={cat}
             onClick={() => handleCategory(cat)}
             className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
-              category === cat
-                ? "bg-yellow-400 text-black shadow-md"
-                : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-100"
-            }`}
+ category === cat
+ ? "bg-yellow-400 text-black shadow-md"
+ : "bg-surface border border-white/10 text-gray-300 hover:bg-surface2"
+ }`}
           >
             {cat.charAt(0).toUpperCase() + cat.slice(1)}
           </button>
@@ -120,7 +120,7 @@ const NewsPage = () => {
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ scale: 1.03 }}
-              className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col hover:shadow-lg transition-all"
+              className="bg-surface border border-white/10 rounded-2xl shadow-sm overflow-hidden flex flex-col hover:shadow-lg transition-all"
             >
               {article.image && (
                 <img
@@ -130,10 +130,10 @@ const NewsPage = () => {
                 />
               )}
               <div className="p-4 flex flex-col justify-between flex-grow">
-                <h2 className="font-semibold text-gray-900 text-base mb-2">
+                <h2 className="font-semibold text-ivory text-base mb-2">
                   {article.title}
                 </h2>
-                <p className="text-gray-600 text-sm line-clamp-3 mb-3">
+                <p className="text-gray-400 text-sm line-clamp-3 mb-3">
                   {article.text}
                 </p>
                 <div className="flex items-center justify-between text-xs text-gray-500">

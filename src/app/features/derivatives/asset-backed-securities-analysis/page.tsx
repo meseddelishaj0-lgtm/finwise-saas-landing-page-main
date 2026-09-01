@@ -64,18 +64,18 @@ export default function AssetBackedSecuritiesAnalysisPage() {
       {/* Back */}
       <Link
         href="/features"
-        className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-yellow-600 transition mb-6"
+        className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gold transition mb-6"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Features
       </Link>
 
       <div className="flex items-center gap-3 mb-2">
-        <Banknote className="w-6 h-6 text-yellow-500" />
-        <h1 className="text-3xl font-bold text-gray-900">
+        <Banknote className="w-6 h-6 text-gold" />
+        <h1 className="text-3xl text-ivory font-display font-normal tracking-tight md:text-4xl">
           Asset-Backed Securities Analysis
         </h1>
       </div>
-      <p className="text-gray-600 mb-8 text-lg">
+      <p className="text-gray-400 mb-8 text-lg">
         Explore mortgage-backed and consumer ABS performance, yields, and
         prepayment trends with live insights.
       </p>
@@ -83,18 +83,18 @@ export default function AssetBackedSecuritiesAnalysisPage() {
       {/* Search */}
       <form
         onSubmit={handleSearch}
-        className="flex items-center gap-2 mb-8 bg-white shadow rounded-full border border-gray-200 p-2"
+        className="flex items-center gap-2 mb-8 bg-surface shadow rounded-full border border-white/10 p-2"
       >
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search ABS ticker (e.g. MBS, ABS, GNMA)"
-          className="flex-1 px-4 py-2 rounded-full outline-none text-gray-700"
+          className="flex-1 px-4 py-2 rounded-full outline-none text-gray-300"
         />
         <button
           type="submit"
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-4 py-2 rounded-full transition"
+          className="bg-yellow-400 hover:bg-gold text-black font-semibold px-4 py-2 rounded-full transition"
         >
           <Search className="w-4 h-4" />
         </button>
@@ -106,9 +106,9 @@ export default function AssetBackedSecuritiesAnalysisPage() {
       {!loading && !error && data && (
         <>
           {/* Chart */}
-          <div className="bg-white rounded-3xl shadow p-6 mb-8">
+          <div className="bg-surface rounded-3xl shadow p-6 mb-8">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-yellow-500" /> Yield Trend
+              <TrendingUp className="w-5 h-5 text-gold" /> Yield Trend
             </h2>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={chartData}>

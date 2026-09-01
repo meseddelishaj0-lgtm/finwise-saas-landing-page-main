@@ -66,7 +66,7 @@ export default async function NewsroomArticlePage({ params }: Props) {
       className="relative w-screen min-h-screen text-white bg-night"
       style={{ marginLeft: "calc(-50vw + 50%)" }}
     >
-      <article className="max-w-3xl mx-auto px-6 md:px-10 pt-28 md:pt-32 pb-24">
+      <article className="max-w-3xl mx-auto px-6 md:px-10 pt-12 md:pt-16 pb-24">
         <Link
           href="/newsroom"
           className="font-monodata text-[11px] uppercase tracking-widest text-gray-500 hover:text-gold transition-colors"

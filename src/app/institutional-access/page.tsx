@@ -5,20 +5,20 @@ import Link from "next/link";
 
 export default function InstitutionalAccessPage() {
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center py-20 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
       {/* Header */}
       <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-4xl md:text-5xl font-extrabold text-center text-black mb-6"
+        className="text-4xl md:text-5xl text-center text-ivory mb-6 font-display font-normal tracking-tight"
       >
         Institutional Access
       </motion.h1>
 
-      <p className="text-gray-600 text-center max-w-3xl mb-12 text-lg">
+      <p className="text-gray-400 text-center max-w-3xl mb-12 text-lg">
         Built for{" "}
-        <span className="text-yellow-600 font-semibold">
+        <span className="text-gold font-semibold">
           Hedge Funds, RIAs, Family Offices
         </span>
         , and professional investment firms seeking institutional-grade AI
@@ -46,19 +46,19 @@ export default function InstitutionalAccessPage() {
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.2 }}
-            className="bg-gray-50 border border-gray-200 rounded-2xl p-8 shadow-md hover:shadow-lg hover:border-yellow-400 transition-all"
+            className="bg-surface2 border border-white/10 rounded-2xl p-8 shadow-md hover:shadow-lg hover:border-gold/60 transition-all"
           >
-            <h3 className="text-xl font-semibold text-yellow-600 mb-3">
+            <h3 className="text-xl font-semibold text-gold mb-3">
               {item.title}
             </h3>
-            <p className="text-gray-700 text-sm leading-relaxed">{item.desc}</p>
+            <p className="text-gray-300 text-sm leading-relaxed">{item.desc}</p>
           </motion.div>
         ))}
       </div>
 
       {/* Subscription Plans */}
       <div className="max-w-4xl w-full text-center mb-20">
-        <h2 className="text-3xl font-bold mb-4 text-yellow-600">
+        <h2 className="text-3xl font-bold mb-4 text-gold">
           Institutional Plans
         </h2>
         <p className="text-gray-500 mb-10">
@@ -110,14 +110,14 @@ export default function InstitutionalAccessPage() {
           ].map((plan, i) => (
             <div
               key={i}
-              className="bg-white border border-gray-200 rounded-2xl p-8 shadow-md hover:shadow-xl hover:border-yellow-400 transition-all flex flex-col justify-between"
+              className="bg-surface border border-white/10 rounded-2xl p-8 shadow-md hover:shadow-xl hover:border-gold/60 transition-all flex flex-col justify-between"
             >
               <div>
-                <h3 className="text-2xl font-semibold text-yellow-600 mb-2">
+                <h3 className="text-2xl font-semibold text-gold mb-2">
                   {plan.tier}
                 </h3>
                 <p className="text-gray-500 mb-4">{plan.price}</p>
-                <ul className="text-sm text-gray-700 space-y-2 mb-6">
+                <ul className="text-sm text-gray-300 space-y-2 mb-6">
                   {plan.features.map((f, j) => (
                     <li key={j}>• {f}</li>
                   ))}
@@ -126,7 +126,7 @@ export default function InstitutionalAccessPage() {
 
               <Link
                 href={plan.link}
-                className="bg-yellow-500 text-white px-4 py-2 rounded-full font-semibold hover:bg-yellow-600 transition"
+                className="bg-gold text-night px-4 py-2 rounded-full font-semibold hover:bg-gold-deep transition"
               >
                 Subscribe
               </Link>
@@ -137,12 +137,12 @@ export default function InstitutionalAccessPage() {
 
       {/* Footer CTA */}
       <div className="text-center">
-        <h3 className="text-2xl font-semibold text-yellow-600 mb-4">
+        <h3 className="text-2xl font-semibold text-gold mb-4">
           Empower Your Fund With AI-Powered Research
         </h3>
         <Link
           href="/register"
-          className="bg-yellow-500 text-white px-6 py-3 rounded-full font-bold hover:bg-yellow-600 transition-all shadow-md"
+          className="bg-gold text-night px-6 py-3 rounded-full font-bold hover:bg-gold-deep transition-all shadow-md"
         >
           Request Institutional Access
         </Link>

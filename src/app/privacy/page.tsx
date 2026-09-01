@@ -5,12 +5,12 @@ import Link from "next/link";
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-[#0a0a0a] to-[#1a1a1a] text-gray-300">
+    <div className="min-h-screen text-gray-300 bg-night">
       {/* Hero Section */}
       <div className="relative py-20 px-6">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,215,0,0.08)_0%,rgba(0,0,0,1)_80%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(250,204,21,0.06)_0%,rgba(13,12,9,0)_70%)] pointer-events-none" />
         <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-yellow-400 drop-shadow-[0_0_15px_rgba(255,215,0,0.4)] mb-4">
+          <h1 className="text-4xl md:text-5xl text-yellow-400 mb-4 font-display font-normal tracking-tight">
             Privacy Policy
           </h1>
           <p className="text-gray-400 text-lg">
@@ -88,22 +88,22 @@ export default function PrivacyPolicy() {
             <p className="mb-4">We may share your information in the following circumstances:</p>
 
             <div className="space-y-4">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+              <div className="bg-surface2 border border-white/10 rounded-xl p-4">
                 <h4 className="font-semibold text-yellow-400 mb-2">Service Providers</h4>
                 <p>We share data with trusted third-party vendors who assist us in operating our Services (e.g., payment processors, cloud hosting, analytics providers, email services).</p>
               </div>
 
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+              <div className="bg-surface2 border border-white/10 rounded-xl p-4">
                 <h4 className="font-semibold text-yellow-400 mb-2">Legal Requirements</h4>
                 <p>We may disclose information if required by law, court order, or government request, or to protect our rights, privacy, safety, or property.</p>
               </div>
 
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+              <div className="bg-surface2 border border-white/10 rounded-xl p-4">
                 <h4 className="font-semibold text-yellow-400 mb-2">Business Transfers</h4>
                 <p>In the event of a merger, acquisition, or sale of assets, your information may be transferred to the acquiring entity.</p>
               </div>
 
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+              <div className="bg-surface2 border border-white/10 rounded-xl p-4">
                 <h4 className="font-semibold text-yellow-400 mb-2">With Your Consent</h4>
                 <p>We may share your information for any other purpose with your explicit consent.</p>
               </div>
@@ -222,7 +222,7 @@ export default function PrivacyPolicy() {
             <p className="mb-4">
               If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us:
             </p>
-            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
+            <div className="bg-surface2 border border-white/10 rounded-xl p-6">
               <p className="font-semibold text-yellow-400">WallStreetStocks.ai</p>
               <p className="mt-2">
                 Email:{" "}
@@ -241,19 +241,19 @@ export default function PrivacyPolicy() {
             <h2 className="text-2xl font-bold text-yellow-400 mb-4">14. Cookie Policy</h2>
             <p className="mb-4">We use the following types of cookies:</p>
             <div className="overflow-x-auto">
-              <table className="w-full border border-gray-700 rounded-xl overflow-hidden">
-                <thead className="bg-gray-800">
+              <table className="w-full border border-white/10 rounded-xl overflow-hidden">
+                <thead className="bg-white/10">
                   <tr>
                     <th className="px-4 py-3 text-left text-yellow-400 font-semibold">Cookie Type</th>
                     <th className="px-4 py-3 text-left text-yellow-400 font-semibold">Purpose</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700">
+                <tbody className="divide-y divide-white/10">
                   <tr className="bg-gray-900/50">
                     <td className="px-4 py-3 font-medium">Essential</td>
                     <td className="px-4 py-3">Required for basic site functionality and security</td>
                   </tr>
-                  <tr className="bg-gray-800/50">
+                  <tr className="bg-surface2">
                     <td className="px-4 py-3 font-medium">Analytics</td>
                     <td className="px-4 py-3">Help us understand how visitors interact with our Services</td>
                   </tr>
@@ -261,7 +261,7 @@ export default function PrivacyPolicy() {
                     <td className="px-4 py-3 font-medium">Functional</td>
                     <td className="px-4 py-3">Remember your preferences and settings</td>
                   </tr>
-                  <tr className="bg-gray-800/50">
+                  <tr className="bg-surface2">
                     <td className="px-4 py-3 font-medium">Marketing</td>
                     <td className="px-4 py-3">Used to deliver relevant advertisements (with consent)</td>
                   </tr>

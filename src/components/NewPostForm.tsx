@@ -39,25 +39,25 @@ export default function NewPostForm({ slug, forumTitle }: NewPostFormProps) {
   };
 
   return (
-    <main className="min-h-screen bg-white flex flex-col items-center py-16 px-6">
+    <main className="min-h-screen bg-night flex flex-col items-center py-16 px-6">
       <motion.h1
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="text-3xl font-bold mb-6 text-gray-900 text-center"
+        className="text-3xl mb-6 text-ivory text-center font-display font-normal tracking-tight md:text-4xl"
       >
         Create New Post {forumTitle ? `— ${forumTitle}` : ""}
       </motion.h1>
 
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-2xl bg-gray-50 p-8 rounded-2xl shadow border"
+        className="w-full max-w-2xl bg-surface2 p-8 rounded-2xl shadow border"
       >
         <div className="mb-4">
-          <label className="block font-medium text-gray-700 mb-2">Title</label>
+          <label className="block font-medium text-gray-300 mb-2">Title</label>
           <input
             type="text"
-            className="w-full border rounded-lg p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full border rounded-lg p-3 text-ivory focus:outline-none focus:ring-2 focus:ring-yellow-400"
             placeholder="Enter your post title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -66,10 +66,10 @@ export default function NewPostForm({ slug, forumTitle }: NewPostFormProps) {
         </div>
 
         <div className="mb-6">
-          <label className="block font-medium text-gray-700 mb-2">Content</label>
+          <label className="block font-medium text-gray-300 mb-2">Content</label>
           <textarea
             rows={8}
-            className="w-full border rounded-lg p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="w-full border rounded-lg p-3 text-ivory focus:outline-none focus:ring-2 focus:ring-yellow-400"
             placeholder="Write your post content here..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -82,7 +82,7 @@ export default function NewPostForm({ slug, forumTitle }: NewPostFormProps) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 rounded-xl transition disabled:opacity-50"
+          className="w-full bg-yellow-400 hover:bg-gold text-black font-semibold py-3 rounded-xl transition disabled:opacity-50"
         >
           {loading ? "Posting..." : `Post to ${forumTitle ?? "Forum"}`}
         </button>

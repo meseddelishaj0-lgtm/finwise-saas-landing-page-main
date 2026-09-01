@@ -42,7 +42,7 @@ const AIPoweredAnalysisPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // ✅ Fetch live data from Finnhub
+  // Fetch live data from Finnhub
   const fetchStockData = async () => {
     if (!ticker) return;
     setLoading(true);
@@ -64,7 +64,7 @@ const AIPoweredAnalysisPage = () => {
         quote.dp > 0 ? "Positive" : quote.dp === 0 ? "Neutral" : "Negative";
       const confidence = Math.floor(Math.random() * 20 + 80);
 
-      // ✅ Expanded Financial Data
+      // Expanded Financial Data
       setData({
         ticker: ticker.toUpperCase(),
         name: profile.name,
@@ -87,7 +87,7 @@ const AIPoweredAnalysisPage = () => {
         debtEquity: metrics.metric.totalDebtTotalEquityAnnual || 0,
         revenueGrowth: metrics.metric.revenueGrowth3Y || 0,
 
-        // ✅ Added Financial Health Metrics
+        // Added Financial Health Metrics
         roa: metrics.metric.roaTTM || 0,
         grossMargin: metrics.metric.grossMarginTTM || 0,
         operatingMargin: metrics.metric.operatingMarginTTM || 0,
@@ -116,7 +116,7 @@ const AIPoweredAnalysisPage = () => {
   ];
 
   return (
-    <section className="min-h-screen bg-gray-50 text-gray-900 px-6 md:px-32 pt-24 md:pt-32 pb-20">
+    <section className="min-h-screen bg-night text-ivory px-6 md:px-32 pt-10 md:pt-12 pb-20">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <motion.div
@@ -125,10 +125,10 @@ const AIPoweredAnalysisPage = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            🤖 AI-Powered Stock Analysis
+          <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
+            AI-Powered Stock Analysis
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-400">
             Enter any company ticker to receive real-time AI insights — including intrinsic valuation,
             financial health, sentiment analysis, and forecast models powered by WallStreetStocks AI.
           </p>
@@ -139,10 +139,10 @@ const AIPoweredAnalysisPage = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.6 }}
-          className="bg-white p-8 rounded-2xl shadow-md mb-10"
+          className="bg-surface p-8 rounded-2xl shadow-md mb-10"
         >
-          <h2 className="text-2xl font-semibold mb-4">🔍 How It Works</h2>
-          <ul className="list-disc list-inside text-gray-700 mb-6">
+          <h2 className="text-2xl font-semibold mb-4">How It Works</h2>
+          <ul className="list-disc list-inside text-gray-300 mb-6">
             <li>Enter or upload a company ticker (e.g., AAPL, TSLA, NVDA).</li>
             <li>AI models analyze financial statements, sentiment & valuation metrics.</li>
             <li>Receive a complete breakdown with intrinsic value, metrics, and AI forecast.</li>
@@ -154,36 +154,36 @@ const AIPoweredAnalysisPage = () => {
               placeholder="Enter ticker symbol (e.g., AAPL)"
               value={ticker}
               onChange={(e) => setTicker(e.target.value.toUpperCase())}
-              className="flex-grow border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              className="flex-grow border border-white/10 rounded-lg px-4 py-3 text-gray-300 focus:outline-none focus:ring-2 focus:ring-yellow-400"
             />
             <button
               onClick={fetchStockData}
               disabled={loading}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-6 rounded-lg transition"
+              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-3 px-6 rounded-lg transition"
             >
               {loading ? "Analyzing..." : "Analyze"}
             </button>
           </div>
 
-          {error && <p className="text-red-600 text-sm">{error}</p>}
+          {error && <p className="text-red-400 text-sm">{error}</p>}
 
-         <div className="mt-6 bg-yellow-100 border border-yellow-300 rounded-xl p-5 text-center shadow-sm">
-  <p className="text-lg font-semibold text-gray-800">
-    <span className="text-black font-bold">{data.name}</span> — Intrinsic Value:{" "}
-    <span className="text-green-600 font-bold">${data.intrinsicValue.toFixed(2)}</span> |{" "}
+         <div className="mt-6 bg-gold/15 border border-gold/40 rounded-xl p-5 text-center shadow-sm">
+  <p className="text-lg font-semibold text-gray-100">
+    <span className="text-ivory font-bold">{data.name}</span> — Intrinsic Value:{" "}
+    <span className="text-green-400 font-bold">${data.intrinsicValue.toFixed(2)}</span> |{" "}
     Sentiment:{" "}
     <span
       className={`font-bold ${
-        data.sentiment === "Positive"
-          ? "text-green-600"
-          : data.sentiment === "Negative"
-          ? "text-red-600"
-          : "text-yellow-600"
-      }`}
+ data.sentiment === "Positive"
+ ? "text-green-400"
+ : data.sentiment === "Negative"
+ ? "text-red-400"
+ : "text-gold"
+ }`}
     >
       {data.sentiment}
     </span>{" "}
-    <span className="text-gray-700">(AI confidence {data.confidence}%)</span>
+    <span className="text-gray-300">(AI confidence {data.confidence}%)</span>
   </p>
 </div>
 
@@ -194,10 +194,10 @@ const AIPoweredAnalysisPage = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.6 }}
-          className="bg-white rounded-2xl shadow-md p-8 mb-10"
+          className="bg-surface rounded-2xl shadow-md p-8 mb-10"
         >
-          <h2 className="text-2xl font-semibold mb-4">🏢 Company Overview</h2>
-          <p className="text-gray-700 mb-4">{data.description}</p>
+          <h2 className="text-2xl font-semibold mb-4">Company Overview</h2>
+          <p className="text-gray-300 mb-4">{data.description}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -218,64 +218,64 @@ const AIPoweredAnalysisPage = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.6 }}
-          className="bg-white rounded-2xl shadow-md p-8 mb-10"
+          className="bg-surface rounded-2xl shadow-md p-8 mb-10"
         >
-          <h2 className="text-2xl font-semibold mb-6">💰 Financial Health Metrics</h2>
+          <h2 className="text-2xl font-semibold mb-6">Financial Health Metrics</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div className="bg-green-50 rounded-xl p-6 shadow-sm">
-              <p className="font-semibold text-gray-700">Revenue Growth</p>
-              <p className="text-2xl font-bold text-green-600">{data.revenueGrowth}%</p>
+            <div className="bg-green-400/10 rounded-xl p-6 shadow-sm">
+              <p className="font-semibold text-gray-300">Revenue Growth</p>
+              <p className="text-2xl font-bold text-green-400">{data.revenueGrowth}%</p>
             </div>
-            <div className="bg-blue-50 rounded-xl p-6 shadow-sm">
-              <p className="font-semibold text-gray-700">Return on Equity (ROE)</p>
-              <p className="text-2xl font-bold text-blue-600">{data.roe}%</p>
+            <div className="bg-surface2 rounded-xl p-6 shadow-sm">
+              <p className="font-semibold text-gray-300">Return on Equity (ROE)</p>
+              <p className="text-2xl font-bold text-gold">{data.roe}%</p>
             </div>
-            <div className="bg-yellow-50 rounded-xl p-6 shadow-sm">
-              <p className="font-semibold text-gray-700">Debt to Equity</p>
-              <p className="text-2xl font-bold text-yellow-600">{data.debtEquity}</p>
+            <div className="bg-gold/10 rounded-xl p-6 shadow-sm">
+              <p className="font-semibold text-gray-300">Debt to Equity</p>
+              <p className="text-2xl font-bold text-gold">{data.debtEquity}</p>
             </div>
           </div>
 
-          {/* ✅ Additional Metrics */}
+          {/* Additional Metrics */}
           {data && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center mt-6">
-              <div className="bg-blue-50 rounded-xl p-6 shadow-sm">
-                <p className="font-semibold text-gray-700">Return on Assets (ROA)</p>
-                <p className="text-2xl font-bold text-blue-600">{data.roa}%</p>
+              <div className="bg-surface2 rounded-xl p-6 shadow-sm">
+                <p className="font-semibold text-gray-300">Return on Assets (ROA)</p>
+                <p className="text-2xl font-bold text-gold">{data.roa}%</p>
               </div>
-              <div className="bg-blue-50 rounded-xl p-6 shadow-sm">
-                <p className="font-semibold text-gray-700">Gross Margin</p>
-                <p className="text-2xl font-bold text-blue-600">{data.grossMargin}%</p>
+              <div className="bg-surface2 rounded-xl p-6 shadow-sm">
+                <p className="font-semibold text-gray-300">Gross Margin</p>
+                <p className="text-2xl font-bold text-gold">{data.grossMargin}%</p>
               </div>
-              <div className="bg-blue-50 rounded-xl p-6 shadow-sm">
-                <p className="font-semibold text-gray-700">Operating Margin</p>
-                <p className="text-2xl font-bold text-blue-600">{data.operatingMargin}%</p>
-              </div>
-
-              <div className="bg-yellow-50 rounded-xl p-6 shadow-sm">
-                <p className="font-semibold text-gray-700">Current Ratio</p>
-                <p className="text-2xl font-bold text-yellow-600">{data.currentRatio}</p>
-              </div>
-              <div className="bg-yellow-50 rounded-xl p-6 shadow-sm">
-                <p className="font-semibold text-gray-700">Quick Ratio</p>
-                <p className="text-2xl font-bold text-yellow-600">{data.quickRatio}</p>
+              <div className="bg-surface2 rounded-xl p-6 shadow-sm">
+                <p className="font-semibold text-gray-300">Operating Margin</p>
+                <p className="text-2xl font-bold text-gold">{data.operatingMargin}%</p>
               </div>
 
-              <div className="bg-purple-50 rounded-xl p-6 shadow-sm">
-                <p className="font-semibold text-gray-700">Asset Turnover</p>
-                <p className="text-2xl font-bold text-purple-600">{data.assetTurnover}</p>
+              <div className="bg-gold/10 rounded-xl p-6 shadow-sm">
+                <p className="font-semibold text-gray-300">Current Ratio</p>
+                <p className="text-2xl font-bold text-gold">{data.currentRatio}</p>
               </div>
-              <div className="bg-purple-50 rounded-xl p-6 shadow-sm">
-                <p className="font-semibold text-gray-700">Inventory Turnover</p>
-                <p className="text-2xl font-bold text-purple-600">{data.inventoryTurnover}</p>
+              <div className="bg-gold/10 rounded-xl p-6 shadow-sm">
+                <p className="font-semibold text-gray-300">Quick Ratio</p>
+                <p className="text-2xl font-bold text-gold">{data.quickRatio}</p>
+              </div>
+
+              <div className="bg-surface2 rounded-xl p-6 shadow-sm">
+                <p className="font-semibold text-gray-300">Asset Turnover</p>
+                <p className="text-2xl font-bold text-gold-soft">{data.assetTurnover}</p>
+              </div>
+              <div className="bg-surface2 rounded-xl p-6 shadow-sm">
+                <p className="font-semibold text-gray-300">Inventory Turnover</p>
+                <p className="text-2xl font-bold text-gold-soft">{data.inventoryTurnover}</p>
               </div>
 
               <div className="bg-pink-50 rounded-xl p-6 shadow-sm">
-                <p className="font-semibold text-gray-700">P/B Ratio</p>
+                <p className="font-semibold text-gray-300">P/B Ratio</p>
                 <p className="text-2xl font-bold text-pink-600">{data.pbRatio}</p>
               </div>
               <div className="bg-pink-50 rounded-xl p-6 shadow-sm">
-                <p className="font-semibold text-gray-700">Dividend Yield</p>
+                <p className="font-semibold text-gray-300">Dividend Yield</p>
                 <p className="text-2xl font-bold text-pink-600">{data.dividendYield}%</p>
               </div>
             </div>
@@ -287,7 +287,7 @@ const AIPoweredAnalysisPage = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.6 }}
-          className="bg-white rounded-2xl shadow-md p-8 mb-10 flex flex-col md:flex-row items-center justify-between"
+          className="bg-surface rounded-2xl shadow-md p-8 mb-10 flex flex-col md:flex-row items-center justify-between"
         >
           <div className="w-full md:w-1/2 h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -306,7 +306,7 @@ const AIPoweredAnalysisPage = () => {
           </div>
           <div className="mt-6 md:mt-0 md:w-1/2 text-center md:text-left">
             <h3 className="text-xl font-semibold mb-2">AI Confidence Score</h3>
-            <p className="text-gray-700">
+            <p className="text-gray-300">
               The AI model expresses <strong>{data.confidence}% confidence</strong> in its current valuation and forecast accuracy.
             </p>
           </div>
@@ -316,7 +316,7 @@ const AIPoweredAnalysisPage = () => {
         <div className="text-center mt-10">
           <Link
             href="/ai-dashboard"
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-6 rounded-lg shadow transition"
+            className="bg-yellow-400 hover:bg-gold text-black font-semibold py-3 px-6 rounded-lg shadow transition"
           >
             ← Back to AI Dashboard
           </Link>

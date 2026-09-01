@@ -56,14 +56,14 @@ export default function SmartPortfolioTipsPage() {
   };
 
   return (
-    <section className="min-h-screen bg-white pt-32 pb-20 px-6">
+    <section className="min-h-screen bg-night pt-12 pb-20 px-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-purple-600 mb-3">
-            🧠 Smart Portfolio Tips
+          <h1 className="text-4xl text-gold-soft mb-3 font-display font-normal tracking-tight md:text-5xl">
+            Smart Portfolio Tips
           </h1>
-          <p className="text-gray-600 max-w-3xl mx-auto">
+          <p className="text-gray-400 max-w-3xl mx-auto">
             Our AI portfolio engine provides data-driven rebalancing
             recommendations designed to minimize risk and enhance compounding
             returns. Strategies adapt dynamically to market volatility, sector
@@ -73,10 +73,10 @@ export default function SmartPortfolioTipsPage() {
 
         {/* Core Strategies */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          <h2 className="text-2xl font-bold text-gray-100 mb-4">
             Core Portfolio Strategies
           </h2>
-          <ul className="list-disc ml-6 text-gray-700 space-y-2">
+          <ul className="list-disc ml-6 text-gray-300 space-y-2">
             <li>Rebalance quarterly to maintain optimal asset allocation.</li>
             <li>Overweight sectors with improving AI sentiment scores.</li>
             <li>Trim exposure in high-volatility or overextended names.</li>
@@ -86,17 +86,17 @@ export default function SmartPortfolioTipsPage() {
         </div>
 
         {/* AI Strategy Summary */}
-        <div className="bg-purple-50 border border-purple-200 rounded-2xl p-8 mb-12 shadow">
-          <h3 className="text-2xl font-bold text-purple-700 mb-3 flex items-center gap-2">
+        <div className="bg-surface2 border border-purple-200 rounded-2xl p-8 mb-12 shadow">
+          <h3 className="text-2xl font-bold text-gold-soft mb-3 flex items-center gap-2">
             <Brain className="w-6 h-6" /> AI Strategy Summary
           </h3>
-          <p className="text-gray-700 mb-3">
+          <p className="text-gray-300 mb-3">
             The portfolio model emphasizes capital efficiency, balancing growth
             and downside protection. AI forecasts expected annualized returns of{" "}
             <strong>8–12%</strong> under moderate risk scenarios, assuming
             quarterly rebalancing and sector rotation optimization.
           </p>
-          <p className="text-gray-700">
+          <p className="text-gray-300">
             Models dynamically adjust equity exposure using sentiment analysis
             and volatility signals, favoring low-drawdown, high-efficiency
             opportunities in technology, healthcare, and infrastructure.
@@ -104,8 +104,8 @@ export default function SmartPortfolioTipsPage() {
         </div>
 
         {/* Interactive Risk Slider */}
-        <div className="bg-gray-50 rounded-2xl shadow p-8 mb-12">
-          <h3 className="text-xl font-bold text-purple-700 mb-4 flex items-center gap-2">
+        <div className="bg-surface2 rounded-2xl shadow p-8 mb-12">
+          <h3 className="text-xl font-bold text-gold-soft mb-4 flex items-center gap-2">
             <BarChart3 className="w-6 h-6" /> Adjust Risk Tolerance
           </h3>
           <div className="flex flex-col items-center space-y-4">
@@ -118,17 +118,17 @@ export default function SmartPortfolioTipsPage() {
               className="w-3/4 accent-purple-600"
             />
             <p className="text-lg font-semibold">
-              Risk Level: <span className="text-purple-600">{riskLevel}%</span>
+              Risk Level: <span className="text-gold-soft">{riskLevel}%</span>
             </p>
-            <p className="text-gray-700 text-center max-w-lg">
+            <p className="text-gray-300 text-center max-w-lg">
               {getAISuggestion()}
             </p>
           </div>
         </div>
 
         {/* Portfolio Allocation Pie */}
-        <div className="bg-gray-50 rounded-2xl shadow p-8 mb-12">
-          <h3 className="text-xl font-bold text-purple-700 mb-4 flex items-center gap-2">
+        <div className="bg-surface2 rounded-2xl shadow p-8 mb-12">
+          <h3 className="text-xl font-bold text-gold-soft mb-4 flex items-center gap-2">
             <PieChart className="w-6 h-6" /> Portfolio Allocation
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -155,8 +155,8 @@ export default function SmartPortfolioTipsPage() {
         </div>
 
         {/* Portfolio Growth Projection */}
-        <div className="bg-gray-50 rounded-2xl shadow p-8 mb-12">
-          <h3 className="text-xl font-bold text-purple-700 mb-4 flex items-center gap-2">
+        <div className="bg-surface2 rounded-2xl shadow p-8 mb-12">
+          <h3 className="text-xl font-bold text-gold-soft mb-4 flex items-center gap-2">
             <TrendingUp className="w-6 h-6" /> Simulated Portfolio Growth
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -197,7 +197,7 @@ export default function SmartPortfolioTipsPage() {
 
           <Link
             href="/ai-dashboard"
-            className="flex items-center gap-2 bg-yellow-400 text-black font-semibold px-6 py-3 rounded-xl hover:bg-yellow-500 transition"
+            className="flex items-center gap-2 bg-yellow-400 text-black font-semibold px-6 py-3 rounded-xl hover:bg-gold transition"
           >
             <ArrowLeft className="w-5 h-5" /> Back to AI Dashboard
           </Link>

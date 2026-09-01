@@ -26,7 +26,7 @@ export default function CreditDerivativesAnalysisPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Fetch credit derivative data
+  // Fetch credit derivative data
   const fetchCreditData = async (symbol: string) => {
     try {
       setLoading(true);
@@ -74,43 +74,43 @@ export default function CreditDerivativesAnalysisPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-12">
-      {/* 🔙 Back */}
+      {/* Back */}
       <div className="mb-6">
         <Link
           href="/features"
-          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-yellow-600 transition"
+          className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gold transition"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Features
         </Link>
       </div>
 
-      {/* 🧠 Title */}
+      {/* Title */}
       <div className="flex items-center gap-3 mb-2">
-        <Shield className="w-6 h-6 text-yellow-500" />
-        <h1 className="text-3xl font-bold text-gray-900">
+        <Shield className="w-6 h-6 text-gold" />
+        <h1 className="text-3xl text-ivory font-display font-normal tracking-tight md:text-4xl">
           Credit Derivatives Analysis
         </h1>
       </div>
-      <p className="text-gray-600 mb-8 text-lg">
+      <p className="text-gray-400 mb-8 text-lg">
         Analyze credit risk, CDS spreads, and ratings to monitor corporate and
         sovereign credit exposure with AI-powered insights.
       </p>
 
-      {/* 🔍 Search Bar */}
+      {/* Search Bar */}
       <form
         onSubmit={handleSearch}
-        className="flex items-center gap-2 mb-8 bg-white shadow rounded-full border border-gray-200 p-2"
+        className="flex items-center gap-2 mb-8 bg-surface shadow rounded-full border border-white/10 p-2"
       >
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search CDS or company symbol (e.g. AAPL-CDS, JPM-CDS, GOVT-CDS)"
-          className="flex-1 px-4 py-2 rounded-full outline-none text-gray-700"
+          className="flex-1 px-4 py-2 rounded-full outline-none text-gray-300"
         />
         <button
           type="submit"
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-4 py-2 rounded-full transition"
+          className="bg-yellow-400 hover:bg-gold text-black font-semibold px-4 py-2 rounded-full transition"
         >
           <Search className="w-4 h-4" />
         </button>
@@ -121,32 +121,32 @@ export default function CreditDerivativesAnalysisPage() {
 
       {!loading && !error && data && (
         <>
-          {/* 💳 Credit Rating Info */}
+          {/* Credit Rating Info */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white shadow rounded-2xl p-5 text-center">
+            <div className="bg-surface shadow rounded-2xl p-5 text-center">
               <p className="text-sm text-gray-500">Symbol</p>
-              <p className="text-xl font-semibold text-gray-800">{query}</p>
+              <p className="text-xl font-semibold text-gray-100">{query}</p>
             </div>
-            <div className="bg-white shadow rounded-2xl p-5 text-center">
+            <div className="bg-surface shadow rounded-2xl p-5 text-center">
               <p className="text-sm text-gray-500">Rating</p>
-              <p className="text-2xl font-bold text-yellow-600">
+              <p className="text-2xl font-bold text-gold">
                 {data.rating}
               </p>
             </div>
-            <div className="bg-white shadow rounded-2xl p-5 text-center">
+            <div className="bg-surface shadow rounded-2xl p-5 text-center">
               <p className="text-sm text-gray-500">Score</p>
               <p className="text-2xl font-bold">{data.ratingScore}</p>
             </div>
-            <div className="bg-white shadow rounded-2xl p-5 text-center">
+            <div className="bg-surface shadow rounded-2xl p-5 text-center">
               <p className="text-sm text-gray-500">Date</p>
               <p className="text-lg font-semibold">{data.date}</p>
             </div>
           </div>
 
-          {/* 📈 Chart */}
-          <div className="bg-white rounded-3xl shadow p-6 mb-8">
+          {/* Chart */}
+          <div className="bg-surface rounded-3xl shadow p-6 mb-8">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-yellow-500" /> CDS Spread Trend
+              <TrendingUp className="w-5 h-5 text-gold" /> CDS Spread Trend
             </h2>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={chartData}>
@@ -168,7 +168,7 @@ export default function CreditDerivativesAnalysisPage() {
         </>
       )}
 
-      {/* 🧠 Disclaimer */}
+      {/* Disclaimer */}
       <div className="mt-10 text-xs text-gray-500 leading-relaxed">
         <p>
           <strong>Disclaimer:</strong> WallStreetStocks.ai is a financial

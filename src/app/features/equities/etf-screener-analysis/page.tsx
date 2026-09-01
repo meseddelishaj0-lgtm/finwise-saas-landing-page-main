@@ -67,22 +67,22 @@ export default function ETFScreenerPage() {
   }, [etfs, search, sortKey, sortOrder]);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto text-gray-900">
+    <div className="p-6 max-w-7xl mx-auto text-ivory">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          className="flex items-center gap-2 text-gray-400 hover:text-ivory"
         >
           <ArrowLeft size={18} /> Back to Features
         </button>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <BarChart4 className="text-yellow-500" /> ETF Screener Analysis
+        <h1 className="text-2xl flex items-center gap-2 font-display font-normal tracking-tight">
+          <BarChart4 className="text-gold" /> ETF Screener Analysis
         </h1>
       </div>
 
       {/* Search */}
-      <div className="flex items-center bg-gray-100 px-4 py-2 rounded-xl mb-6 shadow-inner">
+      <div className="flex items-center bg-surface2 px-4 py-2 rounded-xl mb-6 shadow-inner">
         <Search className="text-gray-500 mr-2" size={18} />
         <input
           type="text"
@@ -94,9 +94,9 @@ export default function ETFScreenerPage() {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto bg-white rounded-2xl shadow-md border border-gray-200">
+      <div className="overflow-x-auto bg-surface rounded-2xl shadow-md border border-white/10">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-700">
+          <thead className="bg-surface2 text-gray-300">
             <tr>
               <th onClick={() => handleSort("symbol")} className="py-3 px-4 text-left cursor-pointer">
                 Symbol <ArrowUpDown size={14} className="inline ml-1" />
@@ -135,19 +135,19 @@ export default function ETFScreenerPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: idx * 0.01 }}
-                className="border-t hover:bg-gray-50 transition"
+                className="border-t hover:bg-surface2 transition"
               >
                 <td className="py-2 px-4 font-semibold">{etf.symbol}</td>
-                <td className="py-2 px-4 text-gray-600">{etf.name}</td>
+                <td className="py-2 px-4 text-gray-400">{etf.name}</td>
                 <td className="py-2 px-4 text-right">
                   {etf.price ? `$${etf.price.toFixed(2)}` : "—"}
                 </td>
                 <td
                   className={`py-2 px-4 text-right font-semibold ${
-                    etf.changesPercentage > 0
-                      ? "text-green-600"
-                      : "text-red-500"
-                  }`}
+ etf.changesPercentage > 0
+ ? "text-green-400"
+ : "text-red-500"
+ }`}
                 >
                   {etf.changesPercentage
                     ? `${etf.changesPercentage.toFixed(2)}%`

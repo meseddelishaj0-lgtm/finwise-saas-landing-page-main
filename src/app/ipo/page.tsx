@@ -67,7 +67,7 @@ export default function Page() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center py-24 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
       {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}
@@ -75,10 +75,10 @@ export default function Page() {
         transition={{ duration: 0.6 }}
         className="max-w-4xl text-center mb-12"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
+        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
           IPO Tracker
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           Explore recent and upcoming IPOs with live market data and AI-powered
           analysis — only on WallStreetStocks.ai.
         </p>
@@ -86,7 +86,7 @@ export default function Page() {
 
       {/* Search + Refresh */}
       <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
-        <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden">
+        <div className="flex items-center border border-white/10 rounded-xl overflow-hidden">
           <Search className="ml-3 text-gray-500" />
           <input
             type="text"
@@ -100,7 +100,7 @@ export default function Page() {
         <button
           onClick={fetchIPOs}
           disabled={loading}
-          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-5 py-3 rounded-xl transition-all"
+          className="flex items-center gap-2 bg-gold hover:bg-gold-deep text-black font-semibold px-5 py-3 rounded-xl transition-all"
         >
           <RefreshCcw className="w-5 h-5" />
           {loading ? "Refreshing..." : "Refresh"}
@@ -108,16 +108,16 @@ export default function Page() {
       </div>
 
       {/* IPO Table */}
-      <div className="overflow-x-auto w-full max-w-6xl border border-gray-200 rounded-2xl shadow-md bg-gray-50 mb-14">
+      <div className="overflow-x-auto w-full max-w-6xl border border-white/10 rounded-2xl shadow-md bg-surface2 mb-14">
         <table className="min-w-full text-left text-sm md:text-base">
-          <thead className="bg-gray-100 border-b border-gray-200">
+          <thead className="bg-surface2 border-b border-white/10">
             <tr>
-              <th className="py-3 px-4 font-semibold text-gray-800">Company</th>
-              <th className="py-3 px-4 font-semibold text-gray-800">Symbol</th>
-              <th className="py-3 px-4 font-semibold text-gray-800">Exchange</th>
-              <th className="py-3 px-4 font-semibold text-gray-800">IPO Date</th>
-              <th className="py-3 px-4 font-semibold text-gray-800">Price</th>
-              <th className="py-3 px-4 font-semibold text-gray-800">Status</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">Company</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">Symbol</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">Exchange</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">IPO Date</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">Price</th>
+              <th className="py-3 px-4 font-semibold text-gray-100">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -125,10 +125,10 @@ export default function Page() {
               filteredIPOs.map((ipo, index) => (
                 <tr
                   key={index}
-                  className="border-t border-gray-200 hover:bg-white transition-all"
+                  className="border-t border-white/10 hover:bg-surface transition-all"
                 >
                   <td className="py-3 px-4">{ipo.name}</td>
-                  <td className="py-3 px-4 font-medium text-yellow-600">
+                  <td className="py-3 px-4 font-medium text-gold">
                     {ipo.symbol}
                   </td>
                   <td className="py-3 px-4">{ipo.exchange}</td>
@@ -136,12 +136,12 @@ export default function Page() {
                   <td className="py-3 px-4">${ipo.price}</td>
                   <td
                     className={`py-3 px-4 font-medium ${
-                      ipo.status === "upcoming"
-                        ? "text-blue-600"
-                        : ipo.status === "priced"
-                        ? "text-green-600"
-                        : "text-gray-500"
-                    }`}
+ ipo.status === "upcoming"
+ ? "text-gold"
+ : ipo.status === "priced"
+ ? "text-green-400"
+ : "text-gray-500"
+ }`}
                   >
                     {ipo.status.charAt(0).toUpperCase() + ipo.status.slice(1)}
                   </td>
@@ -166,16 +166,16 @@ export default function Page() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="max-w-5xl w-full bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-8"
+        className="max-w-5xl w-full bg-surface2 border border-white/10 rounded-2xl shadow-md p-8"
       >
         <div className="flex items-center gap-3 mb-4">
-          <TrendingUp className="text-yellow-500 w-7 h-7" />
-          <h2 className="text-2xl font-semibold text-gray-900">
+          <TrendingUp className="text-gold w-7 h-7" />
+          <h2 className="text-2xl font-semibold text-ivory">
             AI IPO Analysis
           </h2>
         </div>
 
-        <p className="text-gray-700 mb-6">
+        <p className="text-gray-300 mb-6">
           Enter a company name or IPO symbol to get instant AI insights —
           valuation breakdown, investor sentiment, and post-listing forecasts.
         </p>
@@ -185,12 +185,12 @@ export default function Page() {
             value={aiInput}
             onChange={(e) => setAiInput(e.target.value)}
             placeholder="e.g. Arm Holdings, Rivian, or ABNB"
-            className="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="flex-1 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
           <button
             onClick={handleAIAnalyze}
             disabled={aiLoading}
-            className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-xl transition-all"
+            className="bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
           >
             {aiLoading ? "Analyzing..." : "Analyze IPO"}
           </button>
@@ -201,28 +201,28 @@ export default function Page() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="mt-4 bg-white border border-gray-200 rounded-xl p-6"
+            className="mt-4 bg-surface border border-white/10 rounded-xl p-6"
           >
-            <h3 className="text-lg font-semibold mb-3 text-gray-900">
+            <h3 className="text-lg font-semibold mb-3 text-ivory">
               AI Insights
             </h3>
-            <p className="text-gray-700 whitespace-pre-line">{aiResponse}</p>
+            <p className="text-gray-300 whitespace-pre-line">{aiResponse}</p>
           </motion.div>
         )}
       </motion.div>
 
       {/* CTA */}
       <div className="text-center mt-16">
-        <h3 className="text-2xl font-semibold mb-3 text-gray-900">
+        <h3 className="text-2xl font-semibold mb-3 text-ivory">
           Explore More Market Intelligence
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-400 mb-6">
           Access detailed IPO filings, institutional participation, and 
           predictive analytics with WallStreetStocks.ai Premium.
         </p>
         <a
           href="/register"
-          className="inline-block bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-6 py-3 rounded-xl transition-all"
+          className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
         >
           Unlock Full Access
         </a>

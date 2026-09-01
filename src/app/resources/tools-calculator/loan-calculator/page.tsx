@@ -40,7 +40,7 @@ export default function LoanCalculatorPage() {
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 flex flex-col items-center pt-36 md:pt-44 pb-16 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center pt-12 md:pt-16 pb-16 px-6">
       {/* Header */}
       <motion.section
         initial={{ opacity: 0, y: -20 }}
@@ -48,60 +48,60 @@ export default function LoanCalculatorPage() {
         transition={{ duration: 0.6 }}
         className="text-center max-w-2xl mb-10"
       >
-        <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
-          💵 Loan Calculator
+        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
+          Loan Calculator
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-gray-400">
           Understand your loan payments, interest breakdown, and total cost
           across different time periods.
         </p>
       </motion.section>
 
       {/* Calculator Card */}
-      <div className="w-full max-w-md bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-8">
-        <label className="block text-gray-800 font-semibold mb-2">
+      <div className="w-full max-w-md bg-surface2 border border-white/10 rounded-2xl shadow-md p-8">
+        <label className="block text-gray-100 font-semibold mb-2">
           Loan Amount ($)
         </label>
         <input
           type="number"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           placeholder="e.g. 25000"
         />
 
-        <label className="block text-gray-800 font-semibold mb-2">
+        <label className="block text-gray-100 font-semibold mb-2">
           Annual Interest Rate (%)
         </label>
         <input
           type="number"
           value={rate}
           onChange={(e) => setRate(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           placeholder="e.g. 6.5"
         />
 
-        <label className="block text-gray-800 font-semibold mb-2">
+        <label className="block text-gray-100 font-semibold mb-2">
           Loan Term (Years)
         </label>
         <input
           type="number"
           value={years}
           onChange={(e) => setYears(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-6 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-6 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           placeholder="e.g. 5"
         />
 
         <div className="flex gap-3">
           <button
             onClick={calculateLoan}
-            className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 rounded-xl transition-all"
+            className="flex-1 bg-gold hover:bg-gold-deep text-black font-semibold py-3 rounded-xl transition-all"
           >
             Calculate
           </button>
           <button
             onClick={reset}
-            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 rounded-xl transition-all"
+            className="flex-1 bg-white/10 hover:bg-white/15 text-gray-100 font-semibold py-3 rounded-xl transition-all"
           >
             Reset
           </button>
@@ -114,22 +114,22 @@ export default function LoanCalculatorPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="max-w-md w-full mt-10 bg-gray-50 border border-gray-200 rounded-2xl shadow-md p-6 text-center"
+          className="max-w-md w-full mt-10 bg-surface2 border border-white/10 rounded-2xl shadow-md p-6 text-center"
         >
-          <h2 className="text-xl font-bold mb-2 text-gray-800">Loan Summary</h2>
+          <h2 className="text-xl font-bold mb-2 text-gray-100">Loan Summary</h2>
           <div className="space-y-2">
             <p className="text-lg">
-              <span className="font-semibold text-gray-700">Monthly Payment: </span>
-              <span className="text-yellow-500 font-bold">
+              <span className="font-semibold text-gray-300">Monthly Payment: </span>
+              <span className="text-gold font-bold">
                 ${result.monthly.toFixed(2)}
               </span>
             </p>
             <p className="text-lg">
-              <span className="font-semibold text-gray-700">Total Payment: </span>
+              <span className="font-semibold text-gray-300">Total Payment: </span>
               ${result.total.toFixed(2)}
             </p>
             <p className="text-lg">
-              <span className="font-semibold text-gray-700">Total Interest: </span>
+              <span className="font-semibold text-gray-300">Total Interest: </span>
               ${result.interest.toFixed(2)}
             </p>
           </div>

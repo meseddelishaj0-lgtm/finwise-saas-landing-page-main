@@ -34,14 +34,14 @@ export default function LongTermOutlookPage() {
   ];
 
   return (
-    <section className="min-h-screen bg-white pt-32 pb-20 px-6">
+    <section className="min-h-screen bg-night pt-12 pb-20 px-6">
       <div className="max-w-6xl mx-auto">
         {/* Title Section */}
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-green-600 mb-3">
-            📅 Long-Term Outlook
+          <h1 className="text-4xl text-green-400 mb-3 font-display font-normal tracking-tight md:text-5xl">
+            Long-Term Outlook
           </h1>
-          <p className="text-gray-600 max-w-3xl mx-auto">
+          <p className="text-gray-400 max-w-3xl mx-auto">
             Our AI long-term models anticipate steady economic expansion,
             supported by sustained innovation, infrastructure investment,
             and productivity growth across key industries. These projections are
@@ -51,10 +51,10 @@ export default function LongTermOutlookPage() {
 
         {/* Core Investment Themes */}
         <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">
+          <h2 className="text-2xl font-bold text-gray-100 mb-4">
             Core Investment Themes
           </h2>
-          <ul className="list-disc ml-6 text-gray-700 space-y-2">
+          <ul className="list-disc ml-6 text-gray-300 space-y-2">
             <li>Renewable energy adoption accelerating through 2030.</li>
             <li>Healthcare innovation driving global longevity trends.</li>
             <li>AI and automation increasing productivity and margins.</li>
@@ -64,18 +64,18 @@ export default function LongTermOutlookPage() {
         </div>
 
         {/* AI Forecast Insight */}
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-8 mb-12 shadow">
-          <h3 className="text-2xl font-bold text-green-700 mb-3 flex items-center gap-2">
+        <div className="bg-green-400/10 border border-green-400/20 rounded-2xl p-8 mb-12 shadow">
+          <h3 className="text-2xl font-bold text-green-400 mb-3 flex items-center gap-2">
             <Brain className="w-6 h-6" /> AI Forecast Insight
           </h3>
-          <p className="text-gray-700 mb-3">
+          <p className="text-gray-300 mb-3">
             Based on macroeconomic indicators and sectoral performance data, the
             AI models forecast consistent growth in technology-driven industries
             over the next five years. Global GDP is expected to stabilize around
             3% annually, with innovation-led sectors outpacing traditional
             industries by a significant margin.
           </p>
-          <p className="text-gray-700">
+          <p className="text-gray-300">
             Inflation pressures are projected to remain moderate, while
             productivity gains from automation continue to reduce long-term
             labor costs across manufacturing and logistics.
@@ -83,8 +83,8 @@ export default function LongTermOutlookPage() {
         </div>
 
         {/* GDP & Productivity Chart */}
-        <div className="bg-gray-50 p-8 rounded-2xl shadow mb-12">
-          <h3 className="text-xl font-bold text-blue-700 mb-4 flex items-center gap-2">
+        <div className="bg-surface2 p-8 rounded-2xl shadow mb-12">
+          <h3 className="text-xl font-bold text-gold mb-4 flex items-center gap-2">
             <TrendingUp className="w-6 h-6" /> Global Growth Projection
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -122,8 +122,8 @@ export default function LongTermOutlookPage() {
         </div>
 
         {/* Sector Outlook Chart */}
-        <div className="bg-gray-50 p-8 rounded-2xl shadow mb-12">
-          <h3 className="text-xl font-bold text-blue-700 mb-4 flex items-center gap-2">
+        <div className="bg-surface2 p-8 rounded-2xl shadow mb-12">
+          <h3 className="text-xl font-bold text-gold mb-4 flex items-center gap-2">
             <BarChart3 className="w-6 h-6" /> Sector Confidence Outlook
           </h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -148,11 +148,11 @@ export default function LongTermOutlookPage() {
         </div>
 
         {/* Summary & Recommendations */}
-        <div className="bg-white border rounded-2xl shadow p-8">
-          <h3 className="text-2xl font-bold text-gray-800 mb-4">
+        <div className="bg-surface border rounded-2xl shadow p-8">
+          <h3 className="text-2xl font-bold text-gray-100 mb-4">
             Key Takeaways
           </h3>
-          <ul className="list-disc ml-6 text-gray-700 space-y-2">
+          <ul className="list-disc ml-6 text-gray-300 space-y-2">
             <li>
               Long-term investors should maintain overweight positions in
               renewable energy, automation, and AI innovation sectors.
@@ -176,7 +176,7 @@ export default function LongTermOutlookPage() {
         <div className="text-center mt-12">
           <Link
             href="/ai-dashboard"
-            className="inline-flex items-center gap-2 bg-yellow-400 text-black font-semibold px-6 py-3 rounded-xl hover:bg-yellow-500 transition"
+            className="inline-flex items-center gap-2 bg-yellow-400 text-black font-semibold px-6 py-3 rounded-xl hover:bg-gold transition"
           >
             <ArrowLeft className="w-5 h-5" /> Back to AI Dashboard
           </Link>

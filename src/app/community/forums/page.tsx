@@ -38,8 +38,8 @@ export default function ForumsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white py-24 px-6">
-      <h1 className="text-3xl font-bold mb-8 text-center text-yellow-400">
+    <main className="min-h-screen bg-night text-white py-14 px-6">
+      <h1 className="text-3xl mb-8 text-center text-yellow-400 font-display font-normal tracking-tight md:text-4xl">
         Community Forums
       </h1>
 

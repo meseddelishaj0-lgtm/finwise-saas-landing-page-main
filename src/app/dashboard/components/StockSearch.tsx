@@ -35,12 +35,12 @@ const StockSearch: React.FC = () => {
   }, [symbol]);
 
   return (
-    <section className="w-full py-20 bg-white">
+    <section className="w-full py-14 bg-night">
       <div className="max-w-4xl mx-auto text-center">
-        <h2 className="text-4xl font-bold mb-4 text-gray-900">
-          🔎 AI Stock Dashboard
+        <h2 className="text-4xl font-bold mb-4 text-ivory">
+          AI Stock Dashboard
         </h2>
-        <p className="text-gray-600 mb-8">
+        <p className="text-gray-400 mb-8">
           Search any stock and explore AI-driven research, performance charts, and key metrics.
         </p>
 
@@ -50,11 +50,11 @@ const StockSearch: React.FC = () => {
             type="text"
             name="symbol"
             placeholder="Enter Stock Symbol (e.g. TSLA)"
-            className="border border-gray-300 rounded-l-lg px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-white/10 rounded-l-lg px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-gold"
           />
           <button
             type="submit"
-            className="bg-blue-600 text-white px-6 py-2 rounded-r-lg hover:bg-blue-700 transition"
+            className="bg-gold text-night px-6 py-2 rounded-r-lg hover:bg-gold-deep transition"
           >
             Search
           </button>

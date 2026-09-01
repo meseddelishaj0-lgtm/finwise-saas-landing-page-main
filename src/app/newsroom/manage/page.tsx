@@ -136,7 +136,7 @@ export default function NewsroomManagePage() {
       className="relative w-screen min-h-screen text-white bg-night"
       style={{ marginLeft: "calc(-50vw + 50%)" }}
     >
-      <div className="max-w-4xl mx-auto px-6 md:px-10 pt-28 md:pt-32 pb-24">{children}</div>
+      <div className="max-w-4xl mx-auto px-6 md:px-10 pt-12 md:pt-16 pb-24">{children}</div>
     </section>
   );
 

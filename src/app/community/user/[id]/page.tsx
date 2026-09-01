@@ -54,20 +54,20 @@ export default function CommunityUserProfile({ params }: { params: { id: string 
           <div className="text-gray-500 text-lg">@{user.username}</div>
         </div>
       </div>
-      {user.bio && <div className="mb-4 text-gray-700">{user.bio}</div>}
-      <div className="flex gap-6 text-gray-600 mb-4">
+      {user.bio && <div className="mb-4 text-gray-300">{user.bio}</div>}
+      <div className="flex gap-6 text-gray-400 mb-4">
         <div><strong>{user._count?.followers ?? 0}</strong> Followers</div>
         <div><strong>{user._count?.following ?? 0}</strong> Following</div>
         <div><strong>{user._count?.posts ?? 0}</strong> Posts</div>
       </div>
-      {user.location && <div className="mb-2">📍 {user.location}</div>}
+      {user.location && <div className="mb-2">{user.location}</div>}
       {user.website && (
         <div className="mb-2">
-          <a href={user.website} target="_blank" rel="noopener" className="text-blue-600 underline">{user.website}</a>
+          <a href={user.website} target="_blank" rel="noopener" className="text-gold underline">{user.website}</a>
         </div>
       )}
       <div className="mt-8">
-        <button onClick={() => router.back()} className="bg-yellow-400 hover:bg-yellow-500 text-black px-5 py-2 rounded-full font-medium transition-all">Back</button>
+        <button onClick={() => router.back()} className="bg-yellow-400 hover:bg-gold text-black px-5 py-2 rounded-full font-medium transition-all">Back</button>
       </div>
     </div>
   );

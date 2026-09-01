@@ -78,11 +78,11 @@ export default function MATrackerPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 pt-24 py-10">
       {/* Title */}
-      <h1 className="text-3xl font-bold text-center mb-2">M&amp;A Tracker</h1>
-      <p className="text-center text-gray-600 mb-4">
+      <h1 className="text-3xl text-center mb-2 font-display font-normal tracking-tight md:text-4xl">M&amp;A Tracker</h1>
+      <p className="text-center text-gray-400 mb-4">
         Real-time mergers & acquisitions — view acquirers, targets, and filings,
         powered by{" "}
-        <span className="text-yellow-600 font-semibold">WallStreetStocks.ai</span>.
+        <span className="text-gold font-semibold">WallStreetStocks.ai</span>.
         <br />
         <span className="text-xs text-gray-400">
           Last updated: {lastUpdated || "—"}
@@ -93,7 +93,7 @@ export default function MATrackerPage() {
       <div className="flex justify-center mb-8">
         <button
           onClick={() => router.push("/features")}
-          className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-yellow-50 text-gray-700 font-medium px-5 py-2 rounded-full shadow-sm transition"
+          className="flex items-center gap-2 bg-surface border border-white/10 hover:bg-gold/10 text-gray-300 font-medium px-5 py-2 rounded-full shadow-sm transition"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Features
@@ -112,12 +112,12 @@ export default function MATrackerPage() {
             placeholder="Search by company name (e.g. Microsoft)"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full focus:ring-2 focus:ring-yellow-400 outline-none text-gray-700"
+            className="w-full pl-10 pr-4 py-2 border border-white/10 rounded-full focus:ring-2 focus:ring-yellow-400 outline-none text-gray-300"
           />
         </div>
         <button
           type="submit"
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-2 rounded-full shadow transition"
+          className="bg-yellow-400 hover:bg-gold text-black font-semibold px-6 py-2 rounded-full shadow transition"
         >
           Search
         </button>
@@ -125,22 +125,22 @@ export default function MATrackerPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-        <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 text-center">
+        <div className="bg-gold/10 border border-gold/20 rounded-xl p-4 text-center">
           <p className="text-sm text-gray-500">Total Deals</p>
-          <h2 className="text-2xl font-bold text-gray-900">
+          <h2 className="text-2xl font-bold text-ivory">
             {stats.totalDeals.toLocaleString()}
           </h2>
         </div>
-        <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 text-center">
+        <div className="bg-gold/10 border border-gold/20 rounded-xl p-4 text-center">
           <p className="text-sm text-gray-500">Latest Acquirer</p>
-          <h2 className="text-2xl font-bold text-gray-900">{stats.topCompany}</h2>
+          <h2 className="text-2xl font-bold text-ivory">{stats.topCompany}</h2>
         </div>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto bg-white shadow border border-gray-100 rounded-2xl">
+      <div className="overflow-x-auto bg-surface shadow border border-white/10 rounded-2xl">
         <table className="min-w-full text-sm text-left">
-          <thead className="bg-gray-50 border-b text-gray-700">
+          <thead className="bg-surface2 border-b text-gray-300">
             <tr>
               <th className="py-3 px-4">Acquirer</th>
               <th className="py-3 px-4">Target</th>
@@ -166,7 +166,7 @@ export default function MATrackerPage() {
             )}
             {!loading &&
               deals.map((d, i) => (
-                <tr key={i} className="border-t hover:bg-yellow-50">
+                <tr key={i} className="border-t hover:bg-gold/10">
                   <td className="py-3 px-4 font-medium">{d.companyName}</td>
                   <td className="py-3 px-4">{d.targetedCompanyName}</td>
                   <td className="py-3 px-4">{d.symbol || "—"}</td>
@@ -180,7 +180,7 @@ export default function MATrackerPage() {
                       <a
                         href={d.link}
                         target="_blank"
-                        className="text-yellow-600 hover:underline"
+                        className="text-gold hover:underline"
                       >
                         SEC Filing
                       </a>

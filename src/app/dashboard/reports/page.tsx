@@ -14,7 +14,7 @@ export default function ReportsPage() {
 
   if (status === "loading") {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-600 text-lg">
+      <div className="flex items-center justify-center h-screen text-gray-400 text-lg">
         Loading weekly reports...
       </div>
     );
@@ -56,19 +56,19 @@ export default function ReportsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-night">
       {/* Header */}
-      <header className="bg-white shadow-sm py-5">
+      <header className="bg-surface shadow-sm py-5">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-6">
           <h1
             onClick={() => router.push("/dashboard")}
-            className="text-2xl font-semibold text-gray-900 cursor-pointer"
+            className="text-2xl font-semibold text-ivory cursor-pointer"
           >
-            🧠 WallStreetStocks
+            WallStreetStocks
           </h1>
 
           <div className="flex items-center gap-4">
-            <p className="text-gray-700">
+            <p className="text-gray-300">
               Welcome,{" "}
               <span className="font-semibold">
                 {session?.user?.name || session?.user?.email}
@@ -76,7 +76,7 @@ export default function ReportsPage() {
             </p>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black px-5 py-2 rounded-full font-medium transition-all"
+              className="bg-yellow-400 hover:bg-gold text-black px-5 py-2 rounded-full font-medium transition-all"
             >
               Logout
             </button>
@@ -87,11 +87,11 @@ export default function ReportsPage() {
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-6 py-14">
         {/* Header Card */}
-        <div className="bg-white p-10 rounded-2xl shadow-md text-center mb-12">
-          <h2 className="text-3xl font-bold mb-2 text-gray-900">
-            📅 Weekly Research Reports
+        <div className="bg-surface p-10 rounded-2xl shadow-md text-center mb-12">
+          <h2 className="text-3xl font-bold mb-2 text-ivory">
+            Weekly Research Reports
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-400">
             Explore premium AI-generated reports on markets, sectors, and global trends.
           </p>
         </div>
@@ -101,32 +101,32 @@ export default function ReportsPage() {
           {reports.map((report, index) => (
             <div
               key={index}
-              className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+              className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full font-medium">
+                  <span className="text-sm bg-gold/15 text-gold-soft px-3 py-1 rounded-full font-medium">
                     {report.category}
                   </span>
                   <span className="text-xs text-gray-500">{report.date}</span>
                 </div>
 
-                <h3 className="text-xl font-semibold mb-2 text-gray-900">
+                <h3 className="text-xl font-semibold mb-2 text-ivory">
                   {report.title}
                 </h3>
-                <p className="text-gray-600 mb-4 text-sm">{report.summary}</p>
+                <p className="text-gray-400 mb-4 text-sm">{report.summary}</p>
               </div>
 
               <div className="flex justify-between items-center">
                 <button
                   onClick={() => alert("Downloading PDF...")}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-6 rounded-full text-sm transition-all"
+                  className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full text-sm transition-all"
                 >
-                  📄 Download PDF
+                  Download PDF
                 </button>
                 <button
                   onClick={() => alert("Opening full report...")}
-                  className="text-gray-600 hover:text-yellow-600 text-sm font-medium"
+                  className="text-gray-400 hover:text-gold text-sm font-medium"
                 >
                   View Full Report →
                 </button>
@@ -139,7 +139,7 @@ export default function ReportsPage() {
         <div className="mt-12 text-center">
           <button
             onClick={() => router.push("/dashboard")}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-10 rounded-full transition-all"
+            className="bg-yellow-400 hover:bg-gold text-black font-semibold py-3 px-10 rounded-full transition-all"
           >
             ← Back to Dashboard
           </button>

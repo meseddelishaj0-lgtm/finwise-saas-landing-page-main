@@ -172,17 +172,17 @@ const PortfolioPage = () => {
     })) || [];
 
   return (
-    <section className="min-h-screen bg-gray-50 text-gray-900 px-6 md:px-16 pt-24 pb-20">
+    <section className="min-h-screen bg-night text-ivory px-6 md:px-16 pt-10 pb-20">
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12">
         {/* Left side: Portfolio summary */}
         <div>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold">📊 My Portfolio</h1>
+              <h1 className="text-3xl font-display font-normal tracking-tight md:text-4xl">My Portfolio</h1>
               <select
                 value={active}
                 onChange={(e) => setActive(e.target.value)}
-                className="border rounded-lg px-3 py-2 text-sm bg-white"
+                className="border rounded-lg px-3 py-2 text-sm bg-surface"
               >
                 {portfolios.map((p) => (
                   <option key={p.name}>{p.name}</option>
@@ -190,7 +190,7 @@ const PortfolioPage = () => {
               </select>
               <button
                 onClick={createPortfolio}
-                className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-2 rounded-lg font-semibold"
+                className="bg-yellow-400 hover:bg-gold text-black px-3 py-2 rounded-lg font-semibold"
               >
                 + New
               </button>
@@ -209,17 +209,17 @@ const PortfolioPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl shadow-md p-6 mb-6"
+            className="bg-surface rounded-2xl shadow-md p-6 mb-6"
           >
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-gray-600">Total Value</p>
+                <p className="text-gray-400">Total Value</p>
                 <h2 className="text-3xl font-bold">${totalValue.toFixed(2)}</h2>
               </div>
               <p
                 className={`font-semibold ${
-                  gain >= 0 ? "text-green-600" : "text-red-600"
-                }`}
+ gain >= 0 ? "text-green-400" : "text-red-400"
+ }`}
               >
                 {gain >= 0 ? "▲" : "▼"} ${gain.toFixed(2)} ({gainPct.toFixed(2)}%)
               </p>
@@ -227,9 +227,9 @@ const PortfolioPage = () => {
           </motion.div>
 
           {/* Pie chart */}
-          <div className="bg-white rounded-2xl shadow-md p-6">
+          <div className="bg-surface rounded-2xl shadow-md p-6">
             <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <BarChart3 className="text-yellow-500 w-5 h-5" /> Allocation
+              <BarChart3 className="text-gold w-5 h-5" /> Allocation
             </h3>
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
@@ -253,14 +253,14 @@ const PortfolioPage = () => {
         </div>
 
         {/* Right side: Holdings */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
+        <div className="bg-surface rounded-2xl shadow-md p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold flex items-center gap-2">
-              <DollarSign className="text-yellow-500 w-5 h-5" /> Holdings
+              <DollarSign className="text-gold w-5 h-5" /> Holdings
             </h3>
             <button
               onClick={() => setShowAdd(true)}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-1 rounded-lg text-sm font-semibold"
+              className="bg-yellow-400 hover:bg-gold text-black px-3 py-1 rounded-lg text-sm font-semibold"
             >
               + Add Stock
             </button>
@@ -268,7 +268,7 @@ const PortfolioPage = () => {
 
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-gray-600 border-b">
+              <tr className="text-gray-400 border-b">
                 <th className="text-left py-2">Ticker</th>
                 <th>Shares</th>
                 <th>Cost</th>
@@ -305,13 +305,13 @@ const PortfolioPage = () => {
                       <td className="flex gap-2 justify-center">
                         <button
                           onClick={() => saveEdit(s.ticker)}
-                          className="text-green-600 hover:text-green-800"
+                          className="text-green-400 hover:text-green-800"
                         >
                           <Save size={16} />
                         </button>
                         <button
                           onClick={() => setEditingTicker(null)}
-                          className="text-gray-500 hover:text-gray-700"
+                          className="text-gray-500 hover:text-gray-300"
                         >
                           <X size={16} />
                         </button>
@@ -326,13 +326,13 @@ const PortfolioPage = () => {
                       <td className="flex gap-2 justify-center">
                         <button
                           onClick={() => startEdit(s)}
-                          className="text-yellow-500 hover:text-yellow-600"
+                          className="text-gold hover:text-gold"
                         >
                           <Edit3 size={16} />
                         </button>
                         <button
                           onClick={() => deleteStock(s.ticker)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-500 hover:text-red-400"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -349,7 +349,7 @@ const PortfolioPage = () => {
       {/* Add Stock Modal */}
       {showAdd && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 w-96 shadow-xl">
+          <div className="bg-surface rounded-2xl p-8 w-96 shadow-xl">
             <h3 className="text-xl font-semibold mb-4">Add Stock</h3>
             <input
               type="text"
@@ -375,13 +375,13 @@ const PortfolioPage = () => {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowAdd(false)}
-                className="px-4 py-2 rounded-lg bg-gray-200"
+                className="px-4 py-2 rounded-lg bg-white/10"
               >
                 Cancel
               </button>
               <button
                 onClick={addStock}
-                className="px-4 py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-black font-semibold"
+                className="px-4 py-2 rounded-lg bg-yellow-400 hover:bg-gold text-black font-semibold"
               >
                 Add
               </button>
