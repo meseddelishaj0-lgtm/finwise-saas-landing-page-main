@@ -129,7 +129,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/wallstreetstocks.png",
+          "image": "./assets/images/splash-logo.png",
           "imageWidth": 250,
           "resizeMode": "contain",
           "backgroundColor": "#0B1A2E",
