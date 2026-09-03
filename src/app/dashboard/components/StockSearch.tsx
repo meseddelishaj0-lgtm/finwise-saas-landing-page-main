@@ -1,38 +1,17 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import Script from "next/script";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
+// Symbol search that opens the site's own Terminal (no third-party widget).
 const StockSearch: React.FC = () => {
-  const [symbol, setSymbol] = useState("AAPL");
+  const router = useRouter();
+  const [symbol, setSymbol] = useState("");
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const input = (e.currentTarget.elements.namedItem("symbol") as HTMLInputElement).value.toUpperCase();
-    setSymbol(input);
+    const clean = symbol.trim().toUpperCase().replace(/[^A-Z0-9^./-]/g, "");
+    if (clean) router.push(`/terminal?symbol=${encodeURIComponent(clean)}`);
   };
-
-  // initialize TradingView when script loads
-  const initTradingView = () => {
-    if (!(window as any).TradingView) return;
-    new (window as any).TradingView.widget({
-      width: "100%",
-      height: 600,
-      symbol: symbol,
-      interval: "D",
-      timezone: "Etc/UTC",
-      theme: "light",
-      style: "1",
-      locale: "en",
-      enable_publishing: false,
-      allow_symbol_change: true,
-      container_id: "tradingview_chart",
-    });
-  };
-
-  // re-render chart when symbol changes
-  useEffect(() => {
-    if ((window as any).TradingView) initTradingView();
-  }, [symbol]);
 
   return (
     <section className="w-full py-14 bg-night">
@@ -41,40 +20,30 @@ const StockSearch: React.FC = () => {
           AI Stock Dashboard
         </h2>
         <p className="text-gray-400 mb-8">
-          Search any stock and explore AI-driven research, performance charts, and key metrics.
+          Search any stock and open it in the Terminal: charts, fundamentals and news in one view.
         </p>
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="flex justify-center mb-10">
+        <form onSubmit={handleSearch} className="flex justify-center">
           <input
             type="text"
             name="symbol"
-            placeholder="Enter Stock Symbol (e.g. TSLA)"
-            className="border border-white/10 rounded-l-lg px-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-gold"
+            value={symbol}
+            onChange={(e) => setSymbol(e.target.value)}
+            placeholder="Enter a symbol (e.g. TSLA)"
+            autoComplete="off"
+            spellCheck={false}
+            className="rounded-l-lg border border-white/10 bg-white/[0.04] px-4 py-2 w-64 text-ivory placeholder:text-gray-600 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/25"
           />
           <button
             type="submit"
-            className="bg-gold text-night px-6 py-2 rounded-r-lg hover:bg-gold-deep transition"
+            className="bg-gold text-night px-6 py-2 rounded-r-lg font-semibold hover:bg-gold-deep transition"
           >
-            Search
+            Open in Terminal
           </button>
         </form>
-
-        {/* TradingView Container */}
-        <div className="tradingview-widget-container h-[600px]">
-          <div id="tradingview_chart" className="h-full"></div>
-        </div>
-
-        {/* TradingView Script */}
-        <Script
-          src="https://s3.tradingview.com/tv.js"
-          strategy="afterInteractive"
-          onReady={initTradingView}
-        />
       </div>
     </section>
   );
 };
 
 export default StockSearch;
-

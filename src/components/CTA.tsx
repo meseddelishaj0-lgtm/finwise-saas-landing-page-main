@@ -10,8 +10,7 @@ export default function CTA() {
   return (
     <section
       id="cta"
-      className="relative w-screen overflow-hidden bg-gold text-night"
-      style={{ marginLeft: "calc(-50vw + 50%)" }}
+      className="relative w-full overflow-hidden bg-gold text-night"
     >
       <div className="relative max-w-7xl mx-auto px-6 md:px-10 py-20 md:py-28">
         <Reveal>
@@ -31,7 +30,7 @@ export default function CTA() {
           <div className="mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Link href="/register" className="btn-night group px-8 py-3.5 text-base">
               Create free account
-              <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+              <span className="arrow">→</span>
             </Link>
             <Link
               href="/plans"

@@ -95,8 +95,7 @@ const HomePage: React.FC = () => {
       {/* SUB — membership plans */}
       <section
         id="plans"
-        className="relative w-screen text-white bg-night border-t border-white/10"
-        style={{ marginLeft: "calc(-50vw + 50%)" }}
+        className="relative w-full text-white bg-night border-t border-white/10"
       >
         <div className="max-w-7xl mx-auto px-6 md:px-10 py-16 md:py-24">
           <Reveal>
@@ -104,7 +103,7 @@ const HomePage: React.FC = () => {
             <h2 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">
               Choose your edge.
             </h2>
-            <p className="mt-4 text-gray-400 max-w-2xl text-lg">
+            <p className="mt-4 text-gray-300 max-w-2xl text-lg">
               Three tiers, one desk. Start where you are — every plan is
               month to month.
             </p>
@@ -114,8 +113,10 @@ const HomePage: React.FC = () => {
             {PLANS.map((plan, i) => (
               <Reveal key={plan.name} delay={i * 0.1} className="h-full">
                 <div
-                  className={`relative h-full flex flex-col p-8 rounded-xl border bg-surface ${
-                    plan.featured ? "border-yellow-400/60" : "border-white/10"
+                  className={`relative h-full flex flex-col p-8 rounded-2xl border transition-colors duration-300 ${
+                    plan.featured
+                      ? "border-gold/60 bg-surface2 shadow-[0_40px_80px_-50px_rgba(250,204,21,0.35)]"
+                      : "border-white/10 bg-surface hover:border-white/20"
                   }`}
                 >
                   {plan.featured && (
@@ -167,8 +168,7 @@ const HomePage: React.FC = () => {
       {/* HELP — FAQ */}
       <section
         id="faq"
-        className="relative w-screen text-white bg-night border-t border-white/10"
-        style={{ marginLeft: "calc(-50vw + 50%)" }}
+        className="relative w-full text-white bg-night border-t border-white/10"
       >
         <div className="max-w-7xl mx-auto px-6 md:px-10 py-16 md:py-24 grid lg:grid-cols-[0.9fr_1.1fr] gap-12">
           <div>
@@ -176,7 +176,7 @@ const HomePage: React.FC = () => {
             <h2 className="font-display text-ivory text-4xl md:text-5xl tracking-tight">
               Before you ask the desk.
             </h2>
-            <p className="mt-5 text-gray-400 leading-relaxed">
+            <p className="mt-5 text-gray-300 leading-relaxed">
               Anything not covered here reaches a human at{" "}
               <a
                 href="mailto:wallstreetstocks@outlook.com"
@@ -199,7 +199,7 @@ const HomePage: React.FC = () => {
                     +
                   </span>
                 </summary>
-                <p className="pb-6 pr-10 text-gray-400 leading-relaxed">{faq.a}</p>
+                <p className="pb-6 pr-10 text-gray-300 text-[17px] leading-relaxed">{faq.a}</p>
               </details>
             ))}
           </div>

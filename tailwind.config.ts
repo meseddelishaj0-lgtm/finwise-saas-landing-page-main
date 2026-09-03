@@ -9,7 +9,9 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        // Display serif — landing-page headlines only
+        // Body sans — Source Sans 3 via next/font (see layout.tsx)
+        sans: ["var(--font-body)", "'Source Sans 3'", "ui-sans-serif", "system-ui", "sans-serif"],
+        // Display serif — headlines
         display: ["var(--font-display)", "Georgia", "serif"],
         // Data mono — commands, tickers, labels
         monodata: ["var(--font-mono-wss)", "ui-monospace", "SFMono-Regular", "monospace"],
@@ -17,6 +19,9 @@ const config: Config = {
       // Hairline default so bare `border` / `divide-y` read correctly on night surfaces
       borderColor: {
         DEFAULT: "rgba(255, 255, 255, 0.10)",
+      },
+      transitionTimingFunction: {
+        expo: "cubic-bezier(0.22, 1, 0.36, 1)",
       },
       colors: {
         // Warm paper-white for display text on night (print voice)

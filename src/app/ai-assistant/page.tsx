@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { motion } from "framer-motion";
-import { Send } from "lucide-react";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
+
+const inputClass =
+  "w-full rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-ivory placeholder:text-gray-600 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/25";
 
 export default function AiAssistantPage() {
   const [messages, setMessages] = useState<{ sender: string; text: string }[]>([]);
@@ -67,73 +70,84 @@ export default function AiAssistantPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center pt-10 pb-10 px-4 text-ivory bg-night">
-      {/* Header */}
-      <motion.h1
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="text-3xl md:text-4xl mb-3 text-gold text-center font-display font-normal tracking-tight"
-      >
-        WallStreetStocks AI Assistant
-      </motion.h1>
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <CommandLine cmd="ASK" note="ask the desk anything" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">
+            Ask the <em className="italic text-gold-soft">desk</em>.
+          </h1>
+          <p className="mt-5 text-lg text-gray-300 max-w-2xl">
+            Stock picks, market outlook, valuation models, portfolio strategy.
+            Ask in plain English and the desk answers from live data.
+          </p>
+        </Reveal>
 
-      <p className="text-gray-400 mb-10 text-center max-w-xl">
-        Ask about stock picks, market outlook, valuation models, or portfolio
-        strategies — powered by{" "}
-        <span className="font-semibold text-gold">
-          WallStreetStocks.ai
-        </span>
-      </p>
+        <Reveal delay={0.06} className="mt-12">
+          <div className="max-w-3xl">
+            {/* Transcript */}
+            <div
+              className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 md:p-6 flex flex-col gap-4 min-h-[280px] max-h-[60vh] overflow-y-auto"
+              role="log"
+              aria-live="polite"
+            >
+              {messages.length === 0 ? (
+                <p className="text-[15px] md:text-base leading-relaxed text-gray-500">
+                  Ask a question to start the conversation.
+                </p>
+              ) : (
+                messages.map((msg, i) => {
+                  const isUser = msg.sender === "user";
+                  return (
+                    <div
+                      key={i}
+                      className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-2xl px-4 py-3 text-[15px] md:text-base leading-relaxed whitespace-pre-wrap break-words ${
+                          isUser
+                            ? "bg-gold/10 border border-gold/30 text-ivory"
+                            : "bg-surface border border-white/10 text-gray-300"
+                        }`}
+                      >
+                        {msg.text === "" && !isUser && loading ? (
+                          <span className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+                            Thinking
+                          </span>
+                        ) : (
+                          msg.text
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
+            </div>
 
-      {/* Chat container */}
-      <div className="w-full max-w-2xl flex flex-col items-center space-y-5">
-        {/* Chat messages */}
-        <div className="w-full bg-surface rounded-3xl border border-white/10 shadow-md p-5 flex flex-col space-y-3 max-h-[60vh] overflow-y-auto">
-          {messages.length === 0 ? (
-            <p className="text-center text-gray-500 italic">
-              Ask a question to start your AI conversation...
-            </p>
-          ) : (
-            messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`flex ${
- msg.sender === "user" ? "justify-end" : "justify-start"
- }`}
+            {/* Composer */}
+            <div className="mt-4 flex items-center gap-3">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                placeholder="Ask about a stock, a sector, or your portfolio"
+                aria-label="Message the desk"
+                className={inputClass}
+              />
+              <button
+                onClick={sendMessage}
+                disabled={loading}
+                className="btn-gold px-5 py-2.5 text-sm shrink-0 disabled:opacity-60 disabled:pointer-events-none"
               >
-                <div
-                  className={`px-4 py-3 rounded-2xl text-sm font-medium shadow-sm max-w-[80%] break-words ${
- msg.sender === "user"
- ? "bg-yellow-400 text-black rounded-br-none"
- : "bg-surface2 text-gray-100 border border-white/10 rounded-bl-none"
- }`}
-                >
-                  {msg.text}
-                </div>
-              </div>
-            ))
-          )}
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* Input Section */}
-        <div className="w-full flex items-center justify-center space-x-3 mt-4">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            placeholder="Ask about stocks, AI picks, or portfolio strategy..."
-            className="flex-grow max-w-[80%] border border-white/10 bg-surface rounded-full px-5 py-3 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 shadow-sm"
-          />
-          <button
-            onClick={sendMessage}
-            disabled={loading}
-            className="bg-yellow-400 text-black rounded-full px-4 py-3 hover:bg-gold transition-all shadow-md disabled:opacity-60"
-          >
-            <Send size={18} />
-          </button>
-        </div>
+                Send
+              </button>
+            </div>
+            <p className="mt-3 font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+              Enter to send. Not investment advice.
+            </p>
+          </div>
+        </Reveal>
       </div>
     </main>
   );

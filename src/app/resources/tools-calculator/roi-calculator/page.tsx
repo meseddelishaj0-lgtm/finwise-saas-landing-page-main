@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import Link from "next/link";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
 
 export default function ROICalculatorPage() {
   const [gain, setGain] = useState("");
@@ -26,56 +28,52 @@ export default function ROICalculatorPage() {
   };
 
   return (
-    <main className="min-h-screen bg-night text-ivory flex flex-col items-center pt-12 md:pt-16 pb-16 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center px-6 py-14 md:py-20">
       {/* Header */}
-      <motion.section
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="text-center max-w-2xl mb-10"
-      >
-        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
-          ROI Calculator
+      <Reveal className="text-center max-w-2xl mb-10">
+        <CommandLine cmd="CAL" note="return on investment" className="mb-4" />
+        <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">
+          ROI calculator
         </h1>
-        <p className="text-lg text-gray-400">
+        <p className="mt-5 text-lg text-gray-400 leading-relaxed">
           Calculate your Return on Investment (ROI) instantly to measure the profitability of your business or project.
         </p>
-      </motion.section>
+      </Reveal>
 
       {/* Calculator Card */}
-      <div className="w-full max-w-md bg-surface2 border border-white/10 rounded-2xl shadow-md p-8">
-        <label className="block text-gray-100 font-semibold mb-2">
+      <div className="w-full max-w-md card-night p-8">
+        <label className="mb-2 block font-monodata text-[11px] uppercase tracking-widest text-gray-500">
           Total Gain / Return ($)
         </label>
         <input
           type="number"
           value={gain}
           onChange={(e) => setGain(e.target.value)}
-          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/25"
           placeholder="e.g. 12000"
         />
 
-        <label className="block text-gray-100 font-semibold mb-2">
+        <label className="mb-2 block font-monodata text-[11px] uppercase tracking-widest text-gray-500">
           Total Cost / Investment ($)
         </label>
         <input
           type="number"
           value={cost}
           onChange={(e) => setCost(e.target.value)}
-          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-6 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-6 focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/25"
           placeholder="e.g. 10000"
         />
 
         <div className="flex gap-3">
           <button
             onClick={calculateROI}
-            className="flex-1 bg-gold hover:bg-gold-deep text-black font-semibold py-3 rounded-xl transition-all"
+            className="btn-gold flex-1 py-3"
           >
             Calculate
           </button>
           <button
             onClick={resetForm}
-            className="flex-1 bg-white/10 hover:bg-white/15 text-gray-100 font-semibold py-3 rounded-xl transition-all"
+            className="btn-ghost-gold flex-1 py-3"
           >
             Reset
           </button>
@@ -84,14 +82,9 @@ export default function ROICalculatorPage() {
 
       {/* Result Display */}
       {roi !== null && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-md w-full mt-10 bg-surface2 border border-white/10 rounded-2xl shadow-md p-6 text-center"
-        >
-          <h2 className="text-xl font-bold mb-2 text-gray-100">Your ROI</h2>
-          <p className="text-3xl font-extrabold text-gold">
+        <Reveal className="max-w-md w-full mt-10 card-night p-6 text-center">
+          <h2 className="text-lg md:text-xl font-semibold text-ivory mb-2">Your ROI</h2>
+          <p className="font-monodata tabular-nums text-3xl font-semibold text-gold">
             {roi.toFixed(2)}%
           </p>
           <p className="text-gray-400 mt-2">
@@ -99,8 +92,13 @@ export default function ROICalculatorPage() {
               ? "Positive ROI indicates a profitable investment."
               : "Negative ROI indicates a loss on investment."}
           </p>
-        </motion.div>
+        </Reveal>
       )}
+      <Reveal className="mt-12">
+        <Link href="/resources/tools-calculator" className="btn-ghost-gold px-5 py-2.5 text-sm">
+          ← Back to calculators
+        </Link>
+      </Reveal>
     </main>
   );
 }

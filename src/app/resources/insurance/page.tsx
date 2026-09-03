@@ -1,110 +1,129 @@
-"use client";
-
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
 
-const InsurancePage = () => {
-  const [activeTab, setActiveTab] = useState("beginner");
+type Topic = { title: string; body?: string; points?: string[] };
 
+const LEVELS: { label: string; topics: Topic[] }[] = [
+  {
+    label: "Beginner",
+    topics: [
+      {
+        title: "What is insurance?",
+        body:
+          "Insurance is a contract that transfers financial risk from an individual or business to an insurer.",
+        points: [
+          "Life, health, property, and liability insurance",
+          "Premiums, deductibles, and coverage limits",
+          "Purpose: risk management and asset protection",
+        ],
+      },
+      {
+        title: "Why insurance matters",
+        body:
+          "Insurance provides financial security and ensures continuity in case of unforeseen events, which makes it essential to financial planning.",
+      },
+    ],
+  },
+  {
+    label: "Intermediate",
+    topics: [
+      {
+        title: "Property and casualty insurance",
+        body:
+          "Covers losses from damage or liability, such as car, homeowners, or business insurance.",
+        points: [
+          "Homeowners and auto coverage",
+          "Business interruption insurance",
+          "Professional liability (E&O)",
+        ],
+      },
+      {
+        title: "Life and health insurance",
+        body:
+          "Term vs. whole life insurance, health plan structures (HMO/PPO), and employer-provided benefits.",
+      },
+    ],
+  },
+  {
+    label: "Advanced",
+    topics: [
+      {
+        title: "Advanced insurance strategies",
+        points: [
+          "Key person insurance for businesses",
+          "Captive insurance companies",
+          "Using insurance in estate planning",
+        ],
+      },
+      {
+        title: "Insurance in wealth management",
+        body:
+          "How high-net-worth individuals use permanent life insurance for tax-advantaged growth and wealth transfer.",
+      },
+    ],
+  },
+];
+
+function PointList({ items }: { items: string[] }) {
   return (
-    <main className="min-h-screen py-16 px-6 md:px-20 bg-night text-foreground">
-      {/* Header */}
-      <section className="max-w-5xl mx-auto text-center mb-12 pt-12 md:pt-40">
-        <h1 className="text-4xl md:text-5xl mb-4 flex justify-center items-center gap-2 font-display font-normal tracking-tight">
-          Insurance Resources
-        </h1>
-        <p className="text-lg text-foreground-accent">
-          Understand how insurance protects wealth, manages risk, and plays a central role in personal and business finance.
-          Learn about life, health, property, and liability insurance — from fundamentals to advanced strategies.
-        </p>
-      </section>
+    <ul className="mt-4 space-y-1.5 text-sm text-gray-400">
+      {items.map((it) => (
+        <li key={it} className="flex gap-2.5">
+          <span className="font-monodata font-semibold text-gold" aria-hidden="true">
+            +
+          </span>
+          <span>{it}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
-      {/* Tabs */}
-      <div className="flex justify-center gap-4 mb-10">
-        {["beginner", "intermediate", "advanced"].map((level) => (
-          <button
-            key={level}
-            onClick={() => setActiveTab(level)}
-            className={`px-6 py-2 rounded-full font-semibold transition-all ${
- activeTab === level
- ? "bg-primary text-white shadow-lg"
- : "bg-card text-foreground hover:bg-primary/10"
- }`}
-          >
-            {level.charAt(0).toUpperCase() + level.slice(1)}
-          </button>
+export default function InsurancePage() {
+  return (
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <CommandLine cmd="INS" note="insurance guides" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight max-w-3xl">
+            Insurance
+          </h1>
+          <p className="mt-5 max-w-2xl text-lg text-gray-400 leading-relaxed">
+            How insurance protects wealth, manages risk, and fits into personal and business
+            finance. Life, health, property, and liability coverage, from fundamentals to
+            advanced strategies.
+          </p>
+        </Reveal>
+
+        {LEVELS.map((level, li) => (
+          <section key={level.label} className="mt-14">
+            <Reveal>
+              <p className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+                {String(li + 1).padStart(2, "0")} · {level.label}
+              </p>
+            </Reveal>
+            <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
+              {level.topics.map((t, i) => (
+                <Reveal key={t.title} delay={i * 0.06} className="h-full">
+                  <article className="card-night h-full p-6">
+                    <h2 className="text-lg md:text-xl font-semibold text-ivory">{t.title}</h2>
+                    {t.body && <p className="mt-2 text-gray-400 leading-relaxed">{t.body}</p>}
+                    {t.points && <PointList items={t.points} />}
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+          </section>
         ))}
+
+        <Reveal className="mt-14">
+          <Link href="/resources" className="btn-ghost-gold px-5 py-2.5 text-sm">
+            ← Back to library
+          </Link>
+        </Reveal>
       </div>
-
-      {/* BEGINNER */}
-      {activeTab === "beginner" && (
-        <section className="max-w-5xl mx-auto space-y-10 animate-fadeIn">
-          <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-2">What Is Insurance?</h2>
-            <p className="text-foreground-accent mb-3">
-              Insurance is a contract that transfers financial risk from an individual or business to an insurer.
-            </p>
-            <ul className="list-disc list-inside text-foreground-accent">
-              <li>Life, Health, Property, and Liability insurance</li>
-              <li>Premiums, Deductibles, and Coverage Limits</li>
-              <li>Purpose: Risk management and asset protection</li>
-            </ul>
-          </div>
-
-          <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-2">Why Insurance Matters</h2>
-            <p className="text-foreground-accent">
-              Insurance provides financial security and ensures continuity in case of unforeseen events — essential for financial planning.
-            </p>
-          </div>
-        </section>
-      )}
-
-      {/* INTERMEDIATE */}
-      {activeTab === "intermediate" && (
-        <section className="max-w-5xl mx-auto space-y-10 animate-fadeIn">
-          <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-2">Property & Casualty Insurance</h2>
-            <p className="text-foreground-accent mb-3">
-              Covers losses from damage or liability — such as car, homeowners, or business insurance.
-            </p>
-            <ul className="list-disc list-inside text-foreground-accent">
-              <li>Homeowners & Auto Coverage</li>
-              <li>Business Interruption Insurance</li>
-              <li>Professional Liability (E&O)</li>
-            </ul>
-          </div>
-
-          <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-2">Life & Health Insurance</h2>
-            <p className="text-foreground-accent">
-              Learn about term vs. whole life insurance, health plan structures (HMO/PPO), and employer-provided benefits.
-            </p>
-          </div>
-        </section>
-      )}
-
-      {/* ADVANCED */}
-      {activeTab === "advanced" && (
-        <section className="max-w-5xl mx-auto space-y-10 animate-fadeIn">
-          <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-2">Advanced Insurance Strategies</h2>
-            <ul className="list-disc list-inside text-foreground-accent">
-              <li>Key Person Insurance for Businesses</li>
-              <li>Captive Insurance Companies</li>
-              <li>Using Insurance in Estate Planning</li>
-            </ul>
-          </div>
-          <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-2">Insurance in Wealth Management</h2>
-            <p className="text-foreground-accent">
-              Explore how high-net-worth individuals use permanent life insurance for tax-advantaged growth and wealth transfer.
-            </p>
-          </div>
-        </section>
-      )}
     </main>
   );
-};
-
-export default InsurancePage;
+}

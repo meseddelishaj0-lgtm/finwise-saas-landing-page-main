@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Brain, Search, TrendingUp } from 'lucide-react';
+import CommandLine from '@/components/ui/CommandLine';
+import Reveal from '@/components/ui/Reveal';
 
 interface StockData {
   symbol: string;
@@ -14,6 +15,9 @@ interface StockData {
   sentiment: string;
   intrinsicValue: number;
 }
+
+const inputClass =
+  'w-full rounded-full border border-white/10 bg-white/[0.04] px-5 py-3 font-monodata uppercase text-ivory placeholder:normal-case placeholder:text-gray-600 transition-colors focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/25';
 
 export default function AIPoweredAnalysisPage() {
   const [ticker, setTicker] = useState('');
@@ -60,126 +64,134 @@ export default function AIPoweredAnalysisPage() {
   };
 
   return (
-    <main className="min-h-screen bg-night py-16 px-6 text-ivory">
-      <div className="max-w-4xl mx-auto">
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-4xl mx-auto px-6 md:px-10 py-14 md:py-20">
         {/* HEADER */}
-        <div className="text-center mb-12">
-          <Brain className="w-12 h-12 text-gold mx-auto mb-3" />
-          <h1 className="text-4xl mb-3 font-display font-normal tracking-tight md:text-5xl">AI-Powered Analysis</h1>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Leverage our proprietary AI models to evaluate company fundamentals,
-            sentiment, and valuation instantly — with real-time Finnhub data.
+        <Reveal>
+          <CommandLine cmd="FIN" note="ai ticker analysis" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">AI-powered analysis</h1>
+          <p className="mt-5 max-w-2xl text-lg text-gray-400 leading-relaxed">
+            Evaluate a company&apos;s live quote, day range, and an AI-style intrinsic value estimate,
+            with real-time Finnhub data.
           </p>
-        </div>
+        </Reveal>
 
         {/* INPUT SECTION */}
-        <div className="bg-surface p-6 rounded-2xl shadow-sm mb-8 border border-white/10">
-          <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-            <Search className="w-6 h-6 text-gold" />
-            Enter a Company Ticker
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              placeholder="e.g. AAPL, TSLA, NVDA"
-              value={ticker}
-              onChange={(e) => setTicker(e.target.value)}
-              className="flex-grow border border-white/10 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            />
-            <button
-              onClick={analyzeTicker}
-              disabled={!ticker || loading}
-              className="bg-gold hover:bg-gold-deep text-night font-semibold px-6 py-2 rounded-xl transition"
-            >
-              {loading ? 'Analyzing...' : 'Analyze'}
-            </button>
+        <Reveal className="mt-12">
+          <div className="card-night p-6 md:p-8">
+            <h2 className="text-lg md:text-xl font-semibold text-ivory">Enter a company ticker</h2>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <label htmlFor="ticker" className="sr-only">
+                Ticker symbol
+              </label>
+              <input
+                id="ticker"
+                type="text"
+                placeholder="e.g. AAPL, TSLA, NVDA"
+                value={ticker}
+                onChange={(e) => setTicker(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') analyzeTicker();
+                }}
+                className={inputClass}
+              />
+              <button
+                onClick={analyzeTicker}
+                disabled={!ticker || loading}
+                className="btn-gold px-5 py-2.5 text-sm shrink-0 disabled:opacity-60"
+              >
+                {loading ? 'Analyzing…' : 'Analyze'}
+              </button>
+            </div>
           </div>
-        </div>
+        </Reveal>
 
         {/* ERROR HANDLING */}
         {error && (
-          <div className="bg-red-400/15 text-red-400 p-4 rounded-xl mb-6 border border-red-400/20">
+          <div className="mt-6 rounded-xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-400">
             {error}
           </div>
         )}
 
         {/* RESULT SECTION */}
         {data && (
-          <div className="bg-surface p-6 rounded-2xl shadow-md border border-white/10">
-            <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-gold" />
-              Analysis for {data.symbol}
-            </h3>
+          <div className="card-night mt-6 p-6 md:p-8">
+            <h3 className="text-lg md:text-xl font-semibold text-ivory">Analysis for {data.symbol}</h3>
 
-            <ul className="text-gray-300 space-y-2">
-              <li>
-                <strong>Current Price:</strong>{' '}
-                <span className="text-green-400">${data.price.toFixed(2)}</span>
-              </li>
-              <li>
-                <strong>Day Range:</strong>{' '}
-                ${data.low.toFixed(2)} – ${data.high.toFixed(2)}
-              </li>
-              <li>
-                <strong>Change:</strong>{' '}
-                <span
-                  className={
+            <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
+              <div>
+                <dt className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">Current price</dt>
+                <dd className="mt-1 font-monodata tabular-nums text-ivory">${data.price.toFixed(2)}</dd>
+              </div>
+              <div>
+                <dt className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">Day range</dt>
+                <dd className="mt-1 font-monodata tabular-nums text-ivory">
+                  ${data.low.toFixed(2)} – ${data.high.toFixed(2)}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">Change</dt>
+                <dd
+                  className={`mt-1 font-monodata tabular-nums ${
                     data.change >= 0 ? 'text-green-400' : 'text-red-400'
-                  }
+                  }`}
                 >
                   {data.change >= 0 ? '+' : ''}
                   {data.change.toFixed(2)} ({data.percent >= 0 ? '+' : ''}
                   {data.percent.toFixed(2)}%)
-                </span>
-              </li>
-              <li>
-                <strong>Intrinsic Value (AI-Estimate):</strong>{' '}
-                <span className="text-gold font-semibold">
-                  ${data.intrinsicValue.toFixed(2)}
-                </span>
-              </li>
-              <li>
-                <strong>Sentiment:</strong>{' '}
-                <span
-                  className={
+                </dd>
+              </div>
+              <div>
+                <dt className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+                  Intrinsic value (AI estimate)
+                </dt>
+                <dd className="mt-1 font-monodata tabular-nums text-gold">${data.intrinsicValue.toFixed(2)}</dd>
+              </div>
+              <div>
+                <dt className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">Sentiment</dt>
+                <dd
+                  className={`mt-1 font-semibold ${
                     data.sentiment === 'Positive'
-                      ? 'text-green-400 font-semibold'
+                      ? 'text-green-400'
                       : data.sentiment === 'Negative'
-                      ? 'text-red-400 font-semibold'
-                      : 'text-gray-300 font-semibold'
-                  }
+                      ? 'text-red-400'
+                      : 'text-gray-300'
+                  }`}
                 >
                   {data.sentiment}
-                </span>
-              </li>
-            </ul>
+                </dd>
+              </div>
+            </dl>
           </div>
         )}
 
         {/* EXAMPLE CARD */}
         {!data && !loading && (
-          <div className="bg-surface2 p-6 rounded-2xl border border-white/10 mt-8">
-            <h2 className="text-2xl font-bold mb-3">Example: Tesla (TSLA)</h2>
-            <p>
-              Intrinsic Value: <strong>$239.50</strong>
-            </p>
-            <p>
-              Sentiment:{' '}
-              <span className="text-green-400 font-semibold">Positive</span>{' '}
-              (+12% week-over-week)
-            </p>
-          </div>
+          <Reveal className="mt-6">
+            <div className="card-night p-6 md:p-8">
+              <p className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">Example</p>
+              <h2 className="mt-3 text-lg md:text-xl font-semibold text-ivory">Tesla (TSLA)</h2>
+              <p className="mt-2 text-gray-300">
+                Intrinsic value: <strong className="font-monodata tabular-nums text-ivory">$239.50</strong>
+              </p>
+              <p className="mt-1 text-gray-300">
+                Sentiment: <span className="font-semibold text-green-400">Positive</span> (+12% week-over-week)
+              </p>
+            </div>
+          </Reveal>
         )}
 
         {/* BACK BUTTON */}
-        <div className="mt-10 text-center">
-          <Link
-            href="/ai-dashboard"
-            className="inline-block bg-gold text-night px-6 py-3 rounded-xl font-semibold hover:bg-gold-deep transition"
-          >
-            ← Back to Dashboard
-          </Link>
-        </div>
+        <Reveal className="mt-12">
+          <div className="flex flex-wrap gap-3">
+            <Link href="/resources/finance" className="btn-ghost-gold px-5 py-2.5 text-sm">
+              ← Back to finance guides
+            </Link>
+            <Link href="/ai-dashboard" className="btn-ghost-gold px-5 py-2.5 text-sm">
+              Open the AI dashboard
+            </Link>
+          </div>
+        </Reveal>
       </div>
     </main>
   );

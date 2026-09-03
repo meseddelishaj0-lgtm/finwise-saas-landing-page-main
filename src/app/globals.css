@@ -2,30 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-/* === Root Theme Variables === */
+/* =============================================================================
+   WallStreetStocks — night / gold design system
+   Tokens live in tailwind.config.ts (night, surface, surface2, gold, ivory).
+   This file holds: base type, form defaults, shared primitives, motion.
+   ============================================================================= */
+
 :root {
   --background: #0D0C09;
   --foreground: #F2EDE3;
   --primary: #FACC15;
-  --secondary: #304fff;
-
+  --secondary: #EAB308;
   --primary-accent: #EAB308;
   --foreground-accent: #9CA3AF;
   --hero-background: #0D0C09;
+
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-draw: cubic-bezier(0.55, 0, 0.25, 1);
 }
 
 html {
-  @apply scroll-smooth;
+  scroll-behavior: smooth;
   color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+  /* Full-bleed sections use 100vw; clip the scrollbar-width overflow they create. */
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
-  @apply text-lg;
   color: var(--foreground);
   background: var(--background);
-  font-family: "Source Sans 3", sans-serif;
+  font-family: var(--font-body), "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
   font-optical-sizing: auto;
-  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+/* Headings inherit the body face unless a component opts into the serif via
+   `font-display`. Balanced wrapping keeps ragged lines even. */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+h1, h2 {
+  letter-spacing: -0.02em;
+}
+p {
+  text-wrap: pretty;
 }
 
 @layer utilities {
@@ -34,8 +63,8 @@ body {
   }
 }
 
-/* Form controls default to the night surface so inner pages never render
-   white inputs on a dark page. Utilities on the element still win. */
+/* Form controls default to the night surface so no page ever renders a white
+   input. Utilities on the element still win. */
 @layer base {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
   textarea,
@@ -56,35 +85,19 @@ body {
   }
 }
 
-/* === Fonts === */
-.manrope {
-  font-family: "Manrope", sans-serif;
-  font-optical-sizing: auto;
-  font-style: normal;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: "Manrope", sans-serif;
-  font-optical-sizing: auto;
-  font-style: normal;
-}
-
-h1, h2, h3 {
-  letter-spacing: -0.02em;
-}
-
 /* === Global polish === */
 ::selection {
   background: rgba(250, 204, 21, 0.28);
+  color: #F2EDE3;
 }
 
 :focus-visible {
-  outline: 2px solid rgba(250, 204, 21, 0.7);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: 2px solid rgba(250, 204, 21, 0.8);
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
-/* Thin warm scrollbar — subtle on both dark and light surfaces */
+/* Thin warm scrollbar */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(140, 130, 100, 0.35) transparent;
@@ -108,31 +121,111 @@ h1, h2, h3 {
   background-clip: content-box;
 }
 
-#logos svg {
-  @apply w-fit h-10 sm:h-12;
+/* =============================================================================
+   Shared primitives
+   ============================================================================= */
+
+@layer components {
+/* Primary CTA — solid brand gold, hairline inner highlight, sheen on hover */
+.btn-gold {
+  @apply relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-night bg-gold overflow-hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s var(--ease-out-expo), box-shadow 0.3s var(--ease-out-expo), background-color 0.3s;
+}
+.btn-gold::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  transform: translateX(-130%);
+  transition: transform 0.9s var(--ease-out-expo);
+  pointer-events: none;
+}
+.btn-gold:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 12px 30px -10px rgba(250, 204, 21, 0.6);
+}
+.btn-gold:hover::after {
+  transform: translateX(130%);
+}
+.btn-gold:active {
+  transform: translateY(0) scale(0.985);
 }
 
-.benefit-section:last-of-type > div {
-  @apply mb-10;
+/* Secondary CTA — quiet outline that lights up gold */
+.btn-ghost-gold {
+  @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-gold-soft bg-white/[0.03] border border-gold/30;
+  transition: transform 0.3s var(--ease-out-expo), background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+.btn-ghost-gold:hover {
+  @apply bg-gold/10 border-gold/60 text-gold;
+  transform: translateY(-1px);
+}
+.btn-ghost-gold:active {
+  transform: translateY(0) scale(0.985);
 }
 
-/* ✅ Dropdown smooth fade-in animation */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Inverse button — for use on solid-gold surfaces only */
+.btn-night {
+  @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-semibold text-gold bg-night;
+  transition: transform 0.3s var(--ease-out-expo), box-shadow 0.3s var(--ease-out-expo);
+}
+.btn-night:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px -10px rgba(13, 12, 9, 0.7);
 }
 
-.group:hover > div {
-  animation: fadeIn 0.15s ease-in-out forwards;
+/* Section eyebrow label */
+.eyebrow {
+  @apply font-monodata text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500;
 }
 
-/* === Animated Gradient for Title === */
+/* Section eyebrow badge (legacy name, kept for inner pages) */
+.badge-pill {
+  @apply inline-block px-3.5 py-1 rounded-full font-monodata text-[11px] font-semibold uppercase tracking-widest text-gold bg-gold/10 border border-gold/25;
+}
+
+/* Raised card on night background */
+.card-night {
+  @apply rounded-2xl border border-white/10 bg-surface;
+}
+/* Add to any card that is a link or button */
+.card-hover {
+  transition: transform 0.35s var(--ease-out-expo), border-color 0.35s, background-color 0.35s, box-shadow 0.35s;
+}
+.card-hover:hover {
+  @apply border-gold/40 bg-surface2;
+  transform: translateY(-2px);
+  box-shadow: 0 24px 40px -28px rgba(0, 0, 0, 0.9);
+}
+
+/* Glass card — used on a few inner pages */
+.glass-card {
+  @apply relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md;
+  transition: transform 0.35s var(--ease-out-expo), border-color 0.35s;
+}
+.glass-card:hover {
+  @apply border-gold/40;
+  transform: translateY(-2px);
+}
+
+/* Section wrapper glow — one consistent, very quiet radial treatment */
+.section-glow {
+  @apply absolute inset-0 pointer-events-none;
+  background: radial-gradient(circle at center, rgba(250, 204, 21, 0.06) 0%, rgba(0, 0, 0, 0) 62%);
+}
+
+/* Hairline grid used behind the hero — fades out radially */
+.bg-hero-grid {
+  background-image:
+    linear-gradient(rgba(250, 204, 21, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(250, 204, 21, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 100%);
+}
+
+/* Legacy animated headline gradient (one inner page) */
 @keyframes gradientFlow {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -141,220 +234,156 @@ h1, h2, h3 {
 .animate-gradientFlow {
   animation: gradientFlow 8s ease-in-out infinite;
   background-size: 400% 400%;
-  background-image: linear-gradient(
-    270deg,
-    #facc15,
-    #fbbf24,
-    #fde68a,
-    #fffbeb,
-    #fde68a,
-    #eab308,
-    #facc15
-  );
+  background-image: linear-gradient(270deg, #facc15, #fbbf24, #fde68a, #fffbeb, #fde68a, #eab308, #facc15);
 }
 
-/* === Subtle shimmer for subtitle === */
-@keyframes subtleGradient {
-  0% { background-position: 0% 50%; opacity: 0.9; }
-  50% { background-position: 100% 50%; opacity: 1; }
-  100% { background-position: 0% 50%; opacity: 0.9; }
-}
-.animate-subtleGradient {
-  animation: subtleGradient 14s ease-in-out infinite;
-  background-size: 300% 300%;
-  background-image: linear-gradient(
-    270deg,
-    #9ca3af,
-    #facc15,
-    #fde68a,
-    #9ca3af
-  );
-}
-
-/* === Background gradient motion === */
-@keyframes bgShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-.animate-bgShift {
-  background-size: 200% 200%;
-  animation: bgShift 25s ease-in-out infinite;
-}
-
-/* === Radial Gradient Utility === */
-.bg-gradient-radial {
-  background: radial-gradient(circle, var(--tw-gradient-stops));
-}
-
-/* === Hero Grid Overlay === */
-.bg-hero-grid {
-  background-image:
-    linear-gradient(rgba(255, 215, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 215, 0, 0.05) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 30%, transparent 100%);
-}
-
-/* === Glass Card === */
-.glass-card {
-  @apply relative rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-md transition-all duration-300;
-}
-.glass-card:hover {
-  @apply border-yellow-400/40 -translate-y-1;
-  box-shadow: 0 0 35px rgba(255, 215, 0, 0.15), 0 20px 40px rgba(0, 0, 0, 0.4);
-}
-
-/* === Gold Section Title === */
+/* Section title kept for inner pages that still reference it */
 .section-title-gold {
-  @apply text-4xl md:text-5xl font-extrabold tracking-tight bg-gradient-to-r from-yellow-300 via-amber-200 to-yellow-500 bg-clip-text text-transparent;
-  filter: drop-shadow(0 0 18px rgba(250, 204, 21, 0.2));
+  @apply text-4xl md:text-5xl font-display tracking-tight text-ivory;
 }
 
-/* === Shared dark-theme primitives === */
-
-/* Primary CTA — the one gold button style for the whole site */
-.btn-gold {
-  @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-black bg-gradient-to-r from-yellow-400 to-amber-400 transition-all duration-300;
-  box-shadow: 0 0 0 rgba(250, 204, 21, 0);
+/* =============================================================================
+   Long-form reading (guides, resources, articles)
+   ============================================================================= */
+.prose-desk {
+  max-width: 68ch;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: #D1D5DB;
 }
-.btn-gold:hover {
-  @apply -translate-y-0.5;
-  box-shadow: 0 8px 30px rgba(250, 204, 21, 0.35);
+.prose-desk > * + * {
+  margin-top: 1.1em;
 }
-
-/* Secondary CTA — quiet outline that lights up gold */
-.btn-ghost-gold {
-  @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-yellow-300 bg-white/[0.04] border border-yellow-400/30 transition-all duration-300;
+.prose-desk h1 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-size: 2.5rem;
+  line-height: 1.1;
+  color: #F2EDE3;
 }
-.btn-ghost-gold:hover {
-  @apply bg-yellow-400/10 border-yellow-400/60 -translate-y-0.5;
+.prose-desk h2 {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  font-size: 1.85rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: #F2EDE3;
+  margin-top: 2.2em;
 }
-
-/* Section eyebrow badge */
-.badge-pill {
-  @apply inline-block px-4 py-1.5 rounded-full text-sm font-medium text-yellow-300 bg-yellow-400/10 border border-yellow-400/25;
+.prose-desk h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #F2EDE3;
+  margin-top: 1.8em;
 }
-
-/* Raised card on night background */
-.card-night {
-  @apply rounded-2xl border border-white/10 bg-surface;
+.prose-desk h2 + *, .prose-desk h3 + * {
+  margin-top: 0.7em;
 }
-
-/* Section wrapper glow — one consistent radial treatment */
-.section-glow {
-  @apply absolute inset-0 pointer-events-none;
-  background: radial-gradient(circle at center, rgba(250, 204, 21, 0.07) 0%, rgba(0, 0, 0, 0) 62%);
+.prose-desk strong {
+  color: #F2EDE3;
+  font-weight: 600;
 }
-
-/* === Floating Ticker Animations === */
-@keyframes ticker-scroll-left {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+.prose-desk a {
+  color: #FACC15;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(250, 204, 21, 0.4);
+  transition: text-decoration-color 0.2s;
 }
-.animate-ticker1 {
-  position: absolute;
-  top: 30%;
-  left: 0;
-  width: 200%;
-  animation: ticker-scroll-left 30s linear infinite;
+.prose-desk a:hover {
+  text-decoration-color: #FACC15;
 }
-.animate-ticker2 {
-  position: absolute;
-  top: 40%;
-  left: 0;
-  width: 200%;
-  animation: ticker-scroll-left 40s linear infinite;
+.prose-desk ul {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
 }
-
-/* === Soft Pulse Background Motion === */
-@keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
-}
-.animate-pulse-slow {
-  animation: pulse-slow 6s ease-in-out infinite;
-}
-
-/* 🌇 Enhanced Skyline with Gold Shimmer Animation */
-.hero-skyline {
+.prose-desk ul > li {
   position: relative;
-  background: linear-gradient(to top, #000000 10%, #0b0903 55%, #2d230f 100%);
-  overflow: hidden;
+  padding-left: 1.5em;
 }
-
-/* 🏙️ City Silhouette */
-.hero-skyline::before {
-  content: "";
+.prose-desk ul > li::before {
+  content: "+";
   position: absolute;
-  bottom: 0;
-  left: 0;
+  left: 0.1em;
+  top: 0;
+  color: #FACC15;
+  font-family: var(--font-mono-wss), ui-monospace, monospace;
+  font-weight: 600;
+}
+.prose-desk ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+}
+.prose-desk ol > li::marker {
+  color: #FACC15;
+  font-family: var(--font-mono-wss), ui-monospace, monospace;
+  font-size: 0.9em;
+}
+.prose-desk li + li {
+  margin-top: 0.5em;
+}
+.prose-desk pre,
+.prose-desk code {
+  font-family: var(--font-mono-wss), ui-monospace, SFMono-Regular, monospace;
+}
+.prose-desk pre {
+  background: #161410;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #F2EDE3;
+  overflow-x: auto;
+}
+.prose-desk :not(pre) > code {
+  font-size: 0.9em;
+  color: #FDE68A;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.1em 0.4em;
+  border-radius: 0.3rem;
+}
+.prose-desk blockquote {
+  border-left: 2px solid #FACC15;
+  padding-left: 1.1rem;
+  color: #9CA3AF;
+  font-style: italic;
+}
+.prose-desk table {
   width: 100%;
-  height: 220px;
-  background: repeating-linear-gradient(
-    to right,
-    #050505 0px,
-    #050505 60px,
-    #0a0a0a 60px,
-    #0a0a0a 120px
-  );
-  clip-path: polygon(
-    0% 100%,
-    0% 60%,
-    10% 50%,
-    14% 70%,
-    20% 40%,
-    25% 65%,
-    35% 45%,
-    40% 75%,
-    50% 50%,
-    55% 70%,
-    65% 45%,
-    70% 68%,
-    80% 40%,
-    85% 60%,
-    95% 50%,
-    100% 70%,
-    100% 100%
-  );
-  box-shadow: 0 -15px 35px #000000 inset;
-  opacity: 0.95;
+  font-size: 0.95rem;
+  border-collapse: collapse;
+}
+.prose-desk th,
+.prose-desk td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: left;
+  vertical-align: top;
+}
+.prose-desk th {
+  font-family: var(--font-mono-wss), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9CA3AF;
+  font-weight: 600;
+}
+.prose-desk img {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.prose-desk hr {
+  margin: 2.5em 0;
+}
 }
 
-/* 🌅 Gold Horizon Glow */
-.hero-skyline::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 140px;
-  background: radial-gradient(
-    circle at 50% 100%,
-    rgba(255, 200, 90, 0.3) 0%,
-    rgba(255, 200, 90, 0.1) 40%,
-    transparent 80%
-  );
-  mix-blend-mode: screen;
-  opacity: 0.6;
-  animation: shimmerSweep 12s ease-in-out infinite;
-}
+/* =============================================================================
+   Motion
+   ============================================================================= */
 
-/* ✨ Soft Gold Shimmer Effect */
-@keyframes shimmerSweep {
-  0% {
-    background-position: -200% 0;
-  }
-  50% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-/* === Terminal command-line signature (landing redesign) === */
+/* Terminal command-line cursor */
 @keyframes wss-blink {
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
@@ -369,21 +398,98 @@ h1, h2, h3 {
   animation: wss-blink 1.1s steps(1) infinite;
 }
 
-/* Inverse button — for use on solid-gold surfaces only */
-.btn-night {
-  @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-gold bg-night transition-all duration-300;
+/* Scroll reveal. Content is visible by default; only once the `js` class is
+   on <html> do elements start hidden and animate in when they intersect. */
+.js .reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.9s var(--ease-out-expo), transform 0.9s var(--ease-out-expo);
 }
-.btn-night:hover {
-  @apply -translate-y-0.5;
-  box-shadow: 0 8px 30px rgba(13, 12, 9, 0.45);
+.js .reveal.is-in {
+  opacity: 1;
+  transform: none;
 }
 
-/* Respect reduced motion globally: settle every animation to its end state */
+/* Page-load entrance for hero elements (CSS only — never depends on JS) */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+.rise {
+  animation: rise 0.9s var(--ease-out-expo) both;
+  animation-delay: var(--d, 0s);
+}
+
+/* The hero tape draws itself left to right, then its fill fades in */
+@keyframes draw-line {
+  to { stroke-dashoffset: 0; }
+}
+.draw-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-line 2.4s var(--ease-draw) 0.35s forwards;
+}
+@keyframes fade-in {
+  to { opacity: 1; }
+}
+.fade-late {
+  opacity: 0;
+  animation: fade-in 1.4s ease-out 1.5s forwards;
+}
+.fade-later {
+  opacity: 0;
+  animation: fade-in 0.8s ease-out 2.5s forwards;
+}
+
+/* Live marker: solid gold dot with an expanding ring */
+@keyframes ping-gold {
+  0% { transform: scale(1); opacity: 0.7; }
+  100% { transform: scale(3.2); opacity: 0; }
+}
+.live-dot {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #FACC15;
+  box-shadow: 0 0 0 2px #0D0C09;
+}
+.live-dot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: #FACC15;
+  animation: ping-gold 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Arrow nudge used inside links: <span class="arrow">→</span> */
+.group:hover .arrow,
+.group:focus-visible .arrow {
+  transform: translateX(4px);
+}
+.arrow {
+  display: inline-block;
+  transition: transform 0.3s var(--ease-out-expo);
+}
+
+/* Respect reduced motion: settle every animation to its end state */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .draw-line {
+    stroke-dashoffset: 0;
+  }
+  .fade-late, .fade-later {
+    opacity: 1;
   }
 }

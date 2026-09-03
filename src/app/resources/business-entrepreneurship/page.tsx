@@ -1,99 +1,93 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import { Briefcase, Rocket, Users, LineChart, Lightbulb, Target } from "lucide-react";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
+
+const TOPICS = [
+  {
+    title: "Startup fundamentals",
+    icon: Rocket,
+    description:
+      "Turning an idea into a scalable startup: business models, product-market fit, and lean methods.",
+    href: "/resources/business-entrepreneurship/startup-fundamentals",
+  },
+  {
+    title: "Business planning",
+    icon: Briefcase,
+    description:
+      "Business plans and financial projections that hold up in front of investors and support long-term growth.",
+    href: "/resources/business-entrepreneurship/business-planning",
+  },
+  {
+    title: "Leadership & management",
+    icon: Users,
+    description:
+      "Team building, communication, and the organizational culture that makes a company work.",
+    href: "/resources/business-entrepreneurship/leadership-management",
+  },
+  {
+    title: "Marketing & growth",
+    icon: LineChart,
+    description:
+      "Branding, digital advertising, and customer acquisition and retention.",
+    href: "/resources/business-entrepreneurship/marketing-growth",
+  },
+  {
+    title: "Innovation & strategy",
+    icon: Lightbulb,
+    description:
+      "Competitive strategy, business innovation, and the disruptive-thinking frameworks used by leading companies.",
+    href: "/resources/business-entrepreneurship/innovation-strategy",
+  },
+  {
+    title: "Entrepreneurship mindset",
+    icon: Target,
+    description:
+      "Resilience, decision-making, and the long view needed to lead through uncertain markets.",
+    href: "/resources/business-entrepreneurship/entrepreneurship-mindset",
+  },
+];
 
 export default function BusinessEntrepreneurshipPage() {
-  const topics = [
-    {
-      title: "Startup Fundamentals",
-      icon: <Rocket className="w-6 h-6 text-gold" />,
-      description:
-        "Learn how to turn ideas into scalable startups — covering business models, product-market fit, and lean methodologies.",
-      href: "/resources/business-entrepreneurship/startup-fundamentals",
-    },
-    {
-      title: "Business Planning",
-      icon: <Briefcase className="w-6 h-6 text-gold" />,
-      description:
-        "Create powerful business plans and financial projections that attract investors and support long-term growth.",
-      href: "/resources/business-entrepreneurship/business-planning",
-    },
-    {
-      title: "Leadership & Management",
-      icon: <Users className="w-6 h-6 text-gold" />,
-      description:
-        "Develop essential leadership skills for team building, communication, and organizational culture that drives success.",
-      href: "/resources/business-entrepreneurship/leadership-management",
-    },
-    {
-      title: "Marketing & Growth",
-      icon: <LineChart className="w-6 h-6 text-gold" />,
-      description:
-        "Master modern marketing — from branding and digital advertising to customer acquisition and retention strategies.",
-      href: "/resources/business-entrepreneurship/marketing-growth",
-    },
-    {
-      title: "Innovation & Strategy",
-      icon: <Lightbulb className="w-6 h-6 text-gold" />,
-      description:
-        "Explore competitive strategy, business innovation, and disruptive thinking frameworks used by world-class companies.",
-      href: "/resources/business-entrepreneurship/innovation-strategy",
-    },
-    {
-      title: "Entrepreneurship Mindset",
-      icon: <Target className="w-6 h-6 text-gold" />,
-      description:
-        "Build resilience, decision-making, and visionary thinking to lead in uncertain markets and turn challenges into opportunities.",
-      href: "/resources/business-entrepreneurship/entrepreneurship-mindset",
-    },
-  ];
-
   return (
-    <section className="min-h-screen bg-night px-6 pt-10 md:pt-12 pb-20">
-      <div className="max-w-6xl mx-auto text-center">
-        <h1 className="text-4xl mb-6 text-ivory font-display font-normal tracking-tight md:text-5xl">
-          Business & Entrepreneurship
-        </h1>
-        <p className="text-lg text-gray-400 mb-12">
-          Explore modern business strategies, startup frameworks, and leadership tools designed
-          to help you build, scale, and manage successful ventures in today’s competitive economy.
-        </p>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
-          {topics.map((topic) => (
-            <Link
-              key={topic.title}
-              href={topic.href}
-              className="p-6 rounded-2xl border shadow-sm hover:shadow-md transition bg-surface2 hover:bg-surface2 block"
-            >
-              <div className="flex items-center mb-3 space-x-3">
-                {topic.icon}
-                <h3 className="text-xl font-semibold text-ivory">{topic.title}</h3>
-              </div>
-              <p className="text-gray-400">{topic.description}</p>
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-16 max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl font-bold mb-4 text-gray-100">Coming Soon</h2>
-          <p className="text-gray-400">
-            Case studies, AI business planners, and real-world startup simulation tools are in
-            development to enhance your entrepreneurial learning experience.
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <CommandLine cmd="BIZ" note="business and entrepreneurship" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight max-w-3xl">
+            Business &amp; <em className="italic text-gold-soft">entrepreneurship</em>.
+          </h1>
+          <p className="mt-5 max-w-2xl text-lg text-gray-400 leading-relaxed">
+            Business strategy, startup frameworks, and leadership tools for building, scaling,
+            and running a venture in a competitive economy.
           </p>
+        </Reveal>
+
+        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {TOPICS.map((topic, i) => {
+            const Icon = topic.icon;
+            return (
+              <Reveal key={topic.href} delay={i * 0.06} className="h-full">
+                <Link href={topic.href} className="card-night card-hover group flex h-full flex-col p-6">
+                  <Icon className="h-6 w-6 text-gold" aria-hidden="true" />
+                  <h2 className="mt-5 text-lg md:text-xl font-semibold text-ivory">{topic.title}</h2>
+                  <p className="mt-2 flex-1 text-gray-400 leading-relaxed">{topic.description}</p>
+                  <span className="mt-6 font-monodata text-[11px] uppercase tracking-widest text-gold-soft">
+                    Open modules <span className="arrow">→</span>
+                  </span>
+                </Link>
+              </Reveal>
+            );
+          })}
         </div>
 
-        <div className="mt-12">
-          <Link
-            href="/resources"
-            className="inline-block mt-8 text-gold hover:text-indigo-800 font-semibold transition"
-          >
-            ← Back to Resources
+        <Reveal className="mt-14">
+          <Link href="/resources" className="btn-ghost-gold px-5 py-2.5 text-sm">
+            ← Back to library
           </Link>
-        </div>
+        </Reveal>
       </div>
-    </section>
+    </main>
   );
 }

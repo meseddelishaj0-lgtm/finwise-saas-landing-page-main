@@ -1,31 +1,34 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
 
 export default function MemberNetworkPage() {
   const router = useRouter();
 
   const members = [
     {
-      name: "Professional Investors",
+      name: "Professional investors",
       description:
         "Connect with experienced portfolio managers, analysts, and traders to exchange professional insights.",
       link: "/community/members/investors",
     },
     {
-      name: "AI & Data Analysts",
+      name: "AI and data analysts",
       description:
         "Collaborate with AI engineers and data scientists using models to forecast trends and evaluate stocks.",
       link: "/community/members/analysts",
     },
     {
-      name: "Finance Students & Learners",
+      name: "Finance students and learners",
       description:
         "Join a learning community of finance students and aspiring analysts to grow your market knowledge.",
       link: "/community/members/students",
     },
     {
-      name: "Networking Events",
+      name: "Networking events",
       description:
         "Access exclusive online meetups, webinars, and collaboration sessions to expand your professional network.",
       link: "/community/members/events",
@@ -33,66 +36,57 @@ export default function MemberNetworkPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-night">
-      {/* Header */}
-      <header className="bg-surface shadow-sm py-5">
-        <div className="max-w-7xl mx-auto flex justify-between items-center px-6">
-          <h1
-            onClick={() => router.push("/dashboard")}
-            className="text-2xl font-semibold text-ivory cursor-pointer"
-          >
-            Member Network
-          </h1>
-          <button
-            onClick={() => router.push("/community")}
-            className="bg-yellow-400 hover:bg-gold text-black px-5 py-2 rounded-full font-medium transition-all"
-          >
-            ← Back to Community
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-6 py-14 text-center">
-        <h2 className="text-4xl font-bold mb-4 text-ivory">Member Network</h2>
-        <p className="text-gray-400 mb-12 max-w-2xl mx-auto">
-          Build relationships with investors, analysts, and entrepreneurs. 
-          Grow your reputation and share your research within the WallStreetStocks community.
-        </p>
-
-        {/* Member Categories */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {members.map((member) => (
-            <div
-              key={member.name}
-              className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all text-left border border-white/10 cursor-pointer"
-              onClick={() => router.push(member.link)}
-            >
-              <h3 className="text-xl font-semibold mb-2">{member.name}</h3>
-              <p className="text-gray-400 mb-4">{member.description}</p>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  router.push(member.link);
-                }}
-                className="text-gold font-semibold hover:underline"
-              >
-                Learn More →
-              </button>
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            <div>
+              <CommandLine cmd="MEM" note="the member network" className="mb-4" />
+              <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">
+                Member <em className="italic text-gold-soft">network</em>.
+              </h1>
+              <p className="mt-5 text-lg text-gray-300 max-w-2xl">
+                Investors, analysts, and learners who share research and build
+                a reputation on the same desk.
+              </p>
             </div>
-          ))}
-        </section>
+            <button
+              type="button"
+              onClick={() => router.push("/community")}
+              className="btn-ghost-gold px-4 py-2 text-sm shrink-0 self-start md:self-auto"
+            >
+              Back to community
+            </button>
+          </div>
+        </Reveal>
 
-        {/* CTA */}
-        <div className="mt-16 text-center">
-          <button
-            onClick={() => router.push("/community")}
-            className="bg-yellow-400 hover:bg-gold text-black font-semibold py-3 px-10 rounded-full transition-all"
-          >
-            Back to Community Hub
-          </button>
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+          {members.map((member, i) => (
+            <Reveal key={member.name} delay={0.06 + i * 0.06} className="h-full">
+              <Link
+                href={member.link}
+                className="group card-night card-hover p-6 md:p-8 flex flex-col h-full"
+              >
+                <h2 className="text-lg md:text-xl font-semibold text-ivory">{member.name}</h2>
+                <p className="mt-3 text-gray-400 leading-relaxed flex-1">{member.description}</p>
+                <span className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-gold-soft">
+                  Open group <span className="arrow">→</span>
+                </span>
+              </Link>
+            </Reveal>
+          ))}
         </div>
-      </main>
-    </div>
+
+        <Reveal delay={0.3} className="mt-14 pt-8 border-t border-white/10">
+          <button
+            type="button"
+            onClick={() => router.push("/community")}
+            className="btn-ghost-gold px-4 py-2 text-sm"
+          >
+            Back to community hub
+          </button>
+        </Reveal>
+      </div>
+    </main>
   );
 }

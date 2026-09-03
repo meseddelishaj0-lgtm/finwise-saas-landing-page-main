@@ -86,7 +86,7 @@ export default function SmartPortfolioTipsPage() {
         </div>
 
         {/* AI Strategy Summary */}
-        <div className="bg-surface2 border border-purple-200 rounded-2xl p-8 mb-12 shadow">
+        <div className="bg-surface2 border border-white/10 rounded-2xl p-8 mb-12 shadow">
           <h3 className="text-2xl font-bold text-gold-soft mb-3 flex items-center gap-2">
             <Brain className="w-6 h-6" /> AI Strategy Summary
           </h3>
@@ -187,7 +187,7 @@ export default function SmartPortfolioTipsPage() {
               setRebalance(true);
               setTimeout(() => setRebalance(false), 2500);
             }}
-            className="flex items-center gap-2 bg-purple-500 text-white font-semibold px-6 py-3 rounded-xl hover:bg-purple-600 transition"
+            className="flex items-center gap-2 bg-gold text-night font-semibold px-6 py-3 rounded-full hover:bg-gold-deep transition"
           >
             <RefreshCw
               className={`w-5 h-5 ${rebalance ? "animate-spin" : ""}`}

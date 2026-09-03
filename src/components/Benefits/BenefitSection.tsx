@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
 import { IBenefit } from "@/types";
+import Reveal from "@/components/ui/Reveal";
 import SmartAnalysisPanel from "./panels/SmartAnalysisPanel";
 import AIStockResearchPanel from "./panels/AIStockResearchPanel";
 import MarketDataPanel from "./panels/MarketDataPanel";
@@ -12,8 +12,7 @@ interface Props {
   imageAtRight?: boolean;
 }
 
-// Custom visual panel per benefit section (replaces the old TradingView embeds,
-// whose <script> tags never execute through dangerouslySetInnerHTML)
+// Custom visual panel per benefit section
 const PANELS: Record<string, React.FC> = {
   "Smart Analysis": SmartAnalysisPanel,
   "AI Stock Research": AIStockResearchPanel,
@@ -26,49 +25,33 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }) => {
 
   return (
     <section
-      className={`relative w-full bg-transparent ${
-        imageAtRight ? "md:flex-row-reverse" : "md:flex-row"
-      } flex flex-col items-center justify-between gap-16 px-6 md:px-12 py-10`}
+      className={`relative w-full ${
+        imageAtRight ? "lg:flex-row-reverse" : "lg:flex-row"
+      } flex flex-col lg:items-center justify-between gap-10 lg:gap-16 py-12 md:py-16`}
     >
-      {/* ✅ Left Text */}
-      <motion.div
-        initial={{ opacity: 0, x: imageAtRight ? 40 : -40 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="flex-1 space-y-6 text-left"
-      >
-        <h3 className="font-display text-ivory text-4xl md:text-5xl tracking-tight">
-          {title}
-        </h3>
-        <p className="text-gray-400 text-lg leading-relaxed">{description}</p>
+      {/* Copy */}
+      <Reveal className="flex-1 max-w-xl">
+        <h3 className="font-display text-ivory text-3xl md:text-[2.6rem] leading-[1.08] tracking-tight">{title}</h3>
+        <p className="mt-5 text-gray-300 text-lg leading-relaxed">{description}</p>
 
-        <ul className="space-y-4">
+        <ul className="mt-8 space-y-4">
           {bullets?.map((b, i) => (
-            <li key={i} className="flex items-start gap-3 text-gray-400 text-md">
-              <span className="mt-0.5 flex-shrink-0 font-monodata text-gold font-semibold select-none">
-                +
-              </span>
+            <li key={i} className="flex items-start gap-3.5 text-gray-400 text-[15px] md:text-base leading-relaxed">
+              <span className="mt-1 flex-shrink-0 font-monodata text-gold font-semibold select-none">+</span>
               <span>
-                <strong className="text-ivory font-semibold">{b.title}.</strong>{" "}
-                {b.description}
+                <strong className="text-ivory font-semibold">{b.title}.</strong> {b.description}
               </span>
             </li>
           ))}
         </ul>
-      </motion.div>
+      </Reveal>
 
-      {/* ✅ Right Visual Panel */}
-      <motion.div
-        initial={{ opacity: 0, x: imageAtRight ? -40 : 40 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-        className="flex-1 w-full max-w-xl overflow-hidden rounded-xl
-        border border-white/10 bg-surface"
-      >
-        {Panel ? <Panel /> : null}
-      </motion.div>
+      {/* Visual panel */}
+      <Reveal delay={0.12} className="flex-1 w-full max-w-xl">
+        <div className="card-night overflow-hidden shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)]">
+          {Panel ? <Panel /> : null}
+        </div>
+      </Reveal>
     </section>
   );
 };

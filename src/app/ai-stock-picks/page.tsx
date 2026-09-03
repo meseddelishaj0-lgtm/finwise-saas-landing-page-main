@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Brain, RefreshCcw, Search } from "lucide-react";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
 
 interface StockPick {
   symbol: string;
@@ -10,6 +10,25 @@ interface StockPick {
   sector: string;
   rationale: string;
   sentiment: string;
+}
+
+const THEMES = ["growth", "value", "momentum"] as const;
+
+const inputClass =
+  "rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-ivory placeholder:text-gray-600 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/25";
+
+const pillClass = (active: boolean) =>
+  `px-3.5 py-1.5 rounded-md font-monodata text-[11px] uppercase tracking-wider border transition-colors ${
+    active
+      ? "bg-gold/10 text-gold border-gold/30"
+      : "text-gray-500 hover:text-gray-200 border-transparent"
+  }`;
+
+function sentimentClass(sentiment: string) {
+  const s = (sentiment || "").toLowerCase();
+  if (s === "bullish") return "bg-gold/10 text-gold border-gold/30";
+  if (s === "bearish") return "bg-white/[0.04] text-gray-300 border-white/15";
+  return "bg-white/[0.02] text-gray-500 border-white/10";
 }
 
 export default function AIStockPicksPage() {
@@ -37,115 +56,126 @@ export default function AIStockPicksPage() {
     }
   };
 
+  const visible = picks.filter(
+    (p) =>
+      p.name.toLowerCase().includes(query.toLowerCase()) ||
+      p.symbol.toLowerCase().includes(query.toLowerCase())
+  );
+
   return (
-    <main className="min-h-screen pt-10 pb-10 px-6 flex flex-col items-center bg-night">
-      {/* Title */}
-      <motion.h1
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="text-3xl md:text-4xl text-ivory mb-3 flex items-center gap-2 font-display font-normal tracking-tight"
-      >
-        <Brain className="text-yellow-400" /> AI-Powered Stock Picks
-      </motion.h1>
-      <p className="text-gray-400 mb-8 text-center max-w-2xl">
-        Discover curated AI-driven stock recommendations for Growth, Value, and
-        Momentum strategies — updated in real time.
-      </p>
-
-      {/* Controls */}
-      <div className="flex flex-wrap justify-center gap-3 mb-6">
-        {["growth", "value", "momentum"].map((t) => (
-          <button
-            key={t}
-            onClick={() => setTheme(t)}
-            className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
- theme === t
- ? "bg-yellow-400 text-black shadow-md"
- : "bg-surface border border-white/10 text-gray-300 hover:bg-surface2"
- }`}
-          >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* Sector input */}
-      <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
-        <input
-          type="text"
-          placeholder="Optional: Sector (e.g., Technology, Energy)"
-          value={sector}
-          onChange={(e) => setSector(e.target.value)}
-          className="border border-white/10 rounded-full px-4 py-2 w-full md:w-80 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-        />
-        <button
-          onClick={fetchPicks}
-          className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-gold shadow-md flex items-center gap-2 transition-all"
-        >
-          <RefreshCcw size={16} /> Generate Picks
-        </button>
-      </div>
-
-      {/* Search */}
-      {picks.length > 0 && (
-        <div className="flex items-center bg-surface shadow-sm rounded-full border border-white/10 px-4 py-2 w-full md:w-96 mb-8">
-          <Search className="text-gray-400 mr-2" />
-          <input
-            type="text"
-            placeholder="Filter by company or symbol..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="flex-grow outline-none text-sm text-gray-300"
-          />
-        </div>
-      )}
-
-      {/* Results */}
-      <div className="w-full max-w-5xl">
-        {loading ? (
-          <p className="text-center text-gray-500">Generating AI recommendations...</p>
-        ) : picks.length === 0 ? (
-          <p className="text-center text-gray-500 italic">
-            Click “Generate Picks” to get the latest AI stock insights.
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <CommandLine cmd="PIC" note="model-selected stocks" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">
+            Picks with the <em className="italic text-gold-soft">reasoning</em> attached.
+          </h1>
+          <p className="mt-5 text-lg text-gray-300 max-w-2xl">
+            Growth, value, or momentum. The model screens the tape and explains
+            every name it puts forward.
           </p>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2">
-            {picks
-              .filter(
-                (p) =>
-                  p.name.toLowerCase().includes(query.toLowerCase()) ||
-                  p.symbol.toLowerCase().includes(query.toLowerCase())
-              )
-              .map((p, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="bg-surface border border-white/10 rounded-2xl shadow-md p-5 hover:shadow-lg transition-all"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xl font-bold text-ivory">{p.symbol}</h3>
-                    <span
-                      className={`px-3 py-1 text-xs rounded-full font-semibold ${
- p.sentiment.toLowerCase() === "bullish"
- ? "bg-green-400/15 text-green-400"
- : p.sentiment.toLowerCase() === "bearish"
- ? "bg-red-400/15 text-red-400"
- : "bg-surface2 text-gray-300"
- }`}
-                    >
-                      {p.sentiment}
-                    </span>
-                  </div>
-                  <p className="text-gray-300 font-semibold mb-1">{p.name}</p>
-                  <p className="text-gray-500 text-sm mb-3">Sector: {p.sector}</p>
-                  <p className="text-gray-400 text-sm leading-relaxed">{p.rationale}</p>
-                </motion.div>
-              ))}
+        </Reveal>
+
+        <Reveal delay={0.06} className="mt-12">
+          {/* Strategy */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-monodata text-[11px] uppercase tracking-widest text-gray-500 mr-2">
+              Strategy
+            </span>
+            {THEMES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTheme(t)}
+                aria-pressed={theme === t}
+                className={pillClass(theme === t)}
+              >
+                {t}
+              </button>
+            ))}
           </div>
-        )}
+
+          {/* Sector + generate */}
+          <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
+            <input
+              type="text"
+              placeholder="Sector (optional), e.g. Technology or Energy"
+              aria-label="Sector"
+              value={sector}
+              onChange={(e) => setSector(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !loading && fetchPicks()}
+              className={`${inputClass} w-full sm:w-96`}
+            />
+            <button
+              type="button"
+              onClick={fetchPicks}
+              disabled={loading}
+              className="btn-gold px-5 py-2.5 text-sm shrink-0 disabled:opacity-60 disabled:pointer-events-none"
+            >
+              {loading ? "Generating" : "Generate picks"}
+            </button>
+          </div>
+
+          {/* Filter */}
+          {picks.length > 0 && (
+            <div className="mt-4">
+              <input
+                type="text"
+                placeholder="Filter by company or ticker"
+                aria-label="Filter picks"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className={`${inputClass} w-full sm:w-96`}
+              />
+            </div>
+          )}
+        </Reveal>
+
+        {/* Results */}
+        <div className="mt-10">
+          {loading ? (
+            <p className="text-gray-500">Generating picks from the model.</p>
+          ) : picks.length === 0 ? (
+            <p className="text-gray-500">
+              Choose a strategy and generate picks to see the names the model puts forward.
+            </p>
+          ) : (
+            <>
+              <p className="font-monodata text-[11px] uppercase tracking-widest text-gray-500 mb-4">
+                {visible.length} of {picks.length} picks · {theme}
+                {sector.trim() ? ` · ${sector.trim()}` : ""}
+              </p>
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {visible.map((p, i) => (
+                  <Reveal key={`${p.symbol}-${i}`} delay={Math.min(i, 8) * 0.06}>
+                    <article className="card-night p-5 md:p-6 h-full flex flex-col">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-monodata tabular-nums text-lg md:text-xl font-semibold text-ivory">
+                          {p.symbol}
+                        </h3>
+                        <span
+                          className={`shrink-0 px-2.5 py-1 rounded-md border font-monodata text-[10px] uppercase tracking-widest ${sentimentClass(
+                            p.sentiment
+                          )}`}
+                        >
+                          {p.sentiment}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-gray-300 font-medium">{p.name}</p>
+                      <p className="mt-2 font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+                        {p.sector}
+                      </p>
+                      <p className="mt-4 text-sm text-gray-400 leading-relaxed">{p.rationale}</p>
+                    </article>
+                  </Reveal>
+                ))}
+              </div>
+              {visible.length === 0 && (
+                <p className="text-gray-500">No picks match that filter.</p>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </main>
   );

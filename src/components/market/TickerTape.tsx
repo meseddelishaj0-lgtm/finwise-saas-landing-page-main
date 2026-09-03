@@ -24,7 +24,7 @@ const TickerTape: React.FC = () => {
 
   if (quotes.length === 0) {
     return (
-      <div className="w-screen h-[38px] border-y border-white/10 bg-night" style={{ marginLeft: "calc(-50vw + 50%)" }} />
+      <div className="w-full h-[38px] border-y border-white/10 bg-night" />
     );
   }
 
@@ -49,8 +49,7 @@ const TickerTape: React.FC = () => {
 
   return (
     <div
-      className="group w-screen h-[38px] overflow-hidden border-y border-white/10 bg-night"
-      style={{ marginLeft: "calc(-50vw + 50%)" }}
+      className="group w-full h-[38px] overflow-hidden border-y border-white/10 bg-night"
     >
       <style>{`
         @keyframes wss-marquee {

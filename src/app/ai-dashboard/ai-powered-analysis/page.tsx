@@ -270,13 +270,13 @@ const AIPoweredAnalysisPage = () => {
                 <p className="text-2xl font-bold text-gold-soft">{data.inventoryTurnover}</p>
               </div>
 
-              <div className="bg-pink-50 rounded-xl p-6 shadow-sm">
+              <div className="bg-surface2 border border-white/10 rounded-xl p-6 shadow-sm">
                 <p className="font-semibold text-gray-300">P/B Ratio</p>
-                <p className="text-2xl font-bold text-pink-600">{data.pbRatio}</p>
+                <p className="text-2xl font-bold text-gold">{data.pbRatio}</p>
               </div>
-              <div className="bg-pink-50 rounded-xl p-6 shadow-sm">
+              <div className="bg-surface2 border border-white/10 rounded-xl p-6 shadow-sm">
                 <p className="font-semibold text-gray-300">Dividend Yield</p>
-                <p className="text-2xl font-bold text-pink-600">{data.dividendYield}%</p>
+                <p className="text-2xl font-bold text-gold">{data.dividendYield}%</p>
               </div>
             </div>
           )}

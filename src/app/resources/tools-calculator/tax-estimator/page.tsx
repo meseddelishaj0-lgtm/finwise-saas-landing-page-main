@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import Link from "next/link";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
 
 interface TaxBracket {
   rate: number;
@@ -155,26 +157,22 @@ export default function TaxEstimatorPage() {
   };
 
   return (
-    <main className="min-h-screen bg-night text-ivory flex flex-col items-center pt-12 md:pt-16 pb-16 px-6">
+    <main className="min-h-screen bg-night text-ivory flex flex-col items-center px-6 py-14 md:py-20">
       {/* Header */}
-      <motion.section
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="text-center max-w-2xl mb-10"
-      >
-        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
-          Advanced Tax Estimator
+      <Reveal className="text-center max-w-2xl mb-10">
+        <CommandLine cmd="CAL" note="tax estimate" className="mb-4" />
+        <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">
+          Tax estimator
         </h1>
-        <p className="text-lg text-gray-400">
+        <p className="mt-5 text-lg text-gray-400 leading-relaxed">
           Calculate your federal, state, and FICA taxes with deductions and credits
           to get a realistic picture of your net income.
         </p>
-      </motion.section>
+      </Reveal>
 
       {/* Calculator Form */}
-      <div className="w-full max-w-md bg-surface2 border border-white/10 rounded-2xl shadow-md p-8">
-        <label className="block text-gray-100 font-semibold mb-2">
+      <div className="w-full max-w-md card-night p-8">
+        <label className="mb-2 block font-monodata text-[11px] uppercase tracking-widest text-gray-500">
           Annual Income ($)
         </label>
         <input
@@ -182,26 +180,26 @@ export default function TaxEstimatorPage() {
           value={income}
           onChange={(e) => setIncome(e.target.value)}
           placeholder="e.g. 95000"
-          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/25"
         />
 
-        <label className="block text-gray-100 font-semibold mb-2">
+        <label className="mb-2 block font-monodata text-[11px] uppercase tracking-widest text-gray-500">
           Filing Status
         </label>
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/25"
         >
           <option value="single">Single</option>
           <option value="married">Married Filing Jointly</option>
         </select>
 
-        <label className="block text-gray-100 font-semibold mb-2">State</label>
+        <label className="mb-2 block font-monodata text-[11px] uppercase tracking-widest text-gray-500">State</label>
         <select
           value={state}
           onChange={(e) => setState(e.target.value)}
-          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+          className="w-full border border-white/10 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/25"
         >
           {states.map((s) => (
             <option key={s.name} value={s.name.split(" ")[0]}>
@@ -228,13 +226,13 @@ export default function TaxEstimatorPage() {
         {advanced && (
           <div className="bg-surface border border-white/10 rounded-xl p-4 mb-4 space-y-4">
             <div>
-              <label className="block text-gray-100 font-semibold mb-2">
+              <label className="mb-2 block font-monodata text-[11px] uppercase tracking-widest text-gray-500">
                 Deduction Type
               </label>
               <select
                 value={deduction}
                 onChange={(e) => setDeduction(e.target.value)}
-                className="w-full border border-white/10 rounded-lg px-4 py-3 mb-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="w-full border border-white/10 rounded-lg px-4 py-3 mb-2 focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/25"
               >
                 <option value="standard">Standard Deduction</option>
                 <option value="itemized">Itemized Deduction</option>
@@ -246,13 +244,13 @@ export default function TaxEstimatorPage() {
                   value={itemized}
                   onChange={(e) => setItemized(e.target.value)}
                   placeholder="Enter itemized deduction amount"
-                  className="w-full border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  className="w-full border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/25"
                 />
               )}
             </div>
 
             <div>
-              <label className="block text-gray-100 font-semibold mb-2">
+              <label className="mb-2 block font-monodata text-[11px] uppercase tracking-widest text-gray-500">
                 Number of Qualifying Children
               </label>
               <input
@@ -260,7 +258,7 @@ export default function TaxEstimatorPage() {
                 value={children}
                 onChange={(e) => setChildren(e.target.value)}
                 placeholder="e.g. 2"
-                className="w-full border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="w-full border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/25"
               />
             </div>
           </div>
@@ -269,13 +267,13 @@ export default function TaxEstimatorPage() {
         <div className="flex gap-3">
           <button
             onClick={calculateTax}
-            className="flex-1 bg-gold hover:bg-gold-deep text-black font-semibold py-3 rounded-xl transition-all"
+            className="btn-gold flex-1 py-3"
           >
             Calculate
           </button>
           <button
             onClick={reset}
-            className="flex-1 bg-white/10 hover:bg-white/15 text-gray-100 font-semibold py-3 rounded-xl transition-all"
+            className="btn-ghost-gold flex-1 py-3"
           >
             Reset
           </button>
@@ -284,50 +282,45 @@ export default function TaxEstimatorPage() {
 
       {/* Results */}
       {result && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-3xl w-full mt-10 bg-surface2 border border-white/10 rounded-2xl shadow-md p-6"
-        >
-          <h2 className="text-xl font-bold mb-4 text-gray-100 text-center">
-            Tax Summary
+        <Reveal className="max-w-3xl w-full mt-10 card-night p-6">
+          <h2 className="text-lg md:text-xl font-semibold text-ivory mb-4 text-center">
+            Tax summary
           </h2>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
             <div>
               <p className="text-lg font-semibold text-gray-300">Federal Tax</p>
-              <p className="text-2xl text-gold font-bold">
+              <p className="font-monodata tabular-nums text-2xl font-semibold text-gold">
                 ${result.federal.toFixed(2)}
               </p>
             </div>
             <div>
               <p className="text-lg font-semibold text-gray-300">State Tax</p>
-              <p className="text-2xl text-gold font-bold">
+              <p className="font-monodata tabular-nums text-2xl font-semibold text-gold">
                 ${result.state.toFixed(2)}
               </p>
             </div>
             <div>
               <p className="text-lg font-semibold text-gray-300">FICA</p>
-              <p className="text-2xl text-gold font-bold">
+              <p className="font-monodata tabular-nums text-2xl font-semibold text-gold">
                 ${result.fica.toFixed(2)}
               </p>
             </div>
             <div>
               <p className="text-lg font-semibold text-gray-300">Total Tax</p>
-              <p className="text-3xl text-gold font-bold">
+              <p className="font-monodata tabular-nums text-3xl font-semibold text-gold">
                 ${result.total.toFixed(2)}
               </p>
             </div>
             <div>
               <p className="text-lg font-semibold text-gray-300">Effective Rate</p>
-              <p className="text-3xl text-gold font-bold">
+              <p className="font-monodata tabular-nums text-3xl font-semibold text-gold">
                 {result.effectiveRate.toFixed(2)}%
               </p>
             </div>
             <div>
               <p className="text-lg font-semibold text-gray-300">After-Tax Income</p>
-              <p className="text-3xl text-green-400 font-bold">
+              <p className="font-monodata tabular-nums text-3xl font-semibold text-ivory">
                 ${result.afterTax.toFixed(2)}
               </p>
             </div>
@@ -346,8 +339,13 @@ export default function TaxEstimatorPage() {
             *Estimates use 2024 U.S. federal, FICA, and sample state tax rates. 
             Actual results vary by deductions, credits, and local taxes.
           </p>
-        </motion.div>
+        </Reveal>
       )}
+      <Reveal className="mt-12">
+        <Link href="/resources/tools-calculator" className="btn-ghost-gold px-5 py-2.5 text-sm">
+          ← Back to calculators
+        </Link>
+      </Reveal>
     </main>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useId } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 
 interface DropdownItem {
@@ -12,104 +13,94 @@ interface DropdownItem {
 interface DropdownProps {
   label: string;
   items: DropdownItem[];
-  textColor?: string; // Optional custom text color
+  /** Kept for backwards compatibility; the menu is always on the night bar now. */
+  textColor?: string;
 }
 
-export default function DropdownMenu({
-  label,
-  items,
-  textColor = "text-white", // default for your black header
-}: DropdownProps) {
+export default function DropdownMenu({ label, items }: DropdownProps) {
   const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const timer = useRef<NodeJS.Timeout | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathname = usePathname();
+  const panelId = useId();
 
-  // ✅ Close when clicking outside
+  const twoColumns = items.length > 8;
+  const groupActive = items.some((i) => pathname === i.href || pathname?.startsWith(i.href + "/"));
+
+  // Close on outside click, Escape, and navigation
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false);
-      }
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, []);
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
-  const handleMouseEnter = () => {
+  const show = () => {
     if (timer.current) clearTimeout(timer.current);
     setOpen(true);
   };
-
-  const handleMouseLeave = () => {
-    timer.current = setTimeout(() => setOpen(false), 300); // smooth delay
+  const hide = () => {
+    timer.current = setTimeout(() => setOpen(false), 180);
   };
 
-  // Detect dark mode (white text)
-  const isWhite = textColor.includes("white");
-
   return (
-    <div
-      ref={dropdownRef}
-      className="relative inline-block"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* 🔽 Trigger Button */}
+    <div ref={wrapRef} className="relative" onMouseEnter={show} onMouseLeave={hide}>
       <button
-        className={`flex items-center gap-1 font-medium transition-all duration-200 ${
-          open
-            ? "text-yellow-400"
-            : `${textColor} hover:text-yellow-400`
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => {
+          if (timer.current) clearTimeout(timer.current);
+          setOpen(true);
+        }}
+        className={`group flex items-center gap-1 py-2 text-[15px] font-medium transition-colors duration-200 ${
+          open || groupActive ? "text-gold" : "text-gray-300 hover:text-ivory"
         }`}
       >
         {label}
         <ChevronDown
           size={14}
-          className={`mt-0.5 transition-transform ${
-            open ? "rotate-180 text-yellow-400" : "text-inherit"
-          }`}
+          className={`mt-0.5 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
         />
       </button>
 
-      {/* 🟨 Invisible hover bridge to prevent flicker */}
-      <div
-        className="absolute left-0 right-0 h-3 bg-transparent z-[9998]"
-        style={{ top: "100%" }}
-      ></div>
+      {/* Hover bridge so the pointer can travel to the panel */}
+      <div className="absolute left-0 right-0 top-full h-4" aria-hidden="true" />
 
-      {/* 🧭 Dropdown Container */}
       <div
-        className={`absolute left-0 mt-1 w-56 max-h-[70vh] overflow-y-auto rounded-xl shadow-2xl z-[9999] p-2 transition-all duration-200 ease-out border ${
-          open
-            ? "opacity-100 translate-y-0 visible"
-            : "opacity-0 -translate-y-2 invisible pointer-events-none"
-        } ${
-          isWhite
-            ? "bg-surface border-white/10"
-            : "bg-white border-gray-100"
-        }`}
-        style={{
-          pointerEvents: open ? "auto" : "none",
-        }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        id={panelId}
+        className={`absolute left-1/2 top-full z-[60] mt-3 -translate-x-1/2 rounded-2xl border border-white/10 bg-surface/95 p-2 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl transition-all duration-200 ease-expo ${
+          twoColumns ? "w-[32rem] grid grid-cols-2 gap-x-1" : "w-60"
+        } ${open ? "visible translate-y-0 opacity-100" : "invisible -translate-y-1 opacity-0 pointer-events-none"}`}
       >
-        {items.map((item) => (
-          <Link
-            key={item.title}
-            href={item.href}
-            className={`block px-3 py-2 text-sm rounded-lg transition-all ${
-              isWhite
-                ? "text-gray-300 hover:text-yellow-300 hover:bg-white/[0.04]"
-                : "text-gray-700 hover:bg-gray-100 hover:text-yellow-500"
-            }`}
-          >
-            {item.title}
-          </Link>
-        ))}
+        {items.map((item) => {
+          const active = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className={`block rounded-lg px-3 py-2 text-[15px] transition-colors ${
+                active
+                  ? "text-gold bg-gold/10"
+                  : "text-gray-300 hover:text-ivory hover:bg-white/[0.05]"
+              }`}
+            >
+              {item.title}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

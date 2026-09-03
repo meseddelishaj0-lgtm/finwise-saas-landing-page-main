@@ -6,7 +6,7 @@
  * A fully self-contained features landing page with:
  *  - Tabbed categories
  *  - Feature cards (title, description, icon, mini chart)
- *  - "Explore" button for each sub-feature (pretty URLs via slugify)
+ *  - "Open" button for each sub-feature (pretty URLs via slugify)
  *  - Minimal internal components for clean structure
  *
  * You can now create the target pages using the generated URL structure:
@@ -24,6 +24,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import CommandLine from '@/components/ui/CommandLine';
 
 // Icons
 import {
@@ -67,6 +68,20 @@ import {
  * ========================================================================== */
 const slugify = (text: string) =>
   text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+/* ============================================================================
+ * Chart theme (night surfaces: gold series, hairline grid, mono gray ticks)
+ * ========================================================================== */
+const GRID = 'rgba(255,255,255,0.08)';
+const TICK = { fill: '#6B7280', fontSize: 11 };
+const TOOLTIP_STYLE = {
+  background: '#161410',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderRadius: 10,
+  fontSize: 12,
+};
+const TOOLTIP_ITEM = { color: '#F2EDE3' };
+const TOOLTIP_LABEL = { color: '#6B7280' };
 
 /* ============================================================================
  * Data: Demo datasets for charts
@@ -241,10 +256,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={equitiesData1}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="name" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Legend />
             <Line  type="monotone" dataKey="value" stroke="#FACC15" strokeWidth={3} dot={false} />
           </LineChart>
@@ -261,10 +276,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={equitiesData2}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="name" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Bar dataKey="deals" fill="#FACC15" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -280,10 +295,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={equitiesData3}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="region" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="region" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Legend />
             <Line type="monotone" dataKey="index" stroke="#FACC15" strokeWidth={3} dot={false} />
           </LineChart>
@@ -300,11 +315,11 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={equitiesData1}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Area type="monotone" dataKey="value" stroke="#FACC15" fill="#FEF08A" />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="name" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
+            <Area type="monotone" dataKey="value" stroke="#FACC15" fill="#FACC15" fillOpacity={0.15} />
           </AreaChart>
         </ResponsiveContainer>
       ),
@@ -322,11 +337,11 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={derivativesData1}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
-            <Area type="monotone" dataKey="vol" stroke="#FACC15" fill="#FEF08A" />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="day" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
+            <Area type="monotone" dataKey="vol" stroke="#FACC15" fill="#FACC15" fillOpacity={0.15} />
           </AreaChart>
         </ResponsiveContainer>
       ),
@@ -341,10 +356,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={derivativesData2}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="greek" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="greek" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Bar dataKey="value" fill="#FACC15" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -360,10 +375,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={derivativesData3}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="strat" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="strat" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Legend />
             <Line type="monotone" dataKey="perf" stroke="#FACC15" strokeWidth={3} dot={false} />
           </LineChart>
@@ -380,11 +395,11 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={derivativesData1}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
-            <Area type="monotone" dataKey="vol" stroke="#FACC15" fill="#FEF08A" />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="day" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
+            <Area type="monotone" dataKey="vol" stroke="#FACC15" fill="#FACC15" fillOpacity={0.15} />
           </AreaChart>
         </ResponsiveContainer>
       ),
@@ -402,10 +417,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={bondsData1}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="term" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="term" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Legend />
             <Line type="monotone" dataKey="yield" stroke="#FACC15" strokeWidth={3} />
           </LineChart>
@@ -422,11 +437,11 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={bondsRiskData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="credit" />
-            <YAxis />
-            <Tooltip />
-            <Area type="monotone" dataKey="risk" stroke="#FACC15" fill="#FEF08A" />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="credit" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
+            <Area type="monotone" dataKey="risk" stroke="#FACC15" fill="#FACC15" fillOpacity={0.15} />
           </AreaChart>
         </ResponsiveContainer>
       ),
@@ -441,10 +456,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={bondsSpreadData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="name" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Bar dataKey="spread" fill="#FACC15" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -460,11 +475,11 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={bondsSpreadData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Area type="monotone" dataKey="spread" stroke="#FACC15" fill="#FEF08A" />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="name" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
+            <Area type="monotone" dataKey="spread" stroke="#FACC15" fill="#FACC15" fillOpacity={0.15} />
           </AreaChart>
         </ResponsiveContainer>
       ),
@@ -482,10 +497,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={altData1}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="asset" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="asset" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Legend />
             <Line type="monotone" dataKey="value" stroke="#FACC15" strokeWidth={3} />
           </LineChart>
@@ -502,10 +517,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={altData2}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="name" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Bar dataKey="growth" fill="#FACC15" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -521,10 +536,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={altData3}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="name" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Legend />
             <Line type="monotone" dataKey="perf" stroke="#FACC15" strokeWidth={3} />
           </LineChart>
@@ -541,11 +556,11 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={altData3}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Area type="monotone" dataKey="perf" stroke="#FACC15" fill="#FEF08A" />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="name" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
+            <Area type="monotone" dataKey="perf" stroke="#FACC15" fill="#FACC15" fillOpacity={0.15} />
           </AreaChart>
         </ResponsiveContainer>
       ),
@@ -563,10 +578,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={aiData1}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="week" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="week" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Legend />
             <Line type="monotone" dataKey="pred" stroke="#FACC15" strokeWidth={3} />
           </LineChart>
@@ -583,10 +598,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={aiData2}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="topic" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="topic" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Bar dataKey="sentiment" fill="#FACC15" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -602,11 +617,11 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={aiData3}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip />
-            <Area type="monotone" dataKey="gdp" stroke="#FACC15" fill="#FEF08A" />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="month" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
+            <Area type="monotone" dataKey="gdp" stroke="#FACC15" fill="#FACC15" fillOpacity={0.15} />
           </AreaChart>
         </ResponsiveContainer>
       ),
@@ -621,11 +636,11 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={aiData1}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="week" />
-            <YAxis />
-            <Tooltip />
-            <Area type="monotone" dataKey="pred" stroke="#FACC15" fill="#FEF08A" />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="week" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
+            <Area type="monotone" dataKey="pred" stroke="#FACC15" fill="#FACC15" fillOpacity={0.15} />
           </AreaChart>
         </ResponsiveContainer>
       ),
@@ -643,10 +658,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={portData1}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="day" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Legend />
             <Line type="monotone" dataKey="ret" stroke="#FACC15" strokeWidth={3} />
           </LineChart>
@@ -663,10 +678,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={portData2}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="asset" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="asset" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Bar dataKey="weight" fill="#FACC15" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -682,10 +697,10 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={portData3}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="risk" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="risk" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
             <Legend />
             <Line type="monotone" dataKey="reward" stroke="#FACC15" strokeWidth={3} />
           </LineChart>
@@ -702,11 +717,11 @@ const FEATURES: Record<string, FeatureItem[]> = {
       chart: (
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={portData3}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="risk" />
-            <YAxis />
-            <Tooltip />
-            <Area type="monotone" dataKey="reward" stroke="#FACC15" fill="#FEF08A" />
+            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+            <XAxis dataKey="risk" tick={TICK} />
+            <YAxis tick={TICK} />
+            <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={TOOLTIP_ITEM} labelStyle={TOOLTIP_LABEL} />
+            <Area type="monotone" dataKey="reward" stroke="#FACC15" fill="#FACC15" fillOpacity={0.15} />
           </AreaChart>
         </ResponsiveContainer>
       ),
@@ -729,11 +744,12 @@ const SectionHeader: React.FC<{ title: string; subtitle?: string }> = ({
     transition={{ duration: 0.5 }}
     className="text-center mb-10"
   >
-    <h1 className="text-4xl md:text-5xl tracking-tight font-display font-normal tracking-tight">
+    <CommandLine cmd="FEA" note="what the desk can do" className="mb-4" />
+    <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">
       {title}
     </h1>
     {subtitle ? (
-      <p className="text-gray-400 mt-3 max-w-3xl mx-auto">{subtitle}</p>
+      <p className="text-gray-400 mt-5 max-w-2xl mx-auto text-lg leading-relaxed">{subtitle}</p>
     ) : null}
   </motion.div>
 );
@@ -754,8 +770,8 @@ const TabPills: React.FC<{
             onClick={() => onChange(cat.id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
  Active
- ? 'bg-yellow-400 text-black shadow-md'
- : 'bg-surface2 hover:bg-gold/15 text-gray-300'
+ ? 'bg-gold text-night shadow-md'
+ : 'bg-surface2 border border-white/10 hover:border-gold/40 text-gray-300'
  }`}
           >
             <Icon className="w-4 h-4" />
@@ -802,11 +818,8 @@ const BulletList: React.FC<{ items?: string[] }> = ({ items }) => {
 /** Primary CTA used for every card */
 const ExploreButton: React.FC<{ href: string }> = ({ href }) => {
   return (
-    <Link
-      href={href}
-      className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-gold transition"
-    >
-      Explore
+    <Link href={href} className="btn-gold mt-4 px-5 py-2.5 text-sm">
+      Open
       <ArrowIcon className="w-4 h-4" />
     </Link>
   );
@@ -827,7 +840,7 @@ const FeatureCard: React.FC<{
       initial={{ opacity: 0, y: 18 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: index * 0.04 }}
-      className="group flex flex-col justify-between rounded-2xl bg-surface2 p-6 shadow-sm hover:shadow-lg hover:bg-gold/10 transition"
+      className="card-night card-hover group flex flex-col justify-between p-6"
     >
       <div>
         <Icon className="mb-4 h-10 w-10 text-gold" />
@@ -871,7 +884,7 @@ const FeaturesPage: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -18 }}
             transition={{ duration: 0.35 }}
-            className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3"
+            className="grid grid-cols-1 gap-8 md:grid-cols-2"
           >
             {items.map((f, i) => (
               <FeatureCard key={f.title} category={activeTab} item={f} index={i} />
@@ -889,7 +902,7 @@ export default FeaturesPage;
 
 /* ============================================================================
  * Notes:
- * 1) Each Explore button uses a route of the form:
+ * 1) Each Open button uses a route of the form:
  *       /features/<categoryId>/<feature-slug>
  *    Example for “Equity Research & Valuation”:
  *       /features/equities/equity-research-valuation

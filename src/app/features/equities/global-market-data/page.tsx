@@ -10,12 +10,12 @@ import {
   BarChart4,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function GlobalMarketDataPage() {
   const router = useRouter();
   const [indices, setIndices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -61,8 +61,8 @@ export default function GlobalMarketDataPage() {
     return data.slice(0, 100);
   }, [indices, tab, search]);
 
-  const openChart = (symbol: string) => setSelectedSymbol(symbol);
-  const closeChart = () => setSelectedSymbol(null);
+  // Charts live in the site's own Terminal (no third-party widget).
+  const terminalHref = (symbol: string) => `/terminal?symbol=${encodeURIComponent(symbol)}`;
 
   const formatArrow = (value: number) => {
     if (value > 0)
@@ -154,7 +154,7 @@ export default function GlobalMarketDataPage() {
                   <th className="px-6 py-3 text-right font-semibold text-gray-300">Change</th>
                   <th className="px-6 py-3 text-right font-semibold text-gray-300">High</th>
                   <th className="px-6 py-3 text-right font-semibold text-gray-300">Low</th>
-                  <th className="px-6 py-3 text-right font-semibold text-gray-300">Chart</th>
+                  <th className="px-6 py-3 text-right font-semibold text-gray-300">Terminal</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -162,7 +162,7 @@ export default function GlobalMarketDataPage() {
                   <tr
                     key={idx}
                     className="hover:bg-gold/10 cursor-pointer transition"
-                    onClick={() => openChart(d.symbol)}
+                    onClick={() => router.push(terminalHref(d.symbol))}
                   >
                     <td className="px-6 py-3 font-medium text-gray-100">{d.symbol}</td>
                     <td className="px-6 py-3 text-gray-400">{d.name}</td>
@@ -183,15 +183,13 @@ export default function GlobalMarketDataPage() {
                       {Number(d.dayLow).toLocaleString()}
                     </td>
                     <td className="px-6 py-3 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openChart(d.symbol);
-                        }}
-                        className="text-gold hover:text-gold-soft font-medium"
+                      <Link
+                        href={terminalHref(d.symbol)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-monodata text-xs text-gray-500 hover:text-gold transition-colors whitespace-nowrap"
                       >
-                        View Chart
-                      </button>
+                        Open in Terminal &rarr;
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -199,33 +197,6 @@ export default function GlobalMarketDataPage() {
             </table>
           )}
         </div>
-
-        {/* Chart Modal */}
-        {selectedSymbol && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-            <div className="bg-surface rounded-2xl shadow-xl w-[90%] md:w-[70%] lg:w-[60%] relative">
-              <button
-                onClick={closeChart}
-                className="absolute top-2 right-3 text-gray-400 hover:text-ivory text-xl"
-              >
-                ✕
-              </button>
-              <h3 className="text-center font-semibold mt-4 mb-2 text-gray-100">
-                {selectedSymbol} — Interactive Chart
-              </h3>
-              <div className="w-full h-[500px] rounded-b-2xl overflow-hidden">
-                <iframe
-                  src={`https://s.tradingview.com/widgetembed/?symbol=${selectedSymbol}&interval=60&hidesidetoolbar=1&theme=light`}
-                  width="100%"
-                  height="100%"
-                  allowTransparency
-                  frameBorder="0"
-                  title="TradingView Chart"
-                ></iframe>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Disclaimer */}
         <p className="text-xs text-gray-400 mt-10 text-center">

@@ -63,8 +63,7 @@ const DeskDirectory: React.FC = () => {
   return (
     <section
       id="directory"
-      className="relative w-screen text-white bg-night border-t border-white/10"
-      style={{ marginLeft: "calc(-50vw + 50%)" }}
+      className="relative w-full text-white bg-night border-t border-white/10"
     >
       <div className="max-w-7xl mx-auto px-6 md:px-10 py-16 md:py-24">
         <Reveal>
@@ -90,9 +89,9 @@ const DeskDirectory: React.FC = () => {
                 <span className="block font-display text-xl md:text-2xl text-ivory group-hover:text-gold-soft transition-colors">
                   {s.name}
                 </span>
-                <span className="block mt-1 text-sm text-gray-400">{s.desc}</span>
+                <span className="block mt-1 text-[15px] text-gray-400">{s.desc}</span>
               </span>
-              <span className="font-monodata text-gray-600 group-hover:text-gold transition-all duration-300 group-hover:translate-x-1">
+              <span className="arrow font-monodata text-gray-500 group-hover:text-gold transition-colors duration-300">
                 →
               </span>
             </Link>

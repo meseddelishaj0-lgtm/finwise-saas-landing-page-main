@@ -9,8 +9,7 @@ const Benefits: React.FC = () => {
   return (
     <section
       id="benefits"
-      className="relative w-screen overflow-hidden text-white bg-night border-t border-white/10"
-      style={{ marginLeft: "calc(-50vw + 50%)" }}
+      className="relative w-full overflow-hidden text-white bg-night border-t border-white/10"
     >
       {/* ✅ Main content container */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-24">

@@ -14,21 +14,12 @@ export const metadata: Metadata = {
       "Explore AI-powered investment tiers with live dashboards, predictive analytics, and institutional-grade research tools.",
     url: "https://www.wallstreetstocks.ai/plans",
     type: "website",
-    images: [
-      {
-        url: "/images/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "WallStreetStocks.ai Plans",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "WallStreetStocks.ai Plans",
     description:
       "Choose your AI-powered investment plan — Gold, Platinum, or Diamond.",
-    images: ["/images/twitter-image.jpg"],
   },
 };
 

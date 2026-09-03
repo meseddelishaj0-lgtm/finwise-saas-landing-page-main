@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { Newspaper, Search, RefreshCcw } from "lucide-react";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
 
 interface NewsArticle {
   title: string;
@@ -11,6 +11,24 @@ interface NewsArticle {
   url: string;
   image: string;
   publishedDate: string;
+}
+
+const CATEGORIES = ["general", "stocks", "economy", "crypto"];
+
+const pillClass = (active: boolean) =>
+  `px-3.5 py-1.5 rounded-md font-monodata text-[11px] uppercase tracking-wider border transition-colors ${
+    active
+      ? "bg-gold/10 text-gold border-gold/30"
+      : "text-gray-500 hover:text-gray-200 border-transparent"
+  }`;
+
+function formatWhen(value: string) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const diffMin = Math.round((Date.now() - d.getTime()) / 60000);
+  if (diffMin >= 0 && diffMin < 60) return `${Math.max(diffMin, 1)}m ago`;
+  if (diffMin >= 0 && diffMin < 60 * 24) return `${Math.round(diffMin / 60)}h ago`;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 const NewsPage = () => {
@@ -39,6 +57,7 @@ const NewsPage = () => {
 
   useEffect(() => {
     fetchNews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCategory = (cat: string) => {
@@ -51,101 +70,100 @@ const NewsPage = () => {
   };
 
   return (
-    <main className="min-h-screen pt-10 py-10 px-6 flex flex-col items-center bg-night">
-      <motion.h1
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="text-3xl md:text-4xl text-ivory mb-3 flex items-center gap-2 font-display font-normal tracking-tight"
-      >
-        <Newspaper className="text-yellow-400" /> U.S. Market News
-      </motion.h1>
-      <p className="text-gray-400 mb-8 text-center max-w-2xl">
-        Stay up-to-date with real-time stock market headlines, breaking economy
-        updates, and AI-curated insights from WallStreetStocks.ai.
-      </p>
-
-      {/* Search & Filters */}
-      <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
-        <div className="flex items-center bg-surface shadow-sm rounded-full border border-white/10 px-4 py-2 w-full md:w-80">
-          <Search className="text-gray-400 mr-2" />
-          <input
-            type="text"
-            placeholder="Search tickers or keywords (e.g. AAPL, inflation)..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="flex-grow outline-none text-sm text-gray-300"
-          />
-        </div>
-        <button
-          onClick={() => fetchNews()}
-          className="bg-yellow-400 text-black px-6 py-2 rounded-full font-semibold hover:bg-gold shadow-md flex items-center gap-2 transition-all"
-        >
-          <RefreshCcw size={16} /> Refresh
-        </button>
-      </div>
-
-      {/* Category Tabs */}
-      <div className="flex flex-wrap justify-center gap-3 mb-8">
-        {["general", "stocks", "economy", "crypto"].map((cat) => (
-          <button
-            key={cat}
-            onClick={() => handleCategory(cat)}
-            className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
- category === cat
- ? "bg-yellow-400 text-black shadow-md"
- : "bg-surface border border-white/10 text-gray-300 hover:bg-surface2"
- }`}
-          >
-            {cat.charAt(0).toUpperCase() + cat.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* News Feed */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
-        {loading ? (
-          <p className="text-gray-500 text-center col-span-full">
-            Fetching latest headlines...
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <CommandLine cmd="TOP" note="top market news" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">
+            On the <em className="italic text-gold-soft">wire</em>.
+          </h1>
+          <p className="mt-5 text-lg text-gray-300 max-w-2xl">
+            Headlines across stocks, the economy, and crypto, pulled live and
+            sorted newest first.
           </p>
-        ) : news.length === 0 ? (
-          <p className="text-gray-500 text-center col-span-full">
-            No news available.
-          </p>
-        ) : (
-          news.map((article, idx) => (
-            <motion.a
-              key={idx}
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ scale: 1.03 }}
-              className="bg-surface border border-white/10 rounded-2xl shadow-sm overflow-hidden flex flex-col hover:shadow-lg transition-all"
+        </Reveal>
+
+        <Reveal delay={0.06} className="mt-12">
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <input
+              type="text"
+              placeholder="Search tickers or keywords, e.g. AAPL or inflation"
+              aria-label="Search news"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && fetchNews()}
+              className="w-full md:w-96 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-ivory placeholder:text-gray-600 focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/25"
+            />
+            <button
+              type="button"
+              onClick={() => fetchNews()}
+              disabled={loading}
+              className="btn-ghost-gold px-4 py-2 text-sm shrink-0 self-start md:self-auto disabled:opacity-60 disabled:pointer-events-none"
             >
-              {article.image && (
-                <img
-                  src={article.image}
-                  alt={article.title}
-                  className="h-44 w-full object-cover"
-                />
-              )}
-              <div className="p-4 flex flex-col justify-between flex-grow">
-                <h2 className="font-semibold text-ivory text-base mb-2">
-                  {article.title}
-                </h2>
-                <p className="text-gray-400 text-sm line-clamp-3 mb-3">
-                  {article.text}
-                </p>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>{article.site}</span>
-                  <span>
-                    {new Date(article.publishedDate).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            </motion.a>
-          ))
-        )}
+              Refresh
+            </button>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                aria-pressed={category === cat}
+                onClick={() => handleCategory(cat)}
+                className={pillClass(category === cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </Reveal>
+
+        <div className="mt-10">
+          {loading ? (
+            <p className="text-gray-500">Fetching the latest headlines.</p>
+          ) : news.length === 0 ? (
+            <p className="text-gray-500">No news available.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+              {news.map((article, idx) => (
+                <Reveal key={`${article.url}-${idx}`} delay={Math.min(idx, 8) * 0.06} className="h-full">
+                  <a
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group card-night card-hover overflow-hidden flex flex-col h-full"
+                  >
+                    {article.image && (
+                      <img
+                        src={article.image}
+                        alt=""
+                        loading="lazy"
+                        className="aspect-video w-full object-cover bg-surface2"
+                      />
+                    )}
+                    <div className="p-5 flex flex-col flex-1">
+                      <p className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+                        {article.site}
+                        {formatWhen(article.publishedDate) && (
+                          <> · {formatWhen(article.publishedDate)}</>
+                        )}
+                      </p>
+                      <h2 className="mt-2 text-base md:text-lg font-semibold text-ivory leading-snug">
+                        {article.title}
+                      </h2>
+                      <p className="mt-2 text-sm text-gray-400 leading-relaxed line-clamp-2">
+                        {article.text}
+                      </p>
+                      <span className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-gold-soft">
+                        Read <span className="arrow">→</span>
+                      </span>
+                    </div>
+                  </a>
+                </Reveal>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );

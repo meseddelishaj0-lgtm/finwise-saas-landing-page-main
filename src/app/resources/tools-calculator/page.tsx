@@ -1,92 +1,95 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import { Calculator, TrendingUp, Home, DollarSign, BarChart3, PiggyBank } from "lucide-react";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
+
+const TOOLS = [
+  {
+    title: "ROI calculator",
+    icon: TrendingUp,
+    description:
+      "Return on investment from total gain and total cost, so you can compare projects on one number.",
+    href: "/resources/tools-calculator/roi-calculator",
+  },
+  {
+    title: "Mortgage calculator",
+    icon: Home,
+    description:
+      "Estimated monthly principal-and-interest payment from loan amount, rate, and term.",
+    href: "/resources/tools-calculator/mortgage-calculator",
+  },
+  {
+    title: "Loan calculator",
+    icon: DollarSign,
+    description:
+      "Monthly payment, total repaid, and total interest across any loan term.",
+    href: "/resources/tools-calculator/loan-calculator",
+  },
+  {
+    title: "Compound interest calculator",
+    icon: PiggyBank,
+    description:
+      "Future balance and interest earned at any compounding frequency, with a year-by-year growth chart.",
+    href: "/resources/tools-calculator/compound-interest",
+  },
+  {
+    title: "Tax estimator",
+    icon: BarChart3,
+    description:
+      "Federal, state, and FICA taxes with standard or itemized deductions and the child tax credit.",
+    href: "/resources/tools-calculator/tax-estimator",
+  },
+];
 
 export default function ToolsCalculatorsPage() {
-  const tools = [
-    {
-      title: "ROI Calculator",
-      icon: <TrendingUp className="w-6 h-6 text-gold" />,
-      description:
-        "Quickly calculate Return on Investment (ROI) to measure profitability and make smarter investment decisions.",
-      href: "/resources/tools-calculator/roi-calculator",
-    },
-    {
-      title: "Mortgage Calculator",
-      icon: <Home className="w-6 h-6 text-gold" />,
-      description:
-        "Estimate monthly mortgage payments, total interest, and loan amortization to plan your next property purchase.",
-      href: "/resources/tools-calculator/mortgage-calculator",
-    },
-    {
-      title: "Loan Calculator",
-      icon: <DollarSign className="w-6 h-6 text-gold" />,
-      description:
-        "Understand your loan payments, interest breakdown, and total cost across different time periods.",
-      href: "/resources/tools-calculator/loan-calculator",
-    },
-    {
-      title: "Compound Interest Calculator",
-      icon: <PiggyBank className="w-6 h-6 text-gold" />,
-      description:
-        "See how your investments grow over time through the power of compounding — essential for long-term wealth planning.",
-      href: "/resources/tools-calculator/compound-interest",
-    },
-    {
-      title: "Tax Estimator",
-      icon: <BarChart3 className="w-6 h-6 text-gold" />,
-      description:
-        "Estimate income tax liabilities and effective tax rates based on your income level and filing status.",
-      href: "/resources/tools-calculator/tax-estimator",
-    },
-  ];
-
   return (
-    <section className="min-h-screen bg-night px-6 pt-10 md:pt-12 pb-20">
-      <div className="max-w-6xl mx-auto text-center">
-        <h1 className="text-4xl mb-6 text-ivory font-display font-normal tracking-tight md:text-5xl">
-          Tools & Calculators
-        </h1>
-        <p className="text-lg text-gray-400 mb-12">
-          Access smart, data-driven tools built to simplify financial planning,
-          analyze returns, and guide confident investment decisions.
-        </p>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
-          {tools.map((tool) => (
-            <Link
-              key={tool.title}
-              href={tool.href}
-              className="p-6 rounded-2xl border shadow-sm hover:shadow-md transition bg-surface2 hover:bg-surface2 block"
-            >
-              <div className="flex items-center mb-3 space-x-3">
-                {tool.icon}
-                <h3 className="text-xl font-semibold text-ivory">{tool.title}</h3>
-              </div>
-              <p className="text-gray-400">{tool.description}</p>
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-16 max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl font-bold mb-4 text-gray-100">Coming Soon</h2>
-          <p className="text-gray-400">
-            AI-powered valuation models, real estate affordability tools, and advanced
-            market analyzers are in development.
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <CommandLine cmd="CAL" note="tools and calculators" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight max-w-3xl">
+            Tools &amp; <em className="italic text-gold-soft">calculators</em>.
+          </h1>
+          <p className="mt-5 max-w-2xl text-lg text-gray-400 leading-relaxed">
+            Five calculators for the numbers that come up most: returns, mortgages, loans,
+            compounding, and taxes. Enter your figures and the result updates in place.
           </p>
+        </Reveal>
+
+        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {TOOLS.map((tool, i) => {
+            const Icon = tool.icon;
+            return (
+              <Reveal key={tool.href} delay={i * 0.06} className="h-full">
+                <Link href={tool.href} className="card-night card-hover group flex h-full flex-col p-6">
+                  <Icon className="h-6 w-6 text-gold" aria-hidden="true" />
+                  <h2 className="mt-5 text-lg md:text-xl font-semibold text-ivory">{tool.title}</h2>
+                  <p className="mt-2 flex-1 text-gray-400 leading-relaxed">{tool.description}</p>
+                  <span className="mt-6 font-monodata text-[11px] uppercase tracking-widest text-gold-soft">
+                    Open calculator <span className="arrow">→</span>
+                  </span>
+                </Link>
+              </Reveal>
+            );
+          })}
+          <Reveal delay={TOOLS.length * 0.06} className="h-full">
+            <div className="card-night flex h-full flex-col justify-between border-dashed p-6">
+              <Calculator className="h-6 w-6 text-gray-500" aria-hidden="true" />
+              <p className="mt-5 text-sm text-gray-500 leading-relaxed">
+                Every calculator runs in your browser. Nothing you type is sent to a server or
+                stored.
+              </p>
+            </div>
+          </Reveal>
         </div>
 
-        <div className="mt-12">
-          <Link
-            href="/resources"
-            className="inline-block mt-8 text-gold hover:text-indigo-800 font-semibold transition"
-          >
-            ← Back to Resources
+        <Reveal className="mt-14">
+          <Link href="/resources" className="btn-ghost-gold px-5 py-2.5 text-sm">
+            ← Back to library
           </Link>
-        </div>
+        </Reveal>
       </div>
-    </section>
+    </main>
   );
 }

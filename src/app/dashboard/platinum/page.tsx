@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function PlatinumDashboard() {
   const router = useRouter();
@@ -141,15 +142,23 @@ export default function PlatinumDashboard() {
         <h3 className="text-xl font-semibold text-gold mb-4">
           Live Market Snapshot
         </h3>
-        <iframe
-          src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_01&symbol=SPY&interval=D&hidesidetoolbar=1&theme=light"
-          style={{
-            width: "100%",
-            height: "420px",
-            border: "none",
-            borderRadius: "10px",
-          }}
-        ></iframe>
+        <p className="text-gray-400 mb-4">
+          Index, ETF and single-stock charts with fundamentals and news, in the Terminal.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {["SPY", "QQQ", "DIA", "IWM"].map((s) => (
+            <Link
+              key={s}
+              href={`/terminal?symbol=${s}`}
+              className="px-3 py-1.5 rounded-lg font-monodata text-xs font-bold text-gray-400 border border-white/10 hover:text-gold hover:border-gold/40 transition-colors"
+            >
+              {s}
+            </Link>
+          ))}
+          <Link href="/terminal?symbol=SPY" className="btn-gold !py-2 text-sm sm:ml-auto">
+            Open Terminal
+          </Link>
+        </div>
       </div>
 
       {/* Back Button */}

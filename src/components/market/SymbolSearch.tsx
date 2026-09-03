@@ -14,11 +14,11 @@ interface Result {
 }
 
 const TYPE_BADGE: Record<Result["type"], { label: string; cls: string }> = {
-  stock: { label: "Stock", cls: "text-blue-300 bg-blue-400/10" },
-  etf: { label: "ETF", cls: "text-purple-300 bg-purple-400/10" },
+  stock: { label: "Stock", cls: "text-gray-300 bg-white/[0.06]" },
+  etf: { label: "ETF", cls: "text-gold-soft bg-gold/10" },
   index: { label: "Index", cls: "text-yellow-300 bg-yellow-400/10" },
-  crypto: { label: "Crypto", cls: "text-orange-300 bg-orange-400/10" },
-  forex: { label: "Forex", cls: "text-teal-300 bg-teal-400/10" },
+  crypto: { label: "Crypto", cls: "text-gold bg-gold/15" },
+  forex: { label: "Forex", cls: "text-gray-300 bg-white/[0.06]" },
   commodity: { label: "Cmdty", cls: "text-amber-300 bg-amber-400/10" },
 };
 

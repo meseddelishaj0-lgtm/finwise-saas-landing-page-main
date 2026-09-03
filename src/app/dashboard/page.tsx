@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
@@ -92,11 +93,11 @@ export default function DashboardPage() {
         };
       case "diamond":
         return {
-          bg: "from-blue-100 to-blue-50",
-          border: "border-blue-400",
+          bg: "from-surface2 to-surface",
+          border: "border-gold/40",
           text: "text-gold",
           button:
-            "bg-blue-400 hover:bg-gold text-white hover:scale-105 transition-all",
+            "bg-gold hover:bg-gold-deep text-night hover:scale-105 transition-all",
         };
       default:
         return {
@@ -250,19 +251,25 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Market Chart */}
-        <div className="mt-14 bg-surface p-6 rounded-2xl shadow-sm">
-          <h3 className="text-xl font-semibold mb-4">Live Market Chart</h3>
-          <div className="tradingview-widget-container">
-            <iframe
-              src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_01&symbol=NASDAQ:AAPL&interval=D&hidesidetoolbar=1&theme=light"
-              style={{
-                width: "100%",
-                height: "400px",
-                border: "none",
-                borderRadius: "10px",
-              }}
-            ></iframe>
+        {/* Market chart — opens in the site's own Terminal */}
+        <div className="mt-14 bg-surface border border-white/10 p-6 rounded-2xl shadow-sm">
+          <h3 className="text-xl font-semibold mb-2">Live market chart</h3>
+          <p className="text-gray-400 mb-4">
+            Charts, fundamentals and news for any US stock, ETF or crypto pair in the Terminal.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {["AAPL", "NVDA", "SPY", "QQQ", "TSLA"].map((s) => (
+              <Link
+                key={s}
+                href={`/terminal?symbol=${s}`}
+                className="px-3 py-1.5 rounded-lg font-monodata text-xs font-bold text-gray-400 border border-white/10 hover:text-gold hover:border-gold/40 transition-colors"
+              >
+                {s}
+              </Link>
+            ))}
+            <Link href="/terminal?symbol=AAPL" className="btn-gold !py-2 text-sm sm:ml-auto">
+              Open Terminal
+            </Link>
           </div>
         </div>
 

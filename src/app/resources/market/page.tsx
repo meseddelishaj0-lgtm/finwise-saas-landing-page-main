@@ -1,76 +1,93 @@
-"use client";
+import React from "react";
+import Link from "next/link";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
 
-import React, { useState } from "react";
+const LEVELS = [
+  {
+    label: "Beginner",
+    title: "Understanding the stock market",
+    points: [
+      "What are stocks, ETFs, and indices?",
+      "How stock prices move and why",
+      "Major indices: S&P 500, Nasdaq, Dow Jones",
+    ],
+  },
+  {
+    label: "Intermediate",
+    title: "Market analysis techniques",
+    points: [
+      "Fundamental vs technical analysis",
+      "Economic indicators (CPI, GDP, yield curve)",
+      "Market sentiment and volume analysis",
+    ],
+  },
+  {
+    label: "Advanced",
+    title: "Advanced trading and macro insights",
+    points: [
+      "Options, futures, and hedging strategies",
+      "Quantitative trading models",
+      "Monetary policy and global capital flows",
+    ],
+  },
+];
 
-const MarketPage = () => {
-  const [activeTab, setActiveTab] = useState("beginner");
-
+function PointList({ items }: { items: string[] }) {
   return (
-    <main className="min-h-screen py-16 px-6 md:px-20 bg-night text-foreground">
-      <section className="max-w-5xl mx-auto text-center mb-12 pt-12 md:pt-40">
-        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">Market Resources</h1>
-        <p className="text-lg text-foreground-accent">
-          Stay informed about stock markets, indices, and global economic trends.
-          Learn how to analyze market cycles, interpret data, and make data-driven investment decisions.
-        </p>
-      </section>
+    <ul className="mt-4 space-y-1.5 text-sm text-gray-400">
+      {items.map((it) => (
+        <li key={it} className="flex gap-2.5">
+          <span className="font-monodata font-semibold text-gold" aria-hidden="true">
+            +
+          </span>
+          <span>{it}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
-      <div className="flex justify-center gap-4 mb-10">
-        {["beginner", "intermediate", "advanced"].map((level) => (
-          <button
-            key={level}
-            onClick={() => setActiveTab(level)}
-            className={`px-6 py-2 rounded-full font-semibold transition-all ${
- activeTab === level
- ? "bg-primary text-white shadow-lg"
- : "bg-card text-foreground hover:bg-primary/10"
- }`}
-          >
-            {level.charAt(0).toUpperCase() + level.slice(1)}
-          </button>
-        ))}
+export default function MarketPage() {
+  return (
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <CommandLine cmd="MKT" note="market guides" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight max-w-3xl">
+            Market
+          </h1>
+          <p className="mt-5 max-w-2xl text-lg text-gray-400 leading-relaxed">
+            Stock markets, indices, and global economic trends: how to read market cycles,
+            interpret the data, and make decisions grounded in it.
+          </p>
+        </Reveal>
+
+        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
+          {LEVELS.map((level, i) => (
+            <Reveal key={level.title} delay={i * 0.06} className="h-full">
+              <article className="card-night h-full p-6">
+                <p className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+                  {String(i + 1).padStart(2, "0")} · {level.label}
+                </p>
+                <h2 className="mt-4 text-lg md:text-xl font-semibold text-ivory">{level.title}</h2>
+                <PointList items={level.points} />
+              </article>
+            </Reveal>
+          ))}
+        </div>
+
+        <Reveal className="mt-14">
+          <div className="flex flex-wrap gap-3">
+            <Link href="/terminal" className="btn-gold px-5 py-2.5 text-sm">
+              Open the terminal
+            </Link>
+            <Link href="/resources" className="btn-ghost-gold px-5 py-2.5 text-sm">
+              ← Back to library
+            </Link>
+          </div>
+        </Reveal>
       </div>
-
-      {activeTab === "beginner" && (
-        <section className="max-w-5xl mx-auto space-y-10 animate-fadeIn">
-          <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-2">Understanding the Stock Market</h2>
-            <ul className="list-disc list-inside text-foreground-accent">
-              <li>What are stocks, ETFs, and indices?</li>
-              <li>How stock prices move and why</li>
-              <li>Major indices: S&P 500, Nasdaq, Dow Jones</li>
-            </ul>
-          </div>
-        </section>
-      )}
-
-      {activeTab === "intermediate" && (
-        <section className="max-w-5xl mx-auto space-y-10 animate-fadeIn">
-          <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-2">Market Analysis Techniques</h2>
-            <ul className="list-disc list-inside text-foreground-accent">
-              <li>Fundamental vs Technical Analysis</li>
-              <li>Economic Indicators (CPI, GDP, Yield Curve)</li>
-              <li>Market Sentiment & Volume Analysis</li>
-            </ul>
-          </div>
-        </section>
-      )}
-
-      {activeTab === "advanced" && (
-        <section className="max-w-5xl mx-auto space-y-10 animate-fadeIn">
-          <div className="bg-card p-6 rounded-2xl shadow-md">
-            <h2 className="text-2xl font-semibold mb-2">Advanced Trading & Macro Insights</h2>
-            <ul className="list-disc list-inside text-foreground-accent">
-              <li>Options, Futures, and Hedging Strategies</li>
-              <li>Quantitative Trading Models</li>
-              <li>Monetary Policy & Global Capital Flows</li>
-            </ul>
-          </div>
-        </section>
-      )}
     </main>
   );
-};
-
-export default MarketPage;
+}

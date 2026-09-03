@@ -1,20 +1,22 @@
 import React from 'react';
 import Link from 'next/link';
-import { BookOpen } from 'lucide-react';
+import CommandLine from '@/components/ui/CommandLine';
+import Reveal from '@/components/ui/Reveal';
 
 export default function ValuationPage() {
   return (
-    <main className="min-h-screen bg-night py-14 px-6 text-ivory">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-10">
-          <BookOpen className="w-12 h-12 text-gold mx-auto mb-4" />
-          <h1 className="text-4xl mb-2 font-display font-normal tracking-tight md:text-5xl">Valuation Models</h1>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Discover how analysts estimate a company's true worth using DCF, multiples, and intrinsic value methods.
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-4xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <CommandLine cmd="FIN" note="finance guide" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">Valuation models</h1>
+          <p className="mt-5 max-w-2xl text-lg text-gray-400 leading-relaxed">
+            Discover how analysts estimate a company&apos;s true worth using DCF, multiples, and intrinsic value methods.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="space-y-6 text-gray-300 leading-relaxed">
+        <Reveal className="mt-12">
+        <div className="space-y-6 text-gray-300 leading-relaxed prose-desk">
           <h2 className="text-2xl font-semibold">Discounted Cash Flow (DCF)</h2>
           <p>
             The <strong>DCF model</strong> estimates value by projecting future cash flows and discounting them to the present using a required rate of return.
@@ -39,15 +41,13 @@ export default function ValuationPage() {
             It helps investors identify undervalued or overvalued stocks.
           </p>
         </div>
+        </Reveal>
 
-        <div className="text-center mt-10">
-          <Link
-            href="/resources/finance"
-            className="inline-block bg-gold text-night px-6 py-3 rounded-xl font-semibold hover:bg-gold-deep transition"
-          >
-            ← Back to Finance Resources
+        <Reveal className="mt-12">
+          <Link href="/resources/finance" className="btn-ghost-gold px-5 py-2.5 text-sm">
+            ← Back to finance guides
           </Link>
-        </div>
+        </Reveal>
       </div>
     </main>
   );

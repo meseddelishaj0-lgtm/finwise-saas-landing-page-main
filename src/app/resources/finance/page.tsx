@@ -1,128 +1,76 @@
-'use client';
+import React from "react";
+import Link from "next/link";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Upload, FileText, TrendingUp, BookOpen, Brain, Library } from 'lucide-react';
+const GUIDES = [
+  {
+    title: "Understanding risk and return",
+    href: "/resources/finance/risk-return",
+    description:
+      "Systematic and unsystematic risk, standard deviation as a measure of volatility, and the tradeoff behind every allocation.",
+    cta: "Open guide",
+  },
+  {
+    title: "Valuation models: DCF, multiples, and intrinsic value",
+    href: "/resources/finance/valuation",
+    description:
+      "How analysts estimate what a business is worth: projected cash flows, comparable ratios, and intrinsic value.",
+    cta: "Open guide",
+  },
+  {
+    title: "Market psychology and behavioral finance",
+    href: "/resources/finance/behavioral",
+    description:
+      "Overconfidence, herding, and loss aversion: how bias moves markets and how to keep it out of your decisions.",
+    cta: "Open guide",
+  },
+  {
+    title: "AI-powered ticker analysis",
+    href: "/resources/finance/portfolio",
+    description:
+      "Enter a symbol for the live quote, day range, and an AI-style intrinsic value estimate with a sentiment read.",
+    cta: "Open tool",
+  },
+];
 
 export default function FinancePage() {
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-
-  const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setUploadedFiles([...uploadedFiles, ...files]);
-  };
-
-  const handleRemove = (index: number) => {
-    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
-  };
-
   return (
-    <main className="min-h-screen bg-night py-14 px-6 text-ivory">
-      <div className="max-w-5xl mx-auto text-center">
-        {/* Header */}
-        <Library className="w-12 h-12 text-gold mx-auto mb-3" />
-        <h1 className="text-4xl mb-6 font-display font-normal tracking-tight md:text-5xl">Finance Resources</h1>
-        <p className="text-lg text-gray-400 mb-10">
-          Explore guides on investment strategy, valuation models, and portfolio management.
-          You can also upload your own PDFs or notes to customize your learning.
-        </p>
-
-        {/* Upload Section */}
-        <div className="bg-surface border border-white/10 shadow-sm rounded-2xl p-8 mb-14 text-left">
-          <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-            <Upload className="w-6 h-6 text-gold" /> Upload Your Materials
-          </h2>
-          <p className="text-gray-400 mb-4">
-            Add your own PDFs, class notes, or finance research for future access.
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <CommandLine cmd="FIN" note="finance guides" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight max-w-3xl">
+            Finance
+          </h1>
+          <p className="mt-5 max-w-2xl text-lg text-gray-400 leading-relaxed">
+            Investment strategy, valuation models, and the psychology that gets in the way.
+            Four guides, each readable in one sitting.
           </p>
+        </Reveal>
 
-          <label className="cursor-pointer bg-gold hover:bg-gold-deep text-night px-5 py-2.5 rounded-xl font-semibold inline-block transition">
-            Choose File
-            <input
-              type="file"
-              accept=".pdf"
-              multiple
-              onChange={handleUpload}
-              className="hidden"
-            />
-          </label>
-
-          {/* Uploaded Files */}
-          {uploadedFiles.length > 0 && (
-            <ul className="mt-6 space-y-2">
-              {uploadedFiles.map((file, index) => (
-                <li
-                  key={index}
-                  className="flex items-center justify-between bg-surface2 p-3 rounded-lg"
-                >
-                  <span className="flex items-center gap-2 text-gray-100 font-medium">
-                    <FileText className="w-5 h-5 text-gold" />
-                    {file.name}
-                  </span>
-                  <button
-                    onClick={() => handleRemove(index)}
-                    className="text-red-500 hover:underline text-sm"
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2">
+          {GUIDES.map((g, i) => (
+            <Reveal key={g.href} delay={i * 0.06} className="h-full">
+              <Link href={g.href} className="card-night card-hover group flex h-full flex-col p-6">
+                <span className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <h2 className="mt-4 text-lg md:text-xl font-semibold text-ivory">{g.title}</h2>
+                <p className="mt-2 flex-1 text-gray-400 leading-relaxed">{g.description}</p>
+                <span className="mt-6 font-monodata text-[11px] uppercase tracking-widest text-gold-soft">
+                  {g.cta} <span className="arrow">→</span>
+                </span>
+              </Link>
+            </Reveal>
+          ))}
         </div>
 
-        {/* Resource Links */}
-        <ul className="text-left space-y-6 text-gray-100 max-w-3xl mx-auto">
-          <li>
-            <Link
-              href="/resources/finance/risk-return"
-              className="flex items-center gap-2 hover:text-gold font-semibold transition"
-            >
-              <TrendingUp className="w-5 h-5 text-gold" />
-              Understanding Risk and Return
-            </Link>
-          </li>
-
-          <li>
-            <Link
-              href="/resources/finance/valuation"
-              className="flex items-center gap-2 hover:text-gold font-semibold transition"
-            >
-              <BookOpen className="w-5 h-5 text-gold" />
-              Valuation Models: DCF, Multiples, and Intrinsic Value
-            </Link>
-          </li>
-
-          <li>
-            <Link
-              href="/resources/finance/behavioral"
-              className="flex items-center gap-2 hover:text-gold font-semibold transition"
-            >
-              <Brain className="w-5 h-5 text-gold" />
-              Market Psychology and Behavioral Finance
-            </Link>
-          </li>
-
-          <li>
-            <Link
-              href="/resources/finance/portfolio"
-              className="flex items-center gap-2 hover:text-gold font-semibold transition"
-            >
-              <FileText className="w-5 h-5 text-gold" />
-              Building a Diversified Portfolio
-            </Link>
-          </li>
-        </ul>
-
-        {/* Back Button */}
-        <div className="mt-12">
-          <Link
-            href="/resources"
-            className="inline-block bg-white/10 text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/10 transition"
-          >
-            ← Back to Resources
+        <Reveal className="mt-14">
+          <Link href="/resources" className="btn-ghost-gold px-5 py-2.5 text-sm">
+            ← Back to library
           </Link>
-        </div>
+        </Reveal>
       </div>
     </main>
   );

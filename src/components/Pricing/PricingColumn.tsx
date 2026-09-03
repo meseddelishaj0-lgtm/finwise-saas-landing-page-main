@@ -64,8 +64,10 @@ const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
 
   return (
     <div
-      className={`relative h-full flex flex-col p-8 rounded-xl border bg-surface ${
-        highlight ? "border-yellow-400/60" : "border-white/10"
+      className={`relative h-full flex flex-col p-8 rounded-2xl border transition-colors duration-300 ${
+        highlight
+          ? "border-gold/60 bg-surface2 shadow-[0_40px_80px_-50px_rgba(250,204,21,0.35)]"
+          : "border-white/10 bg-surface hover:border-white/20"
       }`}
     >
       {highlight && (

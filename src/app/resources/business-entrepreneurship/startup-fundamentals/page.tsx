@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import Link from "next/link";
+import CommandLine from "@/components/ui/CommandLine";
+import Reveal from "@/components/ui/Reveal";
 
 interface ModuleItem {
   id: string;
@@ -23,7 +24,7 @@ export default function StartupFundamentalsPage() {
       if (Array.isArray(data)) {
         setModules(data);
       } else {
-        console.error("Invalid response for modules:", data);
+        console.error("Invalid modules response:", data);
       }
     } catch (err) {
       console.error("Fetch modules error:", err);
@@ -37,64 +38,79 @@ export default function StartupFundamentalsPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-night text-ivory flex flex-col items-center py-14 px-6">
-      {/* Hero Section */}
-      <motion.section
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="max-w-4xl text-center mb-12"
-      >
-        <h1 className="text-4xl md:text-5xl mb-4 font-display font-normal tracking-tight">
-          Startup Fundamentals
-        </h1>
-        <p className="text-lg text-gray-400">
-          A structured guide to launching, funding and scaling your startup — designed for entrepreneurs and business builders.
-        </p>
-      </motion.section>
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-4xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <Reveal>
+          <CommandLine cmd="BIZ" note="startup fundamentals" className="mb-4" />
+          <h1 className="font-display text-ivory text-4xl md:text-6xl tracking-tight">
+            {"Startup fundamentals"}
+          </h1>
+          <p className="mt-5 max-w-2xl text-lg text-gray-400 leading-relaxed">
+            {"A structured guide to launching, funding and scaling your startup — designed for entrepreneurs and business builders."}
+          </p>
+        </Reveal>
 
-      {/* Modules List */}
-      <div className="w-full max-w-5xl grid gap-8 mb-16">
-        {loading ? (
-          <p className="text-center text-gray-500">Loading modules…</p>
-        ) : modules.length === 0 ? (
-          <p className="text-center text-gray-500">No modules available at this time.</p>
-        ) : (
-          modules.map((m) => (
-            <motion.div
-              key={m.id}
-              whileHover={{ scale: 1.02 }}
-              className="bg-surface2 border border-white/10 rounded-2xl shadow-md p-6"
-            >
-              <h3 className="text-2xl font-semibold mb-2 text-gray-100">
-                {m.title}
-              </h3>
-              <p className="text-gray-300 mb-4">{m.description}</p>
-              <Link
-                href={m.link}
-                className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-5 py-3 rounded-xl transition-all"
-              >
-                Explore Module
+        {/* Modules */}
+        <div className="mt-12 grid gap-6">
+          {loading ? (
+            <p className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+              Loading modules…
+            </p>
+          ) : modules.length === 0 ? (
+            <p className="text-gray-500">{"No modules available at this time."}</p>
+          ) : (
+            modules.map((m, i) => (
+              <Reveal key={m.id} delay={i * 0.06}>
+                <Link
+                  href={m.link}
+                  className="card-night card-hover group flex flex-col p-6 md:flex-row md:items-center md:justify-between md:gap-8"
+                >
+                  <div>
+                    <span className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+                      Module {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <h2 className="mt-3 text-lg md:text-xl font-semibold text-ivory">{m.title}</h2>
+                    <p className="mt-2 text-gray-400 leading-relaxed">{m.description}</p>
+                  </div>
+                  <span className="mt-5 shrink-0 font-monodata text-[11px] uppercase tracking-widest text-gold-soft md:mt-0">
+                    Open module <span className="arrow">→</span>
+                  </span>
+                </Link>
+              </Reveal>
+            ))
+          )}
+        </div>
+
+        {/* Community */}
+        <Reveal className="mt-20">
+          <div className="card-night border-gold/30 p-8 md:p-12">
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-2xl">
+                <p className="font-monodata text-[11px] uppercase tracking-widest text-gray-500">
+                  Community
+                </p>
+                <h2 className="mt-3 font-display text-ivory text-3xl md:text-5xl tracking-tight">
+                  {"Ready to build your startup?"}
+                </h2>
+                <p className="mt-4 text-gray-400 leading-relaxed">
+                  {"Join WallStreetStocks’ entrepreneurship community for live workshops, founder interviews and startup funding strategies."}
+                </p>
+              </div>
+              <Link href="/register" className="btn-gold shrink-0">
+                Join the community
               </Link>
-            </motion.div>
-          ))
-        )}
-      </div>
+            </div>
+          </div>
+        </Reveal>
 
-      {/* CTA Section */}
-      <div className="text-center">
-        <h3 className="text-2xl font-semibold mb-3 text-ivory">
-          Ready to Build Your Startup?
-        </h3>
-        <p className="text-gray-400 mb-6">
-          Join WallStreetStocks’ entrepreneurship community for live workshops, founder interviews and startup funding strategies.
-        </p>
-        <Link
-          href="/register"
-          className="inline-block bg-gold hover:bg-gold-deep text-black font-semibold px-6 py-3 rounded-xl transition-all"
-        >
-          Join the Community
-        </Link>
+        <Reveal className="mt-14">
+          <Link
+            href="/resources/business-entrepreneurship"
+            className="btn-ghost-gold px-5 py-2.5 text-sm"
+          >
+            ← Back to business &amp; entrepreneurship
+          </Link>
+        </Reveal>
       </div>
     </main>
   );
