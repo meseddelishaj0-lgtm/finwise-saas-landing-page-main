@@ -11,6 +11,11 @@
 // a popular ticker can have hundreds of watchers and per-watcher rows would
 // bloat the hottest table. Taps deep-link via data.type='watchlist_alert'
 // (set by sendPushNotificationToWatchlistUsers) → symbol chart screen.
+//
+// STILL ON FMP, DELIBERATELY. Twelve Data has no news feed on any plan, so
+// `stock_news` has nothing to migrate to. This cron fetches no prices, quotes
+// or fundamentals — only headlines — so the whole route stays on FMP.
+// See TWELVEDATA_MIGRATION.md.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
@@ -80,6 +85,7 @@ export async function GET(req: NextRequest) {
     for (let i = 0; i < tickers.length; i += TICKER_BATCH) {
       const batch = tickers.slice(i, i + TICKER_BATCH);
       try {
+        // Stays on FMP: Twelve Data has no news feed on any plan.
         const url = `https://financialmodelingprep.com/api/v3/stock_news?tickers=${batch.join(',')}&limit=100&apikey=${FMP_API_KEY}`;
         const res = await fetch(url);
         if (!res.ok) continue;

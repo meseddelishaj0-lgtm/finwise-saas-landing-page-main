@@ -13,8 +13,13 @@ import {
 } from "recharts";
 import { Search, Banknote, ArrowLeft, TrendingUp } from "lucide-react";
 
+// MBS/ABS yields and prepayment data are not sold by our market-data
+// provider. This page charts the listed ETFs that hold these securities
+// instead (daily closes from /api/market/chart) and labels the series as a
+// fund price, not a yield.
+
 export default function AssetBackedSecuritiesAnalysisPage() {
-  const [query, setQuery] = useState("MBS"); // default asset-backed security
+  const [query, setQuery] = useState("MBB"); // default: iShares MBS ETF
   const [data, setData] = useState<any | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,26 +30,27 @@ export default function AssetBackedSecuritiesAnalysisPage() {
       setLoading(true);
       setError(null);
 
+      const sym = symbol.toUpperCase();
       const res = await fetch(
-        `/api/proxy/fmp/api/v3/rating/${symbol}`
+        `/api/market/chart?symbol=${encodeURIComponent(sym)}&range=6M`
       );
-      const json = await res.json();
+      if (!res.ok) throw new Error("Request failed");
+      const bars = await res.json();
 
-      if (!json || json.length === 0) throw new Error("No data found");
+      if (!Array.isArray(bars) || bars.length === 0) throw new Error("No data found");
 
-      const latest = json[0];
-      setData(latest);
+      // Bars are ascending: { t, o, h, l, c, v }
+      const last = bars[bars.length - 1];
+      setData({ symbol: sym, price: last.c, date: String(last.t).slice(0, 10) });
 
-      const mockChart = Array.from({ length: 7 }, (_, i) => ({
-        day: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i],
-        yield: 3.5 + Math.random() * 0.4,
-      }));
-      setChartData(mockChart);
+      setChartData(
+        bars.map((b: any) => ({ date: String(b.t).slice(0, 10), price: b.c }))
+      );
 
       // AI commentary removed — needs a server route
     } catch (err: any) {
       console.error(err);
-      setError("Could not retrieve ABS data.");
+      setError("Could not retrieve data for that ETF.");
     } finally {
       setLoading(false);
     }
@@ -76,8 +82,8 @@ export default function AssetBackedSecuritiesAnalysisPage() {
         </h1>
       </div>
       <p className="text-gray-400 mb-8 text-lg">
-        Explore mortgage-backed and consumer ABS performance, yields, and
-        prepayment trends with live insights.
+        Track mortgage-backed and consumer ABS markets through the listed ETFs
+        that hold them.
       </p>
 
       {/* Search */}
@@ -89,7 +95,7 @@ export default function AssetBackedSecuritiesAnalysisPage() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search ABS ticker (e.g. MBS, ABS, GNMA)"
+          placeholder="Search an MBS/ABS ETF (e.g. MBB, VMBS, SPMB)"
           className="flex-1 px-4 py-2 rounded-full outline-none text-gray-300"
         />
         <button
@@ -107,18 +113,24 @@ export default function AssetBackedSecuritiesAnalysisPage() {
         <>
           {/* Chart */}
           <div className="bg-surface rounded-3xl shadow p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-gold" /> Yield Trend
+            <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-gold" /> Price Trend — {data.symbol}
             </h2>
+            <p className="text-xs text-gray-500 mb-4">
+              Daily closes over six months, as of {data.date} (last $
+              {data.price?.toFixed(2)}). MBS/ABS yields and prepayment data are
+              not available from our market-data provider — this is the
+              fund&apos;s price, not a yield.
+            </p>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
+                <XAxis dataKey="date" />
+                <YAxis domain={["auto", "auto"]} />
                 <Tooltip />
                 <Area
                   type="monotone"
-                  dataKey="yield"
+                  dataKey="price"
                   stroke="#FACC15"
                   fill="#FEF08A"
                 />

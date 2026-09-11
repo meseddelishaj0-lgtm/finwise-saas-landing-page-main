@@ -4,24 +4,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendPushNotificationToUser, NotificationMessages } from '@/lib/pushNotifications';
+import { getPrices } from '@/lib/twelvedata';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow up to 60 seconds for processing
 
-// Fetch current price from FMP API
-async function getStockPrice(symbol: string): Promise<number | null> {
+// Fetch current prices for every alerted symbol in one pass.
+//
+// Twelve Data's /price is the cheapest endpoint (1 credit per symbol) and the
+// client batches 60 symbols per request, so a watchlist of any size costs one
+// credit per distinct ticker instead of one HTTP round-trip each. getPrices()
+// swallows upstream errors and simply omits the symbols it could not resolve,
+// which the caller below reports as a per-symbol error — exactly what the old
+// per-symbol fetch did on failure.
+async function getStockPrices(symbols: string[]): Promise<Record<string, number>> {
   try {
-    const url = `https://financialmodelingprep.com/api/v3/quote/${encodeURIComponent(
-      symbol
-    )}?apikey=${process.env.FMP_API_KEY}`;
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    return data?.[0]?.price || null;
+    return await getPrices(symbols);
   } catch (error) {
-    console.error(`Error fetching price for ${symbol}:`, error);
-    return null;
+    console.error('Error fetching alert prices:', error);
+    return {};
   }
 }
 
@@ -75,9 +76,13 @@ export async function POST(req: NextRequest) {
     const triggeredAlerts: number[] = [];
     const errors: string[] = [];
 
+    // One batched lookup for every alerted symbol, instead of a request each.
+    const symbolList = Object.keys(alertsBySymbol);
+    const prices = await getStockPrices(symbolList);
+
     // Check each symbol
     for (const [symbol, alerts] of Object.entries(alertsBySymbol)) {
-      const currentPrice = await getStockPrice(symbol);
+      const currentPrice = prices[symbol] ?? null;
 
       if (currentPrice === null) {
         errors.push(`Failed to get price for ${symbol}`);

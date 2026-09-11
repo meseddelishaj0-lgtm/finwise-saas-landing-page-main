@@ -1,6 +1,12 @@
 // api/cron/market-news/route.ts
 // Cron job to fetch breaking market news and push via OneSignal
 // Runs every 15 min, 24/7
+//
+// STILL ON FMP, DELIBERATELY. The rest of the site's market data moved to
+// Twelve Data, but Twelve Data has no news feed on any plan (`press_releases`
+// is per-company issuer PR, not a market wire), so `stock_news` has no
+// counterpart to migrate to. This route fetches nothing but news, so it stays
+// entirely on FMP. See TWELVEDATA_MIGRATION.md.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
@@ -120,7 +126,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Fetch general market news (no-store to bypass Next.js fetch cache)
+    // Fetch general market news (no-store to bypass Next.js fetch cache).
+    // Stays on FMP: Twelve Data has no news feed on any plan.
     const newsRes = await fetch(
       `https://financialmodelingprep.com/api/v3/stock_news?limit=50&apikey=${FMP_API_KEY}`,
       { cache: 'no-store' }

@@ -1,38 +1,50 @@
 // api/mobile/quotes/route.ts
 // Batch quotes endpoint for mobile app
 // Reduces multiple API calls to one, with optional KV caching
+//
+// Prices come from Twelve Data (@/lib/twelvedata). The response envelope and
+// every Quote field name below are the app's contract and are unchanged: the
+// client helpers deliberately emit the previous provider's field names. The
+// valuation fields (marketCap, pe, eps, priceAvg50, priceAvg200,
+// sharesOutstanding) come from one FMP batch quote (@/lib/fmp), since Twelve
+// Data only sells them via /statistics at 50 credits per symbol.
+//
+// Edge-safe: both clients use only fetch, Map, URLSearchParams and setTimeout.
 
 import { NextRequest, NextResponse } from "next/server";
+import { getQuotes, type Quote as TdQuote } from "@/lib/twelvedata";
+import { getQuoteStats, type QuoteStats } from "@/lib/fmp";
 
 export const runtime = "edge"; // Edge Runtime for faster global response
 export const dynamic = "force-dynamic";
 
-const FMP_API_KEY = process.env.FMP_API_KEY;
-
 // Check if KV is configured
 const KV_CONFIGURED = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 
+// Wire shape consumed by the React Native app. Fields that the upstream may
+// not know are null (which is what the previous provider sent too) rather than
+// a misleading 0.
 interface Quote {
   symbol: string;
   name: string;
   price: number;
   changesPercentage: number;
   change: number;
-  dayLow: number;
-  dayHigh: number;
-  yearHigh: number;
-  yearLow: number;
-  marketCap: number;
-  priceAvg50: number;
-  priceAvg200: number;
+  dayLow: number | null;
+  dayHigh: number | null;
+  yearHigh: number | null;
+  yearLow: number | null;
+  marketCap: number | null;
+  priceAvg50: number | null;
+  priceAvg200: number | null;
   volume: number;
   avgVolume: number;
   exchange: string;
-  open: number;
-  previousClose: number;
-  eps: number;
-  pe: number;
-  sharesOutstanding: number;
+  open: number | null;
+  previousClose: number | null;
+  eps: number | null;
+  pe: number | null;
+  sharesOutstanding: number | null;
   timestamp: number;
 }
 
@@ -47,23 +59,56 @@ async function getKV() {
   }
 }
 
-// Fetch quotes from FMP API
-async function fetchQuotesFromFMP(symbols: string[]): Promise<Quote[]> {
+// Shape a Twelve Data quote (+ optional FMP valuation fields) into the app's
+// Quote. NOTE: /api/cron/cache-warm writes the same shape under
+// `quote:<SYMBOL>`, so the two must stay in sync — a warmed entry is served
+// verbatim from KV below.
+function toAppQuote(q: TdQuote, s: QuoteStats | null): Quote {
+  return {
+    symbol: q.symbol,
+    name: q.name,
+    price: q.price,
+    changesPercentage: q.changesPercentage,
+    change: q.change,
+    dayLow: q.dayLow,
+    dayHigh: q.dayHigh,
+    yearHigh: q.yearHigh ?? null,
+    yearLow: q.yearLow ?? null,
+    marketCap: s?.marketCap ?? null,
+    priceAvg50: s?.priceAvg50 ?? null,
+    priceAvg200: s?.priceAvg200 ?? null,
+    volume: q.volume,
+    avgVolume: q.avgVolume,
+    exchange: q.exchange,
+    open: q.open,
+    previousClose: q.previousClose,
+    eps: s?.eps ?? null,
+    pe: s?.pe ?? null,
+    sharesOutstanding: s?.sharesOutstanding ?? null,
+    // Seconds since epoch, as the app has always received it.
+    timestamp: Math.floor(q.timestamp / 1000),
+  };
+}
+
+// Fetch quotes from Twelve Data. Never throws: an upstream failure yields an
+// empty list so the route still answers with a well-formed envelope.
+async function fetchQuotes(symbols: string[]): Promise<Quote[]> {
   if (symbols.length === 0) return [];
 
-  const symbolsParam = symbols.join(",");
-  const url = `https://financialmodelingprep.com/api/v3/quote/${encodeURIComponent(
-    symbolsParam
-  )}?apikey=${FMP_API_KEY}`;
+  try {
+    const quotes = await getQuotes(symbols);
+    if (quotes.length === 0) return [];
 
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.error(`FMP API error: ${res.status}`);
+    // Valuation fields: one FMP batch quote. A failure just leaves them null.
+    const stats = await getQuoteStats(quotes.map((q) => q.symbol)).catch(
+      () => ({}) as Record<string, QuoteStats>
+    );
+
+    return quotes.map((q) => toAppQuote(q, stats[q.symbol.toUpperCase()] ?? null));
+  } catch (err) {
+    console.error("Twelve Data quote error:", err);
     return [];
   }
-
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
 }
 
 export async function GET(req: NextRequest) {
@@ -118,9 +163,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Fetch uncached quotes from FMP
+    // Fetch uncached quotes from Twelve Data
     if (uncachedSymbols.length > 0) {
-      const freshQuotes = await fetchQuotesFromFMP(uncachedSymbols);
+      const freshQuotes = await fetchQuotes(uncachedSymbols);
       quotes.push(...freshQuotes);
 
       // Cache fresh quotes in KV if available (fire and forget)
@@ -162,12 +207,12 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error("Batch quotes error:", error);
 
-    // Fallback: try direct FMP fetch without any caching
+    // Fallback: try a direct upstream fetch without any caching
     try {
       const { searchParams } = new URL(req.url);
       const symbolsParam = searchParams.get("symbols") || "";
       const symbols = symbolsParam.split(",").map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 50);
-      const quotes = await fetchQuotesFromFMP(symbols);
+      const quotes = await fetchQuotes(symbols);
 
       return NextResponse.json({
         quotes,
@@ -206,8 +251,8 @@ export async function POST(req: NextRequest) {
       .filter((s) => s.length > 0 && s.length <= 10)
       .slice(0, 50);
 
-    // Fetch all quotes from FMP (simpler approach for POST)
-    const quotes = await fetchQuotesFromFMP(validSymbols);
+    // Fetch all quotes upstream (simpler approach for POST)
+    const quotes = await fetchQuotes(validSymbols);
 
     // Sort to match request order
     const symbolOrder = new Map(validSymbols.map((s, i) => [s, i]));

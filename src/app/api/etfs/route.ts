@@ -1,41 +1,61 @@
 import { NextResponse } from "next/server";
+import { getQuotes } from "@/lib/twelvedata";
+import { fmp } from "@/lib/fmp";
+
+export const dynamic = "force-dynamic";
+
+// Most-traded US ETFs: live prices from Twelve Data, trailing returns from
+// FMP's batch price-change endpoint (one call for the whole board).
+//
+// Twelve Data's /etfs catalog lists ~81,000 funds worldwide with no pricing and
+// no ordering, and its /etfs/world family is Ultra-plan only, so the board is a
+// curated set of the most liquid US listings.
+
+const BOARD = [
+  "SPY", "IVV", "VOO", "QQQ", "VTI", "IWM", "DIA", "EFA", "VEA", "IEMG",
+  "EEM", "AGG", "BND", "LQD", "HYG", "TLT", "IEF", "GLD", "SLV", "XLK",
+  "XLF", "XLE", "XLV", "XLY", "XLI", "SMH", "ARKK", "VNQ", "VIG", "SCHD",
+];
+
+const pct = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) ? v : null;
 
 export async function GET() {
   try {
-    const fmp_api_key = process.env.FMP_API_KEY;
-    if (!fmp_api_key) {
-      return NextResponse.json(
-        { error: "Missing FMP_API_KEY in environment variables" },
-        { status: 500 }
-      );
-    }
+    const [quotes, changes] = await Promise.all([
+      getQuotes(BOARD, { ttl: 60_000 }),
+      fmp<Record<string, unknown>[]>(`v3/stock-price-change/${BOARD.join(",")}`, {}, 15 * 60_000),
+    ]);
+    if (quotes.length === 0) throw new Error("no ETF quotes");
 
-    // ✅ Fetch most active ETFs
-    const url = `https://financialmodelingprep.com/api/v3/etf/list?apikey=${fmp_api_key}`;
-    const res = await fetch(url);
-    const data = await res.json();
+    const returns = new Map(
+      (Array.isArray(changes) ? changes : []).map((c) => [String(c.symbol), c])
+    );
 
-    if (!Array.isArray(data)) {
-      return NextResponse.json({ error: "Invalid ETF data format" }, { status: 500 });
-    }
+    const etfs = quotes.map((q) => {
+      const r = returns.get(q.symbol);
+      return {
+        symbol: q.symbol,
+        name: q.name,
+        price: q.price,
+        change: q.change,
+        changesPercentage: q.changesPercentage,
+        volume: q.volume,
+        avgVolume: q.avgVolume,
+        yearHigh: q.yearHigh,
+        yearLow: q.yearLow,
+        // Percent returns, e.g. 11.13 = +11.13%.
+        fiftyTwoWeekChange: pct(r?.["1Y"]),
+        ytdReturn: pct(r?.ytd),
+        threeMonthReturn: pct(r?.["3M"]),
+      };
+    });
 
-    // ✅ Example formatting — only take first 20 ETFs
-    const etfs = data.slice(0, 20).map((etf: any) => ({
-      symbol: etf.symbol,
-      name: etf.name || "N/A",
-      price: etf.price || 0,
-      change: etf.change || 0,
-      changesPercentage: etf.changesPercentage || 0,
-      volume: etf.volume || 0,
-      avgVolume: etf.avgVolume || 0,
-      ytdReturn: etf.ytdReturn || 0,
-      threeMonthReturn: etf.threeMonthReturn || 0,
-      fiftyTwoWeekChange: etf.fiftyTwoWeekChange || 0,
-    }));
-
-    return NextResponse.json(etfs);
+    return NextResponse.json(etfs, {
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
+    });
   } catch (error) {
     console.error("ETF route error:", error);
-    return NextResponse.json({ error: "Failed to fetch ETF data" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch ETF data" }, { status: 502 });
   }
 }

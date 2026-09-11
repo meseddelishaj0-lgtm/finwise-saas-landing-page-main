@@ -13,29 +13,39 @@ import {
 import { ArrowLeft, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 
+// Regional credit spreads have no source on our market-data provider. The
+// closest honest substitute is the day's move in listed credit ETFs (high
+// yield, investment grade, emerging markets, leveraged loans), served by
+// /api/derivatives. The chart shows fund price changes, not spreads.
+
 export default function CreditRiskInsights() {
   const [data, setData] = useState<any[]>([]);
+  const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Fetch live credit spread data
+  // Fetch live credit ETF quotes
   const fetchCreditSpreads = async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/proxy/fmp/api/v4/spread`
-      );
-      const raw = await res.json();
+      const res = await fetch("/api/derivatives", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "credit" }),
+      });
+      const json = await res.json();
 
-      // Simulated mapping by region
-      const regions = [
-        { region: "US", spread: raw[0]?.spread ?? 1.1 },
-        { region: "EU", spread: raw[1]?.spread ?? 1.4 },
-        { region: "Asia", spread: raw[2]?.spread ?? 1.7 },
-        { region: "LATAM", spread: raw[3]?.spread ?? 2.0 },
-      ];
-      setData(regions);
+      const rows = (Array.isArray(json?.data) ? json.data : [])
+        .filter((q: any) => typeof q.changesPercentage === "number")
+        .map((q: any) => ({
+          symbol: q.symbol,
+          name: q.name,
+          change: Number(q.changesPercentage.toFixed(2)),
+        }));
+      setData(rows);
+      setNote(json?.note || "");
     } catch (err) {
-      console.error("Error fetching spreads:", err);
+      console.error("Error fetching credit ETF quotes:", err);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -96,7 +106,7 @@ export default function CreditRiskInsights() {
       {/* Chart Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-[#111]">
-          Regional Credit Spread Risk
+          Credit ETF Daily Move
         </h2>
         <button
           onClick={fetchCreditSpreads}
@@ -105,6 +115,11 @@ export default function CreditRiskInsights() {
           <RefreshCcw className="w-4 h-4" /> Refresh
         </button>
       </div>
+      {note && (
+        <p className="text-sm text-gray-500 mb-4">
+          {note} Bars show each fund&apos;s daily price change, not a spread.
+        </p>
+      )}
 
       {/* Bar Chart */}
       <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-md">
@@ -114,19 +129,20 @@ export default function CreditRiskInsights() {
           <ResponsiveContainer width="100%" height={400}>
             <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f2eecb" />
-              <XAxis dataKey="region" tick={{ fill: "#555" }} />
+              <XAxis dataKey="symbol" tick={{ fill: "#555" }} />
               <YAxis
-                label={{ value: "Spread (%)", angle: -90, position: "insideLeft", fill: "#444" }}
+                label={{ value: "Daily change (%)", angle: -90, position: "insideLeft", fill: "#444" }}
                 tick={{ fill: "#555" }}
               />
               <Tooltip
+                formatter={(value) => [`${value}%`, "Daily change"]}
                 contentStyle={{
                   background: "#161410",
                   borderRadius: "10px",
                   border: "1px solid #f9d949",
                 }}
               />
-              <Bar dataKey="spread" fill="#f9d949" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="change" fill="#f9d949" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         ) : (

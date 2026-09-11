@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft,
   BarChart3,
-  LineChart as LineChartIcon,
   Sparkles,
   TrendingUp,
 } from "lucide-react";
@@ -16,51 +15,77 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  LineChart,
-  Line,
-  Legend,
   Cell,
 } from "recharts";
 import { useRouter } from "next/navigation";
 
+// Fund-level private-markets marks (TVPI, IRR, capital calls) are not public
+// market data, so nothing here claims to be one. Both panels show the day's
+// move in the listed vehicles that track the asset class, served by
+// /api/alternatives: listed PE managers plus a listed PE fund index, and
+// liquid funds that replicate hedge-fund strategies.
+
+interface ProxyRow {
+  name: string; // ticker
+  fullName: string;
+  change: number;
+}
+
+const toRows = (json: any): ProxyRow[] =>
+  (Array.isArray(json?.data) ? json.data : [])
+    .filter((q: any) => typeof q.changesPercentage === "number")
+    .map((q: any) => ({
+      name: q.symbol,
+      fullName: q.name,
+      change: Number(q.changesPercentage.toFixed(2)),
+    }));
+
+const fetchBoard = (type: string) =>
+  fetch("/api/alternatives", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type }),
+  })
+    .then((r) => r.json())
+    .catch(() => null);
+
 export default function PrivateMarketsGrowthPage() {
   const router = useRouter();
 
-  const [fundData, setFundData] = useState<any[]>([]);
-  const [irrData, setIrrData] = useState<any[]>([]);
+  const [peData, setPeData] = useState<ProxyRow[]>([]);
+  const [hfData, setHfData] = useState<ProxyRow[]>([]);
+  const [peNote, setPeNote] = useState("");
+  const [hfNote, setHfNote] = useState("");
   const [aiSummary, setAiSummary] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Fetch mock fund data + AI insight
+  // Fetch listed-proxy quotes + AI insight
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Example FMP endpoint for private market proxies
-        const res = await fetch(
-          `/api/proxy/fmp/api/v4/etf-sector-allocation?symbol=XLK`
-        );
-        const json = await res.json();
+        const [pe, hf] = await Promise.all([
+          fetchBoard("private_equity"),
+          fetchBoard("hedge_funds"),
+        ]);
+        const peRows = toRows(pe);
+        const hfRows = toRows(hf);
+        setPeData(peRows);
+        setHfData(hfRows);
+        setPeNote(pe?.note || "");
+        setHfNote(hf?.note || "");
 
-        // Simulated PE/VC/HF growth & IRR dataset
-        const data = [
-          { name: "Private Equity", TVPI: 2.3, IRR: 15.1, Calls: 4.2 },
-          { name: "Venture Capital", TVPI: 3.1, IRR: 22.4, Calls: 6.8 },
-          { name: "Hedge Funds", TVPI: 1.8, IRR: 10.9, Calls: 2.7 },
-        ];
-        setFundData(data);
+        const moves = (rows: ProxyRow[]) =>
+          rows
+            .map((r) => `${r.name} ${r.change > 0 ? "+" : ""}${r.change}%`)
+            .join(", ") || "unavailable";
 
-        const irrSeries = data.map((d) => ({
-          name: d.name,
-          IRR: d.IRR,
-          Vintage: 2018 + Math.floor(Math.random() * 6),
-        }));
-        setIrrData(irrSeries);
-
-        // Prompt AI to summarize trends
+        // Prompt AI to summarize trends from the real proxy moves
         const prompt = `
         Provide a concise institutional-style market commentary (120 words max)
-        about Private Equity, Venture Capital, and Hedge Fund growth trends.
-        Mention TVPI, IRR dispersion, and capital call patterns.
+        on private-markets sentiment, based only on today's moves in these listed proxies.
+        Listed private-equity managers and PE fund index: ${moves(peRows)}.
+        Liquid funds replicating hedge-fund strategies: ${moves(hfRows)}.
+        Do not state TVPI, IRR, or capital-call figures; fund-level marks are not available.
         Use a professional tone for asset managers and investors.
         `;
 
@@ -81,6 +106,26 @@ export default function PrivateMarketsGrowthPage() {
 
     fetchData();
   }, []);
+
+  const renderBoard = (rows: ProxyRow[]) =>
+    rows.length > 0 ? (
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={rows}>
+          <XAxis dataKey="name" />
+          <YAxis unit="%" />
+          <Tooltip formatter={(value) => [`${value}%`, "Daily change"]} />
+          <Bar dataKey="change" fill="#facc15" radius={[8, 8, 0, 0]}>
+            {rows.map((_, i) => (
+              <Cell key={i} fill="#fbbf24" />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    ) : (
+      <p className="text-gray-500 text-sm">
+        {loading ? "Loading…" : "Data unavailable right now."}
+      </p>
+    );
 
   return (
     <div className="min-h-screen bg-night text-ivory py-14 px-6 md:px-16">
@@ -106,11 +151,12 @@ export default function PrivateMarketsGrowthPage() {
         </div>
 
         <p className="text-gray-400 mb-10">
-          AI projections for PE/VC growth, IRR bands, and capital distributions
-          across vintage years. Powered by WallStreetStocks.ai intelligence.
+          Private-markets sentiment read through the listed vehicles that track
+          it. Fund-level marks such as TVPI and IRR are not public data and are
+          not shown.
         </p>
 
-        {/* TVPI Chart */}
+        {/* Listed private equity */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -120,24 +166,14 @@ export default function PrivateMarketsGrowthPage() {
           <div className="flex items-center mb-2">
             <BarChart3 className="h-5 w-5 text-gold mr-2" />
             <h2 className="text-lg font-semibold text-ivory">
-              TVPI Comparison
+              Listed Private Equity — Daily Move
             </h2>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={fundData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="TVPI" fill="#facc15" radius={[8, 8, 0, 0]}>
-                {fundData.map((_, i) => (
-                  <Cell key={i} fill="#fbbf24" />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {peNote && <p className="text-xs text-gray-400 mb-4">{peNote}</p>}
+          {renderBoard(peData)}
         </motion.div>
 
-        {/* IRR Line Chart */}
+        {/* Hedge-fund replicators */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -145,26 +181,13 @@ export default function PrivateMarketsGrowthPage() {
           className="bg-gold/10 p-6 rounded-2xl mb-10 border border-gold/20"
         >
           <div className="flex items-center mb-2">
-            <LineChartIcon className="h-5 w-5 text-gold mr-2" />
+            <BarChart3 className="h-5 w-5 text-gold mr-2" />
             <h2 className="text-lg font-semibold text-ivory">
-              IRR Bands by Vintage
+              Hedge-Fund Replicators — Daily Move
             </h2>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={irrData}>
-              <XAxis dataKey="Vintage" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="IRR"
-                stroke="#facc15"
-                strokeWidth={3}
-                dot={{ r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {hfNote && <p className="text-xs text-gray-400 mb-4">{hfNote}</p>}
+          {renderBoard(hfData)}
         </motion.div>
 
         {/* AI Insights */}

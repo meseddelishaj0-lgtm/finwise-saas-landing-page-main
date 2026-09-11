@@ -224,7 +224,7 @@ export default function AIDashboardPage() {
               )}
             </div>
             <p className="mt-1 font-monodata text-[11px] uppercase tracking-widest text-gray-500">
-              Hourly closes · ^GSPC
+              Hourly closes · SPY
             </p>
 
             <div className="mt-6 h-[300px]">

@@ -21,41 +21,45 @@ import {
   Tooltip,
 } from "recharts";
 
+// Government bond yields have no source on our market-data provider (Twelve
+// Data sells instruments, not yield curves). /api/bonds returns the Treasury
+// ETFs at each point on the curve instead; this page shows their prices and
+// daily moves, labelled as fund prices rather than yields.
+
 export default function GlobalBondsDashboardPage() {
   const [bonds, setBonds] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
   const [query, setQuery] = useState("");
+  const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState("");
   const prevData = useRef<Record<string, number>>({});
 
-  // Fetch live bonds directly from FMP
+  // Fetch the Treasury ETF ladder
   const fetchBondData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(
-        `/api/proxy/fmp/api/v4/government_bonds_yield`
-      );
+      const res = await fetch("/api/bonds");
       const data = await res.json();
+      const ladder = Array.isArray(data?.ladder) ? data.ladder : [];
 
-      const mapped = data
-        .filter((b: any) => b.symbol && b.yield)
+      const mapped = ladder
+        .filter((b: any) => b.symbol && typeof b.price === "number")
         .map((b: any) => ({
-          country: b.country || "N/A",
+          country: "United States",
           symbol: b.symbol,
-          name: b.name || "Government Bond",
-          coupon: b.coupon ? `${b.coupon.toFixed(3)}%` : "0.000%",
-          yield: b.yield ? parseFloat(b.yield) : null,
-          maturityDate: b.maturityDate || "—",
-          termToMaturity: b.termToMaturity || "—",
-          price: b.price ? parseFloat(b.price) : null,
-          changePct: b.changeInPercent ? parseFloat(b.changeInPercent) : 0,
-          change: b.change ? parseFloat(b.change) : 0,
-          date: b.lastUpdated || b.date || "—",
+          name: b.name || b.symbol,
+          bucket: b.bucket || "—",
+          segment: b.maturity || "—",
+          price: b.price,
+          changePct:
+            typeof b.changesPercentage === "number" ? b.changesPercentage : 0,
+          change: typeof b.change === "number" ? b.change : 0,
         }));
 
       setBonds(mapped);
       setFiltered(mapped);
+      setNote(data?.note || "");
       setLastUpdated(new Date().toLocaleTimeString());
       // AI commentary removed — needs a server route
     } catch (err) {
@@ -80,7 +84,8 @@ export default function GlobalBondsDashboardPage() {
       (b) =>
         b.name.toLowerCase().includes(q) ||
         b.country.toLowerCase().includes(q) ||
-        b.symbol.toLowerCase().includes(q)
+        b.symbol.toLowerCase().includes(q) ||
+        b.bucket.toLowerCase().includes(q)
     );
     setFiltered(results);
   };
@@ -103,7 +108,7 @@ export default function GlobalBondsDashboardPage() {
         <div className="flex items-center gap-2">
           <Globe2 className="w-6 h-6 text-gold" />
           <h1 className="text-3xl text-ivory font-display font-normal tracking-tight md:text-4xl">
-            Global Bonds Dashboard
+            Treasury Bonds Dashboard
           </h1>
         </div>
         <button
@@ -114,10 +119,11 @@ export default function GlobalBondsDashboardPage() {
         </button>
       </div>
 
-      <p className="text-gray-400 mb-8">
-        Track global yields, coupons, and price changes — updated every minute
-        with live data and AI-driven insights.
+      <p className="text-gray-400 mb-3">
+        Track the US Treasury curve through the ETFs at each maturity — prices
+        and daily moves, updated every minute.
       </p>
+      {note && <p className="text-sm text-gray-500 mb-8">{note}</p>}
 
       {/* Search */}
       <form
@@ -128,7 +134,7 @@ export default function GlobalBondsDashboardPage() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search Global Bonds (e.g. US10Y, Germany)"
+          placeholder="Search Treasury ETFs (e.g. TLT, 7-10 years)"
           className="flex-1 px-4 py-2 rounded-full outline-none text-gray-300"
         />
         <button
@@ -150,10 +156,8 @@ export default function GlobalBondsDashboardPage() {
                 <th className="py-3 px-4">Country</th>
                 <th className="py-3 px-4">Symbol</th>
                 <th className="py-3 px-4">Name</th>
-                <th className="py-3 px-4 text-right">Coupon</th>
-                <th className="py-3 px-4 text-right">Yield %</th>
-                <th className="py-3 px-4 text-right">Maturity Date</th>
-                <th className="py-3 px-4 text-right">Term</th>
+                <th className="py-3 px-4 text-right">Maturity</th>
+                <th className="py-3 px-4 text-right">Segment</th>
                 <th className="py-3 px-4 text-right">Price</th>
                 <th className="py-3 px-4 text-right">Change %</th>
                 <th className="py-3 px-4 text-right">Change</th>
@@ -161,32 +165,14 @@ export default function GlobalBondsDashboardPage() {
             </thead>
             <tbody>
               {filtered.map((b, i) => {
-                const yieldDir = getDirection(`${b.symbol}-yield`, b.yield);
                 const priceDir = getDirection(`${b.symbol}-price`, b.price);
                 return (
                   <tr key={i} className="border-t hover:bg-gold/10 transition">
                     <td className="py-3 px-4">{b.country}</td>
                     <td className="py-3 px-4 font-medium">{b.symbol}</td>
                     <td className="py-3 px-4">{b.name}</td>
-                    <td className="py-3 px-4 text-right">{b.coupon}</td>
-
-                    {/* Yield */}
-                    <td
-                      className={`py-3 px-4 text-right ${
- b.changePct < 0 ? "text-red-400" : "text-green-400"
- }`}
-                    >
-                      {b.yield ? `${b.yield.toFixed(3)}%` : "—"}
-                      {yieldDir === "up" && (
-                        <ArrowUpRight className="inline w-4 h-4 ml-1 text-green-500" />
-                      )}
-                      {yieldDir === "down" && (
-                        <ArrowDownRight className="inline w-4 h-4 ml-1 text-red-500" />
-                      )}
-                    </td>
-
-                    <td className="py-3 px-4 text-right">{b.maturityDate}</td>
-                    <td className="py-3 px-4 text-right">{b.termToMaturity}</td>
+                    <td className="py-3 px-4 text-right">{b.bucket}</td>
+                    <td className="py-3 px-4 text-right">{b.segment}</td>
 
                     {/* Price */}
                     <td
@@ -228,17 +214,19 @@ export default function GlobalBondsDashboardPage() {
       {/* Chart */}
       {!loading && filtered.length > 0 && (
         <div className="mt-8 bg-surface rounded-3xl shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-gold" /> Global Yield Curve
+          <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-gold" /> Daily Move by Maturity
           </h2>
+          <p className="text-xs text-gray-400 mb-4">
+            Daily % change of each Treasury ETF, shortest to longest maturity —
+            fund prices, not yields.
+          </p>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart
-              data={filtered
-                .filter((b) => b.yield)
-                .map((b) => ({
-                  name: b.symbol,
-                  yield: b.yield,
-                }))}
+              data={filtered.map((b) => ({
+                name: b.symbol,
+                change: Number(b.changePct.toFixed(2)),
+              }))}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
@@ -246,7 +234,7 @@ export default function GlobalBondsDashboardPage() {
               <Tooltip />
               <Area
                 type="monotone"
-                dataKey="yield"
+                dataKey="change"
                 stroke="#FACC15"
                 fill="#FEF08A"
               />

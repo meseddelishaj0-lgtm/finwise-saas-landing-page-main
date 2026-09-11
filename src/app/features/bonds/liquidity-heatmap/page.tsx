@@ -13,41 +13,40 @@ import {
 import { ArrowLeft, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 
+// Dealer axes and TRACE prints are not sold by our market-data provider. The
+// closest honest liquidity measure it does carry is turnover: the day's dollar
+// volume (price x shares traded) in the Treasury ETF at each maturity bucket,
+// from /api/bonds. It shows where trading activity sits on the curve.
+
 export default function LiquidityHeatmap() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch turnover/liquidity proxies (FMP bond data)
+  // Fetch Treasury ETF turnover by maturity bucket
   const fetchLiquidityData = async () => {
     setLoading(true);
     try {
-      // Placeholder API: using yield curve data as liquidity proxy
-      const res = await fetch(
-        `/api/proxy/fmp/api/v4/treasury`
-      );
-      const raw = await res.json();
-      const latest = raw[0];
+      const res = await fetch("/api/bonds");
+      const json = await res.json();
+      const ladder = Array.isArray(json?.ladder) ? json.ladder : [];
 
-      // Map synthetic liquidity data by region
-      const mapped = [
-        { region: "US", liquidity: 1.0 },
-        { region: "EU", liquidity: 1.2 },
-        { region: "Asia", liquidity: 1.5 },
-        { region: "LATAM", liquidity: 2.1 },
-      ];
-
-      // Add realistic variation based on latest yield slope if available
-      if (latest && latest.tenYear && latest.oneYear) {
-        const slope = latest.tenYear - latest.oneYear;
-        mapped[0].liquidity = 0.8 + slope / 10;
-        mapped[1].liquidity = 1.0 + slope / 8;
-        mapped[2].liquidity = 1.3 + slope / 6;
-        mapped[3].liquidity = 1.8 + slope / 5;
-      }
+      const mapped = ladder
+        .filter(
+          (l: any) =>
+            typeof l.price === "number" &&
+            typeof l.volume === "number" &&
+            l.volume > 0
+        )
+        .map((l: any) => ({
+          bucket: l.bucket,
+          symbol: l.symbol,
+          turnover: Number(((l.price * l.volume) / 1e6).toFixed(1)),
+        }));
 
       setData(mapped);
     } catch (err) {
       console.error("Error fetching liquidity data:", err);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -76,32 +75,31 @@ export default function LiquidityHeatmap() {
           Liquidity Heatmap
         </h1>
         <p className="text-lg text-gray-400 mt-3">
-          Identify pockets of liquidity, turnover, and dealer depth across bond
-          universes.
+          See where trading activity sits along the Treasury curve.
         </p>
       </div>
 
       {/* Feature Cards */}
       <div className="grid md:grid-cols-3 gap-6 mb-10">
         <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
-          <h3 className="font-bold text-lg mb-2 text-[#111]">Dealer Axes</h3>
+          <h3 className="font-bold text-lg mb-2 text-[#111]">Turnover by Maturity</h3>
           <p className="text-gray-400 text-sm leading-relaxed">
-            Visualizes dealer positioning and bid/ask liquidity concentration
-            across major regions.
+            The day&apos;s dollar volume in the Treasury ETF for each maturity
+            bucket, from bills to long bonds.
           </p>
         </div>
         <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
-          <h3 className="font-bold text-lg mb-2 text-[#111]">TRACE Heatmap</h3>
+          <h3 className="font-bold text-lg mb-2 text-[#111]">What It Measures</h3>
           <p className="text-gray-400 text-sm leading-relaxed">
-            Uses transaction-level TRACE data to estimate turnover intensity and
-            execution speed.
+            Exchange-traded turnover in bond funds: a proxy for activity, not
+            dealer depth or TRACE prints.
           </p>
         </div>
         <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-sm">
-          <h3 className="font-bold text-lg mb-2 text-[#111]">Ladder Export</h3>
+          <h3 className="font-bold text-lg mb-2 text-[#111]">Latest Session</h3>
           <p className="text-gray-400 text-sm leading-relaxed">
-            Generate exportable liquidity ladders to optimize duration, depth,
-            and pricing visibility.
+            Figures come from the latest session&apos;s quotes; Refresh reloads
+            them.
           </p>
         </div>
       </div>
@@ -109,7 +107,7 @@ export default function LiquidityHeatmap() {
       {/* Chart Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-[#111]">
-          Regional Bond Market Liquidity
+          Treasury ETF Turnover by Maturity
         </h2>
         <button
           onClick={fetchLiquidityData}
@@ -118,6 +116,13 @@ export default function LiquidityHeatmap() {
           <RefreshCcw className="w-4 h-4" /> Refresh
         </button>
       </div>
+      <p className="text-sm text-gray-500 mb-4">
+        Dealer axes and TRACE data are not available from our market-data
+        provider. Shown: the day&apos;s dollar volume (price × shares traded) in
+        the Treasury ETF at each maturity bucket
+        {data.length > 0 && ` (${data.map((d) => d.symbol).join(", ")})`} — a
+        turnover proxy, not dealer depth.
+      </p>
 
       {/* Chart */}
       <div className="bg-surface border border-gold/20 rounded-2xl p-6 shadow-md">
@@ -133,10 +138,10 @@ export default function LiquidityHeatmap() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f2eecb" />
-              <XAxis dataKey="region" tick={{ fill: "#555" }} />
+              <XAxis dataKey="bucket" tick={{ fill: "#555" }} />
               <YAxis
                 label={{
-                  value: "Liquidity Index",
+                  value: "Dollar volume ($M)",
                   angle: -90,
                   position: "insideLeft",
                   fill: "#444",
@@ -144,6 +149,7 @@ export default function LiquidityHeatmap() {
                 tick={{ fill: "#555" }}
               />
               <Tooltip
+                formatter={(value) => [`$${value}M`, "Dollar volume"]}
                 contentStyle={{
                   background: "#161410",
                   borderRadius: "10px",
@@ -152,7 +158,7 @@ export default function LiquidityHeatmap() {
               />
               <Area
                 type="monotone"
-                dataKey="liquidity"
+                dataKey="turnover"
                 stroke="#f9d949"
                 fillOpacity={1}
                 fill="url(#colorLiq)"

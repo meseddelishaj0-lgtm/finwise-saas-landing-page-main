@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
+// Legacy alias. This used to dump a whole FMP stock-screener page; nothing on
+// the site consumes it any more. It now forwards to the maintained screener
+// dataset so any stray caller still gets valid data.
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  const url = new URL("/api/market/screener", request.url);
   try {
-    const url = `https://financialmodelingprep.com/api/v3/stock-screener?marketCapMoreThan=50&limit=10000&country=US&apikey=${process.env.FMP_API_KEY}`;
     const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, { status: res.status });
   } catch (error) {
     console.error("Market Screener Error:", error);
     return NextResponse.json({ error: "Failed to load market data" }, { status: 500 });

@@ -1,28 +1,24 @@
 // api/cron/market-movers/route.ts
 // Cron job to detect big market movers and push notifications via OneSignal
 // Runs every 30 min during market hours (Mon-Fri 9am-4pm ET)
+//
+// Backed by Twelve Data (@/lib/twelvedata). market_movers is billed at 100
+// credits per call, so this run costs 200 — one gainers list, one losers list.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendToAllSubscribers } from '@/lib/onesignal';
+import { getMovers } from '@/lib/twelvedata';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const FMP_API_KEY = process.env.FMP_API_KEY;
+const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY;
 const CRON_SECRET = process.env.CRON_SECRET;
 
 const CHANGE_THRESHOLD = 5.0; // minimum % change to qualify
 const MIN_PRICE = 1.0; // skip penny stocks
 const MAX_MOVERS_IN_NOTIFICATION = 5;
-
-interface MarketMover {
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  changesPercentage: number;
-}
 
 function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0]; // YYYY-MM-DD
@@ -44,25 +40,23 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (!FMP_API_KEY) {
-      return NextResponse.json({ error: 'FMP_API_KEY not configured' }, { status: 500 });
+    if (!TWELVE_DATA_API_KEY) {
+      return NextResponse.json({ error: 'TWELVE_DATA_API_KEY not configured' }, { status: 500 });
     }
 
-    // Fetch gainers and losers from FMP (no-store to bypass Next.js fetch cache)
-    const [gainersRes, losersRes] = await Promise.all([
-      fetch(`https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey=${FMP_API_KEY}`, { cache: 'no-store' }),
-      fetch(`https://financialmodelingprep.com/api/v3/stock_market/losers?apikey=${FMP_API_KEY}`, { cache: 'no-store' }),
+    // Fetch gainers and losers. getMovers() resolves to [] rather than
+    // throwing, so an upstream hiccup can never reject unhandled here.
+    // priceGreaterThan: 1 matches the MIN_PRICE floor applied below instead of
+    // the client's stricter $3 default.
+    const [gainers, losers] = await Promise.all([
+      getMovers('gainers', { outputsize: 30, priceGreaterThan: MIN_PRICE }),
+      getMovers('losers', { outputsize: 30, priceGreaterThan: MIN_PRICE }),
     ]);
 
-    const [gainers, losers]: [MarketMover[], MarketMover[]] = await Promise.all([
-      gainersRes.json(),
-      losersRes.json(),
-    ]);
-
-    if (!Array.isArray(gainers) || !Array.isArray(losers)) {
+    if (gainers.length === 0 && losers.length === 0) {
       return NextResponse.json({
         success: false,
-        error: 'Invalid FMP response',
+        error: 'No market mover data available',
       }, { status: 500 });
     }
 

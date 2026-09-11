@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// Market news proxy (FMP stock_news), optionally filtered by ticker.
+// Market news, optionally filtered by ticker.
+//
+// This is the one route still on Financial Modeling Prep. Twelve Data has no
+// news feed on any plan — its `press_releases` endpoint is per-company
+// announcements only and is not a market news wire. Everything else on the
+// site moved to Twelve Data; see TWELVEDATA_MIGRATION.md.
 let cache: Record<string, { data: any; ts: number }> = {};
 const TTL = 120 * 1000;
 

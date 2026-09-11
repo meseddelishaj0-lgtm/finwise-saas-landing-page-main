@@ -2,13 +2,24 @@
 // Cron job to pre-warm cache for popular stocks and trending data
 // Runs every 2 minutes to keep hot data fresh
 // Gracefully handles missing KV configuration
+//
+// Prices and movers from Twelve Data (@/lib/twelvedata), valuation fields from
+// one FMP batch quote (@/lib/fmp). The `quote:<SYMBOL>` entries are served
+// verbatim by /api/mobile/quotes, so they are written in that route's Quote
+// shape — the two must stay in sync.
 
 import { NextRequest, NextResponse } from "next/server";
+import {
+  getQuotes,
+  getMovers,
+  getMostActive,
+  type Quote as TdQuote,
+} from "@/lib/twelvedata";
+import { getQuoteStats, type QuoteStats } from "@/lib/fmp";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Allow up to 60 seconds for this cron job
 
-const FMP_API_KEY = process.env.FMP_API_KEY;
 const CRON_SECRET = process.env.CRON_SECRET;
 const KV_CONFIGURED = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 
@@ -28,20 +39,31 @@ const HOT_SYMBOLS = [
   "JNJ", "UNH", "PFE", "MRNA",
 ];
 
+const INDEX_SYMBOLS = ["^GSPC", "^DJI", "^IXIC", "^RUT", "^VIX"];
+
+// Mirrors the Quote wire shape in /api/mobile/quotes.
 interface Quote {
   symbol: string;
   name: string;
   price: number;
   changesPercentage: number;
   change: number;
-  dayLow: number;
-  dayHigh: number;
-  yearHigh: number;
-  yearLow: number;
-  marketCap: number;
+  dayLow: number | null;
+  dayHigh: number | null;
+  yearHigh: number | null;
+  yearLow: number | null;
+  marketCap: number | null;
+  priceAvg50: number | null;
+  priceAvg200: number | null;
   volume: number;
+  avgVolume: number;
   exchange: string;
-  previousClose: number;
+  open: number | null;
+  previousClose: number | null;
+  eps: number | null;
+  pe: number | null;
+  sharesOutstanding: number | null;
+  timestamp: number;
 }
 
 // Lazy load KV only if configured
@@ -55,20 +77,46 @@ async function getKV() {
   }
 }
 
-async function fetchQuotesFromFMP(symbols: string[]): Promise<Quote[]> {
+function toAppQuote(q: TdQuote, s: QuoteStats | null): Quote {
+  return {
+    symbol: q.symbol,
+    name: q.name,
+    price: q.price,
+    changesPercentage: q.changesPercentage,
+    change: q.change,
+    dayLow: q.dayLow,
+    dayHigh: q.dayHigh,
+    yearHigh: q.yearHigh ?? null,
+    yearLow: q.yearLow ?? null,
+    marketCap: s?.marketCap ?? null,
+    priceAvg50: s?.priceAvg50 ?? null,
+    priceAvg200: s?.priceAvg200 ?? null,
+    volume: q.volume,
+    avgVolume: q.avgVolume,
+    exchange: q.exchange,
+    open: q.open,
+    previousClose: q.previousClose,
+    eps: s?.eps ?? null,
+    pe: s?.pe ?? null,
+    sharesOutstanding: s?.sharesOutstanding ?? null,
+    timestamp: Math.floor(q.timestamp / 1000),
+  };
+}
+
+// Batch quote + best-effort FMP valuation fields. Never throws.
+async function fetchQuotes(symbols: string[]): Promise<Quote[]> {
   if (symbols.length === 0) return [];
-
-  const symbolsParam = symbols.join(",");
-  const url = `https://financialmodelingprep.com/api/v3/quote/${encodeURIComponent(symbolsParam)}?apikey=${FMP_API_KEY}`;
-
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.error(`FMP API error: ${res.status}`);
+  try {
+    const quotes = await getQuotes(symbols);
+    if (quotes.length === 0) return [];
+    const stats = await getQuoteStats(quotes.map((q) => q.symbol)).catch(
+      () => ({}) as Record<string, QuoteStats>
+    );
+    return quotes.map((q) => toAppQuote(q, stats[q.symbol.toUpperCase()] ?? null));
+  } catch (err) {
+    console.error("Cache warm: quote fetch failed:", err);
     return [];
   }
-
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
 }
 
 export async function GET(req: NextRequest) {
@@ -97,7 +145,7 @@ export async function GET(req: NextRequest) {
 
     // 1. Warm popular stock quotes
     try {
-      const quotes = await fetchQuotesFromFMP(HOT_SYMBOLS);
+      const quotes = await fetchQuotes(HOT_SYMBOLS);
 
       // Cache each quote with 30-second TTL
       const cachePromises = quotes.map((quote) =>
@@ -116,11 +164,17 @@ export async function GET(req: NextRequest) {
 
     // 2. Warm trending/gainers/losers
     try {
-      const [gainers, losers, actives] = await Promise.all([
-        fetch(`https://financialmodelingprep.com/api/v3/stock_market/gainers?limit=20&apikey=${FMP_API_KEY}`).then(r => r.json()),
-        fetch(`https://financialmodelingprep.com/api/v3/stock_market/losers?limit=20&apikey=${FMP_API_KEY}`).then(r => r.json()),
-        fetch(`https://financialmodelingprep.com/api/v3/stock_market/actives?limit=20&apikey=${FMP_API_KEY}`).then(r => r.json()),
+      // market_movers costs 100 credits per call. Ask for 50 rows on each side
+      // — the exact request getMostActive() makes internally — so the actives
+      // list is assembled from the client's 60s cache instead of paying twice.
+      const [gainersRaw, losersRaw] = await Promise.all([
+        getMovers("gainers", { outputsize: 50 }),
+        getMovers("losers", { outputsize: 50 }),
       ]);
+      const actives = await getMostActive(20);
+
+      const gainers = gainersRaw.slice(0, 20);
+      const losers = losersRaw.slice(0, 20);
 
       // Cache market movers with 60-second TTL
       await Promise.all([
@@ -132,9 +186,9 @@ export async function GET(req: NextRequest) {
 
       // Also cache individual quotes from these lists
       const allSymbols = [
-        ...(Array.isArray(gainers) ? gainers.map((s: any) => s.symbol) : []),
-        ...(Array.isArray(losers) ? losers.map((s: any) => s.symbol) : []),
-        ...(Array.isArray(actives) ? actives.map((s: any) => s.symbol) : []),
+        ...gainers.map((s) => s.symbol),
+        ...losers.map((s) => s.symbol),
+        ...actives.map((s) => s.symbol),
       ].filter(Boolean).slice(0, 50);
 
       const uniqueSymbols = [...new Set(allSymbols)].filter(
@@ -142,7 +196,7 @@ export async function GET(req: NextRequest) {
       );
 
       if (uniqueSymbols.length > 0) {
-        const moverQuotes = await fetchQuotesFromFMP(uniqueSymbols);
+        const moverQuotes = await fetchQuotes(uniqueSymbols);
         const moverCachePromises = moverQuotes.map((quote) =>
           kv.set(`quote:${quote.symbol}`, quote, { ex: 30 }).catch(() => errorCount++)
         );
@@ -155,12 +209,13 @@ export async function GET(req: NextRequest) {
     }
 
     // 3. Warm major indices
+    // Twelve Data does not sell US index symbols on this plan, so these are
+    // quoted through their ETF proxies. The caret symbol and index name are
+    // preserved; only the price level belongs to the fund.
     try {
-      const indices = await fetch(
-        `https://financialmodelingprep.com/api/v3/quote/%5EGSPC,%5EDJI,%5EIXIC,%5ERUT,%5EVIX?apikey=${FMP_API_KEY}`
-      ).then(r => r.json());
+      const indices = await getQuotes(INDEX_SYMBOLS);
 
-      if (Array.isArray(indices)) {
+      if (indices.length > 0) {
         await kv.set("market:indices", indices, { ex: 60 }).catch(() => errorCount++);
         cachedCount += 1;
       }

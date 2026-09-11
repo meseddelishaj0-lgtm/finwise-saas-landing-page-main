@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import { fmp } from "@/lib/fmp";
 
-// Screener dataset: top ~1500 US stocks by market cap, enriched with
-// live quote fields and multi-horizon performance. Powers /screener and
-// /heatmap. Heavy upstream fan-out (≈20 FMP calls) hidden behind a
-// 5-minute in-memory cache.
+// Screener dataset: top ~1500 US stocks by market cap, enriched with live
+// quote fields and multi-horizon performance. Powers /screener and /heatmap.
+//
+// Served from FMP rather than Twelve Data: pricing ~1,500 names there costs a
+// credit per symbol, plus a daily series per symbol for performance and 50
+// credits per symbol for valuation — far beyond the 987 credits/minute the
+// website shares with the mobile app. FMP answers the whole build in ~21 batch
+// calls (universe, then quote + stock-price-change in 150-symbol chunks),
+// behind a 5-minute in-memory cache.
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -47,6 +53,10 @@ const US_EXCHANGES = new Set(["NASDAQ", "NYSE", "AMEX"]);
 const UNIVERSE_SIZE = 1500;
 const CHUNK = 150;
 const TTL = 5 * 60 * 1000;
+/** Market-cap ranking and sector data move slowly. */
+const UNIVERSE_TTL = 60 * 60 * 1000;
+
+type Row = Record<string, unknown>;
 
 let cache: { at: number; data: { updated: number; rows: ScreenerRow[] } } | null = null;
 let inflight: Promise<{ updated: number; rows: ScreenerRow[] }> | null = null;
@@ -59,22 +69,22 @@ const num = (x: unknown): number | null => {
 const pct = (a: number | null, b: number | null): number | null =>
   a != null && b != null && b !== 0 ? ((a - b) / Math.abs(b)) * 100 : null;
 
-async function fetchJson(url: string): Promise<unknown> {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`upstream ${res.status}`);
-  return res.json();
-}
-
 async function buildDataset(): Promise<{ updated: number; rows: ScreenerRow[] }> {
-  const key = process.env.FMP_API_KEY;
-  if (!key) throw new Error("no key");
-  const base = "https://financialmodelingprep.com/api/v3";
+  // 1. Universe. The stock screener also carries sector, industry, beta and
+  //    the trailing annual dividend, which the quote lacks.
+  const uni = await fmp<Row[]>(
+    "v3/stock-screener",
+    {
+      marketCapMoreThan: 500_000_000,
+      exchange: "NYSE,NASDAQ,AMEX",
+      isActivelyTrading: "true",
+      limit: 6000,
+    },
+    UNIVERSE_TTL
+  );
+  if (!Array.isArray(uni) || uni.length === 0) throw new Error("no universe");
 
-  // 1. Universe
-  const uni = (await fetchJson(
-    `${base}/stock-screener?marketCapMoreThan=500000000&exchange=NYSE,NASDAQ,AMEX&isActivelyTrading=true&limit=6000&apikey=${key}`
-  )) as Record<string, unknown>[];
-
+  // FMP's screener also lists foreign lines and funds; keep plain US common stock.
   const universe = uni
     .filter(
       (r) =>
@@ -100,27 +110,23 @@ async function buildDataset(): Promise<{ updated: number; rows: ScreenerRow[] }>
     ])
   );
 
-  // 2. Enrich in chunks: quotes + multi-horizon price change
+  // 2. Enrich in chunks: quotes + multi-horizon price change.
   const symbols = universe.map((r) => String(r.symbol));
   const chunks: string[][] = [];
   for (let i = 0; i < symbols.length; i += CHUNK) chunks.push(symbols.slice(i, i + CHUNK));
 
-  const quotes = new Map<string, Record<string, unknown>>();
-  const perf = new Map<string, Record<string, unknown>>();
+  const quotes = new Map<string, Row>();
+  const perf = new Map<string, Row>();
 
   await Promise.all(
     chunks.map(async (chunk) => {
       const list = chunk.join(",");
-      const [qs, ps] = await Promise.allSettled([
-        fetchJson(`${base}/quote/${list}?apikey=${key}`),
-        fetchJson(`${base}/stock-price-change/${list}?apikey=${key}`),
+      const [qs, ps] = await Promise.all([
+        fmp<Row[]>(`v3/quote/${list}`, {}, TTL),
+        fmp<Row[]>(`v3/stock-price-change/${list}`, {}, TTL),
       ]);
-      if (qs.status === "fulfilled" && Array.isArray(qs.value)) {
-        for (const q of qs.value as Record<string, unknown>[]) quotes.set(String(q.symbol), q);
-      }
-      if (ps.status === "fulfilled" && Array.isArray(ps.value)) {
-        for (const p of ps.value as Record<string, unknown>[]) perf.set(String(p.symbol), p);
-      }
+      for (const q of Array.isArray(qs) ? qs : []) quotes.set(String(q.symbol), q);
+      for (const p of Array.isArray(ps) ? ps : []) perf.set(String(p.symbol), p);
     })
   );
 
@@ -176,6 +182,7 @@ async function buildDataset(): Promise<{ updated: number; rows: ScreenerRow[] }>
     });
   }
 
+  if (rows.length === 0) throw new Error("empty screener build");
   return { updated: Date.now(), rows };
 }
 

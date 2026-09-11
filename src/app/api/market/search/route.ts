@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { searchSymbols, type AssetClass } from "@/lib/twelvedata";
 
-// Symbol search proxy (FMP) — ranks US listings first, includes major
-// indices/crypto that FMP search omits. Key stays server-side.
+// Symbol search, backed by Twelve Data's symbol_search. US listings rank
+// first; the curated list below covers indices, crypto, FX and commodities
+// under the ticker conventions the rest of the site uses.
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +11,7 @@ interface Result {
   symbol: string;
   name: string;
   exchange: string;
-  type: "stock" | "etf" | "index" | "crypto" | "forex" | "commodity";
+  type: AssetClass;
 }
 
 const STATIC: Result[] = [
@@ -31,15 +33,15 @@ const STATIC: Result[] = [
   { symbol: "USDJPY", name: "US Dollar / Japanese Yen", exchange: "FOREX", type: "forex" },
   { symbol: "AUDUSD", name: "Australian Dollar / US Dollar", exchange: "FOREX", type: "forex" },
   { symbol: "USDCAD", name: "US Dollar / Canadian Dollar", exchange: "FOREX", type: "forex" },
-  { symbol: "GCUSD", name: "Gold Futures", exchange: "COMMODITY", type: "commodity" },
-  { symbol: "SIUSD", name: "Silver Futures", exchange: "COMMODITY", type: "commodity" },
+  { symbol: "GCUSD", name: "Gold", exchange: "COMMODITY", type: "commodity" },
+  { symbol: "SIUSD", name: "Silver", exchange: "COMMODITY", type: "commodity" },
   { symbol: "CLUSD", name: "Crude Oil WTI", exchange: "COMMODITY", type: "commodity" },
   { symbol: "BZUSD", name: "Brent Crude Oil", exchange: "COMMODITY", type: "commodity" },
   { symbol: "NGUSD", name: "Natural Gas", exchange: "COMMODITY", type: "commodity" },
   { symbol: "HGUSD", name: "Copper", exchange: "COMMODITY", type: "commodity" },
 ];
 
-const US_EXCHANGES = new Set(["NASDAQ", "NYSE", "AMEX", "CBOE", "ETF", "CRYPTO"]);
+const US_EXCHANGES = new Set(["NASDAQ", "NYSE", "AMEX", "CBOE", "ARCA", "BATS", "IEX", "OTC"]);
 
 const cache = new Map<string, { at: number; data: Result[] }>();
 const TTL = 300_000;
@@ -61,47 +63,30 @@ export async function GET(request: Request) {
       s.name.toLowerCase().includes(ql)
   );
 
-  let fmpMatches: Result[] = [];
+  let remote: Result[] = [];
   try {
-    const apiKey = process.env.FMP_API_KEY;
-    if (apiKey) {
-      const url = `https://financialmodelingprep.com/api/v3/search?query=${encodeURIComponent(q)}&limit=30&apikey=${apiKey}`;
-      const res = await fetch(url, { cache: "no-store" });
-      if (res.ok) {
-        const rows = await res.json();
-        if (Array.isArray(rows)) {
-          fmpMatches = rows
-            .filter(
-              (r: Record<string, string>) =>
-                r.symbol &&
-                !r.symbol.includes(".") &&
-                US_EXCHANGES.has(r.exchangeShortName || "")
-            )
-            .map((r: Record<string, string>) => ({
-              symbol: r.symbol,
-              name: r.name || r.symbol,
-              exchange: r.exchangeShortName || "US",
-              type:
-                r.exchangeShortName === "CRYPTO"
-                  ? ("crypto" as const)
-                  : r.exchangeShortName === "ETF"
-                  ? ("etf" as const)
-                  : ("stock" as const),
-            }));
-        }
-      }
-    }
+    const rows = await searchSymbols(q, 30);
+    remote = rows
+      // Twelve Data returns every venue a name is listed on; keep US lines so
+      // a search for "apple" does not surface the Colombian or LSE listing.
+      .filter((r) => r.symbol && !r.symbol.includes(".") && US_EXCHANGES.has(r.exchange))
+      .map((r) => ({
+        symbol: r.symbol,
+        name: r.name,
+        exchange: r.exchange,
+        type: r.type,
+      }));
   } catch {
-    // fall through with static matches only
+    // fall through with the curated matches only
   }
 
-  // De-dup, rank exact ticker match first, then prefix matches
   const seen = new Set<string>();
-  const all = [...staticMatches, ...fmpMatches].filter((r) => {
+  const all = [...staticMatches, ...remote].filter((r) => {
     if (seen.has(r.symbol)) return false;
     seen.add(r.symbol);
     return true;
   });
+
   const qu = q.toUpperCase();
   all.sort((a, b) => {
     const score = (r: Result) =>

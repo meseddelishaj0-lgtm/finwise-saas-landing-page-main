@@ -1,32 +1,23 @@
 // api/cron/daily-recap/route.ts
 // Sends a daily market recap notification at market close (4:30 PM ET)
 // Summary includes major indices, top gainer, top loser
+//
+// Backed by @/lib/twelvedata: movers from Twelve Data, index quotes (served
+// from FMP inside the client) at their real levels. The recap copy is phrased
+// as percent moves.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendToAllSubscribers } from '@/lib/onesignal';
+import { getQuotes, getMovers } from '@/lib/twelvedata';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
-const FMP_API_KEY = process.env.FMP_API_KEY;
+const TWELVE_DATA_API_KEY = process.env.TWELVE_DATA_API_KEY;
 const CRON_SECRET = process.env.CRON_SECRET;
 
-interface IndexQuote {
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  changesPercentage: number;
-}
-
-interface MarketMover {
-  symbol: string;
-  name: string;
-  price: number;
-  change: number;
-  changesPercentage: number;
-}
+const INDEX_SYMBOLS = ['^GSPC', '^DJI', '^IXIC'];
 
 function formatPct(pct: number): string {
   const sign = pct >= 0 ? '+' : '';
@@ -59,8 +50,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (!FMP_API_KEY) {
-      return NextResponse.json({ error: 'FMP_API_KEY not configured' }, { status: 500 });
+    if (!TWELVE_DATA_API_KEY) {
+      return NextResponse.json({ error: 'TWELVE_DATA_API_KEY not configured' }, { status: 500 });
     }
 
     const today = getTodayDateString();
@@ -78,26 +69,18 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Fetch major indices and top movers in parallel
-    const [indicesRes, gainersRes, losersRes] = await Promise.all([
-      fetch(
-        `https://financialmodelingprep.com/api/v3/quote/%5EGSPC,%5EDJI,%5EIXIC?apikey=${FMP_API_KEY}`,
-        { cache: 'no-store' }
-      ),
-      fetch(
-        `https://financialmodelingprep.com/api/v3/stock_market/gainers?apikey=${FMP_API_KEY}`,
-        { cache: 'no-store' }
-      ),
-      fetch(
-        `https://financialmodelingprep.com/api/v3/stock_market/losers?apikey=${FMP_API_KEY}`,
-        { cache: 'no-store' }
-      ),
+    // Fetch major indices and top movers in parallel. Every helper degrades to
+    // an empty array instead of throwing, so one bad upstream call cannot take
+    // the cron down or half-build a notification.
+    const [indices, gainers, losers] = await Promise.all([
+      getQuotes(INDEX_SYMBOLS, { ttl: 0 }),
+      // priceGreaterThan: 1 keeps the same penny-stock floor the route applies
+      // below, rather than the client's stricter $3 default.
+      getMovers('gainers', { outputsize: 30, priceGreaterThan: 1 }),
+      getMovers('losers', { outputsize: 30, priceGreaterThan: 1 }),
     ]);
 
-    const [indices, gainers, losers]: [IndexQuote[], MarketMover[], MarketMover[]] =
-      await Promise.all([indicesRes.json(), gainersRes.json(), losersRes.json()]);
-
-    if (!Array.isArray(indices) || indices.length === 0) {
+    if (indices.length === 0) {
       return NextResponse.json({
         success: false,
         error: 'Failed to fetch index data',
@@ -109,13 +92,17 @@ export async function GET(req: NextRequest) {
       .map(i => `${getIndexLabel(i.symbol)} ${formatPct(i.changesPercentage)}`)
       .join(', ');
 
+    // Nothing meaningful to say → don't push an empty-bodied notification.
+    if (!indexSummary) {
+      return NextResponse.json({
+        success: false,
+        error: 'No index data to summarise',
+      }, { status: 500 });
+    }
+
     // Get top gainer and loser (skip penny stocks)
-    const topGainer = Array.isArray(gainers)
-      ? gainers.find(s => s.price >= 1.0)
-      : null;
-    const topLoser = Array.isArray(losers)
-      ? losers.find(s => s.price >= 1.0)
-      : null;
+    const topGainer = gainers.find(s => s.price >= 1.0) ?? null;
+    const topLoser = losers.find(s => s.price >= 1.0) ?? null;
 
     // Determine overall market direction
     const sp500 = indices.find(i => i.symbol === '^GSPC');
@@ -125,7 +112,7 @@ export async function GET(req: NextRequest) {
 
     const marketEmoji = marketDirection === 'up' ? '📈' : marketDirection === 'down' ? '📉' : '📊';
 
-    // Compose notification
+    // Compose notification — headline leads with the S&P's percent move.
     const title = `${marketEmoji} Market Recap: ${sp500 ? `S&P 500 ${formatPct(sp500.changesPercentage)}` : 'Daily Summary'}`;
 
     let bodyParts = [indexSummary];
@@ -160,8 +147,9 @@ export async function GET(req: NextRequest) {
       body,
       indices: indices.map(i => ({
         name: getIndexLabel(i.symbol),
-        change: formatPct(i.changesPercentage),
         price: i.price,
+        change: formatPct(i.changesPercentage),
+        changePercent: i.changesPercentage,
       })),
       topGainer: topGainer ? { symbol: topGainer.symbol, change: formatPct(topGainer.changesPercentage) } : null,
       topLoser: topLoser ? { symbol: topLoser.symbol, change: formatPct(topLoser.changesPercentage) } : null,

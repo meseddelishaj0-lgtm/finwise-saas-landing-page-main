@@ -13,45 +13,54 @@ import {
 } from "recharts";
 import { Search, ArrowLeft, TrendingUp, LineChart as ChartIcon } from "lucide-react";
 
+// Swap curves are not sold by our market-data provider. This page charts the
+// rate-sensitive Treasury and mortgage ETFs that carry comparable duration
+// exposure instead (daily closes from /api/market/chart) and labels every
+// figure as a fund price, not a swap rate.
+
 export default function SwapsMarketAnalysisPage() {
-  const [query, setQuery] = useState("USDIRS"); // Default: USD Interest Rate Swap
+  const [query, setQuery] = useState("TLT"); // Default: 20+ year Treasury ETF
   const [data, setData] = useState<any | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch Swaps Data (using FMP Ultimate)
+  // Fetch daily closes for a rate-sensitive ETF
   const fetchSwapsData = async (symbol: string) => {
     try {
       setLoading(true);
       setError(null);
 
+      const sym = symbol.toUpperCase();
       const res = await fetch(
-        `/api/proxy/fmp/api/v4/treasury?symbol=${symbol}`
+        `/api/market/chart?symbol=${encodeURIComponent(sym)}&range=6M`
       );
 
       if (!res.ok) throw new Error("Request failed");
-      const json = await res.json();
+      const bars = await res.json();
 
-      if (!json || json.length === 0) throw new Error("No data found");
+      if (!Array.isArray(bars) || bars.length === 0) throw new Error("No data found");
 
-      // sample: { date, rate }
-      const latest = json[0];
-      setData(latest);
+      // Bars are ascending: { t, o, h, l, c, v }
+      const last = bars[bars.length - 1];
+      const prev = bars.length > 1 ? bars[bars.length - 2] : null;
+      setData({
+        symbol: sym,
+        price: last.c,
+        date: String(last.t).slice(0, 10),
+        changePercent: prev?.c ? ((last.c - prev.c) / prev.c) * 100 : null,
+      });
 
-      const formatted = json
-        .slice(0, 10)
-        .reverse()
-        .map((d: any) => ({
-          date: d.date,
-          rate: d.rate,
-        }));
+      const formatted = bars.slice(-30).map((b: any) => ({
+        date: String(b.t).slice(0, 10),
+        price: b.c,
+      }));
 
       setChartData(formatted);
       // AI commentary removed — needs a server route
     } catch (err: any) {
       console.error(err);
-      setError("Unable to fetch swaps data for that symbol.");
+      setError("Unable to fetch data for that symbol.");
     } finally {
       setLoading(false);
     }
@@ -86,8 +95,9 @@ export default function SwapsMarketAnalysisPage() {
         <h1 className="text-3xl text-ivory font-display font-normal tracking-tight md:text-4xl">Swaps Market Analysis</h1>
       </div>
       <p className="text-gray-400 mb-8 text-lg">
-        Explore live swap rate data and yield spreads across global markets.
-        Analyze trends, visualize historical movements, and get AI-powered insights.
+        Track swap-rate exposure through the rate-sensitive Treasury and
+        mortgage ETFs that carry it. Analyze trends and visualize historical
+        movements.
       </p>
 
       {/* Search */}
@@ -99,7 +109,7 @@ export default function SwapsMarketAnalysisPage() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search swap symbol (e.g. USDIRS, EURIRS, JPYIRS)"
+          placeholder="Search a rate-sensitive ETF (e.g. TLT, IEF, SHY, TIP, MBB)"
           className="flex-1 px-4 py-2 rounded-full outline-none text-gray-300"
         />
         <button
@@ -110,7 +120,7 @@ export default function SwapsMarketAnalysisPage() {
         </button>
       </form>
 
-      {loading && <p>Loading live swap data...</p>}
+      {loading && <p>Loading rate-sensitive ETF data...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
       {!loading && !error && data && (
@@ -119,38 +129,51 @@ export default function SwapsMarketAnalysisPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-surface shadow rounded-2xl p-5 text-center">
               <p className="text-sm text-gray-500">Symbol</p>
-              <p className="text-xl font-semibold text-gray-100">{query}</p>
+              <p className="text-xl font-semibold text-gray-100">{data.symbol}</p>
             </div>
             <div className="bg-surface shadow rounded-2xl p-5 text-center">
-              <p className="text-sm text-gray-500">Latest Rate</p>
+              <p className="text-sm text-gray-500">Latest Close</p>
               <p className="text-2xl font-bold text-gold">
-                {data.rate?.toFixed(2)}%
+                ${data.price?.toFixed(2)}
               </p>
             </div>
             <div className="bg-surface shadow rounded-2xl p-5 text-center">
-              <p className="text-sm text-gray-500">Date</p>
-              <p className="text-lg font-semibold text-gray-100">{data.date}</p>
+              <p className="text-sm text-gray-500">Day Change</p>
+              <p
+                className={`text-lg font-semibold ${
+                  (data.changePercent ?? 0) < 0 ? "text-red-400" : "text-green-400"
+                }`}
+              >
+                {data.changePercent === null
+                  ? "—"
+                  : `${data.changePercent > 0 ? "+" : ""}${data.changePercent.toFixed(2)}%`}
+              </p>
             </div>
             <div className="bg-surface shadow rounded-2xl p-5 text-center">
               <p className="text-sm text-gray-500">Data Source</p>
-              <p className="text-gray-300 font-medium">FMP Ultimate</p>
+              <p className="text-gray-300 font-medium">ETF price proxy</p>
             </div>
           </div>
 
           {/* Chart */}
           <div className="bg-surface rounded-3xl shadow p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-gold" /> Rate Trends
+            <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-gold" /> Price Trend
             </h2>
+            <p className="text-xs text-gray-500 mb-4">
+              Daily closes for the last 30 sessions, as of {data.date}. Swap
+              curves are not available from our market-data provider — this is
+              the fund&apos;s price, not a swap rate.
+            </p>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
-                <YAxis />
+                <YAxis domain={["auto", "auto"]} />
                 <Tooltip />
                 <Area
                   type="monotone"
-                  dataKey="rate"
+                  dataKey="price"
                   stroke="#FACC15"
                   fill="#FEF08A"
                 />

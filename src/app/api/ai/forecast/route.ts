@@ -2,13 +2,13 @@
 // AI Price Forecast endpoint
 import { NextRequest, NextResponse } from 'next/server';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { getQuote, getTimeSeries, latestIndicator } from '@/lib/twelvedata';
+import { fmp, getQuoteStats } from '@/lib/fmp';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const FMP_API_KEY = process.env.FMP_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 
 export async function POST(req: NextRequest) {
   const _rl = enforceRateLimit(req, 'ai', 15, 60_000);
@@ -22,58 +22,73 @@ export async function POST(req: NextRequest) {
 
     const ticker = symbol.toUpperCase().trim();
 
-    // Fetch stock data
-    const [quoteRes, historicalRes, analystRes] = await Promise.all([
-      fetch(`${BASE_URL}/quote/${ticker}?apikey=${FMP_API_KEY}`),
-      fetch(`${BASE_URL}/historical-price-full/${ticker}?timeseries=90&apikey=${FMP_API_KEY}`),
-      fetch(`${BASE_URL}/analyst-estimates/${ticker}?limit=1&apikey=${FMP_API_KEY}`),
+    // Price, daily bars and RSI come from Twelve Data (1 credit each). `bars`
+    // is oldest-first, so the index maths below reads forward. Valuation
+    // fields and the analyst estimate come from FMP (see TWELVEDATA_MIGRATION.md).
+    const [quote, statsBySymbol, bars, rsi, estimates] = await Promise.all([
+      getQuote(ticker),
+      getQuoteStats([ticker]),
+      getTimeSeries(ticker, '1day', 90, { ttl: 5 * 60_000 }),
+      latestIndicator(ticker, 'rsi', '1day', { time_period: 14 }),
+      fmp<Record<string, any>[]>(
+        `v3/analyst-estimates/${encodeURIComponent(ticker)}`,
+        { limit: 8 },
+        6 * 60 * 60_000
+      ),
     ]);
 
-    const [quoteData, historicalData, analystData] = await Promise.all([
-      quoteRes.json(),
-      historicalRes.json(),
-      analystRes.json(),
-    ]);
-
-    if (!quoteData || !Array.isArray(quoteData) || quoteData.length === 0) {
+    if (!quote || !quote.price) {
       return NextResponse.json({ error: `No data found for ${ticker}` }, { status: 404 });
     }
 
-    const quote = quoteData[0];
-    const historical = historicalData?.historical || [];
-    const analyst = analystData?.[0] || {};
+    const stats = statsBySymbol[ticker] ?? null;
+    // Estimates arrive newest-first and run years out; use the nearest fiscal
+    // year that has not ended yet.
+    const today = new Date().toISOString().slice(0, 10);
+    const estimate =
+      (Array.isArray(estimates) ? estimates : [])
+        .filter((e) => typeof e?.date === 'string' && e.date >= today)
+        .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null;
+    const rsiValue = rsi?.rsi ? Number(rsi.rsi) : null;
 
     // Calculate technical metrics
     let momentum = 0;
     let volatility = 0;
-    let support = quote.yearLow;
-    let resistance = quote.yearHigh;
+    let support = quote.yearLow ?? quote.price * 0.9;
+    let resistance = quote.yearHigh ?? quote.price * 1.1;
     let trend: 'uptrend' | 'downtrend' | 'sideways' = 'sideways';
 
-    if (historical.length >= 20) {
-      // Calculate 20-day momentum
-      const prices = historical.slice(0, 20).map((d: any) => d.close);
-      const oldPrice = prices[prices.length - 1];
-      const newPrice = prices[0];
-      momentum = ((newPrice - oldPrice) / oldPrice) * 100;
+    if (bars.length >= 20) {
+      const closes = bars.map((b) => b.c);
+      const last20 = closes.slice(-20);
 
-      // Calculate volatility (standard deviation of daily returns)
-      const returns = [];
-      for (let i = 1; i < prices.length; i++) {
-        returns.push((prices[i - 1] - prices[i]) / prices[i]);
+      // 20-session momentum
+      const oldPrice = last20[0];
+      const newPrice = last20[last20.length - 1];
+      if (oldPrice) momentum = ((newPrice - oldPrice) / oldPrice) * 100;
+
+      // Volatility: standard deviation of daily returns over the window
+      const returns: number[] = [];
+      for (let i = 1; i < last20.length; i++) {
+        if (last20[i - 1]) returns.push((last20[i] - last20[i - 1]) / last20[i - 1]);
       }
-      const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
-      volatility = Math.sqrt(returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length) * 100;
+      if (returns.length) {
+        const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+        volatility =
+          Math.sqrt(
+            returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length
+          ) * 100;
+      }
 
-      // Determine trend
-      const ma20 = prices.reduce((a: number, b: number) => a + b, 0) / prices.length;
+      // Trend against the 20-session mean
+      const ma20 = last20.reduce((a, b) => a + b, 0) / last20.length;
       if (quote.price > ma20 * 1.02) trend = 'uptrend';
       else if (quote.price < ma20 * 0.98) trend = 'downtrend';
 
-      // Calculate support/resistance from recent prices
-      const recentPrices = historical.slice(0, 30).map((d: any) => d.close);
-      support = Math.min(...recentPrices) * 0.98;
-      resistance = Math.max(...recentPrices) * 1.02;
+      // Support and resistance from the last 30 sessions
+      const recent = closes.slice(-30);
+      support = Math.min(...recent) * 0.98;
+      resistance = Math.max(...recent) * 1.02;
     }
 
     // Get AI forecast
@@ -82,9 +97,9 @@ export async function POST(req: NextRequest) {
 CURRENT DATA:
 - Price: $${quote.price}
 - Change: ${quote.changesPercentage?.toFixed(2)}%
-- 52-Week Range: $${quote.yearLow} - $${quote.yearHigh}
-- Market Cap: $${(quote.marketCap / 1e9).toFixed(2)}B
-- P/E: ${quote.pe || 'N/A'}
+- 52-Week Range: $${quote.yearLow ?? 'N/A'} - $${quote.yearHigh ?? 'N/A'}
+- Market Cap: ${stats?.marketCap ? '$' + (stats.marketCap / 1e9).toFixed(2) + 'B' : 'N/A'}
+- P/E: ${stats?.pe?.toFixed(2) || 'N/A'}
 
 TECHNICAL INDICATORS:
 - 20-Day Momentum: ${momentum.toFixed(2)}%
@@ -92,10 +107,14 @@ TECHNICAL INDICATORS:
 - Trend: ${trend}
 - Support: $${support.toFixed(2)}
 - Resistance: $${resistance.toFixed(2)}
+- RSI (14): ${rsiValue != null ? rsiValue.toFixed(1) : 'N/A'}
+- 50-Day MA: ${stats?.priceAvg50 ? '$' + stats.priceAvg50.toFixed(2) : 'N/A'}
+- 200-Day MA: ${stats?.priceAvg200 ? '$' + stats.priceAvg200.toFixed(2) : 'N/A'}
 
-${analyst.estimatedEpsAvg ? `ANALYST ESTIMATES:
-- EPS Estimate: $${analyst.estimatedEpsAvg}
-- Revenue Estimate: $${(analyst.estimatedRevenueAvg / 1e9).toFixed(2)}B` : ''}
+${estimate?.estimatedEpsAvg ? `ANALYST ESTIMATES (fiscal year ending ${estimate.date}):
+- EPS Estimate: $${estimate.estimatedEpsAvg} (range $${estimate.estimatedEpsLow ?? '?'} to $${estimate.estimatedEpsHigh ?? '?'})
+- Revenue Estimate: ${estimate.estimatedRevenueAvg ? '$' + (estimate.estimatedRevenueAvg / 1e9).toFixed(2) + 'B' : 'N/A'}
+- Analysts Covering: ${estimate.numberAnalystsEstimatedEps ?? 'N/A'}` : ''}
 
 Provide a JSON forecast with this exact structure:
 {
@@ -174,6 +193,7 @@ Return ONLY valid JSON.`;
       yearLow: quote.yearLow,
       momentum,
       volatility,
+      rsi: rsiValue,
       avgVolume: quote.avgVolume,
       priceTargets: aiForecast.priceTargets,
       probabilities: aiForecast.probabilities,
@@ -187,6 +207,9 @@ Return ONLY valid JSON.`;
         trend,
         support,
         resistance,
+        rsi: rsiValue,
+        day50MA: stats?.priceAvg50 ?? null,
+        day200MA: stats?.priceAvg200 ?? null,
       },
       summary: aiForecast.summary,
     };

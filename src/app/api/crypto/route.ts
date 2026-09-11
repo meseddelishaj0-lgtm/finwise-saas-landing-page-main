@@ -1,54 +1,108 @@
 import { NextResponse } from "next/server";
+import { getQuotes, tdSafe } from "@/lib/twelvedata";
 
-// ✅ GET → Fetch live crypto market data
+export const dynamic = "force-dynamic";
+
+// Crypto dashboard feed, backed by Twelve Data.
+//
+// Two things FMP's `quotes/crypto` had that Twelve Data does not sell on any
+// plan: **market capitalisation** and **24h volume** for a coin. The /quote
+// payload for a pair (BTC/USD) carries open/high/low/close, previous close,
+// percent change and the 52-week range — nothing else. Rather than invent a
+// number, those two fields come back as `null` and the page renders "—".
+//
+// Because there is no market cap, "top 20 by market cap" cannot be computed
+// either. The display order below is an editorial ranking of the majors; every
+// symbol in it is validated against the live `cryptocurrencies` catalog before
+// it is quoted, so nothing is shown that Twelve Data does not actually carry.
+
+/** Conventional major-coin ordering. Filtered against the live catalog. */
+const MAJORS = [
+  "BTC/USD", "ETH/USD", "XRP/USD", "BNB/USD", "SOL/USD", "DOGE/USD",
+  "ADA/USD", "TRX/USD", "LINK/USD", "AVAX/USD", "XLM/USD", "SUI/USD",
+  "BCH/USD", "HBAR/USD", "LTC/USD", "TON/USD", "DOT/USD", "UNI/USD",
+  "AAVE/USD", "NEAR/USD", "APT/USD", "ETC/USD", "ATOM/USD", "ALGO/USD",
+  "ARB/USD", "OP/USD", "FIL/USD", "INJ/USD",
+];
+
+const LIMIT = 24;
+
+interface CatalogRow {
+  symbol: string;
+  currency_base?: string;
+  currency_quote?: string;
+  available_exchanges?: string[];
+}
+
+let cache: { data: unknown; ts: number } | null = null;
+const TTL = 30 * 1000;
+
+/**
+ * The USD-quoted universe Twelve Data actually carries, keyed by pair symbol.
+ * Cached hard: the catalog changes rarely and is a large payload.
+ */
+async function usdUniverse(): Promise<Map<string, CatalogRow>> {
+  const raw = await tdSafe<{ data?: CatalogRow[] }>(
+    "cryptocurrencies",
+    { currency_quote: "USD" },
+    { ttl: 12 * 60 * 60_000 }
+  );
+  const rows = Array.isArray(raw?.data) ? raw.data : [];
+  return new Map(rows.map((r) => [String(r.symbol).toUpperCase(), r]));
+}
+
+// ✅ GET → live crypto market data
 export async function GET() {
+  if (cache && Date.now() - cache.ts < TTL) {
+    return NextResponse.json(cache.data, {
+      headers: { "Cache-Control": "public, max-age=15" },
+    });
+  }
+
   try {
-    const apiKey = process.env.FMP_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "Missing FMP_API_KEY in environment variables" },
-        { status: 500 }
-      );
-    }
+    const universe = await usdUniverse();
+    // Fall back to the editorial list if the catalog call failed, so a catalog
+    // outage degrades to "quotes still work" rather than an empty table.
+    const symbols = universe.size
+      ? MAJORS.filter((s) => universe.has(s)).slice(0, LIMIT)
+      : MAJORS.slice(0, LIMIT);
 
-    const url = `https://financialmodelingprep.com/api/v3/quotes/crypto?apikey=${apiKey}`;
-    const res = await fetch(url);
+    const quotes = await getQuotes(symbols, { ttl: 20_000 });
+    if (quotes.length === 0) throw new Error("no crypto quotes");
 
-    if (!res.ok) {
-      throw new Error(`FMP API returned status ${res.status}`);
-    }
+    const cryptos = quotes.map((q) => {
+      const meta = universe.get(q.symbol);
+      return {
+        symbol: q.symbol,
+        name: meta?.currency_base || q.name || q.symbol,
+        price: q.price.toFixed(q.price >= 1 ? 2 : 6),
+        changes24h: q.changesPercentage.toFixed(2),
+        // No Twelve Data source for either of these on any plan.
+        marketCap: null,
+        volume: null,
+        dayLow: q.dayLow,
+        dayHigh: q.dayHigh,
+        yearLow: q.yearLow,
+        yearHigh: q.yearHigh,
+        exchange: q.exchange,
+      };
+    });
 
-    const data = await res.json();
-
-    if (!Array.isArray(data)) {
-      throw new Error("Invalid FMP response");
-    }
-
-    // ✅ Select top 20 cryptos by market cap
-    const cryptos = data
-      .filter((c: any) => c.marketCap && c.price)
-      .sort((a: any, b: any) => b.marketCap - a.marketCap)
-      .slice(0, 20)
-      .map((c: any) => ({
-        symbol: c.symbol,
-        name: c.name,
-        price: parseFloat(c.price).toFixed(2),
-        changes24h: c.changesPercentage?.toFixed(2) || "0.00",
-        marketCap: Number(c.marketCap).toLocaleString(),
-        volume: Number(c.volume).toLocaleString(),
-      }));
-
-    return NextResponse.json(cryptos);
+    cache = { data: cryptos, ts: Date.now() };
+    return NextResponse.json(cryptos, {
+      headers: { "Cache-Control": "public, max-age=15" },
+    });
   } catch (err) {
     console.error("Crypto API Error:", err);
+    if (cache) return NextResponse.json(cache.data);
     return NextResponse.json(
       { error: "Failed to fetch crypto data" },
-      { status: 500 }
+      { status: 502 }
     );
   }
 }
 
-// ✅ POST → AI-powered crypto insights
+// ✅ POST → AI-powered crypto insights (unchanged; not a market-data call)
 export async function POST(req: Request) {
   try {
     const { topic } = await req.json();

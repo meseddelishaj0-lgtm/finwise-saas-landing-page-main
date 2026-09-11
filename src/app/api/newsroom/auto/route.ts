@@ -22,6 +22,9 @@ const AUTHOR = "auto@wallstreetstocks.ai";
 const INDEX_SYMBOLS = ["^GSPC", "^IXIC", "^DJI", "^RUT", "^VIX"];
 const ASSET_SYMBOLS = ["BTCUSD", "GLD", "USO", "TLT"];
 const MEGA_SYMBOLS = ["NVDA", "AAPL", "MSFT", "GOOGL", "AMZN", "META", "TSLA"];
+
+// Board labels. Index levels are the real index (quoted from FMP); gold is
+// shown through its fund, so it names the fund.
 const BOARD_SYMBOLS: Record<string, string> = {
   "^GSPC": "S&P 500",
   "^RUT": "RUSSELL 2000",
@@ -127,17 +130,18 @@ function fallbackNote(d: {
     d.slot === "open" ? "at the open" : d.slot === "midday" ? "at midday" : "at the close";
   const title = `S&P 500 ${spxDir} ${slotPhrase} (${pct(spx?.changePercent)}) as ${rutRel}`;
 
+  // Index levels are deliberately absent: the underlying quote is a tracking
+  // ETF's, so printing it as "the S&P 500 at 757" would be wrong. Percent
+  // change is accurate and carries the story on its own.
   const paragraphs = [
-    `The tape at ${slotName}: the S&P 500 ${verb} ${tone} at ${fmtPrice(spx?.price)} (${pct(
+    `The tape at ${slotName}: the S&P 500 ${verb} ${tone} (${pct(
       spx?.changePercent
-    )}), the Nasdaq at ${fmtPrice(ndx?.price)} (${pct(ndx?.changePercent)}), and the Dow at ${fmtPrice(
-      dji?.price
-    )} (${pct(dji?.changePercent)}).`,
-    `Small caps ${(rut?.changePercent ?? 0) >= 0 ? "are outperforming" : "are lagging"}: the Russell 2000 sits at ${fmtPrice(
-      rut?.price
-    )} (${pct(rut?.changePercent)}). The VIX at ${fmtPrice(vix?.price)} reads ${
-      (vix?.price ?? 20) < 17 ? "calm" : "elevated"
-    }.`,
+    )}), the Nasdaq ${pct(ndx?.changePercent)}, and the Dow ${pct(dji?.changePercent)}.`,
+    `Small caps ${(rut?.changePercent ?? 0) >= 0 ? "are outperforming" : "are lagging"}: the Russell 2000 ${pct(
+      rut?.changePercent
+    )}. Volatility is ${(vix?.changePercent ?? 0) >= 3 ? "bid" : (vix?.changePercent ?? 0) <= -3 ? "offered" : "steady"} on the session (${pct(
+      vix?.changePercent
+    )}).`,
     megaLead
       ? `Among the mega caps, ${megaLead.symbol} is the biggest mover at ${money(megaLead.price)} (${pct(
           megaLead.changePercent
@@ -278,6 +282,7 @@ export async function GET(req: NextRequest) {
 Voice: plain, precise, confident; a professional desk talking to serious retail investors. No hype, no emojis, no exclamation marks.
 STRICT RULES:
 - Use ONLY the numbers provided in the data. Never invent prices, events, causes, or news.
+- Indices (S&P 500, Nasdaq, Dow, Russell 2000, VIX) are supplied as percent change only, with no level. Describe them by percent change and direction. Never state or estimate an index level or point move.
 - Do not speculate about WHY something moved unless a provided headline supports it; you may cite provided headlines lightly ("on the wire from <site>: ...").
 - Percentages: signed, two decimals for indices/mega caps (e.g. +0.42%), one decimal fine for movers. Prices with $ and commas.
 - Mention 4-8 specific tickers total. Small-cap movers get a one-line liquidity caution if cited.

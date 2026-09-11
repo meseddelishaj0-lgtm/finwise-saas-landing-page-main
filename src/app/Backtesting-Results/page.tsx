@@ -23,6 +23,7 @@ interface BacktestResult {
 export default function BacktestingResultsPage() {
   const [data, setData] = useState<BacktestResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState("");
 
   const fetchData = async () => {
     try {
@@ -30,7 +31,10 @@ export default function BacktestingResultsPage() {
       const res = await fetch("/api/backtesting");
       const json = await res.json();
       if (!json.error) {
-        setData(json);
+        // The API returns { results, note, ... }; older builds returned a bare
+        // array, so accept both.
+        setData(Array.isArray(json) ? json : json.results ?? []);
+        setNotice(typeof json?.note === "string" ? json.note : "");
       } else {
         console.error("Backtesting data error:", json.error);
       }
@@ -68,6 +72,11 @@ export default function BacktestingResultsPage() {
         <p className="text-lg text-gray-400">
           A transparent breakdown of how our strategy has performed versus the benchmark.
         </p>
+        {notice && (
+          <p className="mt-4 rounded-lg border border-gold/30 bg-gold/5 px-4 py-3 text-sm text-gray-300">
+            {notice}
+          </p>
+        )}
       </motion.section>
 
       {/* Summary Metrics */}

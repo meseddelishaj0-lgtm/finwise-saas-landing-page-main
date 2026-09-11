@@ -25,18 +25,21 @@ export default function FuturesMarketAnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all futures data from FMP Ultimate
+  // Fetch the commodity futures board (Twelve Data, via /api/derivatives)
   const fetchFuturesData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(
-        `/api/proxy/fmp/api/v3/quotes/commodity`
-      );
+      const res = await fetch("/api/derivatives", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "futures" }),
+      });
       const json = await res.json();
-      if (!json || json.length === 0) throw new Error("No data found");
-      setData(json);
-      setFiltered(json);
+      const rows = Array.isArray(json?.data) ? json.data : [];
+      if (rows.length === 0) throw new Error("No data found");
+      setData(rows);
+      setFiltered(rows);
       // AI commentary removed — needs a server route
     } catch (err) {
       console.error(err);
@@ -86,8 +89,12 @@ export default function FuturesMarketAnalysisPage() {
         <BarChart3 className="w-6 h-6 text-gold" />
         <h1 className="text-3xl text-ivory font-display font-normal tracking-tight md:text-4xl">Futures Market Analysis</h1>
       </div>
-      <p className="text-gray-400 mb-8 text-base">
+      <p className="text-gray-400 mb-2 text-base">
         Search and analyze real-time futures contracts with AI-generated insights powered by WallStreetStocks.ai.
+      </p>
+      <p className="text-xs text-gray-500 mb-8">
+        Gold, silver, platinum and palladium are spot prices; energy, copper and
+        agricultural contracts are continuous front-month futures.
       </p>
 
       {/* Search Bar */}
@@ -99,7 +106,7 @@ export default function FuturesMarketAnalysisPage() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search futures (e.g. Gold, Crude Oil, 10Y Yield)"
+          placeholder="Search futures (e.g. Gold, Crude Oil, Wheat)"
           className="flex-1 px-4 py-2 rounded-full outline-none text-gray-300"
         />
         <button

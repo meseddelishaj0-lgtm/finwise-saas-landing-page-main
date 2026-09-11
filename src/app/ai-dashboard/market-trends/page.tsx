@@ -25,6 +25,13 @@ import {
 } from "recharts";
 import { useRouter } from "next/navigation";
 
+const INDICES = [
+  { symbol: "^GSPC" },
+  { symbol: "^IXIC" },
+  { symbol: "^DJI" },
+  { symbol: "^RUT" },
+];
+
 export default function MarketTrendsPage() {
   const router = useRouter();
 
@@ -35,6 +42,7 @@ export default function MarketTrendsPage() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [aiInsight, setAiInsight] = useState("");
   const [sentiment, setSentiment] = useState<number | null>(null);
+  const [breadthNote, setBreadthNote] = useState("");
   const [aiSentimentComment, setAiSentimentComment] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -42,64 +50,65 @@ export default function MarketTrendsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [gainersRes, losersRes, indexRes, sectorRes, fearGreedRes] =
+        const getJson = (url: string) =>
+          fetch(url)
+            .then((r) => r.json())
+            .catch(() => null);
+
+        const [gainersJson, losersJson, indexJson, sectorJson] =
           await Promise.all([
-            fetch(
-              `/api/proxy/fmp/api/v3/stock_market/gainers`
+            getJson("/api/market/movers?list=gainers"),
+            getJson("/api/market/movers?list=losers"),
+            getJson(
+              `/api/market/quotes?symbols=${encodeURIComponent(
+                INDICES.map((i) => i.symbol).join(",")
+              )}`
             ),
-            fetch(
-              `/api/proxy/fmp/api/v3/stock_market/losers`
-            ),
-            fetch(
-              `/api/proxy/fmp/api/v3/quotes/index`
-            ),
-            fetch(
-              `/api/proxy/fmp/api/v3/stock/sectors-performance`
-            ),
-            fetch(
-              `/api/proxy/fmp/api/v4/fear_greed_index`
-            ).catch(() => null),
+            // Sector ETF moves plus the breadth score (a labelled proxy, not
+            // the CNN Fear & Greed Index).
+            getJson("/api/market/sectors"),
           ]);
 
-        const [gainersJson, losersJson, indexJson, sectorJson, fgJson] =
-          await Promise.all([
-            gainersRes.json(),
-            losersRes.json(),
-            indexRes.json(),
-            sectorRes.json(),
-            fearGreedRes ? fearGreedRes.json() : [],
-          ]);
+        // Movers and quotes emit `changePercent`; this page reads
+        // `changesPercentage`. Error payloads are objects, not arrays.
+        const rows = (json: unknown) =>
+          (Array.isArray(json) ? json : [])
+            .map((r: any) => ({
+              ...r,
+              changesPercentage: Number(r.changePercent),
+            }))
+            .filter((r: any) => Number.isFinite(r.changesPercentage));
 
-        setGainers(gainersJson.slice(0, 5));
-        setLosers(losersJson.slice(0, 5));
-        setIndices(indexJson.slice(0, 6));
-        setSectorData(sectorJson.sectorPerformance || sectorJson);
+        const gainerRows = rows(gainersJson).slice(0, 5);
+        const loserRows = rows(losersJson).slice(0, 5);
+        const indexRows = rows(indexJson);
+        const sectorRows = Array.isArray(sectorJson?.sectors)
+          ? sectorJson.sectors
+          : [];
+        const breadth =
+          typeof sectorJson?.breadth?.score === "number"
+            ? sectorJson.breadth.score
+            : null;
 
-        const chart = indexJson.slice(0, 5).map((i: any) => ({
-          name: i.symbol,
-          change: i.changesPercentage,
-        }));
-        setChartData(chart);
-
-        const fgScore =
-          fgJson?.data?.value ||
-          Math.min(
-            100,
-            Math.max(
-              0,
-              50 +
-                (Math.random() - 0.5) * 20 +
-                (indices[0]?.changesPercentage || 0) * 2
-            )
-          );
-        setSentiment(fgScore);
+        setGainers(gainerRows);
+        setLosers(loserRows);
+        setIndices(indexRows);
+        setSectorData(sectorRows);
+        setChartData(
+          indexRows.map((i: any) => ({
+            name: i.name,
+            change: i.changesPercentage,
+          }))
+        );
+        setSentiment(breadth);
+        setBreadthNote(sectorJson?.breadth?.label || "");
 
         await generateAIInsights(
-          gainersJson,
-          losersJson,
-          indexJson,
-          sectorJson,
-          fgScore
+          gainerRows,
+          loserRows,
+          indexRows,
+          sectorRows,
+          breadth
         );
       } catch (err) {
         console.error("Market data fetch error:", err);
@@ -117,11 +126,11 @@ export default function MarketTrendsPage() {
     losers: any[],
     indices: any[],
     sectors: any[],
-    fgScore: number
+    breadth: number | null
   ) => {
     try {
       const text = `
-      Fear & Greed Index: ${fgScore}.
+      Market breadth score (0–100; share of the 11 SPDR sector ETFs up on the day, tilted by VIXY's move): ${breadth ?? "unavailable"}.
       Top Gainers: ${gainers
         .slice(0, 5)
         .map((g) => `${g.symbol} +${g.changesPercentage}%`)
@@ -132,7 +141,7 @@ export default function MarketTrendsPage() {
         .join(", ")}.
       Major Indices: ${indices
         .slice(0, 5)
-        .map((i) => `${i.symbol} ${i.changesPercentage}%`)
+        .map((i) => `${i.name} ${i.changesPercentage}%`)
         .join(", ")}.
       Sector Performance: ${sectors
         .slice(0, 10)
@@ -140,7 +149,7 @@ export default function MarketTrendsPage() {
         .join(", ")}.
       Provide two sections:
       1️⃣ 100-word Market Insight summary.
-      2️⃣ 1-line interpretation of sentiment index (0–100) using tone emojis.
+      2️⃣ 1-line interpretation of the breadth score (0–100) using tone emojis.
       `;
 
       // secure API call (server-side)
@@ -249,15 +258,17 @@ export default function MarketTrendsPage() {
             {loading ? (
               <p className="text-gray-400 text-sm">Loading…</p>
             ) : (
-              <ul className="text-sm text-gray-300 space-y-1">
-                {indices.map((i) => (
-                  <li key={i.symbol}>
-                    <strong>{i.symbol}</strong>{" "}
-                    {i.changesPercentage > 0 ? "+" : ""}
-                    {i.changesPercentage.toFixed(2)}%
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="text-sm text-gray-300 space-y-1">
+                  {indices.map((i) => (
+                    <li key={i.symbol}>
+                      <strong>{i.name}</strong>{" "}
+                      {i.changesPercentage > 0 ? "+" : ""}
+                      {i.changesPercentage.toFixed(2)}%
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </div>
         </div>
@@ -287,7 +298,10 @@ export default function MarketTrendsPage() {
 
         {/* Sector heatmap */}
         <div className="mb-10">
-          <h2 className="text-xl font-semibold mb-4">Sector Rotation</h2>
+          <h2 className="text-xl font-semibold mb-1">Sector Rotation</h2>
+          <p className="text-xs text-gray-500 mb-4">
+            Day&apos;s move in the 11 SPDR sector ETFs.
+          </p>
           {loading ? (
             <p className="text-gray-400">Loading sector data…</p>
           ) : (
@@ -333,7 +347,7 @@ export default function MarketTrendsPage() {
           )}
         </motion.div>
 
-        {/* Fear & Greed Gauge */}
+        {/* Market breadth gauge */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -346,12 +360,14 @@ export default function MarketTrendsPage() {
               color={sentiment ? gaugeColor(sentiment) : "#9ca3af"}
             />
             <h2 className="text-lg font-semibold text-gray-100">
-              Fear & Greed Index
+              Market Breadth (proxy)
             </h2>
           </div>
 
           {sentiment === null ? (
-            <p className="text-gray-500 text-sm">Loading sentiment…</p>
+            <p className="text-gray-500 text-sm">
+              {loading ? "Loading sentiment…" : "Breadth data unavailable right now."}
+            </p>
           ) : (
             <>
               <div className="relative w-72 h-3 bg-white/10 rounded-full overflow-hidden mb-3">
@@ -374,6 +390,11 @@ export default function MarketTrendsPage() {
               <p className="text-gray-300 text-sm mt-2 text-center max-w-md">
                 {aiSentimentComment || "Analyzing market mood..."}
               </p>
+              {breadthNote && (
+                <p className="text-xs text-gray-500 mt-2 text-center max-w-md">
+                  {breadthNote}
+                </p>
+              )}
             </>
           )}
         </motion.div>

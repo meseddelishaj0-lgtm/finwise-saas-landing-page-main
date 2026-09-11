@@ -2,36 +2,40 @@
 // AI Chat endpoint for the mobile app assistant
 import { NextRequest, NextResponse } from 'next/server';
 import { enforceRateLimit } from '@/lib/rateLimit';
+import { getQuote, isProxiedIndex } from '@/lib/twelvedata';
+import { getQuoteStats } from '@/lib/fmp';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-const FMP_API_KEY = process.env.FMP_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// Fetch stock data if ticker mentioned
+// Attach live market data when the user names a ticker. Price and trading
+// fields come from Twelve Data's quote; market cap and P/E from FMP.
 async function getStockContext(message: string): Promise<string> {
   const tickerMatch = message.toUpperCase().match(/\$?([A-Z]{1,5})\b/);
   if (!tickerMatch) return '';
 
   try {
-    const symbol = tickerMatch[1];
-    const res = await fetch(
-      `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${FMP_API_KEY}`
-    );
-    const data = await res.json();
+    // A bare index name ("VIX", "SPX") means the index, quoted at its real level.
+    const named = tickerMatch[1];
+    const symbol = isProxiedIndex(`^${named}`) ? `^${named}` : named;
 
-    if (data && data[0]) {
-      const q = data[0];
-      return `\n\n[Current market data for ${q.symbol} (${q.name}):
-- Price: $${q.price?.toFixed(2)}
-- Change: ${q.change >= 0 ? '+' : ''}${q.change?.toFixed(2)} (${q.changesPercentage?.toFixed(2)}%)
-- Market Cap: $${(q.marketCap / 1e9)?.toFixed(2)}B
-- P/E Ratio: ${q.pe?.toFixed(2) || 'N/A'}
-- 52-Week High: $${q.yearHigh?.toFixed(2)}
-- 52-Week Low: $${q.yearLow?.toFixed(2)}
-- Volume: ${(q.volume / 1e6)?.toFixed(2)}M]`;
-    }
+    const [q, statsBySymbol] = await Promise.all([getQuote(symbol), getQuoteStats([symbol])]);
+    if (!q || !q.price) return '';
+    const stats = statsBySymbol[symbol];
+
+    const lines = [
+      `- Price: $${q.price.toFixed(2)}`,
+      `- Change: ${q.change >= 0 ? '+' : ''}${q.change.toFixed(2)} (${q.changesPercentage.toFixed(2)}%)`,
+    ];
+    if (stats?.marketCap) lines.push(`- Market Cap: $${(stats.marketCap / 1e9).toFixed(2)}B`);
+    if (stats?.pe) lines.push(`- P/E Ratio: ${stats.pe.toFixed(2)}`);
+    if (q.yearHigh) lines.push(`- 52-Week High: $${q.yearHigh.toFixed(2)}`);
+    if (q.yearLow) lines.push(`- 52-Week Low: $${q.yearLow.toFixed(2)}`);
+    if (q.volume) lines.push(`- Volume: ${(q.volume / 1e6).toFixed(2)}M`);
+
+    return `\n\n[Current market data for ${q.symbol} (${q.name}):\n${lines.join('\n')}]`;
   } catch (e) {
     console.error('Error fetching stock data:', e);
   }

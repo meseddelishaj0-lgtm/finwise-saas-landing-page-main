@@ -3,19 +3,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveMobileUserId } from '@/lib/mobileAuth';
 import { prisma } from '@/lib/prisma';
+import { getPrices } from '@/lib/twelvedata';
 
 export const dynamic = 'force-dynamic';
 
 // Fetch the current price so we can auto-pick the alert direction (above/below)
 // from the target the user chose, relative to where the stock trades now.
+// Twelve Data's /price is the cheapest lookup (1 credit) and getPrices() never
+// throws — it resolves to {} when the upstream is unavailable, which the
+// caller already treats as "no price" and falls back to 'above'.
 async function getStockPrice(symbol: string): Promise<number | null> {
   try {
-    const url = `https://financialmodelingprep.com/api/v3/quote/${encodeURIComponent(
-      symbol
-    )}?apikey=${process.env.FMP_API_KEY}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    const price = data?.[0]?.price;
+    const prices = await getPrices([symbol]);
+    const price = prices[symbol.toUpperCase()];
     return typeof price === 'number' && Number.isFinite(price) ? price : null;
   } catch {
     return null;

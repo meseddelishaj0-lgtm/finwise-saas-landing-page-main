@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getQuotes } from "@/lib/twelvedata";
+import { getQuoteStats, type QuoteStats } from "@/lib/fmp";
 
 export const dynamic = "force-dynamic";
 
-// Batch quote proxy for the website's live market components.
-// Keeps the FMP key server-side; short cache smooths bursts of traffic.
-let cache: Record<string, { data: any; ts: number }> = {};
+// Batch quote endpoint for the website's live market components.
+// Prices come from Twelve Data; market cap and P/E come from one FMP batch
+// quote, since Twelve Data only sells them via /statistics at 50 credits per
+// symbol. Keys stay server-side and the response shape is unchanged.
+
+let cache: Record<string, { data: unknown; ts: number }> = {};
 const TTL = 30 * 1000;
 
 export async function GET(req: NextRequest) {
@@ -27,30 +32,33 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(
-      `https://financialmodelingprep.com/api/v3/quote/${encodeURIComponent(key)}?apikey=${process.env.FMP_API_KEY}`,
-      { cache: "no-store" }
+    const quotes = await getQuotes(symbols);
+    if (quotes.length === 0) throw new Error("no quotes");
+
+    // Valuation fields are best-effort: a missing one must not fail the batch.
+    const stats = await getQuoteStats(quotes.map((q) => q.symbol)).catch(
+      () => ({}) as Record<string, QuoteStats>
     );
-    const data = await res.json();
-    if (!Array.isArray(data)) throw new Error("bad upstream");
 
-    const slim = data.map((q: any) => ({
-      symbol: q.symbol,
-      name: q.name,
-      price: q.price,
-      change: q.change,
-      changePercent: q.changesPercentage,
-      dayHigh: q.dayHigh,
-      dayLow: q.dayLow,
-      yearHigh: q.yearHigh,
-      yearLow: q.yearLow,
-      marketCap: q.marketCap,
-      volume: q.volume,
-      pe: q.pe,
-      previousClose: q.previousClose,
-    }));
+    const slim = quotes.map((q) => {
+      const s = stats[q.symbol.toUpperCase()];
+      return {
+        symbol: q.symbol,
+        name: q.name,
+        price: q.price,
+        change: q.change,
+        changePercent: q.changesPercentage,
+        dayHigh: q.dayHigh,
+        dayLow: q.dayLow,
+        yearHigh: q.yearHigh ?? null,
+        yearLow: q.yearLow ?? null,
+        marketCap: s?.marketCap ?? null,
+        volume: q.volume,
+        pe: s?.pe ?? null,
+        previousClose: q.previousClose,
+      };
+    });
 
-    // Keep the tiny in-memory cache from growing unbounded
     if (Object.keys(cache).length > 50) cache = {};
     cache[key] = { data: slim, ts: Date.now() };
 
@@ -58,6 +66,7 @@ export async function GET(req: NextRequest) {
       headers: { "Cache-Control": "public, max-age=15" },
     });
   } catch {
+    if (hit) return NextResponse.json(hit.data);
     return NextResponse.json({ error: "Failed to load quotes" }, { status: 502 });
   }
 }

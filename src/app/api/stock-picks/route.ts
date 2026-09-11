@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getQuote, getQuotes } from "@/lib/twelvedata";
+import { getQuoteStats, type QuoteStats } from "@/lib/fmp";
 
 export const dynamic = "force-dynamic";
 
-const FMP_API_KEY = process.env.FMP_API_KEY || "";
-const FMP_BASE_URL = "https://financialmodelingprep.com/api/v3";
 
 // How many picks each tier can see. The server NEVER returns more than this,
 // so a user can't read symbols they haven't paid for.
@@ -143,26 +143,32 @@ async function resolveTier(userId: number): Promise<string> {
 }
 
 async function enrichWithQuotes(picks: Pick[]): Promise<EnrichedPick[]> {
-  let quotes: any[] = [];
+  // Live prices from Twelve Data; market cap and P/E from FMP's batch quote.
+  // Both lookups are best-effort: a failure leaves those fields null and the
+  // picks still return.
+  const symbols = picks.map((p) => p.symbol);
+  let byQuote = new Map<string, Awaited<ReturnType<typeof getQuote>>>();
+  let byStats: Record<string, QuoteStats> = {};
+
   try {
-    const symbols = picks.map((p) => p.symbol).join(",");
-    const res = await fetch(`${FMP_BASE_URL}/quote/${symbols}?apikey=${FMP_API_KEY}`);
-    const data = await res.json();
-    if (Array.isArray(data)) quotes = data;
+    const [quotes, stats] = await Promise.all([getQuotes(symbols), getQuoteStats(symbols)]);
+    byQuote = new Map(quotes.map((q) => [q.symbol, q]));
+    byStats = stats;
   } catch {
-    // Leave quotes empty; picks still return with null price data.
+    // Leave the maps empty; picks still return with null price data.
   }
 
   return picks.map((pick) => {
-    const q = quotes.find((x) => x.symbol === pick.symbol);
+    const q = byQuote.get(pick.symbol);
+    const s = byStats[pick.symbol];
     return {
       ...pick,
       name: q?.name || pick.symbol,
       price: q?.price ?? null,
       change: q?.change ?? null,
       changePercent: q?.changesPercentage ?? null,
-      marketCap: q?.marketCap ?? null,
-      pe: q?.pe ?? null,
+      marketCap: s?.marketCap ?? null,
+      pe: s?.pe ?? null,
       weekHigh52: q?.yearHigh ?? null,
       weekLow52: q?.yearLow ?? null,
     };

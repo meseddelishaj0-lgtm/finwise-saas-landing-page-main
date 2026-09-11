@@ -16,48 +16,54 @@ import {
   Shield,
   ArrowLeft,
   TrendingUp,
-  Activity,
 } from "lucide-react";
 
+// CDS spreads and credit ratings are not sold by our market-data provider.
+// This page charts listed credit ETFs instead (high yield, investment grade,
+// emerging markets, leveraged loans), which move with the same credit risk
+// premium: daily closes from /api/market/chart, labelled as fund prices.
+
 export default function CreditDerivativesAnalysisPage() {
-  const [query, setQuery] = useState("AAPL-CDS"); // default symbol
+  const [query, setQuery] = useState("HYG"); // default: high-yield corporate bond ETF
   const [data, setData] = useState<any | null>(null);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch credit derivative data
+  // Fetch daily closes for a credit ETF
   const fetchCreditData = async (symbol: string) => {
     try {
       setLoading(true);
       setError(null);
 
+      const sym = symbol.toUpperCase();
       const res = await fetch(
-        `/api/proxy/fmp/api/v4/creditRating?symbol=${symbol}`
+        `/api/market/chart?symbol=${encodeURIComponent(sym)}&range=6M`
       );
 
       if (!res.ok) throw new Error("Request failed");
-      const json = await res.json();
+      const bars = await res.json();
 
-      if (!json || json.length === 0) throw new Error("No data found");
+      if (!Array.isArray(bars) || bars.length === 0) throw new Error("No data found");
 
-      const latest = json[0];
-      setData(latest);
+      // Bars are ascending: { t, o, h, l, c, v }
+      const last = bars[bars.length - 1];
+      const prev = bars.length > 1 ? bars[bars.length - 2] : null;
+      setData({
+        symbol: sym,
+        price: last.c,
+        date: String(last.t).slice(0, 10),
+        changePercent: prev?.c ? ((last.c - prev.c) / prev.c) * 100 : null,
+      });
 
-      // Generate fake spread data (you can connect CDS spread endpoint if you have it)
-      const mock = Array.from({ length: 7 }, (_, i) => ({
-        day: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i],
-        spread: Math.max(
-          60 + Math.random() * 30 - Math.random() * 20,
-          30
-        ),
-      }));
-      setChartData(mock);
+      setChartData(
+        bars.map((b: any) => ({ date: String(b.t).slice(0, 10), price: b.c }))
+      );
 
       // AI commentary removed — needs a server route
     } catch (err: any) {
       console.error(err);
-      setError("Unable to fetch credit derivative data for that symbol.");
+      setError("Unable to fetch data for that symbol.");
     } finally {
       setLoading(false);
     }
@@ -92,8 +98,8 @@ export default function CreditDerivativesAnalysisPage() {
         </h1>
       </div>
       <p className="text-gray-400 mb-8 text-lg">
-        Analyze credit risk, CDS spreads, and ratings to monitor corporate and
-        sovereign credit exposure with AI-powered insights.
+        Monitor corporate and emerging-market credit risk through the listed
+        credit ETFs that price it.
       </p>
 
       {/* Search Bar */}
@@ -105,7 +111,7 @@ export default function CreditDerivativesAnalysisPage() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search CDS or company symbol (e.g. AAPL-CDS, JPM-CDS, GOVT-CDS)"
+          placeholder="Search a credit ETF (e.g. HYG, JNK, LQD, EMB)"
           className="flex-1 px-4 py-2 rounded-full outline-none text-gray-300"
         />
         <button
@@ -121,42 +127,56 @@ export default function CreditDerivativesAnalysisPage() {
 
       {!loading && !error && data && (
         <>
-          {/* Credit Rating Info */}
+          {/* Key Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-surface shadow rounded-2xl p-5 text-center">
               <p className="text-sm text-gray-500">Symbol</p>
-              <p className="text-xl font-semibold text-gray-100">{query}</p>
+              <p className="text-xl font-semibold text-gray-100">{data.symbol}</p>
             </div>
             <div className="bg-surface shadow rounded-2xl p-5 text-center">
-              <p className="text-sm text-gray-500">Rating</p>
+              <p className="text-sm text-gray-500">Latest Close</p>
               <p className="text-2xl font-bold text-gold">
-                {data.rating}
+                ${data.price?.toFixed(2)}
               </p>
             </div>
             <div className="bg-surface shadow rounded-2xl p-5 text-center">
-              <p className="text-sm text-gray-500">Score</p>
-              <p className="text-2xl font-bold">{data.ratingScore}</p>
+              <p className="text-sm text-gray-500">Day Change</p>
+              <p
+                className={`text-2xl font-bold ${
+                  (data.changePercent ?? 0) < 0 ? "text-red-400" : "text-green-400"
+                }`}
+              >
+                {data.changePercent === null
+                  ? "—"
+                  : `${data.changePercent > 0 ? "+" : ""}${data.changePercent.toFixed(2)}%`}
+              </p>
             </div>
             <div className="bg-surface shadow rounded-2xl p-5 text-center">
-              <p className="text-sm text-gray-500">Date</p>
+              <p className="text-sm text-gray-500">As of</p>
               <p className="text-lg font-semibold">{data.date}</p>
             </div>
           </div>
 
           {/* Chart */}
           <div className="bg-surface rounded-3xl shadow p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-gold" /> CDS Spread Trend
+            <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-gold" /> Price Trend (credit ETF proxy)
             </h2>
+            <p className="text-xs text-gray-500 mb-4">
+              Daily closes over six months. CDS spreads and credit ratings are
+              not available from our market-data provider — credit ETFs move with
+              the same risk premium, but this is the fund&apos;s price, not a
+              spread.
+            </p>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
+                <XAxis dataKey="date" />
+                <YAxis domain={["auto", "auto"]} />
                 <Tooltip />
                 <Area
                   type="monotone"
-                  dataKey="spread"
+                  dataKey="price"
                   stroke="#FACC15"
                   fill="#FEF08A"
                 />

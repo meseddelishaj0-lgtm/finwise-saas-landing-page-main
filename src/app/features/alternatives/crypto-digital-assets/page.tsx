@@ -5,50 +5,65 @@ import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Search, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+// /api/crypto (Twelve Data) carries price, daily change and day range, but no
+// market cap or 24h volume on any plan, so this screener cannot rank by
+// market cap. `rank` is the route's order: a conventional ranking of the
+// major coins, validated against the live catalog.
+
 interface CryptoQuote {
-  symbol: string;
+  symbol: string; // Twelve Data pair, e.g. "BTC/USD"
   name: string;
   price: number;
   changesPercentage: number;
-  marketCap: number;
-  volume: number;
+  dayLow: number | null;
+  dayHigh: number | null;
+  rank: number;
 }
 
-type SortKey = "marketCap" | "price" | "changesPercentage";
+type SortKey = "rank" | "price" | "changesPercentage";
+
+const num = (v: unknown): number | null => {
+  const x = typeof v === "string" ? parseFloat(v) : (v as number);
+  return Number.isFinite(x) ? x : null;
+};
+
+const fmtUsd = (v: number) =>
+  v.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: v >= 1 ? 2 : 6,
+  });
 
 export default function CryptoScreenerPage() {
   const [cryptos, setCryptos] = useState<CryptoQuote[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>("marketCap");
-  const [sortAsc, setSortAsc] = useState<boolean>(false);
+  const [sortKey, setSortKey] = useState<SortKey>("rank");
+  const [sortAsc, setSortAsc] = useState<boolean>(true);
   const router = useRouter();
 
   useEffect(() => {
     const fetchCryptos = async () => {
       try {
         setLoading(true);
-        const res = await fetch(
-          `/api/proxy/fmp/api/v3/quotes/crypto`
-        );
+        const res = await fetch("/api/crypto");
         if (!res.ok) throw new Error("Failed to fetch crypto data");
         const data = await res.json();
-        const top = data
-          .filter(
-            (coin: any) =>
-              coin.price && coin.marketCap && coin.changesPercentage !== null
-          )
-          .map((coin: any) => ({
-            symbol: coin.symbol,
-            name: coin.name,
-            price: coin.price,
-            changesPercentage: coin.changesPercentage,
-            marketCap: coin.marketCap,
-            volume: coin.volume ?? 0,
-          }))
-          .sort((a: CryptoQuote, b: CryptoQuote) => b.marketCap - a.marketCap)
-          .slice(0, 100);
+        const top: CryptoQuote[] = [];
+        (Array.isArray(data) ? data : []).forEach((coin: any, i: number) => {
+          const price = num(coin.price);
+          const change = num(coin.changes24h);
+          if (price === null || price <= 0 || change === null) return;
+          top.push({
+            symbol: String(coin.symbol),
+            name: String(coin.name || coin.symbol),
+            price,
+            changesPercentage: change,
+            dayLow: num(coin.dayLow),
+            dayHigh: num(coin.dayHigh),
+            rank: i + 1,
+          });
+        });
         setCryptos(top);
       } catch (err: any) {
         console.error(err);
@@ -94,13 +109,16 @@ export default function CryptoScreenerPage() {
       setSortAsc(!sortAsc);
     } else {
       setSortKey(key);
-      setSortAsc(false);
+      // Rank reads best ascending (#1 first); the value columns descending.
+      setSortAsc(key === "rank");
     }
   };
 
   const handleRowClick = (coin: CryptoQuote) => {
+    // The detail route takes the slash-free form (BTCUSD); the data routes
+    // map it back to the BTC/USD pair.
     router.push(
-      `/features/alternatives/crypto-digital-assets/coin/${coin.symbol}`
+      `/features/alternatives/crypto-digital-assets/coin/${coin.symbol.replace("/", "")}`
     );
   };
 
@@ -127,7 +145,7 @@ export default function CryptoScreenerPage() {
             Crypto & Digital Assets Screener
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Track live prices, performance, and market caps of top
+            Track live prices and daily performance of the major
             cryptocurrencies — powered by your WallStreetStocks.ai
           </p>
         </motion.div>
@@ -150,13 +168,13 @@ export default function CryptoScreenerPage() {
           <div className="flex items-center gap-4">
             <button
               className={`px-4 py-2 rounded-full border ${
- sortKey === "marketCap"
+ sortKey === "rank"
  ? "border-gold/40 text-gold"
  : "border-white/10 text-gray-300"
  }`}
-              onClick={() => handleSortChange("marketCap")}
+              onClick={() => handleSortChange("rank")}
             >
-              Market Cap {sortKey === "marketCap" && (sortAsc ? "↑" : "↓")}
+              Rank {sortKey === "rank" && (sortAsc ? "↑" : "↓")}
             </button>
             <button
               className={`px-4 py-2 rounded-full border ${
@@ -200,10 +218,10 @@ export default function CryptoScreenerPage() {
                   Change %
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Market Cap
+                  Day Low
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                  Volume
+                  Day High
                 </th>
               </tr>
             </thead>
@@ -234,7 +252,7 @@ export default function CryptoScreenerPage() {
                       </span>
                     </td>
                     <td className="px-6 py-3 text-sm text-right font-semibold">
-                      ${coin.price.toFixed(2)}
+                      ${fmtUsd(coin.price)}
                     </td>
                     <td
                       className={`px-6 py-3 text-sm text-right font-semibold flex items-center justify-end gap-1 ${
@@ -251,10 +269,10 @@ export default function CryptoScreenerPage() {
                       {coin.changesPercentage.toFixed(2)}%
                     </td>
                     <td className="px-6 py-3 text-sm text-right text-gray-300">
-                      ${coin.marketCap.toLocaleString()}
+                      {coin.dayLow !== null ? `$${fmtUsd(coin.dayLow)}` : "—"}
                     </td>
                     <td className="px-6 py-3 text-sm text-right text-gray-300">
-                      ${coin.volume.toLocaleString()}
+                      {coin.dayHigh !== null ? `$${fmtUsd(coin.dayHigh)}` : "—"}
                     </td>
                   </tr>
                 ))
@@ -264,7 +282,8 @@ export default function CryptoScreenerPage() {
         </div>
 
         <p className="text-xs text-gray-400 text-center mt-6">
-          Data auto-refreshes from WallStreetStocks.ai
+          Ranked by a conventional ordering of the major coins. Market cap and
+          24h volume are not available from our market-data provider.
         </p>
       </div>
     </main>
