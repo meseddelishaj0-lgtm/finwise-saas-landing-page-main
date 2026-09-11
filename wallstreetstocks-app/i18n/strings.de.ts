@@ -1858,6 +1858,8 @@ const strings: Record<string, string> = {
   "Shares are added at the current market price — fine-tune anytime in Portfolio.": "Anteile werden zum aktuellen Marktpreis angelegt — im Portfolio jederzeit anpassbar.",
   "Add to my portfolio": "Zu meinem Portfolio",
   "I don't own any yet": "Besitze noch keine",
+  "Create your own portfolio": "Erstelle dein eigenes Portfolio",
+  "Pick the stocks you own to track your gains. You can skip this.": "Wähle die Aktien, die du besitzt, und verfolge deine Gewinne. Überspringen möglich.",
   "What should we ping you about?": "Worüber sollen wir dich informieren?",
   "All on by default — mute anything. Change later in Settings.": "Alles standardmäßig an — stumm schalten nach Wunsch. Später in Einstellungen änderbar.",
   "Watchlist News": "Watchlist-News",

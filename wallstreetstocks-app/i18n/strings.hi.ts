@@ -1856,6 +1856,8 @@ const strings: Record<string, string> = {
   "Shares are added at the current market price — fine-tune anytime in Portfolio.": "शेयर वर्तमान बाज़ार कीमत पर जोड़े जाते हैं — इसे कभी भी पोर्टफोलियो में ठीक कर सकते हैं।",
   "Add to my portfolio": "मेरे पोर्टफोलियो में जोड़ें",
   "I don't own any yet": "मेरे पास अभी तक कोई नहीं है",
+  "Create your own portfolio": "अपना खुद का पोर्टफोलियो बनाएं",
+  "Pick the stocks you own to track your gains. You can skip this.": "अपने लाभ को ट्रैक करने के लिए वे स्टॉक चुनें जो आपके पास हैं। आप इसे छोड़ सकते हैं।",
   "What should we ping you about?": "हमें आपको किस बारे में सूचित करना चाहिए?",
   "All on by default — mute anything. Change later in Settings.": "डिफ़ॉल्ट रूप से सभी चालू हैं — किसी को भी म्यूट करें। बाद में Settings में बदलें।",
   "Watchlist News": "वॉचलिस्ट समाचार",

@@ -1858,6 +1858,8 @@ const strings: Record<string, string> = {
   "Shares are added at the current market price — fine-tune anytime in Portfolio.": "Hisseler güncel piyasa fiyatından eklenir — Portföy'den dilediğinde düzenle.",
   "Add to my portfolio": "Portföyüme ekle",
   "I don't own any yet": "Henüz hiç yok",
+  "Create your own portfolio": "Kendi portföyünü oluştur",
+  "Pick the stocks you own to track your gains. You can skip this.": "Kazançlarını izlemek için sahip olduğun hisseleri seç. Atlayabilirsin.",
   "What should we ping you about?": "Seni nelerden haberdar edelim?",
   "All on by default — mute anything. Change later in Settings.": "Varsayılan olarak hepsi açık — istediğini kapat. Sonradan Ayarlar'dan değiştir.",
   "Watchlist News": "İzleme Listesi Haberleri",

@@ -1858,6 +1858,8 @@ const strings: Record<string, string> = {
   "Shares are added at the current market price — fine-tune anytime in Portfolio.": "股份按当前市价添加——可随时在投资组合中调整。",
   "Add to my portfolio": "添加到我的投资组合",
   "I don't own any yet": "暂时没有持仓",
+  "Create your own portfolio": "创建您自己的投资组合",
+  "Pick the stocks you own to track your gains. You can skip this.": "选择您持有的股票以追踪收益。可以跳过。",
   "What should we ping you about?": "您想接收哪些通知？",
   "All on by default — mute anything. Change later in Settings.": "默认全部开启——可静音任意项，之后可在设置中更改。",
   "Watchlist News": "自选股新闻",

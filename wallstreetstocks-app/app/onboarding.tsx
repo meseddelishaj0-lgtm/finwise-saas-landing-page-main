@@ -388,55 +388,64 @@ export default function Onboarding() {
     </Animated.View>
   );
 
+  // Grouped ticker grid (Stocks / Crypto / ETFs) with live prices. The
+  // watchlist and portfolio steps both use it, each with its own selection.
+  const renderTickerGrid = (isOn: (symbol: string) => boolean, onToggle: (symbol: string) => void) =>
+    orderedGroups.map((group) => (
+      <View key={group.key}>
+        <Text style={styles.groupLabel}>{t(group.label)}</Text>
+        <View style={styles.tickerGrid}>
+          {group.symbols.map((s) => {
+            const on = isOn(s.symbol);
+            const q = quotes[s.symbol];
+            const up = (q?.changePct ?? 0) >= 0;
+            return (
+              <TouchableOpacity
+                key={s.symbol}
+                style={[styles.tickerCard, on && styles.tickerCardOn]}
+                onPress={() => {
+                  tap();
+                  onToggle(s.symbol);
+                }}
+                activeOpacity={0.8}
+              >
+                <StockLogo symbol={s.symbol} size={34} />
+                <Text style={styles.tickerSymbol}>{s.symbol.replace('USD', '')}</Text>
+                <Text style={styles.tickerName} numberOfLines={1}>{s.name}</Text>
+                {q ? (
+                  <Text style={[styles.tickerPrice, { color: up ? '#34C759' : '#FF453A' }]}>
+                    ${q.price >= 1000 ? Math.round(q.price).toLocaleString() : q.price.toFixed(2)}
+                  </Text>
+                ) : (
+                  <Text style={[styles.tickerPrice, { color: '#666' }]}>—</Text>
+                )}
+                {on && (
+                  <View style={styles.tickerCheck}>
+                    <Ionicons name="checkmark" size={12} color="#000" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    ));
+
   const renderWatchlist = () => (
     <Animated.View key="s2" entering={FadeInRight.duration(300)} exiting={FadeOutLeft.duration(200)} style={styles.stepWrap}>
       <Text style={styles.stepTitle}>{t('Build your watchlist')}</Text>
       <Text style={styles.stepSub}>{t('Tap at least 3 to follow. Live prices included.')}</Text>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        {orderedGroups.map((group) => (
-          <View key={group.key}>
-            <Text style={styles.groupLabel}>{t(group.label)}</Text>
-            <View style={styles.tickerGrid}>
-              {group.symbols.map((s) => {
-                const on = picked.has(s.symbol);
-                const q = quotes[s.symbol];
-                const up = (q?.changePct ?? 0) >= 0;
-                return (
-                  <TouchableOpacity
-                    key={s.symbol}
-                    style={[styles.tickerCard, on && styles.tickerCardOn]}
-                    onPress={() => {
-                      tap();
-                      setPicked((prev) => {
-                        const nxt = new Set(prev);
-                        if (nxt.has(s.symbol)) nxt.delete(s.symbol);
-                        else nxt.add(s.symbol);
-                        return nxt;
-                      });
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <StockLogo symbol={s.symbol} size={34} />
-                    <Text style={styles.tickerSymbol}>{s.symbol.replace('USD', '')}</Text>
-                    <Text style={styles.tickerName} numberOfLines={1}>{s.name}</Text>
-                    {q ? (
-                      <Text style={[styles.tickerPrice, { color: up ? '#34C759' : '#FF453A' }]}>
-                        ${q.price >= 1000 ? Math.round(q.price).toLocaleString() : q.price.toFixed(2)}
-                      </Text>
-                    ) : (
-                      <Text style={[styles.tickerPrice, { color: '#666' }]}>—</Text>
-                    )}
-                    {on && (
-                      <View style={styles.tickerCheck}>
-                        <Ionicons name="checkmark" size={12} color="#000" />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        ))}
+        {renderTickerGrid(
+          (symbol) => picked.has(symbol),
+          (symbol) =>
+            setPicked((prev) => {
+              const nxt = new Set(prev);
+              if (nxt.has(symbol)) nxt.delete(symbol);
+              else nxt.add(symbol);
+              return nxt;
+            })
+        )}
         <View style={{ height: 12 }} />
       </ScrollView>
       <CTA
@@ -453,73 +462,72 @@ export default function Onboarding() {
   );
 
   const renderPortfolio = () => {
-    const candidates = Array.from(picked);
+    // In the order they were picked, so the list below the grid reads naturally.
+    const holdings = Object.keys(owned).filter((symbol) => owned[symbol] > 0);
     return (
       <Animated.View key="s3" entering={FadeInRight.duration(300)} exiting={FadeOutLeft.duration(200)} style={styles.stepWrap}>
-        <Text style={styles.stepTitle}>{t('Own any of these?')}</Text>
-        <Text style={styles.stepSub}>{t('Add them to your portfolio to track your gains. You can skip this.')}</Text>
+        <Text style={styles.stepTitle}>{t('Create your own portfolio')}</Text>
+        <Text style={styles.stepSub}>{t('Pick the stocks you own to track your gains. You can skip this.')}</Text>
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          {candidates.map((symbol) => {
-            const shares = owned[symbol] || 0;
-            const isOwned = shares > 0;
-            const price = quotes[symbol]?.price || 0;
-            return (
-              <TouchableOpacity
-                key={symbol}
-                style={[styles.holdingRow, isOwned && styles.holdingRowOn]}
-                onPress={() => {
-                  tap();
-                  setOwned((prev) => ({ ...prev, [symbol]: isOwned ? 0 : 1 }));
-                }}
-                activeOpacity={0.85}
-              >
-                <StockLogo symbol={symbol} size={36} />
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={styles.holdingSymbol}>{symbol.replace('USD', '')}</Text>
-                  {isOwned && price > 0 && (
-                    <Text style={styles.holdingValue}>
-                      ≈ ${(shares * price).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </Text>
-                  )}
-                </View>
-                {isOwned ? (
-                  <View style={styles.stepper}>
-                    <TouchableOpacity
-                      style={styles.stepperBtn}
-                      onPress={() => {
-                        tap();
-                        setOwned((prev) => ({ ...prev, [symbol]: Math.max(0, (prev[symbol] || 0) - 1) }));
-                      }}
-                    >
-                      <Ionicons name="remove" size={18} color={GOLD} />
-                    </TouchableOpacity>
-                    <Text style={styles.stepperCount}>{shares}</Text>
-                    <TouchableOpacity
-                      style={styles.stepperBtn}
-                      onPress={() => {
-                        tap();
-                        setOwned((prev) => ({ ...prev, [symbol]: (prev[symbol] || 0) + 1 }));
-                      }}
-                    >
-                      <Ionicons name="add" size={18} color={GOLD} />
-                    </TouchableOpacity>
+          {renderTickerGrid(
+            (symbol) => (owned[symbol] || 0) > 0,
+            (symbol) =>
+              setOwned((prev) => {
+                const nxt = { ...prev };
+                if ((nxt[symbol] || 0) > 0) delete nxt[symbol];
+                else nxt[symbol] = 1;
+                return nxt;
+              })
+          )}
+          {holdings.length > 0 && (
+            <>
+              <Text style={styles.groupLabel}>{t('Your Portfolio')}</Text>
+              {holdings.map((symbol) => {
+                const shares = owned[symbol];
+                const price = quotes[symbol]?.price || 0;
+                return (
+                  <View key={symbol} style={[styles.holdingRow, styles.holdingRowOn]}>
+                    <StockLogo symbol={symbol} size={36} />
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={styles.holdingSymbol}>{symbol.replace('USD', '')}</Text>
+                      {price > 0 && (
+                        <Text style={styles.holdingValue}>
+                          ≈ ${(shares * price).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.stepper}>
+                      <TouchableOpacity
+                        style={styles.stepperBtn}
+                        onPress={() => {
+                          tap();
+                          setOwned((prev) => ({ ...prev, [symbol]: Math.max(0, (prev[symbol] || 0) - 1) }));
+                        }}
+                      >
+                        <Ionicons name="remove" size={18} color={GOLD} />
+                      </TouchableOpacity>
+                      <Text style={styles.stepperCount}>{shares}</Text>
+                      <TouchableOpacity
+                        style={styles.stepperBtn}
+                        onPress={() => {
+                          tap();
+                          setOwned((prev) => ({ ...prev, [symbol]: (prev[symbol] || 0) + 1 }));
+                        }}
+                      >
+                        <Ionicons name="add" size={18} color={GOLD} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                ) : (
-                  <Text style={styles.holdingAdd}>{t('I own this')}</Text>
-                )}
-              </TouchableOpacity>
-            );
-          })}
+                );
+              })}
+            </>
+          )}
           <Text style={styles.portfolioNote}>
             {t('Shares are added at the current market price — fine-tune anytime in Portfolio.')}
           </Text>
         </ScrollView>
         <CTA
-          label={
-            Object.values(owned).some((s) => s > 0)
-              ? t('Add to my portfolio')
-              : t("I don't own any yet")
-          }
+          label={holdings.length > 0 ? t('Add to my portfolio') : t("I don't own any yet")}
           onPress={savePortfolio}
           loading={saving}
         />
@@ -871,7 +879,6 @@ const styles = StyleSheet.create({
   holdingRowOn: { borderColor: GOLD, backgroundColor: 'rgba(255,214,10,0.07)' },
   holdingSymbol: { color: '#FFF', fontWeight: '800', fontSize: 16 },
   holdingValue: { color: GOLD, fontSize: 12, fontWeight: '700', marginTop: 2 },
-  holdingAdd: { color: '#888', fontSize: 13, fontWeight: '600' },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   stepperBtn: {
     width: 32,

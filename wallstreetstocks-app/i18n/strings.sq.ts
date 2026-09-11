@@ -1858,6 +1858,8 @@ const strings: Record<string, string> = {
   "Shares are added at the current market price — fine-tune anytime in Portfolio.": "Aksionet shtohen me çmimin aktual të tregut — rregulloji kurdo te Portofoli.",
   "Add to my portfolio": "Shto në portofolin tim",
   "I don't own any yet": "S'kam ende asnjë",
+  "Create your own portfolio": "Krijo portofolin tënd",
+  "Pick the stocks you own to track your gains. You can skip this.": "Zgjidh aksionet që zotëron për të ndjekur fitimet. Mund ta kalosh.",
   "What should we ping you about?": "Për çfarë të të njoftojmë?",
   "All on by default — mute anything. Change later in Settings.": "Të gjitha aktive si parazgjedhje — hesht çfarë të duash. Ndryshoje te Cilësimet.",
   "Watchlist News": "Lajmet e listës",

@@ -1858,6 +1858,8 @@ const strings: Record<string, string> = {
   "Shares are added at the current market price — fine-tune anytime in Portfolio.": "Οι μετοχές προστίθενται στην τρέχουσα τιμή αγοράς — προσαρμογή στο Χαρτοφυλάκιο.",
   "Add to my portfolio": "Προσθήκη στο χαρτοφυλάκιο",
   "I don't own any yet": "Δεν έχω ακόμα",
+  "Create your own portfolio": "Δημιούργησε το δικό σου χαρτοφυλάκιο",
+  "Pick the stocks you own to track your gains. You can skip this.": "Διάλεξε τις μετοχές που έχεις για να βλέπεις τα κέρδη σου. Μπορείς να το παραλείψεις.",
   "What should we ping you about?": "Για τι να σε ειδοποιούμε;",
   "All on by default — mute anything. Change later in Settings.": "Όλα ενεργά από προεπιλογή — σίγασε ό,τι θέλεις. Αλλαγή στις Ρυθμίσεις.",
   "Watchlist News": "Νέα λίστας παρακολούθησης",

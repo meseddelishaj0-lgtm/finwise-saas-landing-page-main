@@ -1856,6 +1856,8 @@ const strings: Record<string, string> = {
   "Shares are added at the current market price — fine-tune anytime in Portfolio.": "주식은 현재 시장가로 추가되며, 포트폴리오에서 언제든지 조정할 수 있어요.",
   "Add to my portfolio": "내 포트폴리오에 추가",
   "I don't own any yet": "아직 보유한 종목이 없어요",
+  "Create your own portfolio": "나만의 포트폴리오 만들기",
+  "Pick the stocks you own to track your gains. You can skip this.": "보유한 종목을 선택하면 수익을 추적할 수 있어요. 건너뛰어도 됩니다.",
   "What should we ping you about?": "어떤 알림을 받고 싶으신가요?",
   "All on by default — mute anything. Change later in Settings.": "기본적으로 모두 켜져 있어요 — 원하는 항목을 뮤트하세요. 설정에서 나중에 변경 가능.",
   "Watchlist News": "워치리스트 뉴스",

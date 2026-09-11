@@ -1856,6 +1856,8 @@ const strings: Record<string, string> = {
   "Shares are added at the current market price — fine-tune anytime in Portfolio.": "تُضاف الأسهم بسعر السوق الحالي — يمكنك ضبطها في أي وقت من المحفظة.",
   "Add to my portfolio": "أضف إلى محفظتي",
   "I don't own any yet": "لا أملك أيًا منها بعد",
+  "Create your own portfolio": "أنشئ محفظتك الخاصة",
+  "Pick the stocks you own to track your gains. You can skip this.": "اختر الأسهم التي تملكها لتتبع أرباحك. يمكنك تخطي هذه الخطوة.",
   "What should we ping you about?": "بماذا تريد أن نُعلمك؟",
   "All on by default — mute anything. Change later in Settings.": "الكل مفعّل افتراضيًا — يمكنك كتم أي منها. غيّر ذلك لاحقًا من الإعدادات.",
   "Watchlist News": "أخبار قائمة المتابعة",

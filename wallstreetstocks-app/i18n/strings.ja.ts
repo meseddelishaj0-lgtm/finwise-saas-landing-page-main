@@ -1856,6 +1856,8 @@ const strings: Record<string, string> = {
   "Shares are added at the current market price — fine-tune anytime in Portfolio.": "株式は現在の市場価格で追加されます — ポートフォリオでいつでも調整できます。",
   "Add to my portfolio": "ポートフォリオに追加",
   "I don't own any yet": "まだ何も保有していない",
+  "Create your own portfolio": "自分だけのポートフォリオを作成",
+  "Pick the stocks you own to track your gains. You can skip this.": "保有している銘柄を選んで損益を追跡しましょう。スキップも可能です。",
   "What should we ping you about?": "どんな通知を受け取りますか?",
   "All on by default — mute anything. Change later in Settings.": "初期設定はすべてオン — 不要なものはミュートできます。設定から後で変更可能です。",
   "Watchlist News": "ウォッチリストニュース",
