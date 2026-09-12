@@ -26,6 +26,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { useUserProfile } from '@/context/UserProfileContext';
+import { getPersonalInfo } from '@/lib/personalInfoStore';
 import FormattedContent from '@/components/FormattedContent';
 import TrendingTickers from '@/components/TrendingTickers';
 import { FEATURE_TIERS } from '@/components/PremiumFeatureGate';
@@ -2406,6 +2407,25 @@ export default function CommunityPage() {
     return getHandle(user);
   };
 
+  // Picking a photo on My Profile saves it to the per-user profile cache
+  // without uploading, so that cache is the last resort for the current
+  // user's avatar. Reloaded on focus, so a new picture shows straight away.
+  const [cachedAvatar, setCachedAvatar] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      getPersonalInfo(authUser?.id)
+        .then((info: any) => {
+          if (alive) setCachedAvatar(info?.avatar || null);
+        })
+        .catch(() => {});
+      return () => {
+        alive = false;
+      };
+    }, [authUser?.id])
+  );
+
   // Avatar Component - optimized with expo-image caching
   // Uses local userProfile data for current user to ensure fresh profile image
   const Avatar = ({ user, size = 44, onPress }: { user: User | null | undefined; size?: number; onPress?: () => void }) => {
@@ -2416,7 +2436,7 @@ export default function CommunityPage() {
     // This fixes the issue where API returns stale/null profileImage after login/logout
     const isCurrentUser = user?.id && (user.id === getUserId());
     const avatarImage = isCurrentUser
-      ? (userProfile?.profileImage || authUser?.profileImage || user?.image || user?.profileImage)
+      ? (userProfile?.profileImage || authUser?.profileImage || user?.image || user?.profileImage || cachedAvatar)
       : (user?.image || user?.profileImage);
 
     const avatarContent = avatarImage ? (
@@ -2594,7 +2614,7 @@ export default function CommunityPage() {
             accessibilityRole="button"
             accessibilityLabel={t('Profile')}
           >
-            <Ionicons name="person-circle-outline" size={26} color={colors.text} />
+            <Avatar user={authUser as User | null | undefined} size={26} />
           </TouchableOpacity>
 
         </View>
