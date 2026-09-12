@@ -14,6 +14,7 @@ import {
   Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
+import Constants from "expo-constants";
 import { useAuth } from "@/lib/auth";
 import { Ionicons } from "@expo/vector-icons";
 import { useSubscription } from "@/context/SubscriptionContext";
@@ -397,7 +398,7 @@ export default function MenuPage() {
         {/* Version Footer */}
         <View style={styles.footer}>
           <Text style={[styles.footerTitle, { color: colors.text }]}>WallStreetStocks</Text>
-          <Text style={styles.version}>{t('Version')} 1.1.5</Text>
+          <Text style={styles.version}>{t('Version')} {Constants.expoConfig?.version ?? '1.2.6'}</Text>
           <Text style={styles.copyright}>{t('Made with in New York')}</Text>
         </View>
       </ScrollView>

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -151,7 +152,7 @@ export default function Help() {
         <View style={[styles.footer, { borderTopColor: isDark ? colors.border : '#f0f0f0' }]}>
           <View style={styles.appInfo}>
             <Text style={[styles.appName, { color: colors.text }]}>{t('WallStreetStocks')}</Text>
-            <Text style={[styles.version, { color: colors.textTertiary }]}>{t('Version 1.1.5')}</Text>
+            <Text style={[styles.version, { color: colors.textTertiary }]}>{t('Version')} {Constants.expoConfig?.version ?? '1.2.6'}</Text>
           </View>
           <Text style={[styles.copyright, { color: colors.textTertiary }]}>{t('© 2025 WallStreetStocks. All rights reserved.')}</Text>
 
