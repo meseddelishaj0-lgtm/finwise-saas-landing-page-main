@@ -34,6 +34,9 @@ import { useSubscription } from '@/context/SubscriptionContext';
 import { useWatchlist } from '@/context/WatchlistContext';
 import { usePortfolio } from '@/context/PortfolioContext';
 import { useWebSocket } from '@/context/WebSocketContext';
+import { useUserProfile } from '@/context/UserProfileContext';
+import { useAuth } from '@/lib/auth';
+import { getPersonalInfo } from '@/lib/personalInfoStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchQuotesWithCache } from '@/services/quoteService';
 import { priceStore } from '@/stores/priceStore';
@@ -550,6 +553,31 @@ export default function Dashboard() {
   // Get current portfolio's holdings from context
   const currentPortfolio = userPortfolios.find(p => p.id === selectedPortfolioId);
   const userHoldings = currentPortfolio?.holdings || [];
+
+  // Header avatar: the profile context first, then the auth user, then the
+  // local profile cache — picking a photo on My Profile saves there without
+  // uploading. Reloaded on focus so a newly chosen picture shows immediately.
+  const { profile: userProfile } = useUserProfile();
+  const authUserId = useAuth((s: any) => s.user?.id);
+  const authProfileImage = useAuth((s: any) => s.user?.profileImage);
+  const [cachedAvatar, setCachedAvatar] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      getPersonalInfo(authUserId)
+        .then((info: any) => {
+          if (alive) setCachedAvatar(info?.avatar || null);
+        })
+        .catch(() => {});
+      return () => {
+        alive = false;
+      };
+    }, [authUserId])
+  );
+
+  const headerAvatar: string | null =
+    userProfile?.profileImage || authProfileImage || cachedAvatar || null;
 
   // Track back press for "press again to exit" behavior
   const backPressedOnce = useRef(false);
@@ -2267,7 +2295,16 @@ export default function Dashboard() {
             accessibilityRole="button"
             accessibilityLabel={t('Menu')}
           >
-            <Ionicons name="person" size={19} color={colors.primary} />
+            {headerAvatar ? (
+              <ExpoImage
+                source={{ uri: headerAvatar }}
+                style={styles.avatarImage}
+                contentFit="cover"
+                transition={150}
+              />
+            ) : (
+              <Ionicons name="person" size={19} color={colors.primary} />
+            )}
           </ScalePress>
 
           <View style={styles.searchWrapper}>
@@ -4103,6 +4140,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 20,
   },
   greetingRow: {
     flexDirection: 'row',
