@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import CommandLine from "@/components/ui/CommandLine";
@@ -9,7 +9,17 @@ import CommandLine from "@/components/ui/CommandLine";
 const inputClass =
   "mt-1.5 w-full rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2.5 text-ivory placeholder:text-gray-600 transition-colors focus:border-gold/60 focus:outline-none focus:ring-2 focus:ring-gold/25";
 
+
+// Where to go after auth — only same-site paths (blocks //evil.com and URLs).
+function nextPath(): string | null {
+  if (typeof window === "undefined") return null;
+  const n = new URLSearchParams(window.location.search).get("next");
+  return n && n.startsWith("/") && !n.startsWith("//") ? n : null;
+}
+
 const LoginPage = () => {
+  const [next, setNext] = useState<string | null>(null);
+  useEffect(() => setNext(nextPath()), []);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,7 +42,7 @@ const LoginPage = () => {
     if (res?.error) {
       setError("Invalid email or password.");
     } else if (res?.ok) {
-      router.push("/dashboard");
+      router.push(nextPath() ?? "/dashboard");
     }
   };
 
@@ -95,7 +105,7 @@ const LoginPage = () => {
         <p className="mt-6 text-center text-sm text-gray-400">
           New to the desk?{" "}
           <Link
-            href="/register"
+            href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"}
             className="text-gold hover:text-gold-soft underline underline-offset-4 transition-colors"
           >
             Create a free account

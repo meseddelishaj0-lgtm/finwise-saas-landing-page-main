@@ -24,7 +24,7 @@ const NAME_OVERRIDES: Record<string, string> = {
 type MoverTab = "Gainers" | "Losers";
 
 const tabClass = (active: boolean) =>
-  `px-3.5 py-1.5 rounded-md font-monodata text-[11px] uppercase tracking-wider whitespace-nowrap transition-colors border ${
+  `min-h-[40px] md:min-h-0 px-3.5 py-1.5 rounded-md font-monodata text-[11px] uppercase tracking-wider whitespace-nowrap transition-colors border ${
     active
       ? "bg-gold/10 text-gold border-gold/30"
       : "text-gray-500 hover:text-gray-200 border-transparent"
@@ -154,7 +154,7 @@ const MarketsBoard: React.FC = () => {
                       key={t}
                       type="button"
                       onClick={() => setMoverTab(t)}
-                      className={`flex-1 px-3.5 py-1.5 rounded-md font-monodata text-[11px] uppercase tracking-wider transition-colors border ${
+                      className={`flex-1 min-h-[40px] md:min-h-0 px-3.5 py-1.5 rounded-md font-monodata text-[11px] uppercase tracking-wider transition-colors border ${
                         active
                           ? t === "Gainers"
                             ? "bg-green-500/10 text-green-400 border-green-500/30"

@@ -126,7 +126,7 @@ const Header: React.FC = () => {
         <nav className="w-full flex items-center text-white gap-3" aria-label="Primary">
           <Link
             href="/"
-            className="flex items-center gap-2.5 group flex-shrink-0 -ml-1"
+            className="flex min-h-[44px] items-center gap-2.5 group flex-shrink-0 -ml-1"
             aria-label="WallStreetStocks home"
           >
             <span className="w-2 h-2 rounded-full bg-gold group-hover:scale-125 transition-transform duration-300" />

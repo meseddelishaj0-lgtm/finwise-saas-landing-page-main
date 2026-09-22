@@ -19,6 +19,10 @@ const PANELS: Record<string, React.FC> = {
   "Market Data": MarketDataPanel,
 };
 
+// The live Markets board sits higher on the homepage, so on phones this
+// panel only repeats it — skip it there to keep the scroll short.
+const DESKTOP_ONLY_PANELS = new Set(["Market Data"]);
+
 const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }) => {
   const { title, description, bullets } = benefit || {};
   const Panel = PANELS[title];
@@ -34,7 +38,7 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }) => {
         <h3 className="font-display text-ivory text-3xl md:text-[2.6rem] leading-[1.08] tracking-tight">{title}</h3>
         <p className="mt-5 text-gray-300 text-lg leading-relaxed">{description}</p>
 
-        <ul className="mt-8 space-y-4">
+        <ul className="mt-8 space-y-4 hidden md:block">
           {bullets?.map((b, i) => (
             <li key={i} className="flex items-start gap-3.5 text-gray-400 text-[15px] md:text-base leading-relaxed">
               <span className="mt-1 flex-shrink-0 font-monodata text-gold font-semibold select-none">+</span>
@@ -47,7 +51,10 @@ const BenefitSection: React.FC<Props> = ({ benefit, imageAtRight }) => {
       </Reveal>
 
       {/* Visual panel */}
-      <Reveal delay={0.12} className="flex-1 w-full max-w-xl">
+      <Reveal
+        delay={0.12}
+        className={`flex-1 w-full max-w-xl ${DESKTOP_ONLY_PANELS.has(title) ? "hidden lg:block" : ""}`}
+      >
         <div className="card-night overflow-hidden shadow-[0_40px_80px_-40px_rgba(0,0,0,0.9)]">
           {Panel ? <Panel /> : null}
         </div>

@@ -64,7 +64,7 @@ const Footer: React.FC = () => {
             <div className="mt-6 flex flex-wrap items-center gap-5">
               <AppStoreButton />
               {footerDetails.socials && (
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 -mx-2.5">
                   {Object.entries(footerDetails.socials).map(
                     ([platformName, url]) =>
                       url && (
@@ -72,7 +72,7 @@ const Footer: React.FC = () => {
                           key={platformName}
                           href={url}
                           aria-label={platformName}
-                          className="text-gray-500 hover:text-gold transition-colors duration-300"
+                          className="inline-flex h-11 w-11 items-center justify-center text-gray-500 hover:text-gold transition-colors duration-300"
                           target="_blank"
                           rel="noopener noreferrer"
                         >
@@ -83,11 +83,11 @@ const Footer: React.FC = () => {
                 </div>
               )}
             </div>
-            <div className="mt-6 space-y-1.5 text-sm">
+            <div className="mt-4 text-sm">
               {footerDetails.email && (
                 <a
                   href={`mailto:${footerDetails.email}`}
-                  className="block text-gray-400 hover:text-gold transition-colors"
+                  className="flex min-h-[40px] items-center text-gray-400 hover:text-gold transition-colors"
                 >
                   {footerDetails.email}
                 </a>
@@ -95,7 +95,7 @@ const Footer: React.FC = () => {
               {footerDetails.telephone && (
                 <a
                   href={`tel:${footerDetails.telephone}`}
-                  className="block font-monodata text-gray-500 hover:text-gold transition-colors"
+                  className="flex min-h-[40px] items-center font-monodata text-gray-500 hover:text-gold transition-colors"
                 >
                   {footerDetails.telephone}
                 </a>
@@ -107,12 +107,12 @@ const Footer: React.FC = () => {
           {COLUMNS.map((col) => (
             <div key={col.heading}>
               <h4 className="eyebrow mb-4">{col.heading}</h4>
-              <ul className="space-y-2.5">
+              <ul className="md:space-y-2.5">
                 {col.links.map(({ label, href }) => (
                   <li key={href}>
                     <Link
                       href={href}
-                      className="text-[15px] text-gray-400 hover:text-ivory transition-colors"
+                      className="flex min-h-[44px] items-center text-[15px] text-gray-400 hover:text-ivory transition-colors md:inline md:min-h-0"
                     >
                       {label}
                     </Link>

@@ -77,9 +77,9 @@ const SymbolHeader: React.FC<{
             {nameLoading ? (
               <div className="h-5 w-40 bg-white/[0.06] animate-pulse rounded" />
             ) : (
-              <div className="text-base md:text-lg font-bold text-gray-100 truncate max-w-[320px]">
+              <h1 className="text-base md:text-lg font-bold text-gray-100 truncate max-w-[320px]">
                 {displayName}
-              </div>
+              </h1>
             )}
             <div className="flex items-center gap-1.5 font-mono text-[11px] text-gray-500 mt-0.5 min-w-0">
               <span className="flex-shrink-0">{cleanSymbol}</span>

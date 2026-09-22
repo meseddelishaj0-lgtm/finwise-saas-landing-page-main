@@ -1,34 +1,49 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { IPricing } from "@/types";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+export type Billing = "monthly" | "yearly";
+
+const APP_STORE_URL = "https://apps.apple.com/us/app/wall-street-stocks/id6756940110";
+
 interface PricingColumnProps {
   tier: IPricing;
+  billing?: Billing;
   highlight?: boolean;
+  /** Set when the user picked this plan, signed in, and came back — resume checkout. */
+  autoCheckout?: boolean;
 }
 
 const TAGLINES: Record<string, string> = {
   Gold: "The essentials for your first serious positions.",
-  Platinum: "Everything in Gold, plus the live dashboards.",
-  Diamond: "Everything in Platinum, plus full research access.",
+  Platinum: "Everything in Gold, plus pro screeners and unlimited watchlists.",
+  Diamond: "Everything in Platinum, plus the full AI toolkit.",
 };
 
-const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
+const PricingColumn: React.FC<PricingColumnProps> = ({ tier, billing = "monthly", highlight, autoCheckout }) => {
+  const yearly = billing === "yearly" && tier.yearlyPrice != null;
+  const priceId = yearly ? tier.stripeYearlyPriceId : tier.stripePriceId;
+  // Yearly plans are sold in the iOS app until a yearly Stripe price exists —
+  // never fall back to the monthly price ID while the card shows a yearly price.
+  const yearlyInAppOnly = yearly && !priceId;
+  const perMonth = yearly ? (Number(tier.yearlyPrice) / 12).toFixed(2) : null;
+
   const [loading, setLoading] = useState(false);
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   // Stripe Checkout — requires a signed-in user
   const handleCheckout = async () => {
     if (!session) {
-      router.push("/login");
+      const back = `/plans?checkout=${encodeURIComponent(tier.name.toLowerCase())}`;
+      router.push(`/login?next=${encodeURIComponent(back)}`);
       return;
     }
 
-    if (!tier.stripePriceId) {
+    if (!priceId) {
       alert("Stripe price ID not set for this plan.");
       return;
     }
@@ -40,7 +55,7 @@ const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          priceId: tier.stripePriceId,
+          priceId,
           plan: tier.name,
           email: session?.user?.email || "unknown@example.com",
         }),
@@ -62,6 +77,14 @@ const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
     }
   };
 
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (!autoCheckout || resumed.current || status !== "authenticated") return;
+    resumed.current = true;
+    handleCheckout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCheckout, status]);
+
   return (
     <div
       className={`relative h-full flex flex-col p-8 rounded-2xl border transition-colors duration-300 ${
@@ -82,11 +105,20 @@ const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
 
       <p className="mt-4 flex items-baseline gap-2">
         <span className="font-display text-5xl text-ivory tabular-nums">
-          ${tier.price}
+          ${yearly ? tier.yearlyPrice : tier.price}
         </span>
         <span className="font-monodata text-xs uppercase tracking-wider text-gray-500">
-          / month
+          / {yearly ? "year" : "month"}
         </span>
+      </p>
+      <p className="mt-1 font-monodata text-[11px] uppercase tracking-wider text-gray-500">
+        {yearly ? (
+          <>
+            <span className="text-gray-300 tabular-nums">${perMonth}</span> / month, billed yearly
+          </>
+        ) : (
+          "Billed monthly · cancel anytime"
+        )}
       </p>
 
       <p className="mt-3 text-sm text-gray-400">
@@ -104,6 +136,16 @@ const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
         ))}
       </ul>
 
+      {yearlyInAppOnly ? (
+        <a
+          href={APP_STORE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`mt-10 w-full text-center ${highlight ? "btn-gold" : "btn-ghost-gold"}`}
+        >
+          Get {tier.name} yearly in the app
+        </a>
+      ) : (
       <button
         onClick={handleCheckout}
         disabled={loading}
@@ -113,8 +155,13 @@ const PricingColumn: React.FC<PricingColumnProps> = ({ tier, highlight }) => {
       >
         {loading ? "Processing…" : `Start ${tier.name}`}
       </button>
+      )}
 
-      {!session && (
+      {yearlyInAppOnly ? (
+        <p className="mt-3 text-center font-monodata text-[11px] uppercase tracking-wider text-gray-500">
+          Yearly billing via the iOS app
+        </p>
+      ) : !session && (
         <p className="mt-3 text-center font-monodata text-[11px] uppercase tracking-wider text-gray-500">
           Sign in to subscribe
         </p>

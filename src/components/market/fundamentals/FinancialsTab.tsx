@@ -3,7 +3,7 @@
 // Financial Statements tab — Income / Balance / Cash Flow, annual + quarterly,
 // wide period-by-period table with sticky labels, sparkbar trends and YoY delta.
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   useDataset,
   fmtMoney,
@@ -174,6 +174,15 @@ const FinancialsTab: React.FC<{ symbol: string; quote?: any }> = ({ symbol }) =>
   const cols = (Array.isArray(data) ? data : []).slice(0, maxCols).slice().reverse();
   const rows = ROWS_BY_STATEMENT[statement];
 
+  // Columns run oldest → newest with Trend/YoY last. On narrow screens only
+  // the first couple fit, so start scrolled to the right edge — the newest
+  // periods are what people come for.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [cols.length, statement, period, loading]);
+
   const controls = (
     <div className="flex gap-2 flex-wrap justify-end">
       <SegmentedControl
@@ -207,7 +216,7 @@ const FinancialsTab: React.FC<{ symbol: string; quote?: any }> = ({ symbol }) =>
       ) : cols.length === 0 ? (
         <EmptyNote text="Financial statements are available for stocks only." />
       ) : (
-        <div className="overflow-x-auto">
+        <div ref={scrollRef} className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10">

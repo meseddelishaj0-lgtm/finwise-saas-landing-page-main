@@ -1,6 +1,7 @@
 import Logos from "@/components/Logos";
 import Benefits from "@/components/Benefits/Benefits";
 import CTA from "@/components/CTA";
+import Pricing from "@/components/Pricing/Pricing";
 import Reveal from "@/components/ui/Reveal";
 import CommandLine from "@/components/ui/CommandLine";
 import TickerTape from "@/components/market/TickerTape";
@@ -8,45 +9,6 @@ import TerminalHero from "@/components/market/TerminalHero";
 import MarketsBoard from "@/components/market/MarketsBoard";
 import NewsAndTrending from "@/components/market/NewsAndTrending";
 import DeskDirectory from "@/components/DeskDirectory";
-
-const PLANS = [
-  {
-    name: "Gold",
-    price: "$29.99",
-    tagline: "The essentials for your first serious positions.",
-    features: [
-      "AI stock picks",
-      "Weekly research briefs",
-      "Fundamental AI ratings",
-      "Starter portfolio templates",
-    ],
-    featured: false,
-  },
-  {
-    name: "Platinum",
-    price: "$49.99",
-    tagline: "Everything in Gold, plus the live dashboards.",
-    features: [
-      "Real-time AI dashboards",
-      "Advanced portfolio tracking",
-      "Sector rotation & trend forecasts",
-      "Custom research requests",
-    ],
-    featured: true,
-  },
-  {
-    name: "Diamond",
-    price: "$99.99",
-    tagline: "Everything in Platinum, plus full research access.",
-    features: [
-      "Full AI research library",
-      "Predictive market outlooks",
-      "Institutional-grade reports",
-      "Portfolio optimization tools",
-    ],
-    featured: false,
-  },
-];
 
 const FAQS = [
   {
@@ -104,61 +66,12 @@ const HomePage: React.FC = () => {
               Choose your edge.
             </h2>
             <p className="mt-4 text-gray-300 max-w-2xl text-lg">
-              Three tiers, one desk. Start where you are — every plan is
-              month to month.
+              Three tiers, one desk. Pay monthly, or go yearly and save
+              33% — cancel anytime.
             </p>
           </Reveal>
 
-          <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-            {PLANS.map((plan, i) => (
-              <Reveal key={plan.name} delay={i * 0.1} className="h-full">
-                <div
-                  className={`relative h-full flex flex-col p-8 rounded-2xl border transition-colors duration-300 ${
-                    plan.featured
-                      ? "border-gold/60 bg-surface2 shadow-[0_40px_80px_-50px_rgba(250,204,21,0.35)]"
-                      : "border-white/10 bg-surface hover:border-white/20"
-                  }`}
-                >
-                  {plan.featured && (
-                    <span className="absolute -top-3 left-8 font-monodata text-[10px] font-semibold uppercase tracking-widest bg-gold text-night px-3 py-1 rounded">
-                      Most popular
-                    </span>
-                  )}
-
-                  <span className="font-monodata text-xs font-semibold uppercase tracking-[0.25em] text-gold">
-                    {plan.name}
-                  </span>
-
-                  <p className="mt-4 flex items-baseline gap-2">
-                    <span className="font-display text-5xl text-ivory">{plan.price}</span>
-                    <span className="font-monodata text-xs uppercase tracking-wider text-gray-500">
-                      / month
-                    </span>
-                  </p>
-
-                  <p className="mt-3 text-sm text-gray-400">{plan.tagline}</p>
-
-                  <ul className="mt-8 space-y-3.5 text-left text-gray-300 flex-1">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-3">
-                        <span className="mt-0.5 flex-shrink-0 font-monodata text-gold font-semibold select-none">
-                          +
-                        </span>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <a
-                    href="/plans"
-                    className={`mt-10 ${plan.featured ? "btn-gold w-full" : "btn-ghost-gold w-full"}`}
-                  >
-                    Start {plan.name}
-                  </a>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          <Pricing />
         </div>
       </section>
 

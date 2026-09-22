@@ -21,7 +21,7 @@ const scores = [
 const insights = [
   { tone: UP, tag: "Bull", text: "Data-center revenue accelerating for a 6th straight quarter." },
   { tone: DOWN, tag: "Risk", text: "Valuation sits above the semiconductor sector median." },
-  { tone: GOLD, tag: "Catalyst", text: "Next earnings report expected late August." },
+  { tone: GOLD, tag: "Catalyst", text: "Data-center guidance on the next earnings call." },
 ];
 
 const fadeUp = {

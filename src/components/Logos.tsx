@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import Reveal from "@/components/ui/Reveal";
 
 // Coverage statusline — one quiet hairline band of platform numbers, set in
@@ -10,14 +11,11 @@ type Stat =
   | { label: string; value: number; format: (n: number) => string }
   | { label: string; text: string };
 
+// Only numbers the product itself backs up — no audience claims.
 const STATS: Stat[] = [
-  { label: "Investors on the desk", value: 10_000, format: (n) => `${Math.round(n / 1000)}K+` },
-  { label: "Funds & RIAs", value: 200, format: (n) => `${Math.round(n)}+` },
-  {
-    label: "Datapoints daily",
-    value: 1_000_000,
-    format: (n) => (n >= 1_000_000 ? "1M+" : `${Math.round(n / 1000)}K`),
-  },
+  { label: "Fundamental datasets per stock", value: 27, format: (n) => `${Math.round(n)}` },
+  { label: "Asset classes, one desk", value: 6, format: (n) => `${Math.round(n)}` },
+  { label: "AI picks tracked vs S&P 500", value: 100, format: (n) => `${Math.round(n)}%` },
   { label: "AI market coverage", text: "24/7" },
 ];
 
@@ -75,6 +73,12 @@ const Logos: React.FC = () => {
               </div>
             ))}
           </div>
+          <Link
+            href="/WallStreetStocks-Track-Record"
+            className="group mt-5 inline-flex min-h-[44px] items-center gap-2 eyebrow hover:text-gold transition-colors"
+          >
+            Every pick, logged in public — see the track record <span className="arrow">→</span>
+          </Link>
         </Reveal>
       </div>
     </section>

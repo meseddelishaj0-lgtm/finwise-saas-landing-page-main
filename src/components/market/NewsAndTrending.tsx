@@ -93,7 +93,7 @@ const NewsAndTrending: React.FC = () => {
         {desk.length > 0 && (
           <div className="mb-5 grid sm:grid-cols-3 gap-4">
             {desk.map((a, i) => (
-              <Reveal key={a.slug} delay={i * 0.06} className="h-full">
+              <Reveal key={a.slug} delay={i * 0.06} className={`h-full ${i >= 1 ? "hidden sm:block" : ""}`}>
                 <Link href={`/newsroom/${a.slug}`} className="group card-night card-hover block h-full p-5">
                   <div className="flex items-center gap-2 eyebrow text-gold mb-3">
                     From the desk
@@ -174,7 +174,7 @@ const NewsAndTrending: React.FC = () => {
 
             <div className="grid sm:grid-cols-2 gap-4 mt-4">
               {rest.slice(0, 6).map((n, i) => (
-                <Reveal key={i} delay={(i % 2) * 0.05} className={i >= 4 ? "hidden sm:block" : ""}>
+                <Reveal key={i} delay={(i % 2) * 0.05} className={i >= 2 ? "hidden sm:block" : ""}>
                   <a
                     href={n.url}
                     target="_blank"
@@ -200,6 +200,14 @@ const NewsAndTrending: React.FC = () => {
                 </Reveal>
               ))}
             </div>
+
+            {/* Mobile shows a short slice — the full wire is one tap away */}
+            <Link
+              href="/news"
+              className="group sm:hidden mt-4 flex min-h-[48px] items-center justify-center gap-2 rounded-xl border border-white/10 eyebrow hover:text-gold transition-colors"
+            >
+              All news <span className="arrow">→</span>
+            </Link>
           </div>
 
           {/* Trending tickers */}
@@ -220,7 +228,7 @@ const NewsAndTrending: React.FC = () => {
                         <Link
                           key={m.symbol}
                           href={`/terminal?symbol=${encodeURIComponent(m.symbol)}`}
-                          className={`${idx >= 6 ? "hidden sm:flex" : "flex"} items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors`}
+                          className={`${idx >= 5 ? "hidden sm:flex" : "flex"} items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
                             <span className="font-monodata text-gray-500 text-xs w-4 tabular-nums">{idx + 1}</span>

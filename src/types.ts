@@ -23,8 +23,10 @@ export interface IBenefitBullet {
 export interface IPricing {
   name: string;
   price: number | string;
+  yearlyPrice?: number | string;
   features: string[]; 
   stripePriceId: string;
+  stripeYearlyPriceId?: string;
 }
 
 export interface IFAQ {

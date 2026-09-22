@@ -2,12 +2,14 @@ import React from "react";
 import Pricing from "@/components/Pricing/Pricing";
 import type { Metadata } from "next";
 import PlansHeader from "@/components/PlansHeader";
+import PlansCompare from "@/components/Pricing/PlansCompare";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.wallstreetstocks.ai"),
-  title: "WallStreetStocks.ai Plans | AI-Powered Investment Tiers",
+  title: "Plans & Pricing",
+  alternates: { canonical: "https://www.wallstreetstocks.ai/plans" },
   description:
-    "Compare all WallStreetStocks.ai subscription plans — from Gold to Diamond. Get AI stock picks, research reports, portfolio tools, and advanced analytics tailored to your goals.",
+    "Compare WallStreetStocks plans — Gold $19.99, Platinum $39.99, and Diamond $59.99 a month. Expert stock picks, pro screeners, AI research tools, and insider data.",
   openGraph: {
     title: "WallStreetStocks.ai Plans",
     description:
@@ -19,12 +21,12 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "WallStreetStocks.ai Plans",
     description:
-      "Choose your AI-powered investment plan — Gold, Platinum, or Diamond.",
+      "Gold $19.99, Platinum $39.99, Diamond $59.99 a month — or save 33% yearly.",
   },
 };
 
 const FINE_PRINT = [
-  ["01", "Month to month", "No contracts. Upgrade, downgrade, or cancel any time from your account."],
+  ["01", "Monthly or yearly", "No contracts. Yearly saves 33%. Upgrade, downgrade, or cancel any time from your account."],
   ["02", "Secure checkout", "Payments run through Stripe. We never see or store your card details."],
   ["03", "Web + iOS", "Every plan follows you across the web terminal and the iOS app."],
 ];
@@ -45,6 +47,8 @@ const PlansPage = () => {
             </div>
           ))}
         </div>
+
+        <PlansCompare />
       </div>
     </main>
   );

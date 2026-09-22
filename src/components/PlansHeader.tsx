@@ -13,9 +13,8 @@ const PlansHeader: React.FC = () => {
         Choose your <em className="italic text-gold-soft">edge</em>.
       </h1>
       <p className="mt-4 text-gray-400 max-w-2xl text-lg">
-        Three tiers, one desk. Start where you are — every plan is month to
-        month, and you can upgrade, downgrade, or cancel from your account at
-        any time.
+        Three tiers, one desk. Pay monthly, or go yearly and save 33% —
+        upgrade, downgrade, or cancel from your account at any time.
       </p>
     </Reveal>
   );
