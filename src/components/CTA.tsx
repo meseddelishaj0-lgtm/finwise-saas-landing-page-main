@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Reveal from "@/components/ui/Reveal";
 import AppStoreButton from "@/components/AppStoreButton";
+import PlayStoreButton from "@/components/PlayStoreButton";
 
 // The one loud moment on the page: a solid gold closing band.
 // Black type on brand gold — poster, not glow.
@@ -24,7 +25,7 @@ export default function CTA() {
 
           <p className="mt-6 text-lg md:text-xl text-night/70 max-w-2xl leading-relaxed">
             Create a free account and the terminal, research, and live data
-            follow you — on the web and in the iOS app.
+            follow you — on the web and in the iOS and Android apps.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -39,6 +40,7 @@ export default function CTA() {
               View plans
             </Link>
             <AppStoreButton />
+            <PlayStoreButton />
           </div>
         </Reveal>
       </div>

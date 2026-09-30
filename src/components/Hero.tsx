@@ -6,6 +6,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { heroDetails } from "@/data/hero";
 import AppStoreButton from "@/components/AppStoreButton";
+import PlayStoreButton from "@/components/PlayStoreButton";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -183,15 +184,16 @@ const Hero: React.FC = () => {
           </Link>
         </motion.div>
 
-        {/* App Store download */}
+        {/* App Store + Google Play downloads */}
         <motion.div
           custom={4}
           initial="hidden"
           animate="visible"
           variants={fadeUp}
-          className="mt-6 flex items-center justify-center"
+          className="mt-6 flex flex-wrap items-center justify-center gap-3"
         >
           <AppStoreButton />
+          <PlayStoreButton />
         </motion.div>
 
         {/* Trust stats */}

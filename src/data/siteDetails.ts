@@ -2,6 +2,7 @@ export const siteDetails = {
     siteName: 'WallStreetStocks',
     siteUrl: 'https://www.wallstreetstocks.ai/',
     appStoreUrl: 'https://apps.apple.com/us/app/wall-street-stocks/id6756940110',
+    googlePlayUrl: 'https://play.google.com/store/apps/details?id=ai.wallstreetstocks.app',
     metadata: {
         title: 'Empowering smart investors worldwide.',
         description: 'AI-Powered Finance Research & Insights.',

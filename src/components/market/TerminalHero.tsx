@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuotes, fmtPrice, Quote } from "./useQuotes";
 import AppStoreButton from "@/components/AppStoreButton";
+import PlayStoreButton from "@/components/PlayStoreButton";
 import CommandLine from "@/components/ui/CommandLine";
 
 /**
@@ -198,8 +199,9 @@ const TerminalHero: React.FC = () => {
             <Link href="/register" className="btn-ghost-gold px-8 py-3.5 text-base">
               Start free
             </Link>
-            <div className="sm:ml-2">
+            <div className="sm:ml-2 flex flex-wrap items-center gap-3">
               <AppStoreButton />
+              <PlayStoreButton />
             </div>
           </div>
 

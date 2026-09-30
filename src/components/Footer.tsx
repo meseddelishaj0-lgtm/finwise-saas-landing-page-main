@@ -6,6 +6,7 @@ import { siteDetails } from "@/data/siteDetails";
 import { footerDetails } from "@/data/footer";
 import { getPlatformIconByName } from "@/utils";
 import AppStoreButton from "@/components/AppStoreButton";
+import PlayStoreButton from "@/components/PlayStoreButton";
 
 const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] = [
   {
@@ -59,10 +60,11 @@ const Footer: React.FC = () => {
             </Link>
             <p className="mt-4 max-w-sm text-[15px] text-gray-400 leading-relaxed">
               An AI research desk for every investor — live quotes, plain-English
-              research, and a pro-grade terminal on the web and iOS.
+              research, and a pro-grade terminal on the web, iOS and Android.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-5">
               <AppStoreButton />
+              <PlayStoreButton />
               {footerDetails.socials && (
                 <div className="flex items-center gap-1 -mx-2.5">
                   {Object.entries(footerDetails.socials).map(
