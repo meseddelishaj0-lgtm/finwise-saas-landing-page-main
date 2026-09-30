@@ -345,9 +345,23 @@ export function toTdSymbol(symbol: string): string {
   return s;
 }
 
-/** True for the US index symbols Twelve Data does not sell (served from FMP). */
+/**
+ * Futures contracts the terminal quotes and charts from FMP (Twelve Data has
+ * no futures feed): equity-index, rates, dollar, energy, metals, ags, softs.
+ */
+export const FMP_FUTURES = new Set([
+  "ESUSD", "NQUSD", "YMUSD", "RTYUSD", "ZBUSD", "ZNUSD", "DXUSD",
+  "RBUSD", "HOUSD", "ALIUSD", "LBUSD",
+  "ZCUSX", "ZSUSX", "ZOUSX", "KCUSX", "SBUSX", "CTUSX", "OJUSX", "LEUSX", "HEUSX",
+]);
+
+/**
+ * True for symbols Twelve Data does not sell, served from FMP instead: every
+ * `^` index (US and world — ^FTSE, ^N225, …) plus FMP_FUTURES.
+ */
 export function isProxiedIndex(symbol: string): boolean {
-  return Boolean(INDEX_PROXY[symbol.toUpperCase()]);
+  const s = symbol.toUpperCase();
+  return s.startsWith("^") || FMP_FUTURES.has(s);
 }
 
 /** Preferred display name for a symbol, falling back to the upstream name. */
@@ -509,7 +523,7 @@ async function getIndexQuotes(symbols: string[], ttl: number): Promise<Quote[]> 
         previousClose: nOrNull(r.previousClose),
         volume: n(r.volume),
         avgVolume: n(r.avgVolume),
-        exchange: "INDEX",
+        exchange: sym.startsWith("^") ? "INDEX" : "FUTURES",
         currency: "USD",
         timestamp: typeof r.timestamp === "number" ? r.timestamp * 1000 : Date.now(),
         isMarketOpen: isOpen,

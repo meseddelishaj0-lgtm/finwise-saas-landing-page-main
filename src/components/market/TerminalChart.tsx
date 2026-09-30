@@ -3,8 +3,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // Custom chart engine — no third-party widgets. Candles + area, wheel/pinch
-// zoom, drag pan, SMA/EMA overlays, log scale, fullscreen, crosshair OHLC
-// tooltip, volume pane. Data via /api/market/chart (Twelve Data + FMP).
+// zoom, drag pan, SMA/EMA/Bollinger/VWAP overlays, RSI/MACD/Stochastic
+// study panes, log scale, fullscreen, crosshair OHLC tooltip, volume pane.
+// Data via /api/market/chart (Twelve Data + FMP).
 
 interface Bar {
   t: string;
@@ -15,10 +16,10 @@ interface Bar {
   v: number;
 }
 
-type RangeKey = "1D" | "5D" | "1M" | "6M" | "1Y" | "5Y";
+type RangeKey = "1D" | "5D" | "1M" | "3M" | "6M" | "YTD" | "1Y" | "5Y" | "10Y";
 type ChartStyle = "area" | "candles";
 
-const RANGE_KEYS: RangeKey[] = ["1D", "5D", "1M", "6M", "1Y", "5Y"];
+const RANGE_KEYS: RangeKey[] = ["1D", "5D", "1M", "3M", "6M", "YTD", "1Y", "5Y", "10Y"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const UP = "#4ade80";
@@ -28,9 +29,21 @@ const GOLD = "#FFD60A";
 const INDICATORS = [
   { key: "sma20", label: "SMA 20", color: "#38bdf8" },
   { key: "sma50", label: "SMA 50", color: "#a78bfa" },
+  { key: "sma200", label: "SMA 200", color: "#f472b6" },
   { key: "ema20", label: "EMA 20", color: "#fb923c" },
+  { key: "bb", label: "Bollinger 20·2", color: "#94a3b8" },
+  { key: "vwap", label: "VWAP", color: "#2dd4bf" },
 ] as const;
 type IndicatorKey = (typeof INDICATORS)[number]["key"];
+
+// Lower study panes, each drawn in its own strip under the price pane.
+const OSCILLATORS = [
+  { key: "rsi", label: "RSI 14", color: GOLD },
+  { key: "macd", label: "MACD 12·26·9", color: "#38bdf8" },
+  { key: "stoch", label: "Stoch 14·3", color: "#a78bfa" },
+] as const;
+type OscKey = (typeof OSCILLATORS)[number]["key"];
+const OSC_H = 84;
 
 const MIN_WINDOW = 8;
 
@@ -60,7 +73,7 @@ const timeLabel = (t: string, range: RangeKey, zoomed: boolean): string => {
     const label = `${h12}:${m} ${h < 12 ? "AM" : "PM"}`;
     return range === "1D" ? label : `${mon} ${day} ${label}`;
   }
-  if (range === "5D" || range === "1M" || range === "6M") return `${mon} ${day}`;
+  if (range === "5D" || range === "1M" || range === "3M" || range === "6M" || range === "YTD") return `${mon} ${day}`;
   return `${mon} ${t.slice(2, 4)}′`;
 };
 
@@ -94,6 +107,123 @@ const ema = (bars: Bar[], period: number): (number | null)[] => {
   return out;
 };
 
+/** EMA over a plain series; leading nulls are skipped. */
+const emaSeries = (vals: (number | null)[], period: number): (number | null)[] => {
+  const out: (number | null)[] = new Array(vals.length).fill(null);
+  const k = 2 / (period + 1);
+  let prev: number | null = null;
+  let seen = 0;
+  for (let i = 0; i < vals.length; i++) {
+    const v = vals[i];
+    if (v == null) continue;
+    prev = prev == null ? v : v * k + prev * (1 - k);
+    seen++;
+    if (seen >= period) out[i] = prev;
+  }
+  return out;
+};
+
+const bollinger = (bars: Bar[], period = 20, mult = 2) => {
+  const mid = sma(bars, period);
+  const up: (number | null)[] = new Array(bars.length).fill(null);
+  const lo: (number | null)[] = new Array(bars.length).fill(null);
+  for (let i = period - 1; i < bars.length; i++) {
+    const m = mid[i]!;
+    let v = 0;
+    for (let j = i - period + 1; j <= i; j++) v += (bars[j].c - m) ** 2;
+    const sd = Math.sqrt(v / period);
+    up[i] = m + mult * sd;
+    lo[i] = m - mult * sd;
+  }
+  return { mid, up, lo };
+};
+
+/** Session VWAP, reset at each calendar date. Null where volume is missing. */
+const vwap = (bars: Bar[]): (number | null)[] => {
+  const out: (number | null)[] = new Array(bars.length).fill(null);
+  let day = "";
+  let pv = 0;
+  let vol = 0;
+  for (let i = 0; i < bars.length; i++) {
+    const b = bars[i];
+    const d = b.t.slice(0, 10);
+    if (d !== day) {
+      day = d;
+      pv = 0;
+      vol = 0;
+    }
+    pv += ((b.h + b.l + b.c) / 3) * b.v;
+    vol += b.v;
+    out[i] = vol > 0 ? pv / vol : null;
+  }
+  return out;
+};
+
+/** Wilder RSI. */
+const rsi = (bars: Bar[], period = 14): (number | null)[] => {
+  const out: (number | null)[] = new Array(bars.length).fill(null);
+  let gain = 0;
+  let loss = 0;
+  for (let i = 1; i < bars.length; i++) {
+    const d = bars[i].c - bars[i - 1].c;
+    const g = Math.max(d, 0);
+    const l = Math.max(-d, 0);
+    if (i <= period) {
+      gain += g;
+      loss += l;
+      if (i === period) {
+        gain /= period;
+        loss /= period;
+        out[i] = loss === 0 ? 100 : 100 - 100 / (1 + gain / loss);
+      }
+    } else {
+      gain = (gain * (period - 1) + g) / period;
+      loss = (loss * (period - 1) + l) / period;
+      out[i] = loss === 0 ? 100 : 100 - 100 / (1 + gain / loss);
+    }
+  }
+  return out;
+};
+
+const macd = (bars: Bar[]) => {
+  const closes = bars.map((b) => b.c);
+  const e12 = emaSeries(closes, 12);
+  const e26 = emaSeries(closes, 26);
+  const line = closes.map((_, i) => (e12[i] != null && e26[i] != null ? e12[i]! - e26[i]! : null));
+  const signal = emaSeries(line, 9);
+  const hist = line.map((v, i) => (v != null && signal[i] != null ? v - signal[i]! : null));
+  return { line, signal, hist };
+};
+
+const stochastic = (bars: Bar[], period = 14, smooth = 3) => {
+  const k: (number | null)[] = new Array(bars.length).fill(null);
+  for (let i = period - 1; i < bars.length; i++) {
+    let hi = -Infinity;
+    let lo = Infinity;
+    for (let j = i - period + 1; j <= i; j++) {
+      if (bars[j].h > hi) hi = bars[j].h;
+      if (bars[j].l < lo) lo = bars[j].l;
+    }
+    k[i] = hi === lo ? 50 : ((bars[i].c - lo) / (hi - lo)) * 100;
+  }
+  const d: (number | null)[] = k.map((_, i) => {
+    if (i < period - 1 + smooth - 1) return null;
+    let sum = 0;
+    for (let j = i - smooth + 1; j <= i; j++) sum += k[j] ?? 0;
+    return sum / smooth;
+  });
+  return { k, d };
+};
+
+interface OscPane {
+  key: OscKey;
+  label: string;
+  lines: { values: (number | null)[]; color: string; name: string }[];
+  hist?: (number | null)[];
+  fixed?: [number, number];
+  levels: number[];
+}
+
 interface Props {
   symbol: string;
   prevClose?: number;
@@ -112,6 +242,7 @@ const TerminalChart: React.FC<Props> = ({ symbol, prevClose, height = 500 }) => 
   const [logScale, setLogScale] = useState(false);
   const [showVolume, setShowVolume] = useState(true);
   const [indicators, setIndicators] = useState<Set<IndicatorKey>>(new Set());
+  const [oscillators, setOscillators] = useState<OscKey[]>([]);
   const [indicatorsOpen, setIndicatorsOpen] = useState(false);
   const [isFs, setIsFs] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -308,22 +439,69 @@ const TerminalChart: React.FC<Props> = ({ symbol, prevClose, height = 500 }) => 
   const PAD_TOP = 14;
   const AXIS_RIGHT = 66;
   const AXIS_BOTTOM = 24;
-  const chartH = isFs ? Math.max(320, (typeof window !== "undefined" ? window.innerHeight : 800) - 120) : height;
-  const VOL_H = showVolume ? Math.round(chartH * 0.14) : 0;
+  const oscTotal = oscillators.length * (OSC_H + 10);
+  const baseH = isFs ? Math.max(320, (typeof window !== "undefined" ? window.innerHeight : 800) - 120 - oscTotal) : height;
+  const chartH = baseH + oscTotal;
+  const VOL_H = showVolume ? Math.round(baseH * 0.14) : 0;
   const plotW = Math.max(50, width - AXIS_RIGHT);
-  const priceH = chartH - PAD_TOP - AXIS_BOTTOM - VOL_H - (showVolume ? 8 : 0);
+  const priceH = baseH - PAD_TOP - AXIS_BOTTOM - VOL_H - (showVolume ? 8 : 0);
   const volTop = PAD_TOP + priceH + 8;
+  const oscTop = (k: number) => volTop + VOL_H + (showVolume ? 10 : 2) + k * (OSC_H + 10);
+  const lowerBottom = oscillators.length ? oscTop(oscillators.length - 1) + OSC_H : volTop + VOL_H;
 
   const showPrev = range === "1D" && prevClose != null && prevClose > 0 && !zoomed;
 
   const indicatorSeries = useMemo(() => {
-    const out: { key: IndicatorKey; color: string; values: (number | null)[] }[] = [];
+    const out: { key: string; label: string; color: string; values: (number | null)[]; dashed?: boolean }[] = [];
     if (!bars.length) return out;
-    if (indicators.has("sma20")) out.push({ key: "sma20", color: "#38bdf8", values: sma(bars, 20) });
-    if (indicators.has("sma50")) out.push({ key: "sma50", color: "#a78bfa", values: sma(bars, 50) });
-    if (indicators.has("ema20")) out.push({ key: "ema20", color: "#fb923c", values: ema(bars, 20) });
+    if (indicators.has("sma20")) out.push({ key: "sma20", label: "SMA 20", color: "#38bdf8", values: sma(bars, 20) });
+    if (indicators.has("sma50")) out.push({ key: "sma50", label: "SMA 50", color: "#a78bfa", values: sma(bars, 50) });
+    if (indicators.has("sma200")) out.push({ key: "sma200", label: "SMA 200", color: "#f472b6", values: sma(bars, 200) });
+    if (indicators.has("ema20")) out.push({ key: "ema20", label: "EMA 20", color: "#fb923c", values: ema(bars, 20) });
+    if (indicators.has("bb")) {
+      const b = bollinger(bars);
+      out.push({ key: "bbU", label: "BB upper", color: "#94a3b8", values: b.up, dashed: true });
+      out.push({ key: "bbM", label: "BB mid", color: "#64748b", values: b.mid, dashed: true });
+      out.push({ key: "bbL", label: "BB lower", color: "#94a3b8", values: b.lo, dashed: true });
+    }
+    if (indicators.has("vwap") && bars.some((b) => b.v > 0)) {
+      out.push({ key: "vwap", label: "VWAP", color: "#2dd4bf", values: vwap(bars) });
+    }
     return out;
   }, [bars, indicators]);
+
+  const oscPanes = useMemo<OscPane[]>(() => {
+    if (!bars.length) return [];
+    return oscillators.map((k) => {
+      if (k === "rsi") {
+        return { key: k, label: "RSI 14", lines: [{ values: rsi(bars), color: GOLD, name: "RSI" }], fixed: [0, 100], levels: [30, 70] };
+      }
+      if (k === "macd") {
+        const m = macd(bars);
+        return {
+          key: k,
+          label: "MACD 12·26·9",
+          lines: [
+            { values: m.line, color: "#38bdf8", name: "MACD" },
+            { values: m.signal, color: "#fb923c", name: "Signal" },
+          ],
+          hist: m.hist,
+          levels: [0],
+        };
+      }
+      const st = stochastic(bars);
+      return {
+        key: k,
+        label: "Stoch 14·3",
+        lines: [
+          { values: st.k, color: "#a78bfa", name: "%K" },
+          { values: st.d, color: "#fb923c", name: "%D" },
+        ],
+        fixed: [0, 100],
+        levels: [20, 80],
+      };
+    });
+  }, [bars, oscillators]);
 
   const { min, max, maxVol } = useMemo(() => {
     if (!n) return { min: 0, max: 1, maxVol: 1 };
@@ -426,6 +604,42 @@ const TerminalChart: React.FC<Props> = ({ symbol, prevClose, height = 500 }) => 
   const hb = hover != null ? visible[hover] : null;
   const tooltipLeft = hb && hover != null ? Math.min(Math.max(x(hover) - 80, 4), plotW - 172) : 0;
 
+  const toggleOsc = (key: OscKey) =>
+    setOscillators((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+
+  // Per-pane value → y mapping over the visible window.
+  const oscGeom = oscPanes.map((pane, k) => {
+    let lo = Infinity;
+    let hi = -Infinity;
+    if (pane.fixed) [lo, hi] = pane.fixed;
+    else {
+      for (let i = win.s; i <= win.e; i++) {
+        for (const l of pane.lines) {
+          const v = l.values[i];
+          if (v != null) { if (v < lo) lo = v; if (v > hi) hi = v; }
+        }
+        const h = pane.hist?.[i];
+        if (h != null) { if (h < lo) lo = h; if (h > hi) hi = h; }
+      }
+      if (!isFinite(lo)) { lo = -1; hi = 1; }
+      const pad = (hi - lo) * 0.1 || 1;
+      lo -= pad;
+      hi += pad;
+    }
+    const top = oscTop(k);
+    const oy = (v: number) => top + ((hi - v) / (hi - lo || 1)) * OSC_H;
+    const paths = pane.lines.map((l) => {
+      let d = "";
+      for (let i = 0; i < n; i++) {
+        const v = l.values[win.s + i];
+        if (v == null) continue;
+        d += `${d ? " L" : "M"} ${x(i).toFixed(2)} ${oy(v).toFixed(2)}`;
+      }
+      return { d, color: l.color, name: l.name };
+    });
+    return { pane, top, oy, paths, lo, hi };
+  });
+
   const toggleIndicator = (key: IndicatorKey) => {
     setIndicators((prev) => {
       const next = new Set(prev);
@@ -439,7 +653,7 @@ const TerminalChart: React.FC<Props> = ({ symbol, prevClose, height = 500 }) => 
     <div ref={rootRef} className={isFs ? "bg-surface" : undefined}>
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-white/5">
-        <div className="flex gap-0.5">
+        <div className="flex gap-0.5 max-w-full overflow-x-auto">
           {RANGE_KEYS.map((r) => (
             <button
               key={r}
@@ -482,10 +696,10 @@ const TerminalChart: React.FC<Props> = ({ symbol, prevClose, height = 500 }) => 
                   : "text-gray-500 border-white/10 hover:text-gray-300"
               }`}
             >
-              ƒ Indicators{indicators.size > 0 ? ` (${indicators.size})` : ""}
+              ƒ Indicators{indicators.size + oscillators.length > 0 ? ` (${indicators.size + oscillators.length})` : ""}
             </button>
             {indicatorsOpen && (
-              <div className="absolute right-0 top-full mt-1.5 z-30 w-44 rounded-xl border border-yellow-500/20 bg-surface shadow-[0_16px_40px_rgba(0,0,0,0.7)] p-1.5">
+              <div className="absolute right-0 top-full mt-1.5 z-30 w-48 rounded-xl border border-yellow-500/20 bg-surface shadow-[0_16px_40px_rgba(0,0,0,0.7)] p-1.5">
                 {INDICATORS.map((ind) => (
                   <button
                     key={ind.key}
@@ -499,6 +713,23 @@ const TerminalChart: React.FC<Props> = ({ symbol, prevClose, height = 500 }) => 
                       {indicators.has(ind.key) ? "✓" : ""}
                     </span>
                     <span style={{ color: indicators.has(ind.key) ? ind.color : undefined }}>{ind.label}</span>
+                  </button>
+                ))}
+                <div className="my-1 border-t border-white/5" />
+                <p className="px-2.5 pt-1 pb-0.5 text-[9px] font-bold uppercase tracking-widest text-gray-600">Studies</p>
+                {OSCILLATORS.map((o) => (
+                  <button
+                    key={o.key}
+                    onClick={() => toggleOsc(o.key)}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-xs font-semibold text-gray-300 hover:bg-white/[0.05] transition-colors"
+                  >
+                    <span
+                      className="w-3.5 h-3.5 rounded border flex items-center justify-center text-[9px] text-black font-bold"
+                      style={oscillators.includes(o.key) ? { background: o.color, borderColor: o.color } : { borderColor: "rgba(255,255,255,0.25)" }}
+                    >
+                      {oscillators.includes(o.key) ? "✓" : ""}
+                    </span>
+                    <span style={{ color: oscillators.includes(o.key) ? o.color : undefined }}>{o.label}</span>
                   </button>
                 ))}
                 <div className="my-1 border-t border-white/5" />
@@ -566,16 +797,20 @@ const TerminalChart: React.FC<Props> = ({ symbol, prevClose, height = 500 }) => 
 
       {/* Indicator legend */}
       {indicatorPaths.length > 0 && (
-        <div className="flex items-center gap-3 px-4 pt-2 -mb-1">
-          {indicatorPaths.map((s) => {
-            const ind = INDICATORS.find((i) => i.key === s.key)!;
-            return (
-              <span key={s.key} className="flex items-center gap-1.5 text-[10px] font-mono font-bold" style={{ color: s.color }}>
-                <span className="w-3 h-0.5 rounded" style={{ background: s.color }} />
-                {ind.label}
-              </span>
-            );
-          })}
+        <div className="flex flex-wrap items-center gap-3 px-4 pt-2 -mb-1">
+          {indicatorPaths
+            .filter((s) => s.key !== "bbM" && s.key !== "bbL")
+            .map((s) => {
+              const label = s.key === "bbU" ? "Bollinger 20·2" : s.label;
+              const v = hover != null ? s.values[win.s + hover] : s.values[win.e];
+              return (
+                <span key={s.key} className="flex items-center gap-1.5 text-[10px] font-mono font-bold" style={{ color: s.color }}>
+                  <span className="w-3 h-0.5 rounded" style={{ background: s.color }} />
+                  {label}
+                  {v != null && s.key !== "bbU" && <span className="text-gray-400 font-normal">{fmtPrice(v)}</span>}
+                </span>
+              );
+            })}
         </div>
       )}
 
@@ -679,8 +914,70 @@ const TerminalChart: React.FC<Props> = ({ symbol, prevClose, height = 500 }) => 
 
             {/* Indicator overlays */}
             {indicatorPaths.map((s) =>
-              s.d ? <path key={s.key} d={s.d} fill="none" stroke={s.color} strokeWidth="1.5" opacity="0.9" /> : null
+              s.d ? (
+                <path
+                  key={s.key}
+                  d={s.d}
+                  fill="none"
+                  stroke={s.color}
+                  strokeWidth={s.dashed ? 1 : 1.5}
+                  strokeDasharray={s.dashed ? "4 3" : undefined}
+                  opacity="0.9"
+                />
+              ) : null
             )}
+
+            {/* Study panes */}
+            {oscGeom.map((g) => {
+              const hv = hover != null ? win.s + hover : win.e;
+              const zeroY = g.lo < 0 && g.hi > 0 ? g.oy(0) : g.oy(g.lo);
+              const hw = Math.max(1, candleW * 0.8);
+              return (
+                <g key={g.pane.key}>
+                  <rect x={0} y={g.top} width={plotW} height={OSC_H} fill="rgba(255,255,255,0.015)" />
+                  <line x1={0} x2={plotW} y1={g.top} y2={g.top} stroke="rgba(255,255,255,0.08)" />
+                  {g.pane.levels.map((lv) => (
+                    <g key={lv}>
+                      <line x1={0} x2={plotW} y1={g.oy(lv)} y2={g.oy(lv)} stroke="rgba(156,163,175,0.25)" strokeDasharray="2 4" />
+                      <text x={plotW + 8} y={g.oy(lv) + 3.5} fill="rgba(156,163,175,0.6)" fontSize="9.5" fontFamily="ui-monospace, monospace">
+                        {lv}
+                      </text>
+                    </g>
+                  ))}
+                  {g.pane.hist &&
+                    visible.map((_, i) => {
+                      const h = g.pane.hist![win.s + i];
+                      if (h == null) return null;
+                      const yy = g.oy(h);
+                      return (
+                        <rect
+                          key={i}
+                          x={x(i) - hw / 2}
+                          y={Math.min(yy, zeroY)}
+                          width={hw}
+                          height={Math.max(0.5, Math.abs(zeroY - yy))}
+                          fill={h >= 0 ? UP : DOWN}
+                          opacity={0.45}
+                        />
+                      );
+                    })}
+                  {g.paths.map((pth) =>
+                    pth.d ? <path key={pth.name} d={pth.d} fill="none" stroke={pth.color} strokeWidth="1.3" /> : null
+                  )}
+                  <text x={6} y={g.top + 12} fontSize="10" fontFamily="ui-monospace, monospace" fontWeight="700" fill="rgba(229,231,235,0.85)">
+                    {g.pane.label}
+                    {g.pane.lines.map((l) => {
+                      const v = l.values[hv];
+                      return v == null ? null : (
+                        <tspan key={l.name} fill={l.color} dx="8">
+                          {l.name} {v.toFixed(2)}
+                        </tspan>
+                      );
+                    })}
+                  </text>
+                </g>
+              );
+            })}
 
             {/* Last price pill */}
             {last && (
@@ -718,7 +1015,7 @@ const TerminalChart: React.FC<Props> = ({ symbol, prevClose, height = 500 }) => 
             {/* Crosshair */}
             {hb && hover != null && (
               <g pointerEvents="none">
-                <line x1={x(hover)} x2={x(hover)} y1={PAD_TOP} y2={volTop + VOL_H} stroke="rgba(255,214,10,0.45)" strokeDasharray="3 3" />
+                <line x1={x(hover)} x2={x(hover)} y1={PAD_TOP} y2={lowerBottom} stroke="rgba(255,214,10,0.45)" strokeDasharray="3 3" />
                 <line x1={0} x2={plotW} y1={y(hb.c)} y2={y(hb.c)} stroke="rgba(255,255,255,0.2)" strokeDasharray="3 3" />
                 <circle cx={x(hover)} cy={y(hb.c)} r="3.5" fill={lineColor} stroke="#161410" strokeWidth="1.5" />
               </g>

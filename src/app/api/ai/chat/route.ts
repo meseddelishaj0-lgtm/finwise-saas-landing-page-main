@@ -2,7 +2,7 @@
 // AI Chat endpoint for the mobile app assistant
 import { NextRequest, NextResponse } from 'next/server';
 import { enforceRateLimit } from '@/lib/rateLimit';
-import { getQuote, isProxiedIndex } from '@/lib/twelvedata';
+import { getQuote, INDEX_PROXY } from '@/lib/twelvedata';
 import { getQuoteStats } from '@/lib/fmp';
 
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,7 @@ async function getStockContext(message: string): Promise<string> {
   try {
     // A bare index name ("VIX", "SPX") means the index, quoted at its real level.
     const named = tickerMatch[1];
-    const symbol = isProxiedIndex(`^${named}`) ? `^${named}` : named;
+    const symbol = INDEX_PROXY[`^${named}`] ? `^${named}` : named;
 
     const [q, statsBySymbol] = await Promise.all([getQuote(symbol), getQuoteStats([symbol])]);
     if (!q || !q.price) return '';

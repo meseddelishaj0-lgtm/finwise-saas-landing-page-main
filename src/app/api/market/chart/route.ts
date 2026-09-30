@@ -9,7 +9,7 @@ import { classify, getTimeSeries, type Bar } from "@/lib/twelvedata";
 
 export const dynamic = "force-dynamic";
 
-type RangeKey = "1D" | "5D" | "1M" | "6M" | "1Y" | "5Y";
+type RangeKey = "1D" | "5D" | "1M" | "3M" | "6M" | "YTD" | "1Y" | "5Y" | "10Y";
 
 // 24/7 markets need more bars to cover the same span: crypto and FX print
 // around the clock where equities print roughly seven hourly bars a day.
@@ -20,9 +20,13 @@ const RANGES: Record<
   "1D": { interval: "5min", outputsize: 300, roundTheClock: 300 },
   "5D": { interval: "15min", outputsize: 300, roundTheClock: 500 },
   "1M": { interval: "1h", outputsize: 160, roundTheClock: 750 },
+  "3M": { interval: "1day", outputsize: 70, roundTheClock: 95 },
   "6M": { interval: "1day", outputsize: 140, roundTheClock: 190 },
+  // YTD fetches a year of dailies and keeps the current calendar year.
+  YTD: { interval: "1day", outputsize: 255, roundTheClock: 370 },
   "1Y": { interval: "1day", outputsize: 255, roundTheClock: 370 },
   "5Y": { interval: "1week", outputsize: 262, roundTheClock: 262 },
+  "10Y": { interval: "1week", outputsize: 522, roundTheClock: 522 },
 };
 
 const cache = new Map<string, { at: number; data: Bar[] }>();
@@ -62,6 +66,13 @@ export async function GET(request: Request) {
   );
   if (range === "1D") bars = lastNDates(bars, 1);
   if (range === "5D") bars = lastNDates(bars, 5);
+  if (range === "YTD" && bars.length) {
+    const year = bars[bars.length - 1].t.slice(0, 4);
+    const ytd = bars.filter((b) => b.t.startsWith(year));
+    // Keep the prior year's last close as the YTD baseline bar.
+    const prior = bars.filter((b) => !b.t.startsWith(year)).slice(-1);
+    bars = [...prior, ...ytd];
+  }
 
   if (bars.length === 0) {
     // Ride out an upstream failure with the last good series.
