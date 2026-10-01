@@ -102,7 +102,7 @@
       "package": "ai.wallstreetstocks.app",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#0B1A2E",
+        "backgroundColor": "#061227",
         "foregroundImage": "./assets/images/wallstreetstocks-android.png"
       },
       "predictiveBackGestureEnabled": false,
