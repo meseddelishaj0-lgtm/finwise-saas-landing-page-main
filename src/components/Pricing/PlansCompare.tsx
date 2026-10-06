@@ -3,23 +3,9 @@ import Reveal from "@/components/ui/Reveal";
 import CommandLine from "@/components/ui/CommandLine";
 import { tiers } from "@/data/pricing";
 
-type Cell = boolean | string;
+import { PLAN_FEATURES, type Cell } from "@/data/planFeatures";
 
-// Mirrors the app's paywall tiers (wallstreetstocks-app/components/PaywallScreen.tsx).
-const ROWS: [string, Cell, Cell, Cell][] = [
-  ["Expert stock picks", "5", "8", "15"],
-  ["Ad-free experience", true, true, true],
-  ["Community access", true, true, true],
-  ["Daily market summary", true, true, true],
-  ["Watchlists", "Basic", "Unlimited", "Unlimited"],
-  ["Screener filters & premium presets", false, true, true],
-  ["Priority support", false, true, true],
-  ["AI tools — Analyzer, Compare, Forecast", false, false, true],
-  ["AI financial assistant", false, false, true],
-  ["Insider trading data", false, false, true],
-  ["Research reports & portfolio tools", false, false, true],
-  ["Verified profile badge", false, false, true],
-];
+const ROWS = PLAN_FEATURES.map((f) => [f.label, ...f.values] as const);
 
 const FAQS = [
   {

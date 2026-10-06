@@ -1,328 +1,304 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Lock } from "lucide-react";
+import CommandLine from "@/components/ui/CommandLine";
+import {
+  PLAN_FEATURES,
+  featureValue,
+  minimumTier,
+  type PaidTier,
+  type PlanFeature,
+} from "@/data/planFeatures";
+
+type Tier = PaidTier | "free" | "lifetime";
+
+interface PlanInfo {
+  tier: Tier;
+  source: "app" | "referral" | "stripe" | null;
+  expiresAt: string | null;
+  isVerified: boolean;
+  hasStripe: boolean;
+  nextBillingDate: string | null;
+}
+
+interface Pick {
+  rank: number;
+  symbol: string;
+  name: string;
+  category: string;
+  reason: string;
+  price: number | null;
+  changePercent: number | null;
+}
+
+const TIER_LABEL: Record<Tier, string> = {
+  free: "Free",
+  gold: "Gold",
+  platinum: "Platinum",
+  diamond: "Diamond",
+  lifetime: "Lifetime",
+};
+
+const SOURCE_LABEL = {
+  app: "Subscribed in the app",
+  referral: "Earned through referrals",
+  stripe: "Subscribed on the website",
+} as const;
+
+const formatDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : null;
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-
-  const [billingInfo, setBillingInfo] = useState({
-    plan: "Loading...",
-    nextBillingDate: "Loading...",
-  });
-
-  // Fetch user billing info
-  useEffect(() => {
-    const fetchBillingInfo = async () => {
-      try {
-        const res = await fetch("/api/stripe-subscription");
-        const data = await res.json();
-        if (res.ok) {
-          setBillingInfo({
-            plan: data.plan || "Free",
-            nextBillingDate: data.nextBillingDate || "N/A",
-          });
-        } else {
-          console.error("Failed to fetch billing info:", data.error);
-        }
-      } catch (err) {
-        console.error("Error fetching billing info:", err);
-      }
-    };
-    fetchBillingInfo();
-  }, []);
+  const [plan, setPlan] = useState<PlanInfo | null>(null);
+  const [planError, setPlanError] = useState(false);
+  const [picks, setPicks] = useState<{ list: Pick[]; total: number } | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
 
-  if (status === "loading") {
-    return (
-      <div className="flex items-center justify-center h-screen text-gray-400 text-lg">
-        Loading your personalized dashboard...
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    fetch("/api/dashboard/plan")
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(setPlan)
+      .catch(() => setPlanError(true));
+  }, [status]);
 
-  // Stripe Billing Portal handler
+  const tier: Tier = plan?.tier ?? "free";
+  // Lifetime unlocks everything Diamond does.
+  const featureTier: PaidTier | "free" = tier === "lifetime" ? "diamond" : tier;
+
+  useEffect(() => {
+    if (!plan || featureTier === "free") return;
+    fetch("/api/stock-picks")
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d) => setPicks({ list: d.picks ?? [], total: d.total ?? 15 }))
+      .catch(() => setPicks({ list: [], total: 15 }));
+  }, [plan, featureTier]);
+
   const handleManageBilling = async () => {
     try {
       const res = await fetch("/api/create-portal-session", { method: "POST" });
       const data = await res.json();
-      if (res.ok && data.url) {
-        window.location.href = data.url;
-      } else {
-        alert("Failed to open billing portal: " + data.error);
-      }
+      if (res.ok && data.url) window.location.href = data.url;
     } catch (err) {
       console.error("Billing portal error:", err);
-      alert("Something went wrong opening the billing portal.");
     }
   };
 
-  // Handle navigation to current plan dashboard
-  const handleGoToPlan = () => {
-    const plan = billingInfo.plan.toLowerCase();
-    if (plan === "gold") router.push("/dashboard/gold");
-    else if (plan === "platinum") router.push("/dashboard/platinum");
-    else if (plan === "diamond") router.push("/dashboard/diamond");
-    else router.push("/plans");
-  };
+  if (status === "loading" || (status === "authenticated" && !plan && !planError)) {
+    return (
+      <main className="min-h-screen bg-night text-ivory flex items-center justify-center">
+        <p className="font-monodata text-sm text-gray-400">Loading your dashboard…</p>
+      </main>
+    );
+  }
 
-  // Dynamic color scheme for plan cards
-  const getPlanStyle = (plan: string) => {
-    switch (plan.toLowerCase()) {
-      case "gold":
-        return {
-          bg: "from-yellow-100 to-yellow-50",
-          border: "border-yellow-400",
-          text: "text-gold-soft",
-          button:
-            "bg-yellow-400 hover:bg-gold text-black hover:scale-105 transition-all",
-        };
-      case "platinum":
-        return {
-          bg: "from-gray-100 to-gray-50",
-          border: "border-white/20",
-          text: "text-gray-300",
-          button:
-            "bg-white/15 hover:bg-white/20 text-black hover:scale-105 transition-all",
-        };
-      case "diamond":
-        return {
-          bg: "from-surface2 to-surface",
-          border: "border-gold/40",
-          text: "text-gold",
-          button:
-            "bg-gold hover:bg-gold-deep text-night hover:scale-105 transition-all",
-        };
-      default:
-        return {
-          bg: "from-gray-50 to-gray-100",
-          border: "border-white/10",
-          text: "text-gray-300",
-          button:
-            "bg-white/15 hover:bg-white/20 text-black hover:scale-105 transition-all",
-        };
-    }
-  };
-
-  const planStyle = getPlanStyle(billingInfo.plan);
+  const firstName = (session?.user?.name || session?.user?.email || "").split(/[ @]/)[0];
+  const renews = formatDate(plan?.nextBillingDate ?? null) ?? formatDate(plan?.expiresAt ?? null);
+  const isTopTier = featureTier === "diamond";
 
   return (
-    <div className="min-h-screen bg-night">
-      {/* Header */}
-      <header className="bg-surface shadow-sm py-5">
-        <div className="max-w-7xl mx-auto flex justify-between items-center px-6">
-          <h1
-            className="text-2xl text-ivory cursor-pointer font-display font-normal tracking-tight"
-            onClick={() => router.push("/dashboard")}
-          >
-            WallStreetStocks
-          </h1>
+    <main className="min-h-screen bg-night text-ivory">
+      <div className="max-w-7xl mx-auto px-6 md:px-10 py-14 md:py-20">
+        <CommandLine cmd="DASH" note="your plan" className="mb-4" />
+        <h1 className="font-display text-4xl md:text-5xl tracking-tight">
+          Welcome back{firstName ? <>, <em className="italic text-gold-soft">{firstName}</em></> : null}.
+        </h1>
 
-          <div className="flex items-center gap-4">
-            <p className="text-gray-300">
-              Welcome,{" "}
-              <span className="font-semibold">
-                {session?.user?.name || session?.user?.email}
-              </span>
+        {/* Plan summary */}
+        <section className="mt-10 card-night p-6 md:p-8 flex flex-wrap items-center justify-between gap-6">
+          <div>
+            <p className="eyebrow">Current plan</p>
+            <p className="mt-2 font-display text-3xl text-gold">{TIER_LABEL[tier]}</p>
+            <p className="mt-1 text-sm text-gray-400">
+              {planError
+                ? "We couldn't load your plan. Refresh to try again."
+                : plan?.source
+                ? `${SOURCE_LABEL[plan.source]}${renews && tier !== "lifetime" ? ` · renews ${renews}` : ""}`
+                : "Pick a plan to unlock stock picks, AI tools and more."}
             </p>
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="bg-yellow-400 hover:bg-gold text-black px-5 py-2 rounded-full font-medium transition-all"
-            >
-              Logout
-            </button>
           </div>
-        </div>
-      </header>
-
-      {/* Dashboard Body */}
-      <main className="max-w-6xl mx-auto px-6 py-14">
-        {/* Welcome Card */}
-        <div className="bg-surface p-10 rounded-2xl shadow-md text-center mb-12">
-          <h2 className="text-3xl font-bold mb-2 text-ivory">
-            Welcome to Your Dashboard
-          </h2>
-          <p className="text-gray-400 mb-8">
-            Explore your premium AI-powered financial insights and tools.
-          </p>
-          <div className="flex flex-col md:flex-row gap-4 justify-center">
-            <button
-              onClick={() => router.push("/dashboard/portfolio")}
-              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-3 px-8 rounded-full transition-all"
-            >
-              View My Portfolio
-            </button>
-            <button
-              onClick={() => router.push("/dashboard/ai-picks")}
-              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-3 px-8 rounded-full transition-all"
-            >
-              AI Research Ideas
-            </button>
-          </div>
-        </div>
-
-        {/* Feature Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* 1. AI Stock Picks */}
-          <div className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
-            <h3 className="text-xl font-semibold mb-2">AI Stock Picks</h3>
-            <p className="text-gray-400 mb-4">
-              Get real-time stock picks generated by our proprietary AI model
-              trained on market sentiment, fundamentals, and technicals.
-            </p>
-            <button
-              onClick={() => router.push("/dashboard/ai-picks")}
-              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full"
-            >
-              View Today’s Picks
-            </button>
-          </div>
-
-          {/* 2. Weekly Research Reports */}
-          <div className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
-            <h3 className="text-xl font-semibold mb-2">
-              Weekly Research Reports
-            </h3>
-            <p className="text-gray-400 mb-4">
-              Access in-depth reports on trending sectors, key economic data,
-              and high-performing companies — updated weekly.
-            </p>
-            <button
-              onClick={() => router.push("/dashboard/reports")}
-              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full"
-            >
-              Read Reports
-            </button>
-          </div>
-
-          {/* 3. Fundamental AI Ratings */}
-          <div className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
-            <h3 className="text-xl font-semibold mb-2">
-              Fundamental AI Ratings
-            </h3>
-            <p className="text-gray-400 mb-4">
-              Get AI-powered ratings for companies based on intrinsic value,
-              growth metrics, and balance sheet strength.
-            </p>
-            <button
-              onClick={() => router.push("/dashboard/ratings")}
-              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full"
-            >
-              Explore Ratings
-            </button>
-          </div>
-
-          {/* 4. Beginner Portfolio Templates */}
-          <div className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
-            <h3 className="text-xl font-semibold mb-2">
-              Beginner Portfolio Templates
-            </h3>
-            <p className="text-gray-400 mb-4">
-              New to investing? Start with our ready-made templates built for
-              long-term growth and diversification.
-            </p>
-            <button
-              onClick={() => router.push("/dashboard/templates")}
-              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full"
-            >
-              Browse Templates
-            </button>
-          </div>
-
-          {/* 5. Community Access */}
-          <div className="bg-surface p-6 rounded-2xl shadow-sm hover:shadow-md transition-all">
-            <h3 className="text-xl font-semibold mb-2">Community Access</h3>
-            <p className="text-gray-400 mb-4">
-              Join our exclusive WallStreetStocks investor community — share
-              insights, track ideas, and grow together.
-            </p>
-            <button
-              onClick={() => router.push("/dashboard/community")}
-              className="bg-yellow-400 hover:bg-gold text-black font-semibold py-2 px-6 rounded-full"
-            >
-              Join Community
-            </button>
+          <div className="flex flex-wrap gap-3">
+            {plan?.hasStripe && (
+              <button onClick={handleManageBilling} className="btn-ghost-gold !py-2.5 text-sm">
+                Manage billing
+              </button>
+            )}
+            {plan?.source === "app" && !plan.hasStripe && tier !== "lifetime" && (
+              <p className="self-center text-sm text-gray-400">
+                Manage billing in the App Store or Google Play.
+              </p>
+            )}
+            {!isTopTier && (
+              <Link href="/plans" className="btn-gold !py-2.5 text-sm">
+                {tier === "free" ? "See plans" : "Upgrade"}
+              </Link>
+            )}
           </div>
         </section>
 
-        {/* Market chart — opens in the site's own Terminal */}
-        <div className="mt-14 bg-surface border border-white/10 p-6 rounded-2xl shadow-sm">
-          <h3 className="text-xl font-semibold mb-2">Live market chart</h3>
-          <p className="text-gray-400 mb-4">
-            Charts, fundamentals and news for any US stock, ETF or crypto pair in the Terminal.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            {["AAPL", "NVDA", "SPY", "QQQ", "TSLA"].map((s) => (
-              <Link
-                key={s}
-                href={`/terminal?symbol=${s}`}
-                className="px-3 py-1.5 rounded-lg font-monodata text-xs font-bold text-gray-400 border border-white/10 hover:text-gold hover:border-gold/40 transition-colors"
-              >
-                {s}
-              </Link>
-            ))}
-            <Link href="/terminal?symbol=AAPL" className="btn-gold !py-2 text-sm sm:ml-auto">
-              Open Terminal
-            </Link>
+        {/* Expert stock picks */}
+        <section className="mt-14">
+          <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+            <h2 className="font-display text-2xl md:text-3xl tracking-tight">Expert stock picks</h2>
+            {picks && picks.list.length > 0 && (
+              <p className="font-monodata text-xs text-gray-400 tabular-nums">
+                {picks.list.length} of {picks.total}
+                {!isTopTier && (
+                  <>
+                    {" · "}
+                    <Link href="/plans" className="text-gold hover:text-gold-soft">
+                      unlock more
+                    </Link>
+                  </>
+                )}
+              </p>
+            )}
           </div>
-        </div>
+          {featureTier === "free" ? (
+            <LockedPanel
+              text="Gold members get 5 hand-picked stocks, Platinum 8 and Diamond all 15."
+              tier="gold"
+            />
+          ) : !picks ? (
+            <p className="font-monodata text-sm text-gray-400">Loading picks…</p>
+          ) : picks.list.length === 0 ? (
+            <p className="text-gray-400">Picks are unavailable right now — check back shortly.</p>
+          ) : (
+            <div className="card-night divide-y overflow-hidden">
+              {picks.list.map((p) => (
+                <Link
+                  key={p.symbol}
+                  href={`/terminal?symbol=${p.symbol}`}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-surface2 transition-colors"
+                >
+                  <span className="w-6 font-monodata text-xs text-gray-500 tabular-nums">{p.rank}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-monodata font-semibold text-ivory truncate">
+                      {p.symbol}
+                      <span className="hidden sm:inline ml-2 font-sans font-normal text-sm text-gray-400">{p.name}</span>
+                    </p>
+                    <p className="mt-0.5 text-sm text-gray-400 truncate">
+                      <span className="text-gold/80">{p.category}</span> · {p.reason}
+                    </p>
+                  </div>
+                  <div className="text-right font-monodata tabular-nums">
+                    <p className="text-ivory">{p.price != null ? `$${p.price.toFixed(2)}` : "—"}</p>
+                    {p.changePercent != null && (
+                      <p className={`text-xs ${p.changePercent >= 0 ? "text-green-400" : "text-red-400"}`}>
+                        {p.changePercent >= 0 ? "+" : ""}
+                        {p.changePercent.toFixed(2)}%
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
 
-        {/* My Plan Access - color themed */}
-        <div
-          className={`bg-gradient-to-br ${planStyle.bg} border ${planStyle.border} p-6 rounded-2xl shadow-sm text-center mt-12 transition-all`}
+        {/* Everything in the plan */}
+        <section className="mt-14">
+          <h2 className="font-display text-2xl md:text-3xl tracking-tight mb-5">Your features</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {PLAN_FEATURES.filter((f) => f.key !== "picks").map((f) => (
+              <FeatureCard
+                key={f.key}
+                feature={f}
+                value={featureValue(f, featureTier)}
+                isVerified={plan?.isVerified ?? false}
+              />
+            ))}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function FeatureCard({
+  feature,
+  value,
+  isVerified,
+}: {
+  feature: PlanFeature;
+  value: string | boolean;
+  isVerified: boolean;
+}) {
+  const unlocked = value !== false;
+  const needed = minimumTier(feature);
+
+  let status: string;
+  if (!unlocked) status = TIER_LABEL[needed];
+  else if (typeof value === "string") status = value;
+  else if (feature.key === "badge") status = isVerified ? "Verified" : "Included";
+  else status = "Included";
+
+  return (
+    <div className={`card-night p-6 flex flex-col ${unlocked ? "" : "opacity-60"}`}>
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-semibold text-ivory">{feature.label}</h3>
+        <span
+          className={`shrink-0 inline-flex items-center gap-1 font-monodata text-[11px] uppercase tracking-widest ${
+            unlocked ? "text-gold" : "text-gray-500"
+          }`}
         >
-          <h3 className={`text-xl font-semibold mb-2 ${planStyle.text}`}>
-            My Plan Access
-          </h3>
-          <p className="text-gray-300 mb-4">
-            Current Plan:{" "}
-            <span className={`font-semibold ${planStyle.text}`}>
-              {billingInfo.plan}
-            </span>
-          </p>
-          <button
-            onClick={handleGoToPlan}
-            className={`font-semibold py-3 px-8 rounded-full ${planStyle.button}`}
-          >
-            Go to {billingInfo.plan} Dashboard →
-          </button>
-        </div>
+          {!unlocked && <Lock className="w-3 h-3" aria-hidden />}
+          {status}
+        </span>
+      </div>
+      <p className="mt-2 text-sm text-gray-400 flex-1">{feature.blurb}</p>
+      <div className="mt-4 text-sm font-semibold">
+        {!unlocked ? (
+          <Link href="/plans" className="text-gray-300 hover:text-gold">
+            Upgrade to {TIER_LABEL[needed]} →
+          </Link>
+        ) : feature.href ? (
+          <div className="flex flex-wrap gap-x-5 gap-y-1">
+            <FeatureLink href={feature.href}>{feature.cta} →</FeatureLink>
+            {feature.key === "research" && (
+              <FeatureLink href="/dashboard/portfolio">Portfolio tools →</FeatureLink>
+            )}
+          </div>
+        ) : feature.key === "badge" && !isVerified ? (
+          <span className="font-normal text-gray-400">Shows on your community profile.</span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
-        {/* Billing Overview */}
-        <div className="bg-surface p-6 rounded-2xl shadow-sm text-center mt-12 border border-white/10">
-          <h3 className="text-xl font-semibold text-ivory mb-2">
-            Billing Overview
-          </h3>
-          <p className="text-gray-300">
-            Active Plan:{" "}
-            <span className="font-semibold text-gold">
-              {billingInfo.plan}
-            </span>
-          </p>
-          <p className="text-gray-300 mt-1">
-            Next Billing Date:{" "}
-            <span className="font-semibold text-gold">
-              {billingInfo.nextBillingDate}
-            </span>
-          </p>
-        </div>
+function FeatureLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const cls = "text-gold hover:text-gold-soft";
+  return href.startsWith("mailto:") ? (
+    <a href={href} className={cls}>
+      {children}
+    </a>
+  ) : (
+    <Link href={href} className={cls}>
+      {children}
+    </Link>
+  );
+}
 
-        {/* Manage Subscription */}
-        <div className="text-center mt-8 mb-10">
-          <button
-            onClick={handleManageBilling}
-            className="bg-gold hover:bg-gold-deep text-night font-semibold py-3 px-8 rounded-full transition-all"
-          >
-            Manage Subscription & Billing
-          </button>
-        </div>
-      </main>
+function LockedPanel({ text, tier }: { text: string; tier: PaidTier }) {
+  return (
+    <div className="card-night p-6 flex flex-wrap items-center justify-between gap-4">
+      <p className="flex items-center gap-2 text-gray-300">
+        <Lock className="w-4 h-4 text-gray-500" aria-hidden />
+        {text}
+      </p>
+      <Link href="/plans" className="btn-gold !py-2.5 text-sm">
+        Get {TIER_LABEL[tier]}
+      </Link>
     </div>
   );
 }

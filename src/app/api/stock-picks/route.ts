@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { resolveUserPlan } from "@/lib/planAccess";
 import { getQuote, getQuotes } from "@/lib/twelvedata";
 import { getQuoteStats, type QuoteStats } from "@/lib/fmp";
 
@@ -110,38 +112,6 @@ const MANUAL_LISTS: Record<string, Pick[]> = {
   growth: MANUAL_GROWTH,
 };
 
-// Resolve the user's tier from the database (same logic as
-// /api/subscription/status). This is the trusted source of truth — we do not
-// rely on anything the client sends beyond the user id.
-async function resolveTier(userId: number): Promise<string> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      subscriptionTier: true,
-      subscriptionExpiry: true,
-      subscriptionStatus: true,
-      referralPremiumExpiry: true,
-    },
-  });
-
-  if (!user) return "free";
-
-  const now = new Date();
-  // Null expiry + active status = LIFETIME (never expires). Was treated as
-  // "not subscribed", so lifetime buyers got zero picks.
-  const hasRevenueCatSubscription =
-    user.subscriptionStatus === "active" &&
-    (user.subscriptionExpiry ? new Date(user.subscriptionExpiry) > now : true);
-  const hasReferralPremium = user.referralPremiumExpiry
-    ? new Date(user.referralPremiumExpiry) > now
-    : false;
-
-  if ((hasRevenueCatSubscription || hasReferralPremium) && user.subscriptionTier) {
-    return user.subscriptionTier.toLowerCase();
-  }
-  return "free";
-}
-
 async function enrichWithQuotes(picks: Pick[]): Promise<EnrichedPick[]> {
   // Live prices from Twelve Data; market cap and P/E from FMP's batch quote.
   // Both lookups are best-effort: a failure leaves those fields null and the
@@ -187,9 +157,14 @@ async function getEnrichedPicks(list: string): Promise<EnrichedPick[]> {
 }
 
 // GET /api/stock-picks - returns the curated stock picks limited to the caller's tier.
-// Requires an authenticated user id via the `x-user-id` header.
+// The app identifies the user via the `x-user-id` header; the website dashboard
+// via its NextAuth session.
 export async function GET(req: NextRequest) {
-  const userIdRaw = req.headers.get("x-user-id");
+  let userIdRaw = req.headers.get("x-user-id");
+  if (!userIdRaw) {
+    const session = await getServerSession(authOptions);
+    userIdRaw = (session?.user as { id?: string } | undefined)?.id ?? null;
+  }
   const userId = userIdRaw ? parseInt(userIdRaw, 10) : NaN;
 
   if (!userIdRaw || isNaN(userId)) {
@@ -202,7 +177,7 @@ export async function GET(req: NextRequest) {
   const listTotal = MANUAL_LISTS[list].length;
 
   try {
-    const tier = await resolveTier(userId);
+    const { tier } = await resolveUserPlan(userId);
     const limit = Math.min(PICKS_BY_TIER[tier] ?? 0, listTotal);
 
     // Non-premium users get nothing — names are never sent to the client.
