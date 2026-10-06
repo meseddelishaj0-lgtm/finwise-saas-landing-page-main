@@ -24,7 +24,7 @@ export const SUBSCRIPTION_TIERS: TierInfo[] = [
     description: 'Essential tools for smart investing',
     color: '#FFD700',
     gradientColors: ['#FFD700', '#FFA500'],
-    monthlyPrice: '$4.99',
+    monthlyPrice: '$19.99',
     features: [
       { name: 'Real-time stock quotes', included: true },
       { name: 'Basic watchlists', included: true },
@@ -42,7 +42,7 @@ export const SUBSCRIPTION_TIERS: TierInfo[] = [
     description: 'Advanced insights for serious investors',
     color: '#E5E4E2',
     gradientColors: ['#E5E4E2', '#A9A9A9'],
-    monthlyPrice: '$6.99',
+    monthlyPrice: '$39.99',
     popular: true,
     features: [
       { name: 'Everything in Gold', included: true },
@@ -61,7 +61,7 @@ export const SUBSCRIPTION_TIERS: TierInfo[] = [
     description: 'Ultimate toolkit for professional traders',
     color: '#B9F2FF',
     gradientColors: ['#B9F2FF', '#00CED1'],
-    monthlyPrice: '$9.99',
+    monthlyPrice: '$59.99',
     features: [
       { name: 'Everything in Platinum', included: true },
       { name: 'AI price predictions', included: true },
