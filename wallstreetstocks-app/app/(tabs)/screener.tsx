@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Platform,
-  Dimensions,
   Animated,
   Easing,
   LayoutAnimation,
@@ -31,6 +30,7 @@ import StockLogo from '@/components/StockLogo';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { FLATLIST_PERFORMANCE_PROPS } from '@/components/OptimizedListItems';
+import { useContentWidth } from '@/hooks/useContentWidth';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
@@ -356,8 +356,6 @@ const PRESET_DEFS: Record<string, PresetDef> = {
   insider: { source: 'actives', sort: byChangeDesc },
 };
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const FILTER_ITEM_WIDTH = (SCREEN_WIDTH - 60) / 2; // 20px padding on each side + 20px gap
 
 // Types
 interface Stock {
@@ -694,6 +692,8 @@ const HeatMapTile = ({
 
 export default function Screener() {
   const { colors, isDark } = useTheme();
+  const contentWidth = useContentWidth();
+  const filterItemWidth = (contentWidth - 60) / 2; // 20px padding on each side + 20px gap
   const { t } = useLanguage();
   const router = useRouter();
   const { canAccess } = usePremiumFeature();
@@ -1737,7 +1737,7 @@ export default function Screener() {
                         key={filter.id}
                         style={[
                           styles.filterGridItem,
-                          { width: FILTER_ITEM_WIDTH, backgroundColor: colors.card, borderColor: colors.border },
+                          { width: filterItemWidth, backgroundColor: colors.card, borderColor: colors.border },
                           isActive && styles.filterGridItemActive,
                           isLocked && styles.filterGridItemPremium
                         ]}

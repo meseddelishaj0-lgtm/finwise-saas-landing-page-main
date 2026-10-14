@@ -6,7 +6,6 @@ import { isEasternDST } from '../../../lib/easternTime';
 import {
   View,
   Text,
-  Dimensions,
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
@@ -26,6 +25,7 @@ import { priceStore, useQuote } from '../../../stores/priceStore';
 import { displaySymbol } from '../../../lib/symbolDisplay';
 import { useWebSocket } from '../../../context/WebSocketContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useContentSize } from '@/hooks/useContentWidth';
 import TechnicalIndicators from '../../../components/TechnicalIndicators';
 
 // ============================================================================
@@ -35,8 +35,6 @@ const API_BASE_URL = "https://www.wallstreetstocks.ai/api";
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CHART_HEIGHT = SCREEN_HEIGHT * 0.38;
 
 type Timeframe = '1D' | '5D' | '1M' | '3M' | '1Y' | 'ALL';
 type MarketStatus = 'pre-market' | 'open' | 'after-hours' | 'closed';
@@ -329,6 +327,10 @@ function PulsingDot({ color }: { color: string }) {
 
 export default function ChartTab() {
   const { t } = useLanguage();
+  // Live size (rotation / fold / split view). Height capped so tall tablet
+  // screens don't get an oversized chart; phones never reach the cap.
+  const { width: SCREEN_WIDTH, height: screenHeight } = useContentSize();
+  const CHART_HEIGHT = Math.min(screenHeight * 0.38, 400);
   // Extract symbol from route params
   const localParams = useLocalSearchParams();
   const globalParams = useGlobalSearchParams();
@@ -554,7 +556,7 @@ export default function ChartTab() {
   const chartSpacing = useMemo(() => {
     if (liveChartData.length <= 1) return 10;
     return Math.max(2, (SCREEN_WIDTH - 25) / liveChartData.length);
-  }, [liveChartData.length]);
+  }, [liveChartData.length, SCREEN_WIDTH]);
 
   // ============================================================================
   // API FETCHING

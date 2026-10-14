@@ -9,7 +9,6 @@ import {
   TextInput,
   ActivityIndicator,
   Platform,
-  Dimensions,
   KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,9 +18,9 @@ import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import { buildAuthHeaders } from '@/lib/authHeaders';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useContentWidth } from '@/hooks/useContentWidth';
 import FadeSlideIn from '@/components/FadeSlideIn';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // FMP API Configuration
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
@@ -166,6 +165,9 @@ const QUICK_PICKS = ['AAPL', 'NVDA', 'TSLA', 'MSFT', 'GOOGL', 'AMZN'];
 const DIAMOND_TABS = ['analyzer', 'compare', 'forecast', 'assistant', 'insider'];
 
 export default function AITools() {
+  const contentWidth = useContentWidth();
+  const halfItemWidth = { width: (contentWidth - 80) / 2 - 6 };
+  const suggestedCardWidth = { width: (contentWidth - 48) / 2 - 5 };
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();
   const router = useRouter();
@@ -1070,39 +1072,39 @@ Always remind users that this is educational information, not financial advice.`
                 <View style={[styles.metricsCard, { backgroundColor: colors.background }]}>
                   <Text style={[styles.metricsTitle, { color: colors.text }]}>{t('Key Metrics')}</Text>
                   <View style={styles.metricsGrid}>
-                    <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.metricItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('Market Cap')}</Text>
                       <Text style={[styles.metricValue, { color: colors.text }]}>{formatNumber(analysisResult.marketCap)}</Text>
                     </View>
-                    <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.metricItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('P/E Ratio')}</Text>
                       <Text style={[styles.metricValue, { color: colors.text }]}>{analysisResult.pe?.toFixed(2) || '—'}</Text>
                     </View>
-                    <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.metricItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('EPS')}</Text>
                       <Text style={[styles.metricValue, { color: colors.text }]}>${analysisResult.eps?.toFixed(2) || '—'}</Text>
                     </View>
-                    <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.metricItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('52W High')}</Text>
                       <Text style={[styles.metricValue, { color: colors.text }]}>${analysisResult.yearHigh?.toFixed(2) || '—'}</Text>
                     </View>
-                    <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.metricItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('52W Low')}</Text>
                       <Text style={[styles.metricValue, { color: colors.text }]}>${analysisResult.yearLow?.toFixed(2) || '—'}</Text>
                     </View>
-                    <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.metricItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('ROE')}</Text>
                       <Text style={[styles.metricValue, { color: (analysisResult.roe || 0) > 15 ? '#00C853' : '#000' }]}>
                         {analysisResult.roe?.toFixed(1) || '—'}%
                       </Text>
                     </View>
-                    <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.metricItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('Debt/Equity')}</Text>
                       <Text style={[styles.metricValue, { color: (analysisResult.debtToEquity || 0) < 1 ? '#00C853' : '#FF9500' }]}>
                         {analysisResult.debtToEquity?.toFixed(2) || '—'}
                       </Text>
                     </View>
-                    <View style={[styles.metricItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.metricItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{t('Revenue Growth')}</Text>
                       <Text style={[styles.metricValue, { color: (analysisResult.revenueGrowth || 0) > 0 ? '#00C853' : '#FF3B30' }]}>
                         {analysisResult.revenueGrowth?.toFixed(1) || '—'}%
@@ -1738,7 +1740,7 @@ Always remind users that this is educational information, not financial advice.`
                     <Text style={[styles.technicalTitle, { color: colors.text }]}>{t('Technical Signals')}</Text>
                   </View>
                   <View style={styles.technicalGrid}>
-                    <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.technicalItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('Trend')}</Text>
                       <View style={[styles.trendBadge, {
                         backgroundColor: forecastResult.technicalSignals.trend === 'uptrend' ? '#00C85320' : forecastResult.technicalSignals.trend === 'downtrend' ? '#FF3B3020' : '#FF950020'
@@ -1755,25 +1757,25 @@ Always remind users that this is educational information, not financial advice.`
                         </Text>
                       </View>
                     </View>
-                    <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.technicalItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('Momentum')}</Text>
                       <Text style={[styles.technicalValue, { color: forecastResult.momentum >= 0 ? '#00C853' : '#FF3B30' }]}>
                         {forecastResult.momentum >= 0 ? '+' : ''}{forecastResult.momentum.toFixed(2)}%
                       </Text>
                     </View>
-                    <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.technicalItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('Support')}</Text>
                       <Text style={[styles.technicalValue, { color: colors.text }]}>${forecastResult.technicalSignals.support.toFixed(2)}</Text>
                     </View>
-                    <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.technicalItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('Resistance')}</Text>
                       <Text style={[styles.technicalValue, { color: colors.text }]}>${forecastResult.technicalSignals.resistance.toFixed(2)}</Text>
                     </View>
-                    <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.technicalItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('52W High')}</Text>
                       <Text style={[styles.technicalValue, { color: colors.text }]}>${forecastResult.yearHigh.toFixed(2)}</Text>
                     </View>
-                    <View style={[styles.technicalItem, { backgroundColor: colors.surface }]}>
+                    <View style={[styles.technicalItem, halfItemWidth, { backgroundColor: colors.surface }]}>
                       <Text style={[styles.technicalLabel, { color: colors.textSecondary }]}>{t('Volatility')}</Text>
                       <Text style={[styles.technicalValue, { color: forecastResult.volatility > 3 ? '#FF9500' : '#00C853' }]}>
                         {forecastResult.volatility.toFixed(2)}%
@@ -1926,7 +1928,7 @@ Always remind users that this is educational information, not financial advice.`
                     {SUGGESTED_QUESTIONS.map((q, idx) => (
                       <TouchableOpacity
                         key={idx}
-                        style={[styles.suggestedCard, { backgroundColor: colors.surface }]}
+                        style={[styles.suggestedCard, suggestedCardWidth, { backgroundColor: colors.surface }]}
                         onPress={() => {
                           setUserInput(q.text);
                         }}
@@ -2849,7 +2851,7 @@ const styles = StyleSheet.create({
   metricsCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginTop: 16 },
   metricsTitle: { fontSize: 18, fontWeight: '700', color: '#000', marginBottom: 16 },
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  metricItem: { width: (SCREEN_WIDTH - 80) / 2 - 6, backgroundColor: '#F9F9FB', padding: 14, borderRadius: 12 },
+  metricItem: { backgroundColor: '#F9F9FB', padding: 14, borderRadius: 12 },
   metricLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 6, fontWeight: '500' },
   metricValue: { fontSize: 17, fontWeight: '700', color: '#000' },
 
@@ -3003,7 +3005,7 @@ const styles = StyleSheet.create({
   technicalHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   technicalTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
   technicalGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  technicalItem: { width: (SCREEN_WIDTH - 80) / 2 - 6, backgroundColor: '#F9F9FB', padding: 14, borderRadius: 12, alignItems: 'center' },
+  technicalItem: { backgroundColor: '#F9F9FB', padding: 14, borderRadius: 12, alignItems: 'center' },
   technicalLabel: { fontSize: 12, color: '#8E8E93', marginBottom: 8, fontWeight: '600' },
   technicalValue: { fontSize: 17, fontWeight: '700', color: '#000' },
   trendBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, gap: 4 },
@@ -3028,7 +3030,7 @@ const styles = StyleSheet.create({
   suggestedContainer: { marginTop: 16 },
   suggestedTitle: { fontSize: 15, fontWeight: '700', color: '#000', marginBottom: 12, marginLeft: 4 },
   suggestedGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  suggestedCard: { width: (SCREEN_WIDTH - 48) / 2 - 5, backgroundColor: '#FFF', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
+  suggestedCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
   suggestedIconBg: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
   suggestedText: { fontSize: 13, fontWeight: '600', color: '#1C1C1E', lineHeight: 18 },
 

@@ -10,15 +10,14 @@ import {
   ActivityIndicator,
   SafeAreaView,
   RefreshControl,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useContentWidth } from '@/hooks/useContentWidth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Picks are generated and gated server-side. The client only renders what the
 // API returns for the user's tier — no symbols or API keys ship in the bundle.
@@ -48,6 +47,9 @@ interface StockPick {
 }
 
 export default function StockPicksScreen() {
+  const contentWidth = useContentWidth();
+  const metricItemWidth = { width: (contentWidth - 64 - 12) / 2 - 6 };
+  const tierCardWidth = { width: (contentWidth - 72) / 3 };
   const { isPremium, currentTier } = useSubscription();
   const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
@@ -170,17 +172,17 @@ export default function StockPicksScreen() {
           </Text>
 
           <View style={styles.tierCards}>
-            <View style={[styles.tierPreviewCard, { borderColor: '#FFD700' }]}>
+            <View style={[styles.tierPreviewCard, tierCardWidth, { borderColor: '#FFD700' }]}>
               <Ionicons name="star" size={20} color="#FFD700" />
               <Text style={styles.tierPreviewName}>{t('Gold')}</Text>
               <Text style={styles.tierPreviewPicks}>{t('5 Stock Picks')}</Text>
             </View>
-            <View style={[styles.tierPreviewCard, { borderColor: '#E5E4E2' }]}>
+            <View style={[styles.tierPreviewCard, tierCardWidth, { borderColor: '#E5E4E2' }]}>
               <Ionicons name="diamond" size={20} color="#E5E4E2" />
               <Text style={styles.tierPreviewName}>{t('Platinum')}</Text>
               <Text style={styles.tierPreviewPicks}>{t('8 Stock Picks')}</Text>
             </View>
-            <View style={[styles.tierPreviewCard, { borderColor: '#B9F2FF' }]}>
+            <View style={[styles.tierPreviewCard, tierCardWidth, { borderColor: '#B9F2FF' }]}>
               <Ionicons name="diamond" size={20} color="#B9F2FF" />
               <Text style={styles.tierPreviewName}>{t('Diamond')}</Text>
               <Text style={styles.tierPreviewPicks}>{t('15 Stock Picks')}</Text>
@@ -355,19 +357,19 @@ export default function StockPicksScreen() {
                     {isExpanded && (
                       <View style={styles.expandedContent}>
                         <View style={styles.metricsGrid}>
-                          <View style={styles.metricItem}>
+                          <View style={[styles.metricItem, metricItemWidth]}>
                             <Text style={styles.metricLabel}>Market Cap</Text>
                             <Text style={styles.metricValue}>{formatMarketCap(stock.marketCap)}</Text>
                           </View>
-                          <View style={styles.metricItem}>
+                          <View style={[styles.metricItem, metricItemWidth]}>
                             <Text style={styles.metricLabel}>P/E Ratio</Text>
                             <Text style={styles.metricValue}>{stock.pe?.toFixed(2) || '—'}</Text>
                           </View>
-                          <View style={styles.metricItem}>
+                          <View style={[styles.metricItem, metricItemWidth]}>
                             <Text style={styles.metricLabel}>52W High</Text>
                             <Text style={styles.metricValue}>${stock.weekHigh52?.toFixed(2) || '—'}</Text>
                           </View>
-                          <View style={styles.metricItem}>
+                          <View style={[styles.metricItem, metricItemWidth]}>
                             <Text style={styles.metricLabel}>52W Low</Text>
                             <Text style={styles.metricValue}>${stock.weekLow52?.toFixed(2) || '—'}</Text>
                           </View>
@@ -679,7 +681,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   metricItem: {
-    width: (SCREEN_WIDTH - 64 - 12) / 2 - 6,
     backgroundColor: '#2C2C2E',
     padding: 12,
     borderRadius: 12,
@@ -833,7 +834,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     alignItems: 'center',
-    width: (SCREEN_WIDTH - 72) / 3,
     borderWidth: 2,
   },
   tierPreviewName: {

@@ -7,13 +7,11 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
-  Dimensions,
 } from "react-native";
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useLanguage } from "@/context/LanguageContext";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const FMP_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || "";
 
 type TabType = "overview" | "income" | "balance" | "cashflow" | "ratios";

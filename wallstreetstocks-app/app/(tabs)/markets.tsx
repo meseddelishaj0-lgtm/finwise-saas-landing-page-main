@@ -11,7 +11,6 @@ import {
   FlatList,
   Keyboard,
   ActivityIndicator,
-  Dimensions,
   Platform,
   Animated,
 } from "react-native";
@@ -34,8 +33,8 @@ import { marketDataService } from "@/services/marketDataService";
 import StockLogo from "@/components/StockLogo";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useContentWidth } from "@/hooks/useContentWidth";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // Format an API date. FMP returns "YYYY-MM-DD"; `new Date(str)` parses it as
 // UTC midnight, which toLocaleDateString then renders as the PREVIOUS day in
@@ -52,7 +51,8 @@ const fmtLocalDate = (
   if (isNaN(date.getTime())) return fallback;
   return date.toLocaleDateString('en-US', opts);
 };
-const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2; // Wider cards, ~2.2 visible
+// Header cards: ~2.2 visible across the live content width
+const headerCardWidth = (contentWidth: number) => (contentWidth - 52) / 2.2;
 
 // WebSocket handles all real-time prices - no API polling needed
 
@@ -199,13 +199,14 @@ const SkeletonPulse = ({ style }: { style?: any }) => {
 // Skeleton layout shown while market data loads (replaces bare spinners)
 const ExploreSkeleton = ({ padded = true }: { padded?: boolean }) => {
   const { colors } = useTheme();
+  const cardWidth = headerCardWidth(useContentWidth());
   return (
     <View style={{ paddingHorizontal: padded ? 16 : 0, paddingTop: 16 }}>
       <View style={{ flexDirection: 'row', marginBottom: 20 }}>
         {[0, 1, 2].map((i) => (
           <View
             key={i}
-            style={{ width: CARD_WIDTH, borderRadius: 18, backgroundColor: colors.card, padding: 14, marginRight: 10 }}
+            style={{ width: cardWidth, borderRadius: 18, backgroundColor: colors.card, padding: 14, marginRight: 10 }}
           >
             <SkeletonPulse style={{ width: 70, height: 10, marginBottom: 10 }} />
             <SkeletonPulse style={{ width: 92, height: 16, marginBottom: 12 }} />
@@ -236,7 +237,7 @@ const ExploreSkeleton = ({ padded = true }: { padded?: boolean }) => {
 // Yield Curve Chart Component
 const YieldCurveChart = ({
   data,
-  width = SCREEN_WIDTH - 40,
+  width: widthProp,
   height = 180,
 }: {
   data: { label: string; value: number; months: number }[];
@@ -244,6 +245,8 @@ const YieldCurveChart = ({
   height?: number;
 }) => {
   const { colors, isDark } = useTheme();
+  const contentWidth = useContentWidth();
+  const width = widthProp ?? contentWidth - 40;
   if (!data || data.length < 2) return null;
 
   const padding = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -393,6 +396,7 @@ const HeaderCard = memo(({
   showSparkline?: boolean;
 }) => {
   const { colors, isDark } = useTheme();
+  const cardWidth = headerCardWidth(useContentWidth());
   const priceValue = item.value !== "..." ? Number(item.value) : 0;
   const changeValue = parseFloat(item.change) || 0;
 
@@ -405,6 +409,7 @@ const HeaderCard = memo(({
       style={[
         styles.headerCard,
         {
+          width: cardWidth,
           backgroundColor: colors.card,
           borderColor: item.isPositive
             ? (isDark ? 'rgba(0,200,83,0.35)' : '#bbf7d0')
@@ -2497,7 +2502,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   headerCard: {
-    width: CARD_WIDTH,
     borderRadius: 18,
     marginRight: 10,
     borderWidth: 1,

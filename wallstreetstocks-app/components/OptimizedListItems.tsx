@@ -7,12 +7,10 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ===== ITEM HEIGHTS (for getItemLayout) =====
 export const ITEM_HEIGHTS = {

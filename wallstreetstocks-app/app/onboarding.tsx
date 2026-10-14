@@ -11,7 +11,6 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -32,6 +31,7 @@ import { usePortfolio } from '@/context/PortfolioContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { fetchQuotesWithCache } from '@/services/quoteService';
 import StockLogo from '@/components/StockLogo';
+import { useContentWidth } from '@/hooks/useContentWidth';
 
 let OneSignal: any = null;
 try {
@@ -40,7 +40,6 @@ try {
   OneSignal = osModule?.OneSignal ?? osModule?.default ?? null;
 } catch {}
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GOLD = '#FFD60A';
 const GOLD_DIM = '#B8860B';
 const BG = '#0A0A08';
@@ -120,6 +119,7 @@ export default function Onboarding() {
   const { t } = useLanguage();
   const { addToWatchlist } = useWatchlist();
   const { addHolding } = usePortfolio();
+  const contentWidth = useContentWidth();
 
   const [step, setStep] = useState(0);
   const [interests, setInterests] = useState<Set<string>>(new Set());
@@ -402,7 +402,7 @@ export default function Onboarding() {
             return (
               <TouchableOpacity
                 key={s.symbol}
-                style={[styles.tickerCard, on && styles.tickerCardOn]}
+                style={[styles.tickerCard, { width: (contentWidth - 40 - 20) / 3 }, on && styles.tickerCardOn]}
                 onPress={() => {
                   tap();
                   onToggle(s.symbol);
@@ -842,7 +842,6 @@ const styles = StyleSheet.create({
   },
   tickerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   tickerCard: {
-    width: (SCREEN_WIDTH - 40 - 20) / 3,
     backgroundColor: CARD,
     borderRadius: 16,
     paddingVertical: 12,

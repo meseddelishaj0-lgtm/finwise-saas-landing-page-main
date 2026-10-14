@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,7 +19,6 @@ import { Ionicons } from '@expo/vector-icons';
 import Sparkline from '@/components/Sparkline';
 import { useAuth } from '@/lib/auth';
 
-const { width: W, height: H } = Dimensions.get('window');
 
 // ---------- animation helpers (native driver only) ----------
 
@@ -115,16 +114,16 @@ const ChartCard = ({ up }: { up: boolean }) => (
   </View>
 );
 
-// position, element, timing — scattered around the edges, clear of the copy
+// position (top as a fraction of screen height), element, timing — scattered around the edges, clear of the copy
 const DECOR: Array<{ top: number; left?: number; right?: number; delay: number; duration: number; node: React.ReactNode }> = [
-  { top: H * 0.075, left: 22, delay: 0, duration: 2400, node: <TickerChip symbol="NVDA" change="2.4%" up /> },
-  { top: H * 0.06, right: 26, delay: 500, duration: 3000, node: <ChartCard up /> },
-  { top: H * 0.155, right: 60, delay: 950, duration: 2700, node: <TickerChip symbol="AAPL" change="1.2%" up /> },
-  { top: H * 0.175, left: 48, delay: 300, duration: 3200, node: <ChartCard up={false} /> },
-  { top: H * 0.265, left: 24, delay: 750, duration: 2500, node: <TickerChip symbol="BTC" change="3.1%" up /> },
-  { top: H * 0.26, right: 30, delay: 150, duration: 2900, node: <TickerChip symbol="TSLA" change="0.8%" up={false} /> },
-  { top: H * 0.75, left: 26, delay: 600, duration: 3100, node: <TickerChip symbol="SPY" change="0.6%" up /> },
-  { top: H * 0.76, right: 28, delay: 1100, duration: 2600, node: <TickerChip symbol="MSFT" change="0.9%" up /> },
+  { top: 0.075, left: 22, delay: 0, duration: 2400, node: <TickerChip symbol="NVDA" change="2.4%" up /> },
+  { top: 0.06, right: 26, delay: 500, duration: 3000, node: <ChartCard up /> },
+  { top: 0.155, right: 60, delay: 950, duration: 2700, node: <TickerChip symbol="AAPL" change="1.2%" up /> },
+  { top: 0.175, left: 48, delay: 300, duration: 3200, node: <ChartCard up={false} /> },
+  { top: 0.265, left: 24, delay: 750, duration: 2500, node: <TickerChip symbol="BTC" change="3.1%" up /> },
+  { top: 0.26, right: 30, delay: 150, duration: 2900, node: <TickerChip symbol="TSLA" change="0.8%" up={false} /> },
+  { top: 0.75, left: 26, delay: 600, duration: 3100, node: <TickerChip symbol="SPY" change="0.6%" up /> },
+  { top: 0.76, right: 28, delay: 1100, duration: 2600, node: <TickerChip symbol="MSFT" change="0.9%" up /> },
 ];
 
 // ---------- screen ----------
@@ -132,6 +131,7 @@ const DECOR: Array<{ top: number; left?: number; right?: number; delay: number; 
 export default function Index() {
   const router = useRouter();
   const { user, token, loading } = useAuth();
+  const { height: screenHeight } = useWindowDimensions();
   const [isReady, setIsReady] = useState(false);
 
   // Wait for component to be fully mounted before allowing navigation
@@ -161,7 +161,7 @@ export default function Index() {
       {/* Floating market decorations */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {DECOR.map((d, i) => (
-          <Enter key={i} delay={250 + i * 110} distance={10} style={[styles.decor, { top: d.top, left: d.left, right: d.right }]}>
+          <Enter key={i} delay={250 + i * 110} distance={10} style={[styles.decor, { top: d.top * screenHeight, left: d.left, right: d.right }]}>
             <Float delay={d.delay} duration={d.duration} distance={9}>
               {d.node}
             </Float>

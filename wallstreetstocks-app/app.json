@@ -3,7 +3,7 @@
     "name": "wallstreetstocksapp",
     "slug": "wallstreetstocks-app",
     "version": "1.2.7",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/wallstreetstocks.png",
     "scheme": "wallstreetstocksapp",
     "userInterfaceStyle": "automatic",
@@ -13,8 +13,17 @@
     ],
     "ios": {
       "bundleIdentifier": "ai.wallstreetstocks.ios",
-      "supportsTablet": false,
+      "supportsTablet": true,
       "infoPlist": {
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ],
         "NSAppleEventsUsageDescription": "This app uses Apple Sign-In for authentication.",
         "NSPhotoLibraryUsageDescription": "WallStreetStocks needs access to your photo library to let you upload images for community posts and customize your profile picture.",
         "NSLocationWhenInUseUsageDescription": "WallStreetStocks may use your location to provide localized market data and news relevant to your region.",
@@ -126,6 +135,7 @@
       ],
       "./plugins/withOneSignalAppDelegate",
       "./plugins/withAndroidR8Optimize",
+      "./plugins/withAndroidPhonePortraitLock",
       "expo-router",
       [
         "expo-splash-screen",

@@ -10,7 +10,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  Dimensions,
   Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -49,7 +48,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import VerifiedBadge from '@/components/VerifiedBadge';
 
 // Screen dimensions for responsive layout
-const _screenWidth = Dimensions.get("window").width;
 
 // Feature-row icon adapter: renders the real blue verified seal
 const VerifiedSealIcon = ({ size }: { size?: number; color?: string }) => (

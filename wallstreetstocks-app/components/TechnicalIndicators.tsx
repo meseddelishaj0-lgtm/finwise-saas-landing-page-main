@@ -7,7 +7,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
@@ -28,9 +27,9 @@ import {
   interpretMACD,
 } from '../services/technicalIndicators';
 import { useLanguage } from '@/context/LanguageContext';
+import { useContentWidth } from '@/hooks/useContentWidth';
 import { priceStore } from '@/stores/priceStore';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const INDICATOR_HEIGHT = 100;
 
 interface TechnicalIndicatorsProps {
@@ -47,6 +46,7 @@ export default function TechnicalIndicators({
   priceColor,
 }: TechnicalIndicatorsProps) {
   const { t } = useLanguage();
+  const SCREEN_WIDTH = useContentWidth();
   const [activeIndicator, setActiveIndicator] = useState<IndicatorType>('RSI');
   const [loading, setLoading] = useState(true);
   const [rsiData, setRsiData] = useState<RSIDataPoint[]>([]);

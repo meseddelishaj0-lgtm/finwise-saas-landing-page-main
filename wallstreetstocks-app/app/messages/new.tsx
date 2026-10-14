@@ -14,7 +14,6 @@ import {
   ActivityIndicator,
   Image,
   Alert,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,7 +25,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface RecipientUser {
   id: number;

@@ -6,15 +6,14 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { usePremiumFeature, FEATURE_TIERS } from '@/hooks/usePremiumFeature';
 import { useLanguage } from '@/context/LanguageContext';
+import { useContentWidth } from '@/hooks/useContentWidth';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface PremiumFeatureGateProps {
   requiredTier: number;
@@ -121,6 +120,7 @@ export function PremiumFeatureCard({
 }: PremiumFeatureCardProps) {
   const { canAccess, withPremiumAccess } = usePremiumFeature();
   const { t } = useLanguage();
+  const cardWidth = (useContentWidth() - 48) / 2;
   const hasAccess = canAccess(tier);
   const tierInfo = TIER_INFO[tier as keyof typeof TIER_INFO] || TIER_INFO[1];
 
@@ -136,6 +136,7 @@ export function PremiumFeatureCard({
     <TouchableOpacity
       style={[
         styles.featureCard,
+        { width: cardWidth },
         !hasAccess && styles.featureCardLocked,
       ]}
       onPress={handlePress}
@@ -300,7 +301,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 16,
-    width: (SCREEN_WIDTH - 48) / 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

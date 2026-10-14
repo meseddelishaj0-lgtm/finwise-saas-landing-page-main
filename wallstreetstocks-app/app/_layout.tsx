@@ -55,6 +55,7 @@ import { LanguageProvider } from "../context/LanguageContext";
 import { useAuth } from "@/lib/auth";
 import { preloadAppData } from "../utils/preload";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { useContentWidth } from "../hooks/useContentWidth";
 import { initializeSentry } from "../utils/sentry";
 
 // Initialize Sentry for crash reporting
@@ -370,10 +371,13 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 
 function ThemedApp() {
   const { colors, isDark } = useTheme();
+  const contentWidth = useContentWidth();
 
   return (
     <ErrorBoundary>
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Tablets/foldables: centre the phone layout in a max-width column */}
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center' }}>
+      <View style={{ flex: 1, width: contentWidth }}>
         <StatusBar
           barStyle={isDark ? "light-content" : "dark-content"}
           backgroundColor={colors.background}
@@ -414,6 +418,7 @@ function ThemedApp() {
             }}
           />
         </Stack>
+      </View>
       </View>
     </ErrorBoundary>
   );

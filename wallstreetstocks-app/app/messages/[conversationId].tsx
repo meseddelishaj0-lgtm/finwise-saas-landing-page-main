@@ -15,7 +15,7 @@ import {
   Image,
   Alert,
   Modal,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,8 +25,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { contentWidthFor } from '@/hooks/useContentWidth';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
 
@@ -56,6 +56,10 @@ interface OtherUser {
 
 export default function ConversationScreen() {
   const { colors, isDark } = useTheme();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const bubbleImageSize = contentWidthFor(windowWidth) * 0.6;
+  // The viewer is a full-window Modal: fit a square to the shorter side
+  const fullImageSize = Math.min(windowWidth, windowHeight);
   const { t } = useLanguage();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -361,7 +365,7 @@ export default function ConversationScreen() {
               >
                 <Image
                   source={{ uri: item.imageUrl }}
-                  style={styles.messageImage}
+                  style={[styles.messageImage, { width: bubbleImageSize, height: bubbleImageSize }]}
                   resizeMode="cover"
                 />
               </TouchableOpacity>
@@ -533,7 +537,7 @@ export default function ConversationScreen() {
           {viewingImage && (
             <Image
               source={{ uri: viewingImage }}
-              style={styles.fullImage}
+              style={[styles.fullImage, { width: fullImageSize, height: fullImageSize }]}
               resizeMode="contain"
             />
           )}
@@ -700,8 +704,6 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   messageImage: {
-    width: SCREEN_WIDTH * 0.6,
-    height: SCREEN_WIDTH * 0.6,
     borderRadius: 14,
     marginBottom: 4,
   },
@@ -742,8 +744,5 @@ const styles = StyleSheet.create({
     zIndex: 10,
     padding: 8,
   },
-  fullImage: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH,
-  },
+  fullImage: {},
 });

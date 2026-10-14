@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,12 +17,12 @@ import { PieChart, LineChart } from 'react-native-gifted-charts';
 import { usePortfolio } from '@/context/PortfolioContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useContentWidth } from '@/hooks/useContentWidth';
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const BASE_URL = 'https://financialmodelingprep.com/api/v3';
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
-const screenWidth = Dimensions.get('window').width;
 
 interface ChartDataPoint {
   value: number;
@@ -33,6 +32,7 @@ interface ChartDataPoint {
 type TimeRange = '1D' | '5D' | '1M' | '1Y' | '5Y' | 'ALL';
 
 export default function AnalyticsScreen() {
+  const screenWidth = useContentWidth();
   const { currentPortfolio, loading, refreshing, refreshPrices } = usePortfolio();
   const { colors, isDark } = useTheme();
   const { t } = useLanguage();

@@ -9,7 +9,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
-  Dimensions,
   Platform,
   Animated,
 } from "react-native";
@@ -30,8 +29,8 @@ import { marketDataService } from "@/services/marketDataService";
 import StockLogo from "@/components/StockLogo";
 import { useTheme } from "@/context/ThemeContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useContentWidth } from "@/hooks/useContentWidth";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // Gold gradients from the app design system
 const GOLD_GRADIENT_DARK = ["#FFD60A", "#DAA520"] as const;
@@ -112,7 +111,6 @@ const TrendingRowSkeleton = ({ color, borderColor, backgroundColor }: { color: s
     </View>
   </View>
 );
-const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2.2;
 const STOCK_ROW_HEIGHT = 76; // Fixed row height for getItemLayout optimization
 
 // ============================================================================
@@ -209,6 +207,7 @@ const HeaderCard = memo(({
   onPress: () => void;
 }) => {
   const { colors, isDark } = useTheme();
+  const cardWidth = (useContentWidth() - 52) / 2.2;
   const priceValue = item.value !== "..." ? Number(item.value) : 0;
   const changeValue = parseFloat(item.change) || 0;
 
@@ -221,6 +220,7 @@ const HeaderCard = memo(({
       style={[
         styles.headerCard,
         {
+          width: cardWidth,
           backgroundColor: colors.card,
           borderColor: item.isPositive
             ? (isDark ? 'rgba(0,200,83,0.35)' : '#bbf7d0')
@@ -1033,7 +1033,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   headerCard: {
-    width: CARD_WIDTH,
     borderRadius: 18,
     marginRight: 10,
     borderWidth: 1,

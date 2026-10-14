@@ -28,7 +28,7 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useFocusEffect } from 'expo-router';
 import { LineChart as GiftedLineChart } from 'react-native-gifted-charts';
-import { Dimensions } from 'react-native';
+import { useContentWidth } from '@/hooks/useContentWidth';
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useWatchlist } from '@/context/WatchlistContext';
@@ -54,11 +54,7 @@ import FadeSlideIn from '@/components/FadeSlideIn';
 import Sparkline from '@/components/Sparkline';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const { width } = Dimensions.get('window');
 const chartWidth = 110;
-const portfolioChartWidth = width - 80;
-// Full-bleed chart width: spans the hero card edge-to-edge (card margins only)
-const portfolioChartBleedWidth = width - 32;
 
 // Fetch with timeout - fail fast if API is slow
 const fetchWithTimeout = async (url: string, timeout: number = 5000): Promise<Response> => {
@@ -249,9 +245,6 @@ const GROWTH_STOCKS_PREVIEW = [
   { symbol: 'LLY', category: 'Healthcare' },
 ];
 
-// Picks carousel geometry: full-width cards, 12px gap, snap per card
-const pickCardWidth = width - 32;
-const pickCardSnap = pickCardWidth + 12;
 
 const STOCK_PICKS_PREVIEW = [
   { symbol: 'NVDA', category: 'AI & Tech', reason: 'AI chip leader' },
@@ -420,6 +413,13 @@ const MARKET_OVERVIEW_SYMBOLS = [
 
 export default function Dashboard() {
   const { colors, isDark } = useTheme();
+  // Live content width (tablet column / foldable aware)
+  const width = useContentWidth();
+  // Full-bleed chart width: spans the hero card edge-to-edge (card margins only)
+  const portfolioChartBleedWidth = width - 32;
+  // Picks carousel geometry: full-width cards, 12px gap, snap per card
+  const pickCardWidth = width - 32;
+  const pickCardSnap = pickCardWidth + 12;
   const { t, lang } = useLanguage();
   const router = useRouter();
   const { isPremium, currentTier } = useSubscription();
@@ -3329,6 +3329,7 @@ export default function Dashboard() {
                   style={[
                     styles.calendarCard,
                     {
+                      width: width * 0.78,
                       backgroundColor: isDark ? colors.surface : '#FFFFFF',
                       borderColor: isDark ? card.tint + '30' : colors.border,
                     },
@@ -5274,7 +5275,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   calendarCard: {
-    width: width * 0.78,
     borderRadius: 20,
     borderWidth: 1,
     padding: 14,

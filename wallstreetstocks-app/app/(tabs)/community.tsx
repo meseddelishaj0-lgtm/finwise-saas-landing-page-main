@@ -14,7 +14,6 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
-  Dimensions,
   Share,
   Animated,
 } from 'react-native';
@@ -40,7 +39,6 @@ import FadeSlideIn from '@/components/FadeSlideIn';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Gold gradients from the app design system
 const GOLD_GRADIENT_DARK = ['#FFD60A', '#DAA520'] as const;
@@ -5258,7 +5256,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   giphyItem: {
-    width: (SCREEN_WIDTH - 40) / 2,
+    // two per row at any sheet width (iPad pageSheet is narrower than the window)
+    flexBasis: '40%',
+    flexGrow: 1,
+    maxWidth: '50%',
     height: 120,
     borderRadius: 8,
     overflow: 'hidden',
@@ -5634,7 +5635,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   fullScreenImage: {
-    width: SCREEN_WIDTH,
+    width: '100%',
     height: '100%',
   },
   imageViewerOverlay: {
