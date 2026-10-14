@@ -125,6 +125,7 @@
         }
       ],
       "./plugins/withOneSignalAppDelegate",
+      "./plugins/withAndroidR8Optimize",
       "expo-router",
       [
         "expo-splash-screen",

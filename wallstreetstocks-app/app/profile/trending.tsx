@@ -135,7 +135,7 @@ export default function Trending() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.card} />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Fixed Header */}
       <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: isDark ? colors.border : '#e5e7eb' }]}>
