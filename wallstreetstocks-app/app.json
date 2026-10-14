@@ -2,7 +2,7 @@
   "expo": {
     "name": "wallstreetstocksapp",
     "slug": "wallstreetstocks-app",
-    "version": "1.2.6",
+    "version": "1.2.7",
     "orientation": "portrait",
     "icon": "./assets/images/wallstreetstocks.png",
     "scheme": "wallstreetstocksapp",
@@ -162,6 +162,11 @@
       [
         "expo-build-properties",
         {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-keep class com.onesignal.rnonesignalandroid.** { *; }\n-keep class com.revenuecat.purchases.react.** { *; }\n-keep class com.revenuecat.purchases.hybridcommon.** { *; }\n-keep class io.invertase.googlemobileads.** { *; }\n-keep class io.sentry.react.** { *; }\n-keep class com.reactnativegooglesignin.** { *; }\n-keep class com.swmansion.gesturehandler.** { *; }\n-keep class com.swmansion.rnscreens.** { *; }\n-keep class com.th3rdwave.safeareacontext.** { *; }\n-keep class expo.modules.** { *; }\n-dontwarn com.google.android.gms.**\n-dontwarn org.slf4j.**"
+          },
           "ios": {
             "extraPods": [
               {
