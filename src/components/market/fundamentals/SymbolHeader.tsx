@@ -7,6 +7,7 @@
 import React, { useState } from "react";
 import { fmtCount, fmtNum, fmtUsd, RangeBar } from "./shared";
 import { fmtCap } from "@/components/market/useQuotes";
+import { Tick } from "@/components/market/live";
 
 const isNum = (v: any): v is number => typeof v === "number" && isFinite(v);
 
@@ -106,9 +107,9 @@ const SymbolHeader: React.FC<{
         {/* Price */}
         <div className="font-mono">
           {isNum(price) ? (
-            <div className="text-2xl font-bold tabular-nums text-gray-100">
+            <Tick value={price} className="block w-fit text-2xl font-bold tabular-nums text-gray-100 rounded px-1 -mx-1">
               {fmtUsd(price)}
-            </div>
+            </Tick>
           ) : (
             <div className="w-24 h-7 bg-white/[0.06] animate-pulse rounded" />
           )}

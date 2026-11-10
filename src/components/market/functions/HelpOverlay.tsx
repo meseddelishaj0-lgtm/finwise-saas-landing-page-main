@@ -60,6 +60,11 @@ const HelpOverlay: React.FC<{ onClose: () => void; onPick: (fn: FnDef) => void }
         <div className="px-5 py-3 border-t border-white/5 flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-gray-500 font-mono">
           <span><span className="text-yellow-300">/</span> or <span className="text-yellow-300">`</span> focus command line</span>
           <span><span className="text-yellow-300">Alt+←/→</span> previous / next function</span>
+          <span><span className="text-yellow-300">1–4</span> number of panes</span>
+          <span><span className="text-yellow-300">P</span> pop panel out to a window</span>
+          <span><span className="text-yellow-300">E</span> export table as CSV</span>
+          <span><span className="text-yellow-300">G</span> globe</span>
+          <span><span className="text-yellow-300">? text</span> or a sentence asks the AI</span>
           <span><span className="text-yellow-300">?</span> this directory</span>
           <span><span className="text-yellow-300">Esc</span> close</span>
         </div>

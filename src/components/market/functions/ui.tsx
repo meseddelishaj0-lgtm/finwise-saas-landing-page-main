@@ -3,7 +3,7 @@
 // Shared bits for terminal function panels: a polling JSON hook, the
 // function-panel frame, table cell styles and number formatters.
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export function useJson<T = any>(url: string | null, pollMs = 0, body?: unknown) {
   const [data, setData] = useState<T | null>(null);
@@ -47,23 +47,74 @@ export const FnPanel: React.FC<{
   subtitle?: string;
   right?: React.ReactNode;
   children: React.ReactNode;
-}> = ({ code, title, subtitle, right, children }) => (
-  <div className="rounded-2xl border border-white/10 bg-surface overflow-hidden">
-    <div className="px-4 md:px-5 py-3 border-b border-white/5 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-3 min-w-0">
-        <span className="px-2 py-1 rounded-md bg-yellow-400 text-black text-[11px] font-mono font-black tracking-wider">
-          {code}
-        </span>
-        <div className="min-w-0">
-          <h3 className="text-sm font-bold text-gray-100 truncate">{title}</h3>
-          {subtitle && <p className="text-[11px] text-gray-500 truncate">{subtitle}</p>}
+}> = ({ code, title, subtitle, right, children }) => {
+  const root = useRef<HTMLDivElement>(null);
+  const [hasTable, setHasTable] = useState(false);
+  // The CSV button appears whenever the panel is showing a table.
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const check = () => setHasTable(!!el.querySelector("table"));
+    check();
+    const mo = new MutationObserver(check);
+    mo.observe(el, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, []);
+
+  return (
+    <div ref={root} data-fn-panel={code} className="rounded-2xl border border-white/10 bg-surface overflow-hidden">
+      <div className="px-4 md:px-5 py-3 border-b border-white/5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="px-2 py-1 rounded-md bg-yellow-400 text-black text-[11px] font-mono font-black tracking-wider">
+            {code}
+          </span>
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-gray-100 truncate">{title}</h3>
+            {subtitle && <p className="text-[11px] text-gray-500 truncate">{subtitle}</p>}
+          </div>
         </div>
+        {(right || hasTable) && (
+          <div className="flex flex-wrap items-center gap-2 max-w-full">
+            {right}
+            {hasTable && (
+              <button
+                data-export-csv
+                onClick={() => root.current && exportTablesCsv(root.current, `${code}-${title}`)}
+                title="Download this table as CSV (E)"
+                className="px-2.5 py-1 rounded-lg border border-white/10 text-[11px] font-mono font-bold text-gray-400 hover:text-yellow-300 hover:border-yellow-400/40 transition-colors"
+              >
+                CSV
+              </button>
+            )}
+          </div>
+        )}
       </div>
-      {right && <div className="flex flex-wrap items-center gap-2 max-w-full">{right}</div>}
+      {children}
     </div>
-    {children}
-  </div>
-);
+  );
+};
+
+/** Download every table inside `el` as one CSV file (tables separated by a blank row). */
+export function exportTablesCsv(el: HTMLElement, name: string) {
+  const cell = (c: Element) => {
+    // Action columns (remove buttons, screen-reader-only headers) are not data.
+    if (c.querySelector(".sr-only") || c.querySelector("button[aria-label]")) return "";
+    const t = (c.textContent ?? "").replace(/\s+/g, " ").replace(/[↗✕]/g, "").replace(/−/g, "-").trim();
+    return /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  const tables = [...el.querySelectorAll("table")].filter((t) => (t as HTMLElement).offsetParent !== null);
+  if (!tables.length) return;
+  const csv = tables
+    .map((t) => [...t.querySelectorAll("tr")].map((tr) => [...tr.querySelectorAll("th,td")].map(cell).join(",").replace(/,+$/, "")).join("\n"))
+    .join("\n\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" }));
+  a.download = `${name.replace(/[^\w-]+/g, "_").replace(/_+$/, "")}_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
 
 export const th = "px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-gray-500 whitespace-nowrap";
 export const td = "px-3 py-2 font-mono tabular-nums text-xs whitespace-nowrap";

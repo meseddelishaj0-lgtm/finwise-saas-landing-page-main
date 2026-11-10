@@ -22,6 +22,13 @@ export async function GET(req: NextRequest) {
     case "insiders": return insiders();
     case "congress": return congress();
     case "cot": return cot();
+    case "etf": return etf(req.nextUrl.searchParams.get("symbol"), req.nextUrl.searchParams.get("vs"));
+    case "dividends": return dividends();
+    case "splits": return splits();
+    case "mna": return mna();
+    case "events": return events();
+    case "fxnews": return fxnews();
+    case "holdings": return holdingsMeta(req.nextUrl.searchParams.get("symbols"));
     default: return NextResponse.json({ error: "Unknown view" }, { status: 400 });
   }
 }
@@ -234,4 +241,241 @@ async function cot() {
     }))
     .sort((a, b) => a.sector.localeCompare(b.sector) || a.name.localeCompare(b.name));
   return json(data, 1800);
+}
+
+/* -------------------------------- etf -------------------------------- */
+
+const SYM = /^[A-Z0-9.-]{1,10}$/;
+const pct = (v: unknown): number | null => {
+  const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace("%", ""));
+  return Number.isFinite(n) ? n : null;
+};
+
+async function etfHoldings(symbol: string) {
+  const rows = await fmp<Record<string, any>[]>(`v3/etf-holder/${symbol}`, {}, 6 * 3_600_000);
+  return (Array.isArray(rows) ? rows : [])
+    .map((r) => ({
+      asset: String(r.asset ?? ""),
+      name: String(r.name ?? ""),
+      weight: num(r.weightPercentage) ?? 0,
+      value: num(r.marketValue),
+    }))
+    .filter((r) => r.weight > 0)
+    .sort((a, b) => b.weight - a.weight);
+}
+
+/** ETF: profile, top holdings, sector and country mix, and overlap against `vs`. */
+async function etf(rawSymbol: string | null, rawVs: string | null) {
+  const symbol = (rawSymbol || "").toUpperCase();
+  const vs = (rawVs || "").toUpperCase();
+  if (!SYM.test(symbol)) return NextResponse.json({ error: "symbol required" }, { status: 400 });
+
+  const [info, holdings, sectors, countries, vsHoldings] = await Promise.all([
+    fmp<Record<string, any>[]>("v4/etf-info", { symbol }, 6 * 3_600_000),
+    etfHoldings(symbol),
+    fmp<Record<string, any>[]>(`v3/etf-sector-weightings/${symbol}`, {}, 6 * 3_600_000),
+    fmp<Record<string, any>[]>(`v3/etf-country-weightings/${symbol}`, {}, 6 * 3_600_000),
+    SYM.test(vs) && vs !== symbol ? etfHoldings(vs) : Promise.resolve(null),
+  ]);
+  if (!holdings.length) return NextResponse.json({ error: "Not an ETF or no holdings" }, { status: 404 });
+
+  const i = Array.isArray(info) ? info[0] : null;
+  const mix = (rows: Record<string, any>[] | null, key: string) =>
+    (Array.isArray(rows) ? rows : [])
+      .map((r) => ({ name: String(r[key] ?? ""), weight: pct(r.weightPercentage) ?? 0 }))
+      .filter((r) => r.name && r.weight > 0)
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, 14);
+
+  let overlap = null;
+  if (vsHoldings) {
+    if (!vsHoldings.length) overlap = { vs, error: "No holdings found" };
+    else {
+      const other = new Map(vsHoldings.filter((h) => h.asset).map((h) => [h.asset, h.weight]));
+      const common = holdings
+        .filter((h) => h.asset && other.has(h.asset))
+        .map((h) => ({ asset: h.asset, name: h.name, a: h.weight, b: other.get(h.asset)! }));
+      overlap = {
+        vs,
+        // Overlap by weight: the share of each fund that sits in the same names.
+        weight: Math.round(common.reduce((s, c) => s + Math.min(c.a, c.b), 0) * 100) / 100,
+        count: common.length,
+        ofA: holdings.length,
+        ofB: vsHoldings.length,
+        top: common.sort((x, y) => Math.min(y.a, y.b) - Math.min(x.a, x.b)).slice(0, 15),
+      };
+    }
+  }
+
+  return json(
+    {
+      symbol,
+      name: i?.name ?? null,
+      description: i?.description ?? null,
+      aum: num(i?.aum),
+      expenseRatio: num(i?.expenseRatio),
+      inception: i?.inceptionDate ?? null,
+      issuer: i?.etfCompany ?? null,
+      assetClass: i?.assetClass ?? null,
+      holdingsCount: num(i?.holdingsCount) ?? holdings.length,
+      top10: Math.round(holdings.slice(0, 10).reduce((s, h) => s + h.weight, 0) * 100) / 100,
+      holdings: holdings.slice(0, 50),
+      sectors: mix(sectors, "sector"),
+      countries: mix(countries, "country"),
+      overlap,
+    },
+    1800
+  );
+}
+
+/* ------------------------ dividends / splits ------------------------ */
+
+const etDate = (offsetDays = 0) => {
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+  d.setDate(d.getDate() + offsetDays);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+// Five-letter tickers ending in F are foreign OTC ordinaries, not US listings.
+const US_TICKER = /^(?![A-Z]{4}F$)[A-Z]{1,5}$/;
+
+/** Ex-dividend dates for the next two weeks, companies of $2B+ only. */
+async function dividends() {
+  const rows = await fmp<Record<string, any>[]>("v3/stock_dividend_calendar", { from: etDate(), to: etDate(14) }, 3_600_000);
+  const us = (Array.isArray(rows) ? rows : []).filter((r) => US_TICKER.test(String(r.symbol)) && (r.dividend ?? 0) > 0);
+  if (!us.length) return unavailable();
+
+  const symbols = [...new Set(us.map((r) => String(r.symbol)))];
+  const quotes = new Map<string, Record<string, any>>();
+  await Promise.all(
+    Array.from({ length: Math.ceil(symbols.length / 150) }, (_, i) => symbols.slice(i * 150, i * 150 + 150)).map(async (chunk) => {
+      const q = await fmp<Record<string, any>[]>(`v3/quote/${chunk.join(",")}`, {}, 3_600_000);
+      for (const r of Array.isArray(q) ? q : []) quotes.set(String(r.symbol), r);
+    })
+  );
+  const data = us
+    .map((r) => {
+      const q = quotes.get(String(r.symbol));
+      return {
+        date: String(r.date),
+        symbol: String(r.symbol),
+        name: q?.name ? String(q.name) : "",
+        dividend: num(r.dividend),
+        price: num(q?.price),
+        marketCap: num(q?.marketCap),
+        payDate: r.paymentDate ? String(r.paymentDate) : null,
+        recordDate: r.recordDate ? String(r.recordDate) : null,
+      };
+    })
+    .filter((r) => (r.marketCap ?? 0) >= 2e9)
+    .sort((a, b) => a.date.localeCompare(b.date) || (b.marketCap ?? 0) - (a.marketCap ?? 0))
+    .slice(0, 300);
+  return json(data, 900);
+}
+
+async function splits() {
+  const rows = await fmp<Record<string, any>[]>("v3/stock_split_calendar", { from: etDate(-14), to: etDate(45) }, 3_600_000);
+  const data = (Array.isArray(rows) ? rows : [])
+    .filter((r) => US_TICKER.test(String(r.symbol)) && r.numerator > 0 && r.denominator > 0)
+    .map((r) => ({
+      date: String(r.date),
+      symbol: String(r.symbol),
+      numerator: Number(r.numerator),
+      denominator: Number(r.denominator),
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (!data.length) return unavailable();
+  return json(data, 900);
+}
+
+/* -------------------------------- mna -------------------------------- */
+
+/** Latest M&A filings, one row per deal (FMP lists each share class separately). */
+async function mna() {
+  let rows: Record<string, any>[] = [];
+  try {
+    const res = await fetch(
+      `https://financialmodelingprep.com/stable/mergers-acquisitions-latest?page=0&limit=200&apikey=${process.env.FMP_API_KEY}`,
+      { next: { revalidate: 900 } }
+    );
+    if (res.ok) rows = await res.json();
+  } catch {}
+  if (!Array.isArray(rows) || !rows.length) return unavailable();
+  const seen = new Set<string>();
+  const data = [];
+  for (const r of rows) {
+    const key = `${r.cik}|${r.targetedCik || r.targetedCompanyName}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    data.push({
+      date: String(r.transactionDate ?? "").slice(0, 10),
+      acquirer: String(r.companyName ?? ""),
+      acquirerSymbol: String(r.symbol ?? "").replace(/-(UN|WT|U|W|R)$/, ""),
+      target: String(r.targetedCompanyName ?? ""),
+      targetSymbol: r.targetedSymbol ? String(r.targetedSymbol) : "",
+      link: typeof r.link === "string" ? r.link : null,
+    });
+  }
+  return json(data.slice(0, 120), 900);
+}
+
+/* ------------------------------ events ------------------------------ */
+
+/** Medium and high impact economic releases, yesterday through three days out. */
+async function events() {
+  const rows = await fmp<Record<string, any>[]>("v3/economic_calendar", { from: etDate(-1), to: etDate(3) }, 15 * 60_000);
+  const data = (Array.isArray(rows) ? rows : [])
+    .filter((r) => r.impact === "High" || r.impact === "Medium")
+    .map((r) => ({
+      date: String(r.date),
+      country: String(r.country ?? ""),
+      event: String(r.event ?? ""),
+      impact: String(r.impact),
+      actual: num(r.actual),
+      estimate: num(r.estimate),
+      previous: num(r.previous),
+      unit: r.unit ? String(r.unit) : "",
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (!data.length) return unavailable();
+  return json(data, 300);
+}
+
+/* ------------------------------ fxnews ------------------------------ */
+
+async function fxnews() {
+  const pages = await Promise.all([0, 1, 2].map((page) => fmp<Record<string, any>[]>("v4/forex_news", { page }, 10 * 60_000)));
+  const data = pages
+    .flatMap((p) => (Array.isArray(p) ? p : []))
+    .map((r) => ({
+      symbol: String(r.symbol ?? ""),
+      title: String(r.title ?? ""),
+      site: String(r.site ?? ""),
+      url: String(r.url ?? ""),
+      date: String(r.publishedDate ?? ""),
+    }))
+    .filter((r) => r.title && /^https?:\/\//.test(r.url));
+  if (!data.length) return unavailable();
+  return json(data, 300);
+}
+
+/* ----------------------------- holdings ----------------------------- */
+
+/** Sector, beta, dividend and next earnings date for a list of holdings (PORT). */
+async function holdingsMeta(raw: string | null) {
+  const symbols = [...new Set((raw || "").toUpperCase().split(",").map((s) => s.trim()).filter((s) => SYM.test(s)))].slice(0, 40);
+  if (!symbols.length) return NextResponse.json({ error: "symbols required" }, { status: 400 });
+  const [profiles, quotes] = await Promise.all([
+    fmp<Record<string, any>[]>(`v3/profile/${symbols.join(",")}`, {}, 3_600_000),
+    fmp<Record<string, any>[]>(`v3/quote/${symbols.join(",")}`, {}, 3_600_000),
+  ]);
+  const q = new Map((Array.isArray(quotes) ? quotes : []).map((r) => [String(r.symbol), r]));
+  const data = (Array.isArray(profiles) ? profiles : []).map((p) => ({
+    symbol: String(p.symbol),
+    name: String(p.companyName ?? p.symbol),
+    sector: p.isEtf ? "ETF" : p.sector ? String(p.sector) : "Other",
+    beta: num(p.beta),
+    annualDividend: num(p.lastDiv),
+    earnings: typeof q.get(String(p.symbol))?.earningsAnnouncement === "string" ? String(q.get(String(p.symbol))!.earningsAnnouncement).slice(0, 10) : null,
+  }));
+  return json(data, 900);
 }

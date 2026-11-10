@@ -7,7 +7,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { FnPanel, Pills, useJson, fetchBars, fmtP, fmtChg, fmtPctS, fmtBig, tone, isNum } from "./ui";
-import { COMMODITIES, CHOKEPOINTS, INDEX_CITIES, FX_CITIES, CommodityGeo } from "./globeData";
+import { COMMODITIES, CHOKEPOINTS, INDEX_CITIES, FX_CITIES, COUNTRY_GEO, CommodityGeo } from "./globeData";
 import type { GlobeMarker, GlobeArc } from "./GlobeCanvas";
 
 const GlobeCanvas = dynamic(() => import("./GlobeCanvas"), {
@@ -39,12 +39,45 @@ interface Cot {
   prevNet: number | null;
 }
 
-type Layer = "CMDTY" | "EQ" | "FX" | "SEA";
+interface EcoEvent {
+  date: string;
+  country: string;
+  event: string;
+  impact: string;
+  actual: number | null;
+  estimate: number | null;
+  previous: number | null;
+  unit: string;
+}
+interface FxHeadline {
+  symbol: string;
+  title: string;
+  site: string;
+  url: string;
+  date: string;
+}
+
+/** Calendar timestamps are UTC; show them in the viewer's time zone. */
+const ecoDate = (s: string) => new Date(`${s.replace(" ", "T")}Z`);
+const ecoTime = (s: string) => {
+  const d = ecoDate(s);
+  return Number.isNaN(d.getTime()) ? s : d.toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" });
+};
+const ecoUpcoming = (e: EcoEvent) => ecoDate(e.date).getTime() > Date.now();
+/** The next scheduled release, or the most recent one once all have passed. */
+const ecoHeadline = (events: EcoEvent[]) => {
+  const next = events.find(ecoUpcoming);
+  return next ? `Next: ${next.event}` : events.length ? `Latest: ${events[events.length - 1].event}` : undefined;
+};
+const ecoValue = (v: number, unit: string) => `${fmtP(v, 2)}${unit === "%" ? "%" : unit ? ` ${unit}` : ""}`;
+
+type Layer = "CMDTY" | "EQ" | "FX" | "SEA" | "ECO";
 const LAYERS = [
   { key: "CMDTY", label: "Commodities" },
   { key: "EQ", label: "Indices" },
   { key: "FX", label: "Currencies" },
   { key: "SEA", label: "Chokepoints" },
+  { key: "ECO", label: "Economic releases" },
 ];
 
 const toneOf = (pct?: number | null): "up" | "down" | "flat" =>
@@ -124,6 +157,20 @@ const GlobePanel: React.FC<{ onSelect: (s: string) => void }> = ({ onSelect }) =
   const wei = useJson<GQuote[]>(seen.EQ ? "/api/market/global?view=wei" : null, 30_000);
   const fx = useJson<GQuote[]>(seen.FX ? "/api/market/global?view=fx" : null, 30_000);
   const cot = useJson<Cot[]>("/api/market/desk?view=cot");
+  const eco = useJson<EcoEvent[]>(seen.ECO ? "/api/market/desk?view=events" : null, 300_000);
+  const fxNews = useJson<FxHeadline[]>(seen.FX ? "/api/market/desk?view=fxnews" : null, 600_000);
+
+  /** Economic releases grouped by country, for countries we can place. */
+  const ecoCountries = useMemo(() => {
+    const by = new Map<string, EcoEvent[]>();
+    for (const e of Array.isArray(eco.data) ? eco.data : []) {
+      if (!COUNTRY_GEO[e.country]) continue;
+      by.set(e.country, [...(by.get(e.country) ?? []), e]);
+    }
+    return [...by.entries()]
+      .map(([code, events]) => ({ code, geo: COUNTRY_GEO[code], events, high: events.filter((e) => e.impact === "High").length }))
+      .sort((a, b) => b.high - a.high || b.events.length - a.events.length);
+  }, [eco.data]);
 
   const quotes = useMemo(() => {
     const m = new Map<string, GQuote>();
@@ -198,6 +245,15 @@ const GlobePanel: React.FC<{ onSelect: (s: string) => void }> = ({ onSelect }) =
         });
         info.set(c.symbol, { title: `${c.code} vs USD`, sub: c.city, symbol: c.symbol });
       }
+    } else if (layer === "ECO") {
+      for (const c of ecoCountries) {
+        const id = `eco:${c.code}`;
+        markers.push({
+          id, lat: c.geo.lat, lon: c.geo.lon, tone: "gold", emphasis: sel === id || c.high > 0,
+          label: `${c.code} ${c.events.length}`, labelTone: c.high > 0 ? "gold" : "flat", emphasisLabel: sel === id,
+        });
+        info.set(id, { title: c.geo.name, sub: `${c.events.length} release${c.events.length === 1 ? "" : "s"}${c.high ? ` · ${c.high} high impact` : ""}`, note: ecoHeadline(c.events) });
+      }
     } else {
       for (const k of CHOKEPOINTS) {
         const id = `sea:${k.name}`;
@@ -209,7 +265,7 @@ const GlobePanel: React.FC<{ onSelect: (s: string) => void }> = ({ onSelect }) =
     }
     return { markers, arcs, info };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layer, sel, selCommodity, quotes]);
+  }, [layer, sel, selCommodity, quotes, ecoCountries]);
 
   const onPick = (id: string) => {
     const m = markers.find((x) => x.id === id);
@@ -234,7 +290,11 @@ const GlobePanel: React.FC<{ onSelect: (s: string) => void }> = ({ onSelect }) =
 
   /* ---- detail card for the selection ---- */
   const detailSymbol =
-    layer === "CMDTY" ? selCommodity?.symbol : layer === "SEA" ? undefined : sel && !sel.startsWith("sea:") ? sel : undefined;
+    layer === "CMDTY" ? selCommodity?.symbol : layer === "SEA" || layer === "ECO" ? undefined : sel && !sel.startsWith("sea:") ? sel : undefined;
+  const selCountry = layer === "ECO" && sel ? ecoCountries.find((c) => `eco:${c.code}` === sel) : undefined;
+  // Headlines for the selected currency pair (the feed tags each story with a pair).
+  const pairNews =
+    layer === "FX" && detailSymbol ? (Array.isArray(fxNews.data) ? fxNews.data : []).filter((n) => n.symbol === detailSymbol).slice(0, 4) : [];
   const dq = detailSymbol ? quotes.get(detailSymbol) : undefined;
   const dCot = selCommodity?.cot ? (Array.isArray(cot.data) ? cot.data : []).find((r) => r.symbol === selCommodity.cot) : undefined;
   const selChoke = layer === "SEA" && sel ? CHOKEPOINTS.find((k) => `sea:${k.name}` === sel) : undefined;
@@ -290,9 +350,37 @@ const GlobePanel: React.FC<{ onSelect: (s: string) => void }> = ({ onSelect }) =
         <div className="border-t lg:border-t-0 lg:border-l border-white/5 flex flex-col lg:h-[640px]">
           <div className="flex-1 overflow-y-auto max-h-[620px] lg:max-h-none">
           {/* Detail */}
-          {(detailSymbol || selChoke) && (
+          {(detailSymbol || selChoke || selCountry) && (
             <div className="p-4 border-b border-white/5 space-y-3">
-              {selChoke ? (
+              {selCountry ? (
+                <>
+                  <div>
+                    <p className="text-sm font-bold text-gray-100">{selCountry.geo.name}</p>
+                    <p className="text-[11px] text-gray-500">Medium and high impact releases, yesterday to three days out</p>
+                  </div>
+                  <div className="space-y-2.5">
+                    {selCountry.events.map((e, i) => (
+                      <div key={i} className="text-xs">
+                        <p className="flex items-start gap-2">
+                          <span className={`mt-1 w-1.5 h-1.5 shrink-0 rounded-full ${e.impact === "High" ? "bg-yellow-300" : "bg-gray-500"}`} title={`${e.impact} impact`} />
+                          <span className="text-gray-100 leading-snug">{e.event}</span>
+                        </p>
+                        <p className="pl-3.5 mt-0.5 font-mono text-[11px] tabular-nums text-gray-500">
+                          {ecoTime(e.date)}
+                          {" · "}
+                          {e.actual !== null ? (
+                            <span className="text-gray-100">act {ecoValue(e.actual, e.unit)}</span>
+                          ) : (
+                            <span>{ecoUpcoming(e) ? "upcoming" : "no figure"}</span>
+                          )}
+                          {e.estimate !== null && <> · est {ecoValue(e.estimate, e.unit)}</>}
+                          {e.previous !== null && <> · prev {ecoValue(e.previous, e.unit)}</>}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : selChoke ? (
                 <>
                   <div>
                     <p className="text-sm font-bold text-gray-100">{selChoke.name}</p>
@@ -358,6 +446,16 @@ const GlobePanel: React.FC<{ onSelect: (s: string) => void }> = ({ onSelect }) =
                       <span className="font-bold uppercase tracking-wider text-[10px]">Flows </span>
                       {selCommodity.flows.map((f) => `${f.from} → ${f.to}`).join(" · ")}
                     </p>
+                  )}
+                  {pairNews.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Latest headlines</p>
+                      {pairNews.map((n, i) => (
+                        <a key={i} href={n.url} target="_blank" rel="noopener noreferrer" className="block py-1.5 border-t border-white/5 text-xs text-gray-300 hover:text-yellow-200 leading-snug">
+                          {n.title} <span className="text-gray-600">· {n.site}</span>
+                        </a>
+                      ))}
+                    </div>
                   )}
                   {chartable && (
                     <button onClick={() => onSelect(detailSymbol!)} className="w-full px-3 py-2 rounded-lg bg-yellow-400 text-black text-xs font-black tracking-wide hover:bg-yellow-300 transition-colors">
@@ -428,6 +526,29 @@ const GlobePanel: React.FC<{ onSelect: (s: string) => void }> = ({ onSelect }) =
                 );
               })}
 
+            {layer === "ECO" &&
+              (eco.loading && !eco.data ? (
+                <p className="px-3 py-6 text-xs text-gray-600">Loading releases…</p>
+              ) : !ecoCountries.length ? (
+                <p className="px-3 py-6 text-xs text-gray-500">No medium or high impact releases in this window.</p>
+              ) : (
+                ecoCountries.map((c) => {
+                  const id = `eco:${c.code}`;
+                  return (
+                    <button key={id} onClick={() => { setSel(id); flyTo(c.geo.lat, c.geo.lon, id); }} className={railRow(sel === id)}>
+                      <span className="min-w-0">
+                        <span className="block text-xs font-semibold text-gray-100">{c.geo.name}</span>
+                        <span className="block text-[11px] text-gray-500 truncate">{ecoHeadline(c.events)}</span>
+                      </span>
+                      <span className="text-right font-mono tabular-nums text-xs whitespace-nowrap">
+                        <span className="block text-gray-100">{c.events.length}</span>
+                        <span className={`block text-[11px] ${c.high ? "text-yellow-300" : "text-gray-600"}`}>{c.high} high</span>
+                      </span>
+                    </button>
+                  );
+                })
+              ))}
+
             {layer === "SEA" &&
               CHOKEPOINTS.map((k) => {
                 const id = `sea:${k.name}`;
@@ -447,6 +568,8 @@ const GlobePanel: React.FC<{ onSelect: (s: string) => void }> = ({ onSelect }) =
           <p className="px-3 py-2 border-t border-white/5 text-[10px] text-gray-600 leading-snug">
             {layer === "FX"
               ? "Colour shows each currency's move against the US dollar today."
+              : layer === "ECO"
+              ? "Economic data releases by country. Bright markers have a high-impact release in the window; times are in your time zone."
               : layer === "SEA"
               ? "Passages that concentrate seaborne energy and grain trade. Arcs show the main crude routes."
               : layer === "EQ"

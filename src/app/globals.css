@@ -493,3 +493,10 @@ p {
     opacity: 1;
   }
 }
+
+/* Streaming price ticks: a brief green/red wash when a live price changes */
+@keyframes tick-up { 0% { background: rgba(74,222,128,0.35); color: #bbf7d0; } 100% { background: transparent; } }
+@keyframes tick-down { 0% { background: rgba(248,113,113,0.35); color: #fecaca; } 100% { background: transparent; } }
+.tick-up { animation: tick-up 0.7s ease-out; }
+.tick-down { animation: tick-down 0.7s ease-out; }
+@media (prefers-reduced-motion: reduce) { .tick-up, .tick-down { animation: none; } }

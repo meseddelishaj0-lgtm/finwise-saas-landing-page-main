@@ -312,3 +312,43 @@ export const FX_CITIES: (CityQuote & { code: string; usdIsBase: boolean })[] = [
   { code: "CAD", symbol: "USDCAD", label: "CAD", city: "Ottawa", lat: 45.42, lon: -75.7, usdIsBase: true },
   { code: "MXN", symbol: "USDMXN", label: "MXN", city: "Mexico City", lat: 19.43, lon: -99.13, usdIsBase: true },
 ];
+
+/**
+ * Where to place a country's economic releases (its capital, or the central
+ * bank's seat for the euro area). Keys are the calendar feed's country codes.
+ */
+export const COUNTRY_GEO: Record<string, { name: string; lat: number; lon: number }> = {
+  US: { name: "United States", lat: 38.9, lon: -77.04 },
+  CA: { name: "Canada", lat: 45.42, lon: -75.7 },
+  MX: { name: "Mexico", lat: 19.43, lon: -99.13 },
+  BR: { name: "Brazil", lat: -15.79, lon: -47.88 },
+  AR: { name: "Argentina", lat: -34.6, lon: -58.38 },
+  CL: { name: "Chile", lat: -33.45, lon: -70.67 },
+  CO: { name: "Colombia", lat: 4.71, lon: -74.07 },
+  UK: { name: "United Kingdom", lat: 51.51, lon: -0.13 },
+  GB: { name: "United Kingdom", lat: 51.51, lon: -0.13 },
+  EU: { name: "Euro Area", lat: 50.11, lon: 8.68 },
+  DE: { name: "Germany", lat: 52.52, lon: 13.4 },
+  FR: { name: "France", lat: 48.86, lon: 2.35 },
+  IT: { name: "Italy", lat: 41.9, lon: 12.5 },
+  ES: { name: "Spain", lat: 40.42, lon: -3.7 },
+  NL: { name: "Netherlands", lat: 52.37, lon: 4.9 },
+  BE: { name: "Belgium", lat: 50.85, lon: 4.35 },
+  CH: { name: "Switzerland", lat: 46.95, lon: 7.45 },
+  SE: { name: "Sweden", lat: 59.33, lon: 18.07 },
+  NO: { name: "Norway", lat: 59.91, lon: 10.75 },
+  PL: { name: "Poland", lat: 52.23, lon: 21.01 },
+  TR: { name: "Türkiye", lat: 39.93, lon: 32.86 },
+  RU: { name: "Russia", lat: 55.76, lon: 37.62 },
+  ZA: { name: "South Africa", lat: -25.75, lon: 28.19 },
+  SA: { name: "Saudi Arabia", lat: 24.71, lon: 46.68 },
+  IN: { name: "India", lat: 28.61, lon: 77.21 },
+  CN: { name: "China", lat: 39.9, lon: 116.4 },
+  JP: { name: "Japan", lat: 35.68, lon: 139.77 },
+  KR: { name: "South Korea", lat: 37.57, lon: 126.98 },
+  HK: { name: "Hong Kong", lat: 22.28, lon: 114.16 },
+  SG: { name: "Singapore", lat: 1.35, lon: 103.82 },
+  ID: { name: "Indonesia", lat: -6.21, lon: 106.85 },
+  AU: { name: "Australia", lat: -35.28, lon: 149.13 },
+  NZ: { name: "New Zealand", lat: -41.29, lon: 174.78 },
+};

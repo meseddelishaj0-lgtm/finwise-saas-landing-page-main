@@ -12,9 +12,11 @@ interface Props {
   symbol: string;
   onRun: (symbol: string | undefined, fn: FnDef | undefined) => void;
   onHelp: () => void;
+  /** A plain-English question for ASK. */
+  onAsk: (question: string) => void;
 }
 
-const CommandBar: React.FC<Props> = ({ symbol, onRun, onHelp }) => {
+const CommandBar: React.FC<Props> = ({ symbol, onRun, onHelp, onAsk }) => {
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState(0);
@@ -50,6 +52,11 @@ const CommandBar: React.FC<Props> = ({ symbol, onRun, onHelp }) => {
     if (!v) {
       return history.map((h) => ({ kind: "history" as const, text: h, label: h, desc: "Recent" }));
     }
+    // A sentence goes to ASK; say so instead of guessing at tickers.
+    const parsed = parseCommand(value);
+    if (parsed.kind === "ask") {
+      return [{ kind: "fn" as const, text: value, label: "ASK", desc: `Ask the terminal: “${parsed.question}”` }];
+    }
     const tokens = v.split(/\s+/);
     const lastTok = tokens[tokens.length - 1];
     const prefix = tokens.length > 1 ? tokens.slice(0, -1).join(" ") + " " : "";
@@ -83,8 +90,9 @@ const CommandBar: React.FC<Props> = ({ symbol, onRun, onHelp }) => {
     const cmd = parseCommand(text);
     if (cmd.kind === "empty") return;
     if (cmd.kind === "help") onHelp();
+    else if (cmd.kind === "ask") onAsk(cmd.question);
     else onRun(cmd.symbol, cmd.fn);
-    const clean = text.trim().toUpperCase();
+    const clean = cmd.kind === "ask" ? text.trim() : text.trim().toUpperCase();
     const next = [clean, ...history.filter((h) => h !== clean)].slice(0, 8);
     setHistory(next);
     try {
@@ -137,9 +145,11 @@ const CommandBar: React.FC<Props> = ({ symbol, onRun, onHelp }) => {
           onKeyDown={onKeyDown}
           spellCheck={false}
           autoComplete="off"
-          placeholder="Type a command: GLOBE · MSFT HP · WEI · NVDA SEAG · HELP"
+          placeholder="Command or question: GLOBE · MSFT HP · NVDA SEAG · what moved oil today?"
           aria-label="Terminal command line"
-          className="flex-1 min-w-0 bg-transparent py-2.5 font-mono text-sm uppercase text-yellow-100 placeholder:normal-case placeholder:text-gray-600 focus:outline-none"
+          className={`flex-1 min-w-0 bg-transparent py-2.5 font-mono text-sm text-yellow-100 placeholder:normal-case placeholder:text-gray-600 focus:outline-none ${
+            parseCommand(value).kind === "ask" ? "" : "uppercase"
+          }`}
         />
         <button
           onMouseDown={(e) => e.preventDefault()}

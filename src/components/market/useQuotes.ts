@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLive } from "./live";
 
 export interface Quote {
   symbol: string;
@@ -19,7 +20,9 @@ export interface Quote {
 }
 
 // Poll the server-side quote proxy. Refreshes every `intervalMs` (default 30s).
-export function useQuotes(symbols: string[], intervalMs = 30000) {
+// With `live`, streamed last-trade prices are laid over the polled quotes so
+// price and change tick between polls (stocks, ETFs, crypto and FX only).
+export function useQuotes(symbols: string[], intervalMs = 30000, live = false) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const key = symbols.join(",");
@@ -54,7 +57,22 @@ export function useQuotes(symbols: string[], intervalMs = 30000) {
     };
   }, [key, intervalMs]);
 
-  return { quotes, loading };
+  const ticks = useLive(symbols, live);
+  const tickKey = JSON.stringify(ticks);
+  const merged = useMemo(() => {
+    if (!live) return quotes;
+    return quotes.map((q) => {
+      const p = ticks[q.symbol];
+      if (p === undefined || p === q.price) return q;
+      // Rebase the day change on the streamed price.
+      const prev = q.previousClose ?? (Number.isFinite(q.price - q.change) ? q.price - q.change : undefined);
+      if (!prev) return { ...q, price: p };
+      return { ...q, price: p, change: p - prev, changePercent: ((p - prev) / prev) * 100 };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotes, live, tickKey]);
+
+  return { quotes: merged, loading };
 }
 
 export const fmtPrice = (v?: number) =>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useQuotes, fmtPrice, Quote } from "./useQuotes";
+import { Tick } from "./live";
 import { CATEGORIES, NAME_OVERRIDES } from "./catalog";
 
 // Left panel of the terminal: Watchlist + Markets browser with asset
@@ -42,7 +43,7 @@ const MarketsPanel: React.FC<Props> = ({ activeSymbol, watchlist, onSelect, onTo
 
   const cat = CATEGORIES.find((c) => c.key === category) || CATEGORIES[0];
   const symbols = tab === "watchlist" ? watchlist : moverList ? [] : cat.symbols;
-  const { quotes } = useQuotes(symbols, 30000);
+  const { quotes } = useQuotes(symbols, 30000, true);
 
   // Movers (gainers/losers/actives) come from their own endpoint
   useEffect(() => {
@@ -206,9 +207,9 @@ const MarketsPanel: React.FC<Props> = ({ activeSymbol, watchlist, onSelect, onTo
                     </span>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <span className="block font-mono text-[13px] tabular-nums text-gray-200">
+                    <Tick value={r.price} className="block font-mono text-[13px] tabular-nums text-gray-200 rounded px-1 -mx-1">
                       {r.price != null ? `$${fmtPrice(r.price)}` : "—"}
-                    </span>
+                    </Tick>
                     <span className={`font-mono text-[11px] font-bold tabular-nums ${up ? "text-green-400" : "text-red-400"}`}>
                       {up ? "+" : ""}{(r.changePercent || 0).toFixed(2)}%
                     </span>

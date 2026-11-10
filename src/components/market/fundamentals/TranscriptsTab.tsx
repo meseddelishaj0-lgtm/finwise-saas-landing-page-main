@@ -4,6 +4,7 @@
 // in-transcript search with highlighting.
 
 import React, { useMemo, useState } from "react";
+import { TranscriptAsk } from "@/components/market/functions/Intel";
 import {
   useDataset,
   fmtDate,
@@ -167,6 +168,13 @@ const TranscriptsTab: React.FC<{ symbol: string; quote?: any }> = ({ symbol }) =
         <EmptyNote text="No earnings call transcripts available for this symbol." />
       ) : (
         <div>
+          {/* Ask the call a question */}
+          {active && transcript?.content && (
+            <div className="px-4 md:px-5 pt-4">
+              <TranscriptAsk symbol={symbol} year={active.year} quarter={active.quarter} />
+            </div>
+          )}
+
           {/* Search bar */}
           <div className="px-4 md:px-5 py-3 border-b border-white/5 flex items-center gap-3">
             <div className="relative flex-1 max-w-sm">
