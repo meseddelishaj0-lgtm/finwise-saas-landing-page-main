@@ -70,6 +70,7 @@ export const FUTURES: UniverseItem[] = [
   { symbol: "ALIUSD", name: "Aluminum", group: "Metals" },
   { symbol: "ZCUSX", name: "Corn", group: "Agriculture" },
   { symbol: "ZSUSX", name: "Soybeans", group: "Agriculture" },
+  { symbol: "KEUSX", name: "KC Wheat", group: "Agriculture" },
   { symbol: "ZOUSX", name: "Oats", group: "Agriculture" },
   { symbol: "LEUSX", name: "Live Cattle", group: "Agriculture" },
   { symbol: "HEUSX", name: "Lean Hogs", group: "Agriculture" },

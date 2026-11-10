@@ -352,7 +352,10 @@ export function toTdSymbol(symbol: string): string {
 export const FMP_FUTURES = new Set([
   "ESUSD", "NQUSD", "YMUSD", "RTYUSD", "ZBUSD", "ZNUSD", "DXUSD",
   "RBUSD", "HOUSD", "ALIUSD", "LBUSD",
-  "ZCUSX", "ZSUSX", "ZOUSX", "KCUSX", "SBUSX", "CTUSX", "OJUSX", "LEUSX", "HEUSX",
+  // Twelve Data has no feed for these four: BRN1/NG1 return nothing and
+  // HG1/CC1 resolve to unrelated European listings.
+  "BZUSD", "NGUSD", "HGUSD", "CCUSD",
+  "ZCUSX", "ZSUSX", "KEUSX", "ZOUSX", "KCUSX", "SBUSX", "CTUSX", "OJUSX", "LEUSX", "HEUSX",
 ]);
 
 /**

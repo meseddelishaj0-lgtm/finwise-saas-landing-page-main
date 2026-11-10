@@ -29,6 +29,9 @@ import FxMatrix from "@/components/market/functions/FxMatrix";
 import YieldCurve from "@/components/market/functions/YieldCurve";
 import { WorldIndices, FuturesBoard, MostActive, SectorBoard } from "@/components/market/functions/MarketBoards";
 import { EcoCalendar, EarningsCalendar, IpoCalendar } from "@/components/market/functions/Calendars";
+import GlobePanel from "@/components/market/functions/GlobePanel";
+import { CryptoBoard, EconStats, InsiderFlow, CotBoard } from "@/components/market/functions/DeskBoards";
+import { Seasonality, Launchpad, Portfolio, MacroStrip } from "@/components/market/functions/Workbench";
 
 const DEFAULT_WATCHLIST = ["NVDA", "AAPL", "MSFT", "META", "TSLA", "AMZN", "SPY", "BTCUSD"];
 const WATCHLIST_KEY = "wss_terminal_watchlist";
@@ -85,6 +88,14 @@ const renderPanel = (code: string, { symbol, quote, go }: PanelProps): React.Rea
     case "EVTS": return <EarningsCalendar onSelect={go} />;
     case "IPO": return <IpoCalendar onSelect={go} />;
     case "TOP": return <NewsPanel onSelect={go} />;
+    case "SEAG": return <Seasonality symbol={symbol} />;
+    case "GLOBE": return <GlobePanel onSelect={go} />;
+    case "COT": return <CotBoard />;
+    case "CRYP": return <CryptoBoard onSelect={go} />;
+    case "ECST": return <EconStats />;
+    case "INSD": return <InsiderFlow onSelect={go} />;
+    case "LPAD": return <Launchpad onSelect={go} />;
+    case "PORT": return <Portfolio symbol={symbol} onSelect={go} />;
     default: return null;
   }
 };
@@ -301,13 +312,20 @@ function TerminalInner() {
                 {s}
               </button>
             ))}
+            <span className="w-px h-5 bg-white/10 mx-1" />
+            <button onClick={() => runFn(undefined, findFn("GLOBE"))}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold border transition-colors ${
+                fn === "GLOBE" ? "bg-yellow-400 text-black border-yellow-400" : "text-yellow-300 border-yellow-400/30 hover:bg-yellow-400/10"
+              }`}>
+              GLOBE
+            </button>
             <Link href="/heatmap"
-              className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 border border-white/10 hover:text-yellow-300 hover:border-yellow-400/40 transition-colors">
-              🗺️ Heatmap
+              className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-gray-400 border border-white/10 hover:text-yellow-300 hover:border-yellow-400/40 transition-colors">
+              HMAP
             </Link>
             <Link href="/screener"
-              className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-400 border border-white/10 hover:text-yellow-300 hover:border-yellow-400/40 transition-colors">
-              ⚙️ Screener
+              className="px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-gray-400 border border-white/10 hover:text-yellow-300 hover:border-yellow-400/40 transition-colors">
+              EQS
             </Link>
           </div>
 
@@ -323,6 +341,11 @@ function TerminalInner() {
               {inWatchlist ? "★ Watching" : "☆ Watch"}
             </button>
           </div>
+        </div>
+
+        {/* Macro line — futures, energy, metals, dollar, rates */}
+        <div className="mb-4">
+          <MacroStrip onSelect={go} active={symbol} />
         </div>
 
         {/* Command line */}

@@ -137,7 +137,7 @@ const CommandBar: React.FC<Props> = ({ symbol, onRun, onHelp }) => {
           onKeyDown={onKeyDown}
           spellCheck={false}
           autoComplete="off"
-          placeholder="Type a command: MSFT HP · WEI · ECO · NVDA COMP · HELP"
+          placeholder="Type a command: GLOBE · MSFT HP · WEI · NVDA SEAG · HELP"
           aria-label="Terminal command line"
           className="flex-1 min-w-0 bg-transparent py-2.5 font-mono text-sm uppercase text-yellow-100 placeholder:normal-case placeholder:text-gray-600 focus:outline-none"
         />
