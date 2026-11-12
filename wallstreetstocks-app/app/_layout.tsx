@@ -6,6 +6,8 @@ import { View, StatusBar, Platform, AppState, LogBox } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants from "expo-constants";
 import { loadNotifPrefs, applyPrefsToOneSignal } from "@/lib/notificationPrefs";
+// News notifications open in the in-app browser, like news on the Home tab
+import { openArticle } from "@/lib/openArticle";
 
 // OneSignal for push notifications
 let OneSignal: any = null;
@@ -18,14 +20,6 @@ try {
   OneSignal = osModule?.OneSignal ?? osModule?.default ?? null;
 } catch {
   // Module not available in Expo Go - will work in production builds
-}
-
-// In-app browser for opening article URLs from notifications
-let WebBrowser: any = null;
-try {
-  WebBrowser = require("expo-web-browser");
-} catch {
-  // Module not available
 }
 
 // ATT module - only available in production builds, not Expo Go
@@ -133,23 +127,6 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!OneSignal) return;
-
-    const openArticle = async (articleUrl: string) => {
-      if (WebBrowser) {
-        try {
-          await WebBrowser.openBrowserAsync(articleUrl, {
-            presentationStyle: 1, // FULL_SCREEN
-            dismissButtonStyle: 'close',
-            enableBarCollapsing: true,
-          });
-          return;
-        } catch (e) {
-          console.warn('[OneSignal] In-app browser failed, opening externally:', e);
-        }
-      }
-      const { Linking } = require('react-native');
-      Linking.openURL(articleUrl).catch(() => {});
-    };
 
     const processNotificationClick = async (event: any) => {
       const notification = event?.notification;

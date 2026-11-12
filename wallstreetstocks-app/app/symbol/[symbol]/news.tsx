@@ -6,13 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Linking,
   RefreshControl
 } from "react-native";
 import { useLocalSearchParams, useGlobalSearchParams, useSegments } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLanguage } from "@/context/LanguageContext";
+import { openArticle } from "@/lib/openArticle";
 
 const FMP_API_KEY = process.env.EXPO_PUBLIC_FMP_API_KEY || '';
 const NEWS_CACHE_PREFIX = 'news_cache_';
@@ -188,14 +188,12 @@ export default function NewsTab() {
     fetchNews(true);
   };
 
+  // Opens in the in-app browser, like news on the Home tab and news
+  // notifications (this used to leave the app for Safari).
   const handleArticlePress = async (url: string) => {
+    if (!url) return;
     try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        
-      }
+      await openArticle(url);
     } catch (err) {
       
     }
