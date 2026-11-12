@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { CustomerInfo, PurchasesPackage, PurchasesOfferings } from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildAuthHeaders } from '@/lib/authHeaders';
 import {
   initializeRevenueCat,
   identifyUser,
@@ -137,10 +138,12 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       // Use the /api/user/:id endpoint which is proven to work correctly
       const response = await fetch(`${API_URL}/api/user/${userId}`, {
         method: 'PUT',
-        headers: {
+        // Signed login token, so the server can confirm it is this user's own
+        // record (it still accepts the request without one for now).
+        headers: await buildAuthHeaders(userId, {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',
-        },
+        }),
         body: JSON.stringify({
           subscriptionTier: tier,
         }),

@@ -1,6 +1,6 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { TRANSLATIONS } from "@/i18n/translations";
+import { getDictionary, isSupportedLanguage } from "@/i18n/translations";
 
 // App-wide language state. Keys are the English strings themselves;
 // t() falls back to the key, so a missing translation can never crash
@@ -26,20 +26,23 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((saved) => {
-        if (saved && TRANSLATIONS[saved]) setLangState(saved);
+        if (saved && isSupportedLanguage(saved)) setLangState(saved);
       })
       .catch(() => {});
   }, []);
 
   const setLang = useCallback((code: string) => {
-    if (!TRANSLATIONS[code]) return;
+    if (!isSupportedLanguage(code)) return;
     setLangState(code);
     AsyncStorage.setItem(STORAGE_KEY, code).catch(() => {});
   }, []);
 
+  // Only the active language's dictionary is ever loaded
+  const dict = useMemo(() => getDictionary(lang), [lang]);
+
   const t = useCallback(
-    (key: string) => TRANSLATIONS[lang]?.[key] ?? key,
-    [lang]
+    (key: string) => dict[key] ?? key,
+    [dict]
   );
 
   return (

@@ -252,7 +252,7 @@ export default function MessagesScreen() {
                 `${API_BASE_URL}/messages?conversationId=${conversationId}`,
                 {
                   method: 'DELETE',
-                  headers: { 'x-user-id': userId },
+                  headers: await buildAuthHeaders(userId),
                 }
               );
 

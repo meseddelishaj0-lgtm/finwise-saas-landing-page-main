@@ -269,7 +269,7 @@ export default function PriceAlertsScreen() {
               const userId = await AsyncStorage.getItem('userId');
               const res = await fetch(
                 `${API_BASE_URL}/price-alerts?alertId=${id}&userId=${userId}`,
-                { method: 'DELETE' }
+                { method: 'DELETE', headers: await buildAuthHeaders(userId) }
               );
               if (res.ok) {
                 setAlerts(prev => prev.filter(a => a.id !== id));

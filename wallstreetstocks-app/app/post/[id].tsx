@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import VerifiedBadge from '@/components/VerifiedBadge';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { buildAuthHeaders } from '@/lib/authHeaders';
 import { getUserDisplayName, getUserHandle } from '@/context/UserProfileContext';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai/api';
@@ -145,7 +146,7 @@ export default function PostDetail() {
     try {
       const res = await fetch(`${API_BASE_URL}/likes`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await buildAuthHeaders(currentUserId, { 'Content-Type': 'application/json' }),
         body: JSON.stringify({ postId: post.id, userId: currentUserId }),
       });
 

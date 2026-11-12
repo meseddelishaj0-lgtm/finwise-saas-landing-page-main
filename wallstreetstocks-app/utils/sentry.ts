@@ -14,9 +14,11 @@ export function initializeSentry() {
   Sentry.init({
     dsn: SENTRY_DSN,
 
-    // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-    // Adjust this value in production.
-    tracesSampleRate: 1.0,
+    // Performance tracing for 1 session in 5. Tracing every session (1.0) adds
+    // work to every screen change and network call on every device; a 20%
+    // sample still shows where time goes. Crash and error reports are NOT
+    // sampled — every one is still sent.
+    tracesSampleRate: 0.2,
 
     // Enable automatic session tracking
     enableAutoSessionTracking: true,

@@ -3,11 +3,21 @@
 // Pre-loads ALL symbols on app start for instant tab switching
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { priceStore } from '../stores/priceStore';
+import { priceStore, QuoteInput } from '../stores/priceStore';
 import { websocketService } from './websocketService';
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
+
+// One cached server response holding every symbol below (see the website's
+// /api/mobile/market-snapshot route). Replaces 16 back-to-back Twelve Data
+// requests per launch; if it is unreachable or incomplete the app falls back
+// to those direct requests, so startup never depends on it.
+const SNAPSHOT_URL = 'https://www.wallstreetstocks.ai/api/mobile/market-snapshot';
+const SNAPSHOT_TIMEOUT = 6000; // ms
+// Share of each list the snapshot must cover to be used instead of the
+// direct requests.
+const SNAPSHOT_MIN_COVERAGE = 0.8;
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -142,6 +152,82 @@ const processQuoteData = (item: any, type: 'stock' | 'crypto' | 'etf'): MarketIt
   };
 };
 
+// Every symbol in one request from our own server (CDN-cached there, so it
+// costs no Twelve Data credits per launch). Returns null unless the response
+// is complete enough to stand in for the direct requests.
+const fetchSnapshot = async (): Promise<Pick<MarketDataState, 'stocks' | 'crypto' | 'etfs'> | null> => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SNAPSHOT_TIMEOUT);
+
+  try {
+    const res = await fetch(SNAPSHOT_URL, { signal: controller.signal });
+    if (!res.ok) return null;
+    const json = await res.json();
+
+    const clean = (rows: any, type: MarketItem['type']): MarketItem[] =>
+      (Array.isArray(rows) ? rows : [])
+        .filter((r: any) => r && typeof r.symbol === 'string' && r.symbol && Number.isFinite(r.price) && r.price > 0)
+        .map((r: any) => ({
+          symbol: r.symbol,
+          name: r.name || r.symbol,
+          price: r.price,
+          change: Number(r.change) || 0,
+          changePercent: Number(r.changePercent) || 0,
+          type,
+          previousClose: Number(r.previousClose) || r.price,
+        }));
+
+    const stocks = clean(json?.stocks, 'stock');
+    const crypto = clean(json?.crypto, 'crypto');
+    const etfs = clean(json?.etfs, 'etf');
+
+    // A thin response (upstream trouble on the server) is not worth using:
+    // the direct path below fills every list.
+    if (
+      stocks.length < ALL_STOCKS.length * SNAPSHOT_MIN_COVERAGE ||
+      crypto.length < ALL_CRYPTO.length * SNAPSHOT_MIN_COVERAGE ||
+      etfs.length < ALL_ETFS.length * SNAPSHOT_MIN_COVERAGE
+    ) {
+      return null;
+    }
+
+    return { stocks, crypto, etfs };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+// Write a list of items to the price store in ONE update (each store write
+// copies the whole quote table and notifies every subscriber).
+const pushToPriceStore = (items: MarketItem[], withCryptoSlash: boolean) => {
+  const updates: QuoteInput[] = [];
+  for (const item of items) {
+    updates.push({
+      symbol: item.symbol,
+      price: item.price,
+      change: item.change,
+      changePercent: item.changePercent,
+      previousClose: item.previousClose,
+      name: item.name,
+    });
+
+    // Also store with slash for crypto
+    if (withCryptoSlash && item.type === 'crypto') {
+      updates.push({
+        symbol: item.symbol.slice(0, -3) + '/' + item.symbol.slice(-3),
+        price: item.price,
+        change: item.change,
+        changePercent: item.changePercent,
+        previousClose: item.previousClose,
+        name: item.name,
+      });
+    }
+  }
+  priceStore.setQuotes(updates);
+};
+
 // ============================================================================
 // STORAGE FUNCTIONS
 // ============================================================================
@@ -182,16 +268,7 @@ const loadFromStorage = async (): Promise<boolean> => {
 
     // Update price store with cached data
     const allItems = [...marketData.stocks, ...marketData.crypto, ...marketData.etfs];
-    for (const item of allItems) {
-      priceStore.setQuote({
-        symbol: item.symbol,
-        price: item.price,
-        change: item.change,
-        changePercent: item.changePercent,
-        previousClose: item.previousClose,
-        name: item.name,
-      });
-    }
+    pushToPriceStore(allItems, false);
 
     return allItems.length > 0;
   } catch (err) {
@@ -204,48 +281,37 @@ const loadFromStorage = async (): Promise<boolean> => {
 // ============================================================================
 
 const fetchAllData = async () => {
-  // Fetch data SEQUENTIALLY to prevent overwhelming the device
-  // This is critical for iPad performance on startup
-  const stockQuotes = await fetchBatchQuotes(ALL_STOCKS);
-  await new Promise(resolve => setTimeout(resolve, 300)); // Brief pause
+  // Fast path: every symbol in one cached request from our own server
+  const snapshot = await fetchSnapshot();
 
-  const cryptoQuotes = await fetchBatchQuotes(ALL_CRYPTO);
-  await new Promise(resolve => setTimeout(resolve, 300)); // Brief pause
+  if (snapshot) {
+    marketData.stocks = snapshot.stocks;
+    marketData.crypto = snapshot.crypto;
+    marketData.etfs = snapshot.etfs;
+  } else {
+    // Fallback: ask Twelve Data directly.
+    // Fetch data SEQUENTIALLY to prevent overwhelming the device
+    // This is critical for iPad performance on startup
+    const stockQuotes = await fetchBatchQuotes(ALL_STOCKS);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Brief pause
 
-  const etfQuotes = await fetchBatchQuotes(ALL_ETFS);
+    const cryptoQuotes = await fetchBatchQuotes(ALL_CRYPTO);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Brief pause
 
-  // Process and store
-  marketData.stocks = stockQuotes.map(q => processQuoteData(q, 'stock'));
-  marketData.crypto = cryptoQuotes.map(q => processQuoteData(q, 'crypto'));
-  marketData.etfs = etfQuotes.map(q => processQuoteData(q, 'etf'));
+    const etfQuotes = await fetchBatchQuotes(ALL_ETFS);
+
+    // Process and store
+    marketData.stocks = stockQuotes.map(q => processQuoteData(q, 'stock'));
+    marketData.crypto = cryptoQuotes.map(q => processQuoteData(q, 'crypto'));
+    marketData.etfs = etfQuotes.map(q => processQuoteData(q, 'etf'));
+  }
+
   marketData.lastUpdate = Date.now();
   marketData.isLoaded = true;
 
   // Update price store
   const allItems = [...marketData.stocks, ...marketData.crypto, ...marketData.etfs];
-  for (const item of allItems) {
-    priceStore.setQuote({
-      symbol: item.symbol,
-      price: item.price,
-      change: item.change,
-      changePercent: item.changePercent,
-      previousClose: item.previousClose,
-      name: item.name,
-    });
-
-    // Also store with slash for crypto
-    if (item.type === 'crypto') {
-      const symbolWithSlash = item.symbol.slice(0, -3) + '/' + item.symbol.slice(-3);
-      priceStore.setQuote({
-        symbol: symbolWithSlash,
-        price: item.price,
-        change: item.change,
-        changePercent: item.changePercent,
-        previousClose: item.previousClose,
-        name: item.name,
-      });
-    }
-  }
+  pushToPriceStore(allItems, true);
 
 
   // Save to storage for persistence
@@ -257,13 +323,12 @@ const fetchAllData = async () => {
 };
 
 const subscribeToWebSocket = () => {
-  // Delay WebSocket subscription to prevent overwhelming the device at startup
-  setTimeout(() => {
-    // Subscribe ALL symbols for real-time WebSocket updates
-    // 117 symbols total - well within 800 WS credit limit
-    const allSymbols = [...ALL_STOCKS, ...ALL_CRYPTO, ...ALL_ETFS];
-    websocketService.subscribe(allSymbols);
-  }, 3000); // 3 second delay
+  // Subscribe ALL symbols for real-time WebSocket updates
+  // 117 symbols total - well within 800 WS credit limit
+  // (No startup delay any more: ticks are batched into the price store by
+  // websocketService, so the first burst no longer floods the UI.)
+  const allSymbols = [...ALL_STOCKS, ...ALL_CRYPTO, ...ALL_ETFS];
+  websocketService.subscribe(allSymbols);
 };
 
 // ============================================================================

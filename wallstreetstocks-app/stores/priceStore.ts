@@ -20,13 +20,16 @@ export interface Quote {
   updatedAt: number; // timestamp
 }
 
+export type QuoteTable = Record<string, Quote>;
+export type QuoteInput = Partial<Quote> & { symbol: string; price: number };
+
 interface PriceState {
   // All quotes indexed by symbol
-  quotes: Record<string, Quote>;
+  quotes: QuoteTable;
 
   // Actions
-  setQuote: (quote: Partial<Quote> & { symbol: string; price: number }) => void;
-  setQuotes: (quotes: Array<Partial<Quote> & { symbol: string; price: number }>) => void;
+  setQuote: (quote: QuoteInput) => void;
+  setQuotes: (quotes: QuoteInput[]) => void;
   getQuote: (symbol: string) => Quote | undefined;
   getPrice: (symbol: string) => number | undefined;
 
@@ -34,18 +37,40 @@ interface PriceState {
   clearAll: () => void;
 }
 
+// Look a symbol up in a quote table, also trying the other crypto spelling
+// (BTCUSD <-> BTC/USD). Shared by the store and by code holding a snapshot.
+export function findQuote(quotes: QuoteTable, symbol: string): Quote | undefined {
+  // Try exact match first
+  if (quotes[symbol]) return quotes[symbol];
+  // Try with slash for crypto (e.g., BTCUSD -> BTC/USD)
+  if (!symbol.includes('/') && symbol.length >= 6) {
+    const withSlash = symbol.slice(0, -3) + '/' + symbol.slice(-3);
+    if (quotes[withSlash]) return quotes[withSlash];
+  }
+  // Try without slash for crypto (e.g., BTC/USD -> BTCUSD)
+  const withoutSlash = symbol.replace('/', '');
+  if (quotes[withoutSlash]) return quotes[withoutSlash];
+  return undefined;
+}
+
+// When the store last received any price (0 until the first one). Read by
+// "updated Xs ago" labels on their own timer, so it is deliberately not state.
+let lastUpdateAt = 0;
+export const getLastPriceUpdateAt = (): number => lastUpdateAt;
+
 export const usePriceStore = create<PriceState>((set, get) => ({
   quotes: {},
 
   // Update a single quote
   setQuote: (quote) => {
+    lastUpdateAt = Date.now();
     set((state) => ({
       quotes: {
         ...state.quotes,
         [quote.symbol]: {
           ...state.quotes[quote.symbol],
           ...quote,
-          updatedAt: Date.now(),
+          updatedAt: lastUpdateAt,
         },
       },
     }));
@@ -53,7 +78,9 @@ export const usePriceStore = create<PriceState>((set, get) => ({
 
   // Batch update multiple quotes (more efficient)
   setQuotes: (quotes) => {
+    if (quotes.length === 0) return;
     const now = Date.now();
+    lastUpdateAt = now;
     set((state) => {
       const newQuotes = { ...state.quotes };
       for (const quote of quotes) {
@@ -70,20 +97,7 @@ export const usePriceStore = create<PriceState>((set, get) => ({
   },
 
   // Get a quote by symbol (also checks normalized crypto symbols)
-  getQuote: (symbol) => {
-    const quotes = get().quotes;
-    // Try exact match first
-    if (quotes[symbol]) return quotes[symbol];
-    // Try with slash for crypto (e.g., BTCUSD -> BTC/USD)
-    if (!symbol.includes('/') && symbol.length >= 6) {
-      const withSlash = symbol.slice(0, -3) + '/' + symbol.slice(-3);
-      if (quotes[withSlash]) return quotes[withSlash];
-    }
-    // Try without slash for crypto (e.g., BTC/USD -> BTCUSD)
-    const withoutSlash = symbol.replace('/', '');
-    if (quotes[withoutSlash]) return quotes[withoutSlash];
-    return undefined;
-  },
+  getQuote: (symbol) => findQuote(get().quotes, symbol),
 
   // Get just the price for a symbol
   getPrice: (symbol) => {

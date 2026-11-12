@@ -5,6 +5,7 @@ import { Text, StyleSheet, Animated, View, TextStyle, ViewStyle, StyleProp } fro
 import { isEasternDST } from '../lib/easternTime';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '@/context/LanguageContext';
+import { getLastPriceUpdateAt } from '@/stores/priceStore';
 
 interface AnimatedPriceProps {
   value: number;
@@ -624,6 +625,43 @@ export const LastUpdated = memo(({ timestamp, style, prefix = 'Updated' }: LastU
 });
 
 LastUpdated.displayName = 'LastUpdated';
+
+// "Xs ago" since the price feed last delivered anything. Same look as
+// LastUpdated, but it reads the feed's own clock once a second instead of
+// needing its parent to re-render with a fresh timestamp.
+export const LiveUpdated = memo(({ style, prefix = 'Updated' }: Omit<LastUpdatedProps, 'timestamp'>) => {
+  const [secondsAgo, setSecondsAgo] = React.useState(0);
+
+  useEffect(() => {
+    const updateTime = () => {
+      const at = getLastPriceUpdateAt();
+      // Before the first price arrives there is nothing to be late against
+      setSecondsAgo(at > 0 ? Math.max(0, Math.floor((Date.now() - at) / 1000)) : 0);
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatTime = () => {
+    if (secondsAgo < 60) {
+      return `${secondsAgo}s ago`;
+    } else if (secondsAgo < 3600) {
+      return `${Math.floor(secondsAgo / 60)}m ago`;
+    } else {
+      return `${Math.floor(secondsAgo / 3600)}h ago`;
+    }
+  };
+
+  return (
+    <Text style={[styles.lastUpdated, style]}>
+      {prefix} {formatTime()}
+    </Text>
+  );
+});
+
+LiveUpdated.displayName = 'LiveUpdated';
 
 // Crypto Live Indicator - always shows LIVE since crypto trades 24/7
 export const CryptoLiveIndicator = memo(() => {

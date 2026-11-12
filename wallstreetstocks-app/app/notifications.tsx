@@ -56,7 +56,9 @@ export default function Notifications() {
         return;
       }
 
-      const res = await fetch(`${API_BASE_URL}/notifications?userId=${userId}`);
+      const res = await fetch(`${API_BASE_URL}/notifications?userId=${userId}`, {
+        headers: await buildAuthHeaders(userId),
+      });
 
       if (res.ok) {
         const data = await res.json();

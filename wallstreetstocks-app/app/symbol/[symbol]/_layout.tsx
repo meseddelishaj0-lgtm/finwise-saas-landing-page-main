@@ -6,9 +6,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import SymbolHeader from "./header";
 import { setToMemory, CACHE_KEYS } from "../../../utils/memoryCache";
 import { useLanguage } from "@/context/LanguageContext";
+import { fetchTdQuote } from "@/lib/tdQuote";
 
-const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
-const TWELVE_DATA_URL = 'https://api.twelvedata.com';
 const QUOTE_CACHE_PREFIX = 'quote_cache_';
 
 // Pre-fetch quote data for faster tab loading (chart.tsx fetches its own chart data)
@@ -16,9 +15,9 @@ async function prefetchSymbolData(symbol: string) {
   const cleanSymbol = symbol.toUpperCase().trim();
 
   try {
-    // Fetch quote from Twelve Data
-    const res = await fetch(`${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(cleanSymbol)}&apikey=${TWELVE_DATA_API_KEY}`);
-    const data = await res.json();
+    // Fetch quote from Twelve Data (shared with the chart tab's own quote
+    // request, so opening a symbol asks for it once, not twice)
+    const data = await fetchTdQuote(cleanSymbol);
 
     if (data && data.symbol && !data.code) {
       const price = parseFloat(data.close) || 0;
@@ -65,8 +64,9 @@ export default function SymbolLayout() {
     <Tabs
       screenOptions={{
         header: () => <SymbolHeader />,
-        tabBarActiveTintColor: "#0dd977",
-        tabBarInactiveTintColor: "#666",
+        // Gold accent, as on the main tab bar (this screen is always dark)
+        tabBarActiveTintColor: "#FFD60A",
+        tabBarInactiveTintColor: "#8E8E93",
         tabBarStyle: { backgroundColor: "#000", borderTopWidth: 0 },
         tabBarLabelStyle: { fontWeight: "600", fontSize: 11 },
       }}

@@ -2,7 +2,7 @@
 // Real-time price streaming via Twelve Data WebSocket
 // Connects to Zustand price store for automatic UI updates
 
-import { priceStore } from '../stores/priceStore';
+import { priceStore, Quote, QuoteInput } from '../stores/priceStore';
 import { AppState, AppStateStatus } from 'react-native';
 
 // WebSocket configuration - connects to our Railway relay server (not directly to Twelve Data)
@@ -12,6 +12,10 @@ const WEBSOCKET_URL = 'wss://wallstreetstocks-ws-server-production.up.railway.ap
 const MAX_SYMBOLS = 800; // Pro plan: 1000 WS credits - maximize usage!
 const RECONNECT_DELAY = 3000; // 3 seconds
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+// Ticks are collected and written to the price store together at this pace.
+// Each store write copies the whole quote table and wakes every subscriber,
+// so one write per tick (hundreds a second on a busy tape) was the hot spot.
+const FLUSH_INTERVAL = 100; // ms
 
 type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 
@@ -64,6 +68,9 @@ class WebSocketService {
   private listeners: Set<(status: ConnectionStatus) => void> = new Set();
   private appStateSubscription: any = null;
   private isConnected: boolean = false;
+  // Ticks per symbol waiting to be written to the price store.
+  private pendingTicks: Map<string, TwelveDataPriceMessage[]> = new Map();
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     // Listen for app state changes (background/foreground)
@@ -164,15 +171,31 @@ class WebSocketService {
     }
   }
 
-  // Handle real-time price update
+  // Handle real-time price update: queue the tick, write it on the next flush
   private handlePriceUpdate(message: TwelveDataPriceMessage): void {
     const symbol = message.symbol.toUpperCase();
     const price = message.price;
 
     if (!price || price <= 0) return;
 
-    // Get existing quote to preserve other fields
-    const existingQuote = priceStore.getQuote(symbol);
+    // Keep every tick for this symbol since the last flush, in arrival order
+    const queued = this.pendingTicks.get(symbol);
+    if (queued) {
+      queued.push(message);
+    } else {
+      this.pendingTicks.set(symbol, [message]);
+    }
+
+    if (!this.flushTimer) {
+      this.flushTimer = setTimeout(this.flushPendingTicks, FLUSH_INTERVAL);
+    }
+  }
+
+  // Turn a tick into the quote to store, building on the quote that came
+  // before it (the store's, or the result of the previous queued tick).
+  private buildQuote(message: TwelveDataPriceMessage, existingQuote: Partial<Quote> | undefined): QuoteInput {
+    const symbol = message.symbol.toUpperCase();
+    const price = message.price;
 
     // Use WebSocket's previous_close when available, fall back to existing
     const previousClose = message.previous_close ?? existingQuote?.previousClose ?? price;
@@ -195,8 +218,8 @@ class WebSocketService {
       changePercent = existingQuote?.changePercent ?? 0;
     }
 
-    // Update the price store with all available data
-    priceStore.setQuote({
+    // The quote with all available data
+    return {
       ...existingQuote,
       symbol,
       price,
@@ -209,8 +232,34 @@ class WebSocketService {
       volume: message.volume ?? existingQuote?.volume,
       bid: message.bid ?? existingQuote?.bid,
       ask: message.ask ?? existingQuote?.ask,
-    });
+    };
   }
+
+  // Write all queued ticks to the price store in a single update
+  private flushPendingTicks = (): void => {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+    if (this.pendingTicks.size === 0) return;
+
+    const queued = Array.from(this.pendingTicks.entries());
+    this.pendingTicks.clear();
+
+    // Apply each symbol's ticks one after another, exactly as if each had
+    // been written when it arrived, then store only the final result.
+    const batch: QuoteInput[] = [];
+    for (const [symbol, ticks] of queued) {
+      let quote: Partial<Quote> | undefined = priceStore.getQuote(symbol);
+      let latest: QuoteInput | null = null;
+      for (const tick of ticks) {
+        latest = this.buildQuote(tick, quote);
+        quote = latest;
+      }
+      if (latest) batch.push(latest);
+    }
+    priceStore.setQuotes(batch);
+  };
 
   // Subscribe to symbols
   subscribe(symbols: string | string[]): void {
@@ -329,6 +378,8 @@ class WebSocketService {
     this.cancelReconnect();
     this.stopHeartbeat();
     this.isConnected = false;
+    // Don't lose the last ticks received before closing
+    this.flushPendingTicks();
 
     if (this.ws) {
       this.ws.close();

@@ -23,6 +23,8 @@ import { FLATLIST_PERFORMANCE_PROPS } from "@/components/OptimizedListItems";
 import { AnimatedPrice, AnimatedChange, MarketTimeLabel } from "@/components/AnimatedPrice";
 import { fetchSparklines } from "@/services/sparklineService";
 import { priceStore } from "@/stores/priceStore";
+import { useQuoteTick } from "@/hooks/useQuoteTick";
+import { useScreenFocused } from "@/hooks/useScreenFocused";
 import { InlineAdBanner } from "@/components/AdBanner";
 import { useWebSocket } from "@/context/WebSocketContext";
 import { marketDataService } from "@/services/marketDataService";
@@ -370,8 +372,21 @@ export default function Trending() {
   const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
   const wsSubscribedRef = useRef<string[]>([]);
 
-  // Price update trigger for real-time updates
-  const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
+  // Price update trigger for real-time updates. This used to be a 100ms
+  // timer that re-rendered the whole screen 10 times a second forever, even
+  // on another tab. It now moves only when a listed symbol's price actually
+  // changed, at most 4 times a second, and only while this tab is on display.
+  const isFocused = useScreenFocused();
+  const liveSymbols = useMemo(() => {
+    const out: string[] = [];
+    for (const item of data) {
+      if (item.symbol) out.push(item.symbol);
+      // liveData below also looks quotes up under the original pair name
+      if (item.companyName) out.push(item.companyName);
+    }
+    return out;
+  }, [data]);
+  const priceUpdateTrigger = useQuoteTick(liveSymbols, { intervalMs: 250, enabled: isFocused });
 
   const HEADER_SYMBOLS = ["SPY", "QQQ", "DIA", "IWM", "AAPL", "MSFT", "GOOGL", "AMZN"];
   const HEADER_NAMES: Record<string, string> = {
@@ -683,31 +698,6 @@ export default function Trending() {
       }
     }, [activeTab, wsConnected, data, wsSubscribe])
   );
-
-  // Real-time price update trigger - runs continuously for live prices
-  const priceIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    // Clear any existing interval
-    if (priceIntervalRef.current) {
-      clearInterval(priceIntervalRef.current);
-    }
-
-    // Start price update interval after brief delay
-    const startupDelay = setTimeout(() => {
-      priceIntervalRef.current = setInterval(() => {
-        setPriceUpdateTrigger(prev => prev + 1);
-      }, 100); // 100ms = 10 updates/sec for ultra-fast prices
-    }, 200); // 200ms initial delay
-
-    return () => {
-      clearTimeout(startupDelay);
-      if (priceIntervalRef.current) {
-        clearInterval(priceIntervalRef.current);
-        priceIntervalRef.current = null;
-      }
-    };
-  }, []);
 
   // Cleanup WebSocket on unmount
   useEffect(() => {

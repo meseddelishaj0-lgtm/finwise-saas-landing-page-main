@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFromMemory, setToMemory, clearFromMemory, CACHE_KEYS } from '../../../utils/memoryCache';
 import { priceStore, useQuote } from '../../../stores/priceStore';
+import { fetchTdQuote } from '../../../lib/tdQuote';
 import { displaySymbol } from '../../../lib/symbolDisplay';
 import { useWebSocket } from '../../../context/WebSocketContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -397,8 +398,10 @@ export default function ChartTab() {
   // WEBSOCKET INTEGRATION
   // ============================================================================
   const { subscribe, isConnected } = useWebSocket();
-  const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
-  const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Slow clock for the one time-based rule below (the 1D chart grows a new
+  // point once the last bar is over a minute old). Prices themselves arrive
+  // through useQuote, which re-renders on every tick for this symbol.
+  const [chartClock, setChartClock] = useState(0);
 
   // Subscribe to WebSocket
   useEffect(() => {
@@ -411,17 +414,14 @@ export default function ChartTab() {
     }
   }, [cleanSymbol, apiSymbol, isConnected, subscribe]);
 
-  // Re-render sample for WebSocket price updates — 100ms = 10 updates/sec.
+  // This used to be a 100ms timer that re-rendered the screen (and rebuilt
+  // the chart) 10 times a second whether or not the price had moved.
   useEffect(() => {
-    priceRefreshIntervalRef.current = setInterval(() => {
-      setPriceUpdateTrigger(prev => prev + 1);
-    }, 100);
+    const interval = setInterval(() => {
+      setChartClock(prev => prev + 1);
+    }, 15000);
 
-    return () => {
-      if (priceRefreshIntervalRef.current) {
-        clearInterval(priceRefreshIntervalRef.current);
-      }
-    };
+    return () => clearInterval(interval);
   }, []);
 
   // Get quote from WebSocket store
@@ -443,7 +443,10 @@ export default function ChartTab() {
         Animated.timing(pulseAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
       ]).start();
     }
-  }, [livePrice, priceUpdateTrigger]);
+    // Re-checked whenever either price changes, so the live price still wins
+    // straight away if a REST quote lands after it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [livePrice, currentPrice]);
 
   // ============================================================================
   // CHART DATA PROCESSING
@@ -492,7 +495,8 @@ export default function ChartTab() {
     }
 
     return result;
-  }, [rawChartData, timeframe, livePrice, currentPrice, priceUpdateTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawChartData, timeframe, livePrice, currentPrice, chartClock]);
 
   // ============================================================================
   // PRICE CHANGE CALCULATION
@@ -566,8 +570,7 @@ export default function ChartTab() {
     if (!cleanSymbol || !apiSymbol) return;
 
     try {
-      const res = await fetch(`${TWELVE_DATA_URL}/quote?symbol=${encodeURIComponent(apiSymbol)}&apikey=${TWELVE_DATA_API_KEY}`);
-      const data = await res.json();
+      const data = await fetchTdQuote(apiSymbol);
 
       let price = parseFloat(data?.close) || 0;
       const prevClose = parseFloat(data?.previous_close) || 0;

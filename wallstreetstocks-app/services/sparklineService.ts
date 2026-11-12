@@ -3,6 +3,7 @@
 // Properly handles premarket/after-hours by filtering to today's session
 
 import { getFromMemory, setToMemory, CACHE_KEYS } from '../utils/memoryCache';
+import { isEasternDST } from '../lib/easternTime';
 
 const TWELVE_DATA_API_KEY = process.env.EXPO_PUBLIC_TWELVE_DATA_API_KEY || '';
 const TWELVE_DATA_URL = 'https://api.twelvedata.com';
@@ -96,8 +97,8 @@ function getTodaySessionStart(): Date {
   // Create 4:00 AM ET as ISO string
   const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T04:00:00`;
 
-  // Determine DST (rough approximation: March-November)
-  const isDST = month >= 3 && month <= 10;
+  // Eastern offset for that calendar date (exact DST rule, not a month guess)
+  const isDST = isEasternDST(new Date(year, month - 1, day));
   const offset = isDST ? '-04:00' : '-05:00';
 
   return new Date(dateStr + offset);
@@ -107,11 +108,11 @@ function getTodaySessionStart(): Date {
  * Parse a Twelve Data datetime string to a Date object
  */
 function parseTwelveDataTime(datetime: string): Date {
+  // The string is Eastern wall-clock time; read as local time its date
+  // fields are the Eastern calendar date, which is what the DST rule needs.
   const tempDate = new Date(datetime.replace(' ', 'T'));
-  const month = tempDate.getMonth(); // 0-11
 
-  // DST check: April-October is definitely DST
-  const isDST = month > 2 && month < 10;
+  const isDST = isEasternDST(tempDate);
   const offset = isDST ? '-04:00' : '-05:00';
 
   return new Date(datetime.replace(' ', 'T') + offset);

@@ -1,5 +1,6 @@
 // lib/realtime/sse.ts
 // React Native compatible - uses polling instead of EventSource
+import { buildAuthHeaders } from '../authHeaders';
 
 const API_BASE_URL = 'https://www.wallstreetstocks.ai';
 
@@ -16,7 +17,8 @@ export function openSSEConnection(
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/notifications?userId=${userId}&unread=true`
+        `${API_BASE_URL}/api/notifications?userId=${userId}&unread=true`,
+        { headers: await buildAuthHeaders(userId) }
       );
       
       if (response.ok) {

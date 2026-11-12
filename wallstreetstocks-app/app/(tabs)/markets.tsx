@@ -26,6 +26,8 @@ import { fetchQuotesWithCache } from "@/services/quoteService";
 import { fetchSparklines } from "@/services/sparklineService";
 import Sparkline from "@/components/Sparkline";
 import { priceStore } from "@/stores/priceStore";
+import { useQuoteTick } from "@/hooks/useQuoteTick";
+import { useScreenFocused } from "@/hooks/useScreenFocused";
 import { displaySymbol, displayAssetName } from "@/lib/symbolDisplay";
 import { useWebSocket } from "@/context/WebSocketContext";
 import { InlineAdBanner } from "@/components/AdBanner";
@@ -595,25 +597,13 @@ export default function Explore() {
   const { subscribe: wsSubscribe, unsubscribe: wsUnsubscribe, isConnected: wsConnected } = useWebSocket();
   const currentSubscribedSymbolsRef = useRef<string[]>([]);
 
-  // Real-time price refresh - polls store every 500ms for near-instant updates
-  const [priceUpdateTrigger, setPriceUpdateTrigger] = useState(0);
-  const priceRefreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Refresh prices - MAXIMUM SPEED for instant WebSocket updates
-  useEffect(() => {
-    const startupDelay = setTimeout(() => {
-      priceRefreshIntervalRef.current = setInterval(() => {
-        setPriceUpdateTrigger(prev => prev + 1);
-      }, 100); // 100ms = 10 updates/sec for ultra-fast prices
-    }, 300); // 300ms initial delay
-
-    return () => {
-      clearTimeout(startupDelay);
-      if (priceRefreshIntervalRef.current) {
-        clearInterval(priceRefreshIntervalRef.current);
-      }
-    };
-  }, []);
+  // Real-time price refresh. This used to be a 100ms timer that re-rendered
+  // the whole screen 10 times a second forever, even on another tab. It now
+  // moves only when a listed symbol's price actually changed, at most 4 times
+  // a second, and only while this tab is on display.
+  const isFocused = useScreenFocused();
+  const liveSymbols = useMemo(() => data.map(item => item.symbol), [data]);
+  const priceUpdateTrigger = useQuoteTick(liveSymbols, { intervalMs: 250, enabled: isFocused });
 
   // NO API POLLING - WebSocket handles ALL real-time price updates
   // This saves 700+ API credits/minute and makes tab switching instant

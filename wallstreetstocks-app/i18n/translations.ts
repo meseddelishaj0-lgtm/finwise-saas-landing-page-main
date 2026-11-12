@@ -5,19 +5,10 @@
 // Base UI dictionaries below cover settings/tabs/common; the big per-screen
 // string dictionaries live in i18n/strings.<lang>.ts and are merged on top.
 
-import es_strings from "./strings.es";
-import pt_strings from "./strings.pt";
-import fr_strings from "./strings.fr";
-import de_strings from "./strings.de";
-import it_strings from "./strings.it";
-import sq_strings from "./strings.sq";
-import tr_strings from "./strings.tr";
-import el_strings from "./strings.el";
-import zh_strings from "./strings.zh";
-import hi_strings from "./strings.hi";
-import ar_strings from "./strings.ar";
-import ja_strings from "./strings.ja";
-import ko_strings from "./strings.ko";
+//
+// The per-screen dictionaries are loaded on first use (see STRING_LOADERS at
+// the bottom), so only the language actually in use is ever evaluated. They
+// used to be imported here, which built all 13 at every app start.
 
 export interface Language {
   code: string;
@@ -227,20 +218,54 @@ const ko: Dict = {
   "Close": "닫기", "Back": "뒤로",
 };
 
-// English needs no dictionary — t() returns the key itself.
-export const TRANSLATIONS: Record<string, Dict> = {
-  en: {},
-  es: { ...es, ...es_strings },
-  pt: { ...pt, ...pt_strings },
-  fr: { ...fr, ...fr_strings },
-  de: { ...de, ...de_strings },
-  it: { ...it, ...it_strings },
-  sq: { ...sq, ...sq_strings },
-  tr: { ...tr, ...tr_strings },
-  el: { ...el, ...el_strings },
-  zh: { ...zh, ...zh_strings },
-  hi: { ...hi, ...hi_strings },
-  ar: { ...ar, ...ar_strings },
-  ja: { ...ja, ...ja_strings },
-  ko: { ...ko, ...ko_strings },
+const BASE: Record<string, Dict> = { es, pt, fr, de, it, sq, tr, el, zh, hi, ar, ja, ko };
+
+// require() inside a function, so the bundler only evaluates a dictionary
+// module the first time its language is asked for. (An import statement
+// would evaluate all of them at startup again.)
+/* eslint-disable @typescript-eslint/no-require-imports */
+const STRING_LOADERS: Record<string, () => Dict> = {
+  es: () => require("./strings.es").default,
+  pt: () => require("./strings.pt").default,
+  fr: () => require("./strings.fr").default,
+  de: () => require("./strings.de").default,
+  it: () => require("./strings.it").default,
+  sq: () => require("./strings.sq").default,
+  tr: () => require("./strings.tr").default,
+  el: () => require("./strings.el").default,
+  zh: () => require("./strings.zh").default,
+  hi: () => require("./strings.hi").default,
+  ar: () => require("./strings.ar").default,
+  ja: () => require("./strings.ja").default,
+  ko: () => require("./strings.ko").default,
 };
+/* eslint-enable @typescript-eslint/no-require-imports */
+
+// English needs no dictionary — t() returns the key itself.
+const loaded: Record<string, Dict> = { en: {} };
+
+/** True for every language the app can switch to (English included). */
+export function isSupportedLanguage(code: string): boolean {
+  return code === "en" || Object.prototype.hasOwnProperty.call(BASE, code);
+}
+
+/**
+ * The full dictionary for a language: its base UI strings with the
+ * per-screen strings merged on top. Built once, then cached.
+ * Unknown codes get the (empty) English dictionary.
+ */
+export function getDictionary(code: string): Dict {
+  const hit = loaded[code];
+  if (hit) return hit;
+  if (!isSupportedLanguage(code)) return loaded.en;
+
+  let strings: Dict = {};
+  try {
+    strings = STRING_LOADERS[code]() || {};
+  } catch {
+    // A dictionary that fails to load leaves the base strings + English keys
+  }
+  const dict = { ...BASE[code], ...strings };
+  loaded[code] = dict;
+  return dict;
+}

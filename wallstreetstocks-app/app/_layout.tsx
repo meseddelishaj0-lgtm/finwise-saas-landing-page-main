@@ -3,7 +3,6 @@ import { useEffect, useRef } from "react";
 import { Stack, router } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View, StatusBar, Platform, AppState, LogBox } from "react-native";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants from "expo-constants";
 import { loadNotifPrefs, applyPrefsToOneSignal } from "@/lib/notificationPrefs";
@@ -124,8 +123,6 @@ const DEFAULT_STREAMING_SYMBOLS = [
   // Popular stocks (market hours)
   'AAPL', 'MSFT', 'TSLA', 'NVDA', 'AMZN', 'GOOGL',
 ];
-
-const queryClient = new QueryClient();
 
 function AppInitializer({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -429,7 +426,6 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <LanguageProvider>
-        <QueryClientProvider client={queryClient}>
           <SafeAreaProvider>
             <SubscriptionProvider>
             <ReferralProvider>
@@ -450,7 +446,6 @@ export default function RootLayout() {
             </ReferralProvider>
           </SubscriptionProvider>
           </SafeAreaProvider>
-        </QueryClientProvider>
         </LanguageProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

@@ -31,8 +31,9 @@ export async function preloadAppData(): Promise<void> {
     // Ignore migration errors
   }
 
-  // Delay heavy loading to let the UI render first
-  // This prevents the app from becoming unresponsive on startup
+  // Let the first frame render before loading market data. This used to wait
+  // 2 seconds because the load was 16 requests and ~150 store writes; it is
+  // now one request and one batched write, so a short pause is enough.
   setTimeout(async () => {
     try {
       // Import market data service dynamically to avoid circular deps
@@ -45,5 +46,5 @@ export async function preloadAppData(): Promise<void> {
     } catch (err) {
       // Silently handle errors - preload is non-critical
     }
-  }, 2000); // 2 second delay after app start
+  }, 300); // just after the first frame
 }

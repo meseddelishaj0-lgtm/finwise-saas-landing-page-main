@@ -147,7 +147,7 @@ const fetchPosts = async (forumSlug?: string, currentUserId?: number): Promise<a
 const createPost = async (data: { title: string; content: string; forumId: number; userId: number; mediaUrl?: string }): Promise<any> => {
   const response = await fetch(`${API_BASE}/api/posts`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await buildAuthHeaders(data.userId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify(data),
   });
   if (!response.ok) {
@@ -186,7 +186,7 @@ const fetchComments = async (postId: string | number, userId?: number): Promise<
 const createComment = async (postId: string | number, content: string, userId: number, parentId?: number | null): Promise<any> => {
   const response = await fetch(`${API_BASE}/api/comments`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ postId: Number(postId), content, userId, ...(parentId != null ? { parentId } : {}) }),
   });
   if (!response.ok) throw new Error('Failed to create comment');
@@ -207,7 +207,7 @@ const likePost = async (postId: string, userId: number): Promise<{ liked: boolea
   try {
     const response = await fetch(`${API_BASE}/api/likes`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
       body: JSON.stringify({ postId: Number(postId), userId }),
     });
     if (!response.ok) throw new Error('Failed to like post');
@@ -222,7 +222,7 @@ const likeComment = async (commentId: string, userId: number): Promise<{ liked: 
   try {
     const response = await fetch(`${API_BASE}/api/likes`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
       body: JSON.stringify({ commentId: Number(commentId), userId }),
     });
     if (!response.ok) throw new Error('Failed to like comment');
@@ -239,7 +239,7 @@ const fetchNotifications = async (userId: number): Promise<any[]> => {
     const timestamp = Date.now();
     const response = await fetch(`${API_BASE}/api/notifications?userId=${userId}&_t=${timestamp}`, {
       cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache' },
+      headers: await buildAuthHeaders(userId, { 'Cache-Control': 'no-cache' }),
     });
     if (!response.ok) return [];
     const data = await response.json();
@@ -286,7 +286,7 @@ const getCurrentUser = async (): Promise<any> => {
 const voteSentiment = async (userId: number, postId: number, type: 'bullish' | 'bearish'): Promise<any> => {
   const response = await fetch(`${API_BASE}/api/sentiment`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ userId, postId, type }),
   });
   if (!response.ok) throw new Error('Failed to vote');
@@ -296,7 +296,7 @@ const voteSentiment = async (userId: number, postId: number, type: 'bullish' | '
 const addToWatchlist = async (userId: number, ticker: string): Promise<void> => {
   await fetch(`${API_BASE}/api/watchlist`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ userId, ticker }),
   });
 };
@@ -304,7 +304,7 @@ const addToWatchlist = async (userId: number, ticker: string): Promise<void> => 
 const blockUser = async (blockerId: number, blockedId: number): Promise<{ success: boolean }> => {
   const response = await fetch(`${API_BASE}/api/community/social/${blockedId}/block`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await buildAuthHeaders(blockerId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ blockerId }),
   });
   return { success: response.ok };
@@ -313,7 +313,7 @@ const blockUser = async (blockerId: number, blockedId: number): Promise<{ succes
 const muteUser = async (muterId: number, mutedId: number): Promise<{ success: boolean }> => {
   const response = await fetch(`${API_BASE}/api/community/social/${mutedId}/mute`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await buildAuthHeaders(muterId, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ muterId }),
   });
   return { success: response.ok };
@@ -352,7 +352,7 @@ const followUserApi = async (followerId: number, followingId: number): Promise<{
   try {
     const response = await fetch(`${API_BASE}/api/follows`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await buildAuthHeaders(followerId, { 'Content-Type': 'application/json' }),
       body: JSON.stringify({ followerId, followingId }),
     });
     if (!response.ok) {
@@ -1025,7 +1025,7 @@ export default function CommunityPage() {
         `https://www.wallstreetstocks.ai/api/follows`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
           body: JSON.stringify({ followerId: userId, followingId: selectedProfile.id }),
         }
       );
@@ -1809,7 +1809,7 @@ export default function CommunityPage() {
         `https://www.wallstreetstocks.ai/api/follows`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await buildAuthHeaders(userId, { 'Content-Type': 'application/json' }),
           body: JSON.stringify({ followerId: userId, followingId: targetUserId }),
         }
       );
