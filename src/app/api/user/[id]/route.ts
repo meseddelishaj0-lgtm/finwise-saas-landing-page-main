@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@/generated/prisma/client/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import prisma from "@/lib/prisma";
 import { syncDiamondVerification } from '@/lib/verification';
 import { getVerifiedSubscription } from '@/lib/verifySubscription';
 import { resolveMobileUserId } from '@/lib/mobileAuth';
 
 export const dynamic = 'force-dynamic';
-
-// Create a fresh connection for reads to avoid stale data
-function createFreshPrisma() {
-  const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!;
-  const adapter = new PrismaNeon({ connectionString });
-  return new PrismaClient({ adapter });
-}
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -25,14 +17,10 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  // Create fresh connection to avoid stale reads after updates
-  const prisma = createFreshPrisma();
-
   try {
     const userId = parseInt(params.id, 10);
 
     if (isNaN(userId)) {
-      await prisma.$disconnect();
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
@@ -116,13 +104,11 @@ export async function GET(
     });
 
     if (!result) {
-      await prisma.$disconnect();
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     console.log('📍 GET /api/user/[id] - All data in single txn:', { id: result.id, name: result.name, followers: result._count.followers, isFollowing: result.isFollowing });
 
-    await prisma.$disconnect();
     return NextResponse.json(result, {
       status: 200,
       headers: {
@@ -133,7 +119,6 @@ export async function GET(
     });
   } catch (err) {
     console.error("❌ Error fetching user:", err);
-    await prisma.$disconnect();
     return NextResponse.json({ error: "Failed to load user" }, { status: 500 });
   }
 }
@@ -143,21 +128,16 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  // Use fresh connection for both write and read-back
-  const prisma = createFreshPrisma();
-
   try {
     const userId = parseInt(params.id, 10);
 
     if (isNaN(userId)) {
-      await prisma.$disconnect();
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
     // Only the account owner may edit this profile (token must match the id).
     const _auth = resolveMobileUserId(req, userId);
     if (!_auth.ok) {
-      await prisma.$disconnect();
       return NextResponse.json({ error: _auth.error }, { status: _auth.status });
     }
 
@@ -172,7 +152,6 @@ export async function PUT(
       // Validate username format
       const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
       if (!usernameRegex.test(username)) {
-        await prisma.$disconnect();
         return NextResponse.json(
           { error: 'Username must be 3-20 characters, letters, numbers, and underscores only' },
           { status: 400 }
@@ -185,7 +164,6 @@ export async function PUT(
       `;
 
       if (existingUsers.length > 0) {
-        await prisma.$disconnect();
         return NextResponse.json({ error: 'Username is already taken' }, { status: 409 });
       }
 
@@ -278,11 +256,9 @@ export async function PUT(
 
     console.log('✅ User profile updated:', { id: updatedUser.id, name: updatedUser.name, tier: updatedUser.subscriptionTier });
 
-    await prisma.$disconnect();
     return NextResponse.json(updatedUser, { status: 200, headers: NO_CACHE_HEADERS });
   } catch (err) {
     console.error("❌ Error updating user:", err);
-    await prisma.$disconnect();
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
   }
 }

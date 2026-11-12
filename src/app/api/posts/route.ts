@@ -1,24 +1,13 @@
 // api/posts/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { resolveMobileUserId } from '@/lib/mobileAuth';
-import { PrismaClient, Prisma } from "@/generated/prisma/client/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { Prisma } from "@/generated/prisma/client/client";
 import prisma from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 
-// Create a fresh connection for reads to avoid stale data
-function createFreshPrisma() {
-  const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!;
-  const adapter = new PrismaNeon({ connectionString });
-  return new PrismaClient({ adapter });
-}
-
 // GET /api/posts - Get all posts (PUBLIC)
 export async function GET(req: NextRequest) {
-  // Create fresh connection to avoid stale reads from replicas
-  const freshPrisma = createFreshPrisma();
-
   try {
     const { searchParams } = new URL(req.url);
     const forumSlug = searchParams.get("forum");
@@ -40,7 +29,7 @@ export async function GET(req: NextRequest) {
 
     // Filter out posts from blocked users
     if (currentUserId) {
-      const blockedUsers = await freshPrisma.block.findMany({
+      const blockedUsers = await prisma.block.findMany({
         where: {
           OR: [
             { blockerId: parseInt(currentUserId, 10) },
@@ -58,7 +47,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const posts = await freshPrisma.post.findMany({
+    const posts = await prisma.post.findMany({
       where,
       include: {
         forum: { select: { id: true, title: true, slug: true } },
@@ -74,22 +63,64 @@ export async function GET(req: NextRequest) {
       skip: offset,
     });
 
-    // Fetch fresh user data using transaction to force reading from primary
+    // Everything the page needs besides the posts themselves. These five
+    // lookups depend only on the page of posts, not on each other, so they
+    // run together instead of one after another.
     const userIds = [...new Set(posts.map(p => p.userId))];
-    const usersMap = new Map<number, any>();
+    const pageIds = posts.map(p => p.id);
 
-    if (userIds.length > 0) {
-      // Use transaction to ensure we read from primary (bypasses Neon replica lag)
-      const users = await freshPrisma.$transaction(async (tx) => {
-        await tx.$executeRaw`SELECT 1`; // Force primary connection
-        return await tx.$queryRaw<any[]>`
-          SELECT id, name, username, "profileImage", karma, "isVerified", "subscriptionTier"
-          FROM "User"
-          WHERE id IN (${Prisma.join(userIds)})
-        `;
-      });
-      users.forEach(u => usersMap.set(u.id, u));
-    }
+    const [users, userLikes, pageRepostRows, userReposts, sentimentGroups] = await Promise.all([
+      // Authors (raw query: always the current row, never a cached relation)
+      userIds.length > 0
+        ? prisma.$queryRaw<any[]>`
+            SELECT id, name, username, "profileImage", karma, "isVerified", "subscriptionTier"
+            FROM "User"
+            WHERE id IN (${Prisma.join(userIds)})
+          `
+        : Promise.resolve([] as any[]),
+
+      // Viewer's likes on this page
+      currentUserId
+        ? prisma.like.findMany({
+            where: {
+              userId: parseInt(currentUserId, 10),
+              postId: { in: pageIds },
+            },
+            select: { postId: true },
+          })
+        : Promise.resolve([]),
+
+      // Reposts of this page's posts, newest first (for the "Reposted by" banner)
+      prisma.repost.findMany({
+        where: { postId: { in: pageIds } },
+        orderBy: { createdAt: 'desc' },
+        include: { user: { select: { id: true, username: true, name: true } } },
+      }),
+
+      // Viewer's reposts on this page
+      currentUserId
+        ? prisma.repost.findMany({
+            where: {
+              userId: parseInt(currentUserId, 10),
+              postId: { in: pageIds },
+            },
+            select: { postId: true },
+          })
+        : Promise.resolve([]),
+
+      // Sentiment split (bullish/bearish) for ALL posts in ONE grouped query,
+      // rather than a per-post groupBy (was an N+1 over an unbounded post set).
+      pageIds.length > 0
+        ? prisma.sentiment.groupBy({
+            by: ['postId', 'type'],
+            where: { postId: { in: pageIds } },
+            _count: { type: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const usersMap = new Map<number, any>();
+    users.forEach(u => usersMap.set(u.id, u));
 
     // Attach fresh user data to posts
     const postsWithUsers = posts.map(post => ({
@@ -97,55 +128,20 @@ export async function GET(req: NextRequest) {
       user: usersMap.get(post.userId) || null,
     }));
 
-    // Get user's likes if currentUserId is provided
+    // Viewer's likes
     const userLikedPostIds = new Set<number>();
-    if (currentUserId) {
-      const userLikes = await freshPrisma.like.findMany({
-        where: {
-          userId: parseInt(currentUserId, 10),
-          postId: { in: postsWithUsers.map(p => p.id) },
-        },
-        select: { postId: true },
-      });
-      userLikes.forEach(l => l.postId && userLikedPostIds.add(l.postId));
-    }
+    userLikes.forEach(l => l.postId && userLikedPostIds.add(l.postId));
 
-    // Latest reposter per post (for the "Reposted by" banner)
+    // Latest reposter per post
     const latestReposterByPost = new Map<number, { id: number; username: string | null; name: string | null }>();
-    {
-      const pageRepostRows = await freshPrisma.repost.findMany({
-        where: { postId: { in: postsWithUsers.map(p => p.id) } },
-        orderBy: { createdAt: 'desc' },
-        include: { user: { select: { id: true, username: true, name: true } } },
-      });
-      for (const r of pageRepostRows) {
-        if (!latestReposterByPost.has(r.postId)) latestReposterByPost.set(r.postId, r.user);
-      }
+    for (const r of pageRepostRows) {
+      if (!latestReposterByPost.has(r.postId)) latestReposterByPost.set(r.postId, r.user);
     }
 
-    // Viewer's reposts (same pattern as likes)
+    // Viewer's reposts
     const userRepostedPostIds = new Set<number>();
-    if (currentUserId) {
-      const userReposts = await freshPrisma.repost.findMany({
-        where: {
-          userId: parseInt(currentUserId, 10),
-          postId: { in: postsWithUsers.map(p => p.id) },
-        },
-        select: { postId: true },
-      });
-      userReposts.forEach(r => userRepostedPostIds.add(r.postId));
-    }
+    userReposts.forEach(r => userRepostedPostIds.add(r.postId));
 
-    // Sentiment split (bullish/bearish) for ALL posts in ONE grouped query,
-    // rather than a per-post groupBy (was an N+1 over an unbounded post set).
-    const pageIds = postsWithUsers.map(p => p.id);
-    const sentimentGroups = pageIds.length > 0
-      ? await freshPrisma.sentiment.groupBy({
-          by: ['postId', 'type'],
-          where: { postId: { in: pageIds } },
-          _count: { type: true },
-        })
-      : [];
     const sentimentMap = new Map<number, { bullish: number; bearish: number }>();
     for (const g of sentimentGroups) {
       if (g.postId == null) continue;
@@ -172,7 +168,6 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    await freshPrisma.$disconnect();
 
     const response = NextResponse.json(postsWithSentiment, { status: 200 });
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -181,7 +176,6 @@ export async function GET(req: NextRequest) {
     return response;
   } catch (err) {
     console.error("❌ Error fetching posts:", err);
-    await freshPrisma.$disconnect();
     return NextResponse.json({ error: "Failed to load posts" }, { status: 500 });
   }
 }

@@ -1,27 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@/generated/prisma/client/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import prisma from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 
 export const dynamic = "force-dynamic";
 
-// Create fresh connection to avoid stale reads from Neon replicas
-function createFreshPrisma() {
-  const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!;
-  const adapter = new PrismaNeon({ connectionString });
-  return new PrismaClient({ adapter });
-}
-
 export async function POST(request: NextRequest) {
-  const prisma = createFreshPrisma();
-
   try {
     const { email, name, profileImage } = await request.json();
 
     console.log("Mobile Apple auth request:", { email, name });
 
     if (!email) {
-      await prisma.$disconnect();
       return NextResponse.json(
         { error: "Email is required" },
         { status: 400 }
@@ -69,7 +58,6 @@ export async function POST(request: NextRequest) {
       { expiresIn: "30d" }
     );
 
-    await prisma.$disconnect();
     return NextResponse.json({
       token,
       userId: user.id,
@@ -89,7 +77,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Apple auth error:", error);
-    await prisma.$disconnect();
     return NextResponse.json(
       { error: "Internal server error", details: String(error) },
       { status: 500 }

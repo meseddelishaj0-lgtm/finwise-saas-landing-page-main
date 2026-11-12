@@ -60,6 +60,10 @@ export function resolveMobileUserId(req: NextRequest, claimedRaw?: string | numb
   }
 
   if (claimed != null && Number.isFinite(claimed)) {
+    // Logged (path only, no user id) so the server logs show when installed
+    // app versions have stopped relying on this fallback — the point at which
+    // STRICT_MOBILE_AUTH can be switched on without locking anyone out.
+    console.warn(`[mobileAuth] accepted without a login token: ${req.method} ${req.nextUrl?.pathname ?? ''}`);
     return { ok: true, userId: claimed };
   }
   return { ok: false, status: 401, error: 'Missing user identity' };

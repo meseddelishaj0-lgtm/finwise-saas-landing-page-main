@@ -1,25 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@/generated/prisma/client/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import prisma from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { enforceRateLimit, rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
-// Create fresh connection to avoid stale reads from Neon replicas
-function createFreshPrisma() {
-  const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!;
-  const adapter = new PrismaNeon({ connectionString });
-  return new PrismaClient({ adapter });
-}
-
 export async function POST(request: NextRequest) {
   // Blunt credential stuffing / password guessing.
   const ipLimited = enforceRateLimit(request, "login", 15, 5 * 60 * 1000);
   if (ipLimited) return ipLimited;
-
-  const prisma = createFreshPrisma();
 
   try {
     const { email, password } = await request.json();
@@ -31,7 +21,6 @@ export async function POST(request: NextRequest) {
         5 * 60 * 1000,
       );
       if (!ok) {
-        await prisma.$disconnect();
         return NextResponse.json(
           { error: "Too many attempts. Please try again later." },
           { status: 429, headers: { "Retry-After": String(retryAfter) } },
@@ -40,7 +29,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!email || !password) {
-      await prisma.$disconnect();
       return NextResponse.json(
         { error: "Email and password are required" },
         { status: 400 }
@@ -53,7 +41,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      await prisma.$disconnect();
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
@@ -62,7 +49,6 @@ export async function POST(request: NextRequest) {
 
     // Check if user has a password (might be OAuth user)
     if (!user.password) {
-      await prisma.$disconnect();
       return NextResponse.json(
         { error: "Please sign in with Google or Apple" },
         { status: 401 }
@@ -73,7 +59,6 @@ export async function POST(request: NextRequest) {
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
-      await prisma.$disconnect();
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 }
@@ -89,7 +74,6 @@ export async function POST(request: NextRequest) {
       { expiresIn: "30d" }
     );
 
-    await prisma.$disconnect();
     return NextResponse.json({
       token,
       userId: user.id,
@@ -108,7 +92,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Login error:", error);
-    await prisma.$disconnect();
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

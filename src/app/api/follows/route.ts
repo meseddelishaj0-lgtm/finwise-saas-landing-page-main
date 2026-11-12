@@ -1,21 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@/generated/prisma/client/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import prisma from "@/lib/prisma";
 import { resolveMobileUserId } from "@/lib/mobileAuth";
 
 export const dynamic = 'force-dynamic';
 
-// Create fresh connection to avoid stale reads from Neon replicas
-function createFreshPrisma() {
-  const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL!;
-  const adapter = new PrismaNeon({ connectionString });
-  return new PrismaClient({ adapter });
-}
-
 // POST /api/follows - Follow a user (toggle behavior)
 export async function POST(req: NextRequest) {
-  const prisma = createFreshPrisma();
-
   try {
     const { followerId: claimedFollowerId, followingId } = await req.json();
 
@@ -23,18 +13,15 @@ export async function POST(req: NextRequest) {
     // spoofed followerId can't force someone else to follow/unfollow.
     const auth = resolveMobileUserId(req, claimedFollowerId);
     if (!auth.ok) {
-      await prisma.$disconnect();
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     const followerId = auth.userId;
 
     if (!followingId) {
-      await prisma.$disconnect();
       return NextResponse.json({ error: "followingId is required" }, { status: 400 });
     }
 
     if (followerId === followingId) {
-      await prisma.$disconnect();
       return NextResponse.json({ error: "You cannot follow yourself" }, { status: 400 });
     }
 
@@ -54,7 +41,6 @@ export async function POST(req: NextRequest) {
         where: { id: existingFollow.id }
       });
       console.log('📍 Unfollowed:', { followerId, followingId });
-      await prisma.$disconnect();
       return NextResponse.json({
         success: true,
         action: 'unfollowed',
@@ -75,7 +61,6 @@ export async function POST(req: NextRequest) {
     });
 
     console.log('📍 Followed:', { followerId, followingId });
-    await prisma.$disconnect();
     return NextResponse.json({
       ...follow,
       success: true,
@@ -84,27 +69,22 @@ export async function POST(req: NextRequest) {
     }, { status: 201 });
   } catch (err) {
     console.error("❌ Error following user:", err);
-    await prisma.$disconnect();
     return NextResponse.json({ error: "Failed to follow user" }, { status: 500 });
   }
 }
 
 // DELETE /api/follows - Unfollow a user
 export async function DELETE(req: NextRequest) {
-  const prisma = createFreshPrisma();
-
   try {
     const { followerId: claimedFollowerId, followingId } = await req.json();
 
     const auth = resolveMobileUserId(req, claimedFollowerId);
     if (!auth.ok) {
-      await prisma.$disconnect();
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
     const followerId = auth.userId;
 
     if (!followingId) {
-      await prisma.$disconnect();
       return NextResponse.json({ error: "followingId is required" }, { status: 400 });
     }
 
@@ -116,11 +96,9 @@ export async function DELETE(req: NextRequest) {
     });
 
     console.log('📍 Unfollowed (DELETE):', { followerId, followingId });
-    await prisma.$disconnect();
     return NextResponse.json({ message: "Unfollowed successfully", isFollowing: false }, { status: 200 });
   } catch (err) {
     console.error("❌ Error unfollowing user:", err);
-    await prisma.$disconnect();
     return NextResponse.json({ error: "Failed to unfollow user" }, { status: 500 });
   }
 }
